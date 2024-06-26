@@ -62,7 +62,7 @@ b7537a67fee3   ghcr.io/open-webui/open-webui:main   "bash start.sh"       5 hour
 ed45ab7c6770   ollama/ollama                        "/bin/ollama serve"   7 days ago    Up 7 hours             0.0.0.0:11434->11434/tcp, :::11434->11434/tcp   ollama
 ```
 
-### IDE AI Tooling:
+### User AI Tooling:
 
 **Ollama with Open Webui**
 
