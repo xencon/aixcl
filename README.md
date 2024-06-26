@@ -38,14 +38,14 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 - 16GB RAM
 
 
-**IDE AI Tooling:**
+### IDE AI Tooling
 
 - Ollama
 - Open WebUI
 - Continue VSCode plugin
 
 
-## CICD Tooling:
+### CICD Tooling
 
 **Actionable AI:**
 
