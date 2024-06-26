@@ -38,14 +38,27 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 - 16GB RAM
 
 
-### IDE AI Tooling
+### IDE AI Tooling:
 
-- Ollama
-- Open WebUI
-- Continue VSCode plugin
+**Ollama** 
+
+- Get up and running with Llama 3, Mistral, Gemma, and other large language models.
+
+### Open WebUI 
+
+- Code Editor: Write and edit code directly within the UI.
+- Model Selector: Choose from a variety of pre-trained AI models for different tasks.
+- Input & Output: Input your data and review the model's outputs.
+- Customization: Train your own models with your own data.
+
+### Continue VSCode plugin
+
+- Access AI models directly from your code editor.
+- Get context-aware suggestions as you type.
+- Train your own models and save them for future use.
 
 
-### CICD Tooling
+### CICD Tooling:
 
 **Actionable AI:**
 
