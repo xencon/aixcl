@@ -27,7 +27,7 @@ Kodexcl is an AI-powered software development platform designed to accelerate an
 **AWS Instance:**
 
 - Operating System: Ubuntu Linux
-- Instance Type: g4dn.xlarge
+- Instance Type: [g4dn.xlarge](https://aws.amazon.com/ec2/instance-types/g4/)
 - 4x CPU
 - 1x GPU
 - 16GB RAM
