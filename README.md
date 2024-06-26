@@ -1,8 +1,8 @@
-## KODEXCL Platform Overview
+## Kodexcl Platform Overview
 
 ### Overview
 
-KODEXCL is an AI-powered software development platform designed to accelerate and streamline the software development process. Key features include:
+Kodexcl is an AI-powered software development platform designed to accelerate and streamline the software development process. Key features include:
 
 - Automated test generation and code suggestions.
 - AI-powered pull request and code review assistance.
