@@ -40,18 +40,16 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 
 ### IDE AI Tooling:
 
-**Ollama** 
+**Ollama with Open Webui**
 
 - Get up and running with Llama 3, Mistral, Gemma, and other large language models.
-
-### Open WebUI 
-
 - Code Editor: Write and edit code directly within the UI.
 - Model Selector: Choose from a variety of pre-trained AI models for different tasks.
 - Input & Output: Input your data and review the model's outputs.
 - Customization: Train your own models with your own data.
+- Administer users and LMM access to your server.
 
-### Continue VSCode plugin
+**Continue VSCode plugin**
 
 - Access AI models directly from your code editor.
 - Get context-aware suggestions as you type.
