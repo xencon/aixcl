@@ -1,4 +1,3 @@
-```markdown
 ## AIXCL Platform Overview
 
 ### Overview
@@ -47,6 +46,4 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 
 
 **CICD Tooling:**
-
 (Information not provided in the given text.)
-```
