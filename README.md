@@ -63,10 +63,10 @@ ed45ab7c6770   ollama/ollama                        "/bin/ollama serve"   7 days
 
 Check the endpoints are available with curl and look for status code 200 OK.
 ```
-head -n1 <(curl -I http://www,example.com:11434 2> /dev/null)
+head -n1 <(curl -I http://www.example.com:11434 2> /dev/null)
 HTTP/1.1 200 OK
 
-head -n1 <(curl -I http://www,example.com:3000 2> /dev/null)
+head -n1 <(curl -I http://www.example.com:3000 2> /dev/null)
 HTTP/1.1 200 OK
 ```
 
@@ -87,10 +87,10 @@ llama3:latest           365c0bd3c000    4.7 GB  7 days ago
 
 At this stage the server is installed with Ollama, Open WebUI and The Meta LLama3 LLM.
 
-//TODO Login into the server using Open WebUI
-//TODO Configure some sane defaults
-//TODO Install instructions for the Continue Plugin
-
+You should now browse to your server instance via Open WebUI and use the signup button to create your admin account.
+```
+http://www.example.com:3000 
+```
 
 ### User AI Tooling:
 
