@@ -47,14 +47,13 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 
 ### Installation Instructions
 
-Install Ollama and Open WebUI via docker
-
+Install Ollama and Open WebUI via docker.
 ```
 $ docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama --restart always
 $ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
 ```
 
-Check the containers are running
+Check the containers are running.
 ```
 $ docker ps
 CONTAINER ID   IMAGE                                COMMAND               CREATED       STATUS                 PORTS                                           NAMES
