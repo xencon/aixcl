@@ -94,7 +94,7 @@ http://www.example.com:3000
 
 ### User AI Tooling:
 
-**Ollama with Open Webui**
+**[Ollama](https://ollama.com) with Open Webui**
 
 - Get up and running with Llama 3, Mistral, Gemma, and other large language models.
 - Code Editor: Write and edit code directly within the UI.
