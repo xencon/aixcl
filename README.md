@@ -49,17 +49,48 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 
 Install Ollama and Open WebUI via docker.
 ```
-$ docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama --restart always
-$ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama --restart always
+docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
 ```
 
 Check the containers are running.
 ```
-$ docker ps
+docker ps
 CONTAINER ID   IMAGE                                COMMAND               CREATED       STATUS                 PORTS                                           NAMES
 b7537a67fee3   ghcr.io/open-webui/open-webui:main   "bash start.sh"       5 hours ago   Up 5 hours (healthy)   0.0.0.0:3000->8080/tcp, :::3000->8080/tcp       open-webui
 ed45ab7c6770   ollama/ollama                        "/bin/ollama serve"   7 days ago    Up 7 hours             0.0.0.0:11434->11434/tcp, :::11434->11434/tcp   ollama
 ```
+
+Check the endpoints are available with curl and look for status code 200 OK.
+```
+head -n1 <(curl -I http://www,example.com:11434 2> /dev/null)
+HTTP/1.1 200 OK
+
+head -n1 <(curl -I http://www,example.com:3000 2> /dev/null)
+HTTP/1.1 200 OK
+```
+
+Install the LLM.
+```
+docker exec -it ollama ollama run llama3
+>>> Send a message (/? for help
+```
+
+Exit the LLM prompt with CTRL-D
+
+You can list the installed LLM with
+```
+docker exec -it ollama ollama list
+NAME                    ID              SIZE    MODIFIED   
+llama3:latest           365c0bd3c000    4.7 GB  7 days ago
+```
+
+At this stage the server is installed with Ollama, Open WebUI and The Meta LLama3 LLM.
+
+//TODO Login into the server using Open WebUI
+//TODO Configure some sane defaults
+//TODO Install instructions for the Continue Plugin
+
 
 ### User AI Tooling:
 
