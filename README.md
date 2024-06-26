@@ -46,4 +46,46 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 
 
 **CICD Tooling:**
-(Information not provided in the given text.)
+
+## Popular AI-Powered GitHub Actions Tools
+
+**Actionable AI:**
+
+- Provides pre-trained models for tasks like classification, summarization, and sentiment analysis.
+- Offers custom model training and deployment options.
+- Free for public repositories, paid for private repositories.
+
+
+**AI Code Suggest:**
+
+- Autocompletes code based on your typing and surrounding context.
+- Learns from your coding style over time.
+- Open-source.
+
+
+**GitHub AI:**
+
+- Improves code readability and maintainability.
+- Analyzes code structure, naming, and documentation.
+- Free for all GitHub users.
+
+
+**CodeX:**
+
+- Generates code from natural language descriptions.
+- Offers code completion and debugging suggestions.
+- Available as a GitHub Action and VS Code extension.
+
+
+**Other Notable Options:**
+
+- GitHub Actions - AI/ML
+- DataCamp AI
+- ModelFlow
+
+
+**Resources:**
+
+- GitHub Marketplace: AI & ML: https://marketplace.github.com/collections/ai-ml
+- AI for GitHub Actions: https://blog.github.com/announcements/ai-github-actions/
+- List of AI GitHub Actions: https://github.com/marketplace/actions?q=ai
