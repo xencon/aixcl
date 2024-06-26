@@ -15,11 +15,6 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 - Users can extend the platform with proprietary tooling as needed.
 
 
-### Installation and Configuration
-
-- Scripts are provided for easy installation and configuration on various server environments, including cloud, on-premises, and local machines.
-
-
 ### Platform Specifications
 
 **POC Platform:**
@@ -36,7 +31,36 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 - 4x CPU
 - 1x GPU
 - 16GB RAM
+- Note: You should have at least 8 GB of RAM available to run the 7B models, 16 GB to run the 13B models, and 32 GB to run the 33B models.
 
+**prerequisites:**
+
+- Ubuntu Linux
+- Docker
+- Nvidia divers and toolset
+
+**Server Ports:**
+
+- 11434 Ollama
+- 3000 Open WebUI
+- 22 SSH Access
+
+### Installation Instructions
+
+Install Ollama and Open WebUI via docker
+
+```
+$ docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama --restart always
+$ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+```
+
+Check the containers are running
+```
+$ docker ps
+CONTAINER ID   IMAGE                                COMMAND               CREATED       STATUS                 PORTS                                           NAMES
+b7537a67fee3   ghcr.io/open-webui/open-webui:main   "bash start.sh"       5 hours ago   Up 5 hours (healthy)   0.0.0.0:3000->8080/tcp, :::3000->8080/tcp       open-webui
+ed45ab7c6770   ollama/ollama                        "/bin/ollama serve"   7 days ago    Up 7 hours             0.0.0.0:11434->11434/tcp, :::11434->11434/tcp   ollama
+```
 
 ### IDE AI Tooling:
 
