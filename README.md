@@ -45,9 +45,7 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 - Continue VSCode plugin
 
 
-**CICD Tooling:**
-
-## Popular AI-Powered GitHub Actions Tools
+## CICD Tooling:
 
 **Actionable AI:**
 
