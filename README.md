@@ -1,8 +1,8 @@
-## Kodexcl AI Accelerated Software Development
+## AIXCL AI Accelerated Software Engineering
 
 ### Overview
 
-Kodexcl is an AI-powered software development platform designed to accelerate and streamline the software development process. Key features include:
+AIXCL is an AI-powered software development platform designed to accelerate and streamline the software development process. Key features include:
 
 - Automated test generation and code suggestions.
 - AI-powered pull request and code review assistance.
