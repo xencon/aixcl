@@ -11,7 +11,7 @@ Kodexcl is an AI-powered software development platform designed to accelerate an
 
 ### Technology Stack
 
-- Open-source software and readily available AI language models (LLMs) form the foundation of the platform.
+- Open-source software and readily available Large Language Models (LLMs) form the foundation of the platform.
 - Users can extend the platform with proprietary tooling as needed.
 
 
