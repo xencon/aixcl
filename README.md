@@ -1,8 +1,8 @@
-## AIXCL Platform Overview
+## Kodexcl AI Accelerated Software Development
 
 ### Overview
 
-AIXCL is an AI-powered software engineering platform designed to accelerate and streamline the software development process. Key features include:
+Kodexcl is an AI-powered software development platform designed to accelerate and streamline the software development process. Key features include:
 
 - Automated test generation and code suggestions.
 - AI-powered pull request and code review assistance.
@@ -27,7 +27,7 @@ AIXCL is an AI-powered software engineering platform designed to accelerate and 
 **AWS Instance:**
 
 - Operating System: Ubuntu Linux
-- Instance Type: g4dn.xlarge
+- Instance Type: [g4dn.xlarge](https://aws.amazon.com/ec2/instance-types/g4/)
 - 4x CPU
 - 1x GPU
 - 16GB RAM
@@ -94,7 +94,7 @@ http://www.example.com:3000
 
 ### User AI Tooling:
 
-**Ollama with Open Webui**
+**[Ollama](https://github.com/ollama/ollama) with [Open Webui](https://github.com/open-webui/open-webui)**
 
 - Get up and running with Llama 3, Mistral, Gemma, and other large language models.
 - Code Editor: Write and edit code directly within the UI.
@@ -103,7 +103,7 @@ http://www.example.com:3000
 - Customization: Train your own models with your own data.
 - Administer users and LMM access to your server.
 
-**Continue VSCode plugin**
+**[Continue](https://docs.continue.dev/quickstart) VSCode plugin**
 
 - Access AI models directly from your code editor.
 - Get context-aware suggestions as you type.
