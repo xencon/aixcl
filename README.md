@@ -145,6 +145,3 @@ http://www.example.com:3000
 - GitHub Actions - AI/ML
 - DataCamp AI
 - ModelFlow
-
-
-**Resources:**
