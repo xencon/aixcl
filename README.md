@@ -148,7 +148,3 @@ http://www.example.com:3000
 
 
 **Resources:**
-
-- GitHub Marketplace: AI & ML: https://marketplace.github.com/collections/ai-ml
-- AI for GitHub Actions: https://blog.github.com/announcements/ai-github-actions/
-- List of AI GitHub Actions: https://github.com/marketplace/actions?q=ai
