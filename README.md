@@ -1,4 +1,4 @@
-## AIXCL AI Accelerated Software Engineering
+## AIXCL Accelerated Software Engineering
 
 ### Overview
 
