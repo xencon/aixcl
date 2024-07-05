@@ -2,12 +2,22 @@
 
 ### Overview
 
-AIXCL is an AI-powered software development and engineering platform designed to accelerate and streamline the software development process. Key features include:
+AIXCL is an AI-powered software development and engineering platform designed to accelerate and streamline the software development process.
 
-- Automated test generation and code suggestions.
-- AI-powered pull request and code review assistance.
+**Key Features:**
+
+- Code and test generation.
+- Pull request and code review assistance.
+- Standards enforcement and linting.
+- Security scanning.
 - Seamless integration with the IDE and CI/CD pipeline.
 
+**Benefits:**
+
+- User AI Tooling: Write and edit code directly, receive context-aware suggestions, and train your own models.
+- Actionable AI: Access pre-trained models for various tasks and customize them for your needs.
+- AI Code Suggest: Autocomplete your code and receive debugging insights.
+- GitHub AI: Improve code readability and maintainability.
 
 ### Technology Stack
 
