@@ -102,6 +102,11 @@ You should now browse to your server instance via Open WebUI and use the signup 
 http://www.example.com:3000 
 ```
 
+You can install the continue plugin via VSCode or using the following command.
+```
+code --install-extension continue.continue
+```
+
 ### User AI Tooling:
 
 **[Ollama](https://github.com/ollama/ollama) with [Open Webui](https://github.com/open-webui/open-webui)**
