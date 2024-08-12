@@ -47,7 +47,7 @@ AIXCL is an AI-powered software development and engineering platform designed to
 
 - Ubuntu Linux
 - Docker
-- Nvidia divers and toolset
+- Nvidia drivers and toolset
 
 **Server Ports:**
 
