@@ -14,9 +14,9 @@ AIXCL is an AI-powered software development and engineering platform designed to
 
 **Benefits:**
 
-- User AI Tooling: Write and edit code directly, receive context-aware suggestions, and train your own models.
+- Tooling: Write and edit code directly, receive context-aware suggestions, and train your own models.
 - Actionable AI: Access pre-trained models for various tasks and customize them for your needs.
-- AI Code Suggest: Autocomplete your code and receive debugging insights.
+- Code Suggest: Autocomplete your code and receive debugging insights.
 - GitHub AI: Improve code readability and maintainability.
 
 ### Technology Stack
@@ -57,10 +57,31 @@ AIXCL is an AI-powered software development and engineering platform designed to
 
 ### Installation Instructions
 
-Install Ollama and Open WebUI via docker.
+Install Ollama. You can also use this command to update Ollama.
 ```
-docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama --restart always
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+Install Open WebUI via docker.
+```
 docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+```
+
+Configure Open WebUI.
+```
+sudo systemctl edit ollama.service
+```
+
+Insert the following statement to correspond to the server ip address or use a catch all as in the example.
+```
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0"
+```
+
+Restart the service.
+```
+sudo systemctl daemon-reload
+sudo systemctl restart ollama
 ```
 
 Check the containers are running.
