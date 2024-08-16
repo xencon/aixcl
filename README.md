@@ -89,7 +89,6 @@ Check the containers are running.
 docker ps
 CONTAINER ID   IMAGE                                COMMAND               CREATED       STATUS                 PORTS                                           NAMES
 b7537a67fee3   ghcr.io/open-webui/open-webui:main   "bash start.sh"       5 hours ago   Up 5 hours (healthy)   0.0.0.0:3000->8080/tcp, :::3000->8080/tcp       open-webui
-ed45ab7c6770   ollama/ollama                        "/bin/ollama serve"   7 days ago    Up 7 hours             0.0.0.0:11434->11434/tcp, :::11434->11434/tcp   ollama
 ```
 
 Check the endpoints are available with curl and look for status code 200 OK.
