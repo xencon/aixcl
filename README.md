@@ -51,9 +51,9 @@ AIXCL is an AI-powered software development and engineering platform designed to
 
 **Server Ports:**
 
-- 11434 Ollama
-- 3000 Open WebUI
-- 22 SSH Access
+- Ollama LLM: 11434
+- Open WebUI: 3000
+- SSH Access: 22
 
 ### Installation Instructions
 
@@ -100,22 +100,27 @@ head -n1 <(curl -I http://www.example.com:3000 2> /dev/null)
 HTTP/1.1 200 OK
 ```
 
-Install the LLM.
+Install the recommended LLM's.
 ```
-docker exec -it ollama ollama run llama3
->>> Send a message (/? for help
+ollama pull llama3.1:latest
+ollama pull codellama:latest
+ollama pull gemma2:latest
+ollama pull nomic-embed-text:latest
+ollama pull starcoder2:latest
 ```
-
-Exit the LLM prompt with CTRL-D
 
 You can list the installed LLM with
 ```
-docker exec -it ollama ollama list
-NAME                    ID              SIZE    MODIFIED   
-llama3:latest           365c0bd3c000    4.7 GB  7 days ago
+ollama list
+NAME                   	ID          	SIZE  	MODIFIED           
+starcoder2:latest      	f67ae0f64584	1.7 GB	About a minute ago	
+llama3.1:latest        	91ab477bec9d	4.7 GB	8 minutes ago     	
+nomic-embed-text:latest	0a109f422b47	274 MB	3 hours ago       	
+codellama:latest       	8fdf8f752f6e	3.8 GB	6 days ago        	
+gemma2:latest          	ff02c3702f32	5.4 GB	6 days ago      
 ```
 
-At this stage the server is installed with Ollama, Open WebUI and The Meta LLama3 LLM.
+At this stage the server is installed with Ollama, Open WebUI and the required LLMs.
 
 You should now browse to your server instance via Open WebUI and use the signup button to create your admin account.
 ```
