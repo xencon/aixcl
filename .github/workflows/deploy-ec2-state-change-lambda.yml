@@ -1,0 +1,33 @@
+name: Deploy EC2StateChangeNotifier
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: eu-north-1 # Modify this to your desired AWS region    
+
+
+      -  name: Creating deployment zip
+         run: |
+          ls -lash
+          sudo apt install zip
+          mkdir -p ./deployment_zip 
+          cp lambda/functions/EC2StateChangeNotifier.py ./deployment_zip
+          cd deployment_zip 
+          zip -r lambda_zip.zip *
+      - name: lambda_code_update
+        run: |
+          aws lambda update-function-code --function-name EC2StateChangeNotifier --zip-file fileb://./deployment_zip/lambda_zip.zip
