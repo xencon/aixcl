@@ -14,8 +14,8 @@ def lambda_handler(event, context):
 
     # Construct the message to be sent to Slack
     message = {
-        "text": f"EC2 Instance State Change:\nInstance ID: {instance_id}\nNew State: {state}" + 
-            f"\n**Channel:** {SLACK_CHANNEL}"  
+        "text": f"EC2 Instance State Change:\nInstance ID: {instance_id}\nNew State: {state}",
+        "channel" : "{SLACK_CHANNEL}" 
     }
 
     # Convert the message to JSON
