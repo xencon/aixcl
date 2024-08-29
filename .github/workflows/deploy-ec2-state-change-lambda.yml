@@ -19,19 +19,18 @@ jobs:
         with:
           python-version: '3.8'  # Specify your Python version
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt  # If you have dependencies
-
       - name: Package Lambda function
         run: |
           zip -r EC2StateChangeNotifier.zip lambda/functions/EC2StateChangeNotifier.py  # Adjust the path if necessary
 
+
       - name: Deploy to AWS Lambda
-        uses: aws-actions/aws-lambda-deploy@v1
+        uses: aws-actions/aws-cli-action@v2
         with:
-          function-name: EC2StateChangeNotifier  # Your Lambda function name
-          zip-file: EC2StateChangeNotifier.zip
-          region: eu-north-1 # Change to your desired region
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: 'eu-north-1'  # Your specified region
+            command: |
+                aws lambda update-function-code \
+                    --function-name EC2StateChangeNotifier_Dep \
+                    --zip-file fileb://EC2StateChangeNotifier.zip
