@@ -1,0 +1,37 @@
+name: Deploy EC2StateChangeNotifier
+
+on:
+  push:
+    branches:
+      - main  # Change this to your default branch if different
+      - aa/lambda-test-action
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'  # Specify your Python version
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt  # If you have dependencies
+
+      - name: Package Lambda function
+        run: |
+          zip -r EC2StateChangeNotifier.zip lambda/functions/EC2StateChangeNotifier.py  # Adjust the path if necessary
+
+      - name: Deploy to AWS Lambda
+        uses: aws-actions/aws-lambda-deploy@v1
+        with:
+          function-name: EC2StateChangeNotifier  # Your Lambda function name
+          zip-file: EC2StateChangeNotifier.zip
+          region: eu-north-1 # Change to your desired region
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
