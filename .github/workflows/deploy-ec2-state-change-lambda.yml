@@ -12,25 +12,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/checkout@v4
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          python-version: '3.8'  # Specify your Python version
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: eu-north-1 # Modify this to your desired AWS region    
 
       - name: Package Lambda function
         run: |
           zip -r EC2StateChangeNotifier.zip lambda/functions/EC2StateChangeNotifier.py  # Adjust the path if necessary
 
-
-      - name: Deploy to AWS Lambda
-        uses: aws-actions/aws-cli-action@v2
-        with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: 'eu-north-1'  # Your specified region
-            command: |
-                aws lambda update-function-code \
-                    --function-name EC2StateChangeNotifier_Dep \
-                    --zip-file fileb://EC2StateChangeNotifier.zip
+      - name: lambda_code_update
+        run: |
+          aws lambda update-function-code --function-name lambda_deployment_via_gitaction --zip-file fileb://EC2StateChangeNotifier.zip
