@@ -1,7 +1,7 @@
 import json
 import http.client
 
-SLACK_WEBHOOK_URL = ###REPLACE_ME####
+SLACK_WEBHOOK_URL = "###REPLACE_ME####"
 SLACK_HOST = "hooks.slack.com"
 SLACK_CHANNEL = "alerts"  
 
