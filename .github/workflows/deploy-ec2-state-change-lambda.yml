@@ -24,11 +24,12 @@ jobs:
          run: |
           ls -lash
           sudo apt install zip
-          sed -i "s/###REPLACE_ME####/${{ secrets.SLACK_WEBHOOK_URL }}/" lambda/functions/EC2StateChangeNotifier.py
+          sed -i 's/###REPLACE_ME####/'"${{ secrets.SLACK_WEBHOOK_URL }}"'/' lambda/functions/EC2StateChangeNotifier.py
           mkdir -p ./deployment_zip 
           cp lambda/functions/EC2StateChangeNotifier.py ./deployment_zip
           cd deployment_zip 
           zip -r lambda_zip.zip *
+
       - name: lambda_code_update
         run: |
           aws lambda update-function-code --function-name EC2StateChangeNotifier --zip-file fileb://./deployment_zip/lambda_zip.zip
