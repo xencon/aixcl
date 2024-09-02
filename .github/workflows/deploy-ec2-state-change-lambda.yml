@@ -33,3 +33,9 @@ jobs:
       - name: lambda_code_update
         run: |
           aws lambda update-function-code --function-name EC2StateChangeNotifier --zip-file fileb://./deployment_zip/lambda_zip.zip
+
+      - name: Save deployment zip as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: lambda_zip
+          path: './deployment_zip/lambda_zip.zip'
