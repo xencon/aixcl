@@ -26,7 +26,7 @@ jobs:
           sudo apt install zip
           sed -i 's|###REPLACE_ME####|'"${{ secrets.SLACK_WEBHOOK_URL }}"'|' lambda/functions/EC2StateChangeNotifier/lambda_function.py
           mkdir -p ./deployment_zip 
-          cp lambda/functions/EC2StateChangeNotifier.py ./deployment_zip
+          cp lambda/functions/EC2StateChangeNotifier/lambda_function.py ./deployment_zip
           cd deployment_zip 
           zip -r lambda_zip.zip *
 
