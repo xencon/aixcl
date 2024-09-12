@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     message_json = json.dumps(message)
 
     # Read the webhook URL from environment
-    SLACK_WEBHOOK_URL = get_secret
+    SLACK_WEBHOOK_URL = get_secret()
     # Parse the webhook URL to get the path
     webhook_path = "/services" + SLACK_WEBHOOK_URL.split("/services")[1]
 
