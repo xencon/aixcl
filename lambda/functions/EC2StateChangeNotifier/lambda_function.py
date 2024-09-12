@@ -1,20 +1,19 @@
 import json
 import http.client
 
-SLACK_WEBHOOK_URL = "###REPLACE_ME####"
 SLACK_HOST = "hooks.slack.com"
 SLACK_CHANNEL = "alerts"  
 
 def lambda_handler(event, context):
     # Log the incoming event for debugging
     
-    print(f"Received event: {json.dumps(event)}")  # {{ edit_1 }}
+    print(f"Received event: {json.dumps(event)}")
 
     # Extract the SNS message from the event
     records = event.get('Records', [])
     if records:
         sns_message = records[0].get('Sns', {}).get('Message', '{}')
-        detail = json.loads(sns_message).get('detail', {})  # {{ edit_2 }}
+        detail = json.loads(sns_message).get('detail', {})
     else:
         detail = {}
 
@@ -24,7 +23,7 @@ def lambda_handler(event, context):
     # Construct the message to be sent to Slack
     message = {
         "text": f"EC2 Instance State Change:\nInstance ID: {instance_id}\nNew State: {state}",
-        "channel": SLACK_CHANNEL  # {{ edit_3 }}
+        "channel": SLACK_CHANNEL 
     }
 
     # Convert the message to JSON
