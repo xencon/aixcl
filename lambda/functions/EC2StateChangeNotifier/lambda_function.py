@@ -1,6 +1,6 @@
 import json
 import http.client
-
+import os
 
 SLACK_HOST = "hooks.slack.com"
 SLACK_CHANNEL = "alerts"  
