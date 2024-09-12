@@ -24,7 +24,6 @@ jobs:
          run: |
           ls -lash
           sudo apt install zip
-          export SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
           mkdir -p ./deployment_zip 
           cp lambda/functions/EC2StateChangeNotifier/lambda_function.py ./deployment_zip
           cd deployment_zip 
