@@ -25,7 +25,7 @@ jobs:
           ls -lash
           sudo apt install zip
           mkdir -p ./deployment_zip 
-          cp lambda/functions/EC2StateChangeNotifier/lambda_function.py ./deployment_zip
+          cp -r lambda/functions/EC2StateChangeNotifier ./deployment_zip
           cd deployment_zip 
           zip -r lambda_zip.zip *
 
