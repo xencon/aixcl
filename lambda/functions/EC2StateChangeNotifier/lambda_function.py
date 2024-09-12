@@ -1,6 +1,7 @@
 import json
 import http.client
 
+
 SLACK_HOST = "hooks.slack.com"
 SLACK_CHANNEL = "alerts"  
 
@@ -29,6 +30,8 @@ def lambda_handler(event, context):
     # Convert the message to JSON
     message_json = json.dumps(message)
 
+    # Read the webhook URL from environment
+    SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
     # Parse the webhook URL to get the path
     webhook_path = "/services" + SLACK_WEBHOOK_URL.split("/services")[1]
 
