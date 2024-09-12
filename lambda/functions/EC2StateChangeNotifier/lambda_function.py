@@ -1,7 +1,8 @@
 import json
 import http.client
+import boto3
 
-from .secret_helper import get_secret
+from botocore.exceptions import ClientError
 
 SLACK_HOST = "hooks.slack.com"
 SLACK_CHANNEL = "alerts"  
@@ -58,3 +59,24 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps('Notification sent to Slack!')
     }
+
+def get_secret():
+
+    secret_name = "kodify/webhook_url"
+    region_name = "eu-north-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        raise e
+
+    return get_secret_value_response['SecretString']
