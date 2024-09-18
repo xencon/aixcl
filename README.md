@@ -57,74 +57,51 @@ AIXCL is an AI-powered software development and engineering platform designed to
 
 ### Installation Instructions
 
-Install Ollama. You can also use this command to update Ollama.
+To install the conternized bundle.
 ```
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-Install Open WebUI via docker.
-```
-docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+docker run --network="host" -d -p 3000:8080 --gpus=all -v ollama:/root/.ollama -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:ollama
 ```
 
-Configure Open WebUI.
+Install the recommended LLM's.
 ```
-sudo systemctl edit ollama.service
-```
-
-Insert the following statement to correspond to the server ip address or use a catch all as in the example.
-```
-[Service]
-Environment="OLLAMA_HOST=0.0.0.0"
-```
-
-Restart the service.
-```
-sudo systemctl daemon-reload
-sudo systemctl restart ollama
+docker exec -it open-webui ollama run llama3.1:latest
+docker exec -it open-webui ollama run codellama:latest
+docker exec -it open-webui ollama run gemma2:latest
+docker exec -it open-webui ollama run nomic-embed-text:latest
+docker exec -it open-webui ollama run starcoder2:latest
 ```
 
 Check the containers are running.
 ```
 docker ps
-CONTAINER ID   IMAGE                                COMMAND               CREATED       STATUS                 PORTS                                           NAMES
-b7537a67fee3   ghcr.io/open-webui/open-webui:main   "bash start.sh"       5 hours ago   Up 5 hours (healthy)   0.0.0.0:3000->8080/tcp, :::3000->8080/tcp       open-webui
+CONTAINER ID   IMAGE                                  COMMAND           CREATED          STATUS                    PORTS     NAMES
+442ac8fbc2bc   ghcr.io/open-webui/open-webui:ollama   "bash start.sh"   17 minutes ago   Up 17 minutes (healthy)             open-webui
 ```
 
 Check the endpoints are available with curl and look for status code 200 OK.
 ```
-head -n1 <(curl -I http://www.example.com:11434 2> /dev/null)
+head -n1 <(curl -I http://localhost:11434 2> /dev/null)
 HTTP/1.1 200 OK
 
-head -n1 <(curl -I http://www.example.com:3000 2> /dev/null)
+head -n1 <(curl -I http://localhost:8080 2> /dev/null)
 HTTP/1.1 200 OK
-```
-
-Install the recommended LLM's.
-```
-ollama pull llama3.1:latest
-ollama pull codellama:latest
-ollama pull gemma2:latest
-ollama pull nomic-embed-text:latest
-ollama pull starcoder2:latest
 ```
 
 You can list the installed LLM with
 ```
-ollama list
-NAME                   	ID          	SIZE  	MODIFIED           
-starcoder2:latest      	f67ae0f64584	1.7 GB	About a minute ago	
-llama3.1:latest        	91ab477bec9d	4.7 GB	8 minutes ago     	
-nomic-embed-text:latest	0a109f422b47	274 MB	3 hours ago       	
-codellama:latest       	8fdf8f752f6e	3.8 GB	6 days ago        	
-gemma2:latest          	ff02c3702f32	5.4 GB	6 days ago      
+docker exec -it open-webui ollama list
+NAME                    ID              SIZE    MODIFIED    
+gemma2:latest           ff02c3702f32    5.4 GB  7 hours ago
+llama3.1:latest         42182419e950    4.7 GB  7 hours ago
+nomic-embed-text:latest 0a109f422b47    274 MB  8 hours ago
+starcoder:latest        847e5a7aa26f    1.8 GB  8 hours ago
 ```
 
 At this stage the server is installed with Ollama, Open WebUI and the required LLMs.
 
 You should now browse to your server instance via Open WebUI and use the signup button to create your admin account.
 ```
-http://www.example.com:3000 
+http://localhost:8080 
 ```
 
 You can install the continue plugin via VSCode or using the following command.
