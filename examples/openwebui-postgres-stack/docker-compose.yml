@@ -8,14 +8,15 @@ services:
       - ollama:/root/.ollama
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
-      - ./start.sh:/app/backend/start2.sh  # Mount start.sh if it's not in the image
+      - ./start.sh:/app/backend/start2.sh
     environment:
       - DATA_DIR=/app/data
-      - DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/mydatabase
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NVIDIA_VISIBLE_DEVICES=all
-      - ADMIN_USER_EMAIL=admin@aixcl.com
-      - ADMIN_USER_PASSWORD=aixcldotcom
-      - MODELS=["llama3.2:1b","nomic-embed-text:latest","starcoder2:latest"]
+      - ADMIN_USER_EMAIL=${ADMIN_USER_EMAIL}
+      - ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}
+      - MODELS=${MODELS} # Change the MODELS value in the .env file
+                         # Visit https://ollama.com/search for a list of available models
     depends_on:
       - postgres
     restart: always
@@ -25,9 +26,9 @@ services:
     image: postgres:latest
     container_name: postgres
     environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: mydatabase
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: $POSTGRES_DB
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
@@ -38,8 +39,8 @@ services:
     image: dpage/pgadmin4
     container_name: pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: $PGADMIN_DEFAULT_EMAIL
+      PGADMIN_DEFAULT_PASSWORD: $PGADMIN_DEFAULT_PASSWORD
     ports:
       - "5050:80"
     depends_on:

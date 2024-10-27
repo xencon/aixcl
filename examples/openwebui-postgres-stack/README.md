@@ -16,7 +16,7 @@ This project leverages Docker Compose to orchestrate a multi-container applicati
      - `DATABASE_URL`: Connection string for the PostgreSQL database.
      - `NVIDIA_VISIBLE_DEVICES`: Allows access to all NVIDIA devices for GPU acceleration.
      - `ADMIN_USER_EMAIL` and `ADMIN_USER_PASSWORD`: Credentials for admin access.
-     - `MODELS`: Specifies the models to be used by the application.
+     - `MODELS`: Specifies the models to be used by the application. You can change the `MODELS` value in the `.env` file. Visit [Ollama's search page](https://ollama.com/search) for a list of available models.
    - **Dependencies**: Waits for the PostgreSQL service to start before initializing.
    - **Command**: Executes a script to start the application.
 
@@ -48,5 +48,18 @@ This project leverages Docker Compose to orchestrate a multi-container applicati
 
 ### Usage
 
-To start the application stack, simply run:
+1. **Prepare Environment Variables**:
+   - Copy the `.env.example` file to `.env`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Fill in the required environment variables in the `.env` file with your specific values. Feel free to modify any of the values in the `.env.example` file to suit your needs.
+   - To update the models used by the application, modify the `MODELS` variable in the `.env` file. You can find a list of available models at [Ollama's search page](https://ollama.com/search).
 
+2. **Start the Application Stack**:
+   - Run the following command to start all services in detached mode:
+     ```bash
+     docker-compose up -d
+     ```
+
+This command will start all services, allowing you to interact with the Open WebUI on port 3000, manage your database with pgAdmin on port 5050, and ensure your containers are kept up-to-date with Watchtower.
