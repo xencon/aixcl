@@ -8,13 +8,18 @@ services:
       - ollama:/root/.ollama
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
+      - ./start.sh:/app/backend/start2.sh  # Mount start.sh if it's not in the image
     environment:
       - DATA_DIR=/app/data
       - DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/mydatabase
       - NVIDIA_VISIBLE_DEVICES=all
+      - ADMIN_USER_EMAIL=admin@aixcl.com
+      - ADMIN_USER_PASSWORD=aixcldotcom
+      - MODELS=["llama3.2:1b","nomic-embed-text:latest","starcoder2:latest"]
     depends_on:
       - postgres
     restart: always
+    command: ["/bin/bash", "-c", "chmod +x start2.sh && bash start2.sh"]
 
   postgres:
     image: postgres:latest
@@ -39,6 +44,14 @@ services:
       - "5050:80"
     depends_on:
       - postgres
+    restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: open-webui
     restart: always
 
 volumes:
