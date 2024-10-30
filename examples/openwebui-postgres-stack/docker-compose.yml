@@ -1,11 +1,30 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    pull_policy: always
+    tty: true
+    restart: always
+    # Cant run on mac without proper GPU need to fix 
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities:
+    #             - gpu
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:ollama
     container_name: open-webui
     ports:
       - "3000:8080"
     volumes:
-      - ollama:/root/.ollama
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
       - ./start.sh:/app/backend/start2.sh
@@ -13,6 +32,8 @@ services:
       - DATA_DIR=/app/data
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_BASE_URLS=http://ollama:11434
+      - WEBUI_NAME=AIXCL 
       - ADMIN_USER_EMAIL=${ADMIN_USER_EMAIL}
       - ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}
       - MODELS=${MODELS} # Change the MODELS value in the .env file
