@@ -10,14 +10,14 @@ services:
     tty: true
     restart: always
     # Cant run on mac without proper GPU need to fix 
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities:
-    #             - gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:ollama
