@@ -46,9 +46,14 @@ networks=$(docker network ls --filter "type=custom" -q)
 print_if_empty "$networks" "No custom networks to remove." \
                "echo 'Removing all custom networks...'; docker network rm \$networks"
 
-# Remove all unused data (dangling images, stopped containers, networks, and volumes)
-echo "Performing a system prune to clean up any remaining resources..."
-docker system prune -a --volumes -f
+# Perform a system prune to clean up any remaining resources
+if [ "$KEEP_IMAGES" = false ]; then
+  echo "Performing a system prune to clean up any remaining resources..."
+  docker system prune -a --volumes -f
+else
+  echo "Performing a system prune without removing images..."
+  docker system prune --volumes -f
+fi
 
 echo "Docker environment cleanup complete!"
 
