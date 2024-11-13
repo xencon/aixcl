@@ -20,14 +20,6 @@ services:
     network_mode: host
     restart: always
     command: ["/bin/bash", "-c", "chmod +x start2.sh && bash start2.sh"]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
 
   postgres:
     image: postgres:latest
