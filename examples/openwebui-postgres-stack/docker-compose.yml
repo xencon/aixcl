@@ -1,6 +1,21 @@
 services:
+
+  ollama:
+    volumes:
+      - ollama:/root/.ollama
+      - ./entrypoint.sh:/entrypoint.sh
+    environment:
+      - MODELS=${MODELS} # Change the MODELS value in the .env file
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    network_mode: host
+    image: ollama/ollama:latest
+    entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
+
   open-webui:
-    image: ghcr.io/open-webui/open-webui:ollama
+    image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
     volumes:
       - open-webui:/app/backend/data
@@ -11,23 +26,16 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}
       - NVIDIA_VISIBLE_DEVICES=all
       - WEBUI_NAME=AIXCL
+      - 'OLLAMA_BASE_URL=http://localhost:11434'
       - ADMIN_USER_EMAIL=${ADMIN_USER_EMAIL}
       - ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}
-      - MODELS=${MODELS} # Change the MODELS value in the .env file
         # Visit https://ollama.com/search for a list of available models
     depends_on:
       - postgres
+      - ollama
     network_mode: host
     restart: always
     command: ["/bin/bash", "-c", "chmod +x start2.sh && bash start2.sh"]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
 
   postgres:
     image: postgres:latest
