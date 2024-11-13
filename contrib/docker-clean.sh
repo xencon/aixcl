@@ -9,15 +9,32 @@ print_if_empty() {
   fi
 }
 
+# Parse command-line arguments
+KEEP_IMAGES=false
+for arg in "$@"; do
+  case $arg in
+    --keep-images|-k)
+      KEEP_IMAGES=true
+      shift
+      ;;
+    *)
+      ;;
+  esac
+done
+
 # Stop and remove all containers
 containers=$(docker ps -aq)
 print_if_empty "$containers" "No containers to stop or remove." \
                "echo 'Stopping all running containers...'; docker stop \$containers; echo 'Removing all containers...'; docker rm \$containers"
 
-# Remove all images
-images=$(docker images -q)
-print_if_empty "$images" "No images to remove." \
-               "echo 'Removing all images...'; docker rmi -f \$images"
+# Remove all images unless --keep-images is specified
+if [ "$KEEP_IMAGES" = false ]; then
+  images=$(docker images -q)
+  print_if_empty "$images" "No images to remove." \
+                 "echo 'Removing all images...'; docker rmi -f \$images"
+else
+  echo "Skipping image removal due to --keep-images flag."
+fi
 
 # Remove all volumes
 volumes=$(docker volume ls -q)
