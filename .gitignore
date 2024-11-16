@@ -10,9 +10,6 @@ __pycache__/
 *.pdb
 
 # Docker
-docker-compose.override.yml
-docker-compose.*.yml
-docker-compose.yml
 *.log
 *.pid
 *.seed
