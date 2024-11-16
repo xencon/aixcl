@@ -1,4 +1,4 @@
-# Project Name
+# AIXCL
 
 ## Overview
 This project sets up a multi-container application using Docker Compose. It includes services for Ollama, Open WebUI, PostgreSQL, PgAdmin, and Watchtower. The setup is designed to provide a robust environment for web-based UI and data management.
