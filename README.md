@@ -90,5 +90,6 @@ This project sets up a multi-container application using Docker Compose. It incl
 ## License
 This project is licensed under the MIT License.
 
-## Contact
-For questions or support, please contact [your-email@example.com].
+## Contributing
+
+We welcome contributions from the community! Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started.
