@@ -10,7 +10,6 @@ This project sets up a multi-container application using Docker Compose. It incl
 - **Image**: `ollama/ollama:latest`
 - **Environment Variables**:
   - `MODELS_BASE`: Base models directory.
-  - `MODELS_EXTRA`: Additional models to load.
 
 ### Open WebUI
 - **Description**: A web-based UI service that interacts with a PostgreSQL database.
