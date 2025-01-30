@@ -26,14 +26,5 @@ for model in "${MODELS_ARRAY[@]}"; do
 done
 echo "Done installing default models."
 
-MODELS_ARRAY=($(echo $MODELS_EXTRA | jq -r '.[]'))
-echo "Installing extra default models."
-echo $MODELS_EXTRA
-for model in "${MODELS_ARRAY[@]}"; do
-    echo "Installing model $model."
-    ollama run "$model" &
-done
-echo "Done installing extra models."
-
 # Wait for Ollama process to finish.
 wait $pid
