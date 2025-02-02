@@ -59,7 +59,6 @@ This project sets up a multi-container application using Docker Compose. It incl
      PGADMIN_EMAIL=your_pgadmin_email
      PGADMIN_PASSWORD=your_pgadmin_password
      MODELS_BASE=your_models_base
-     MODELS_EXTRA=your_models_extra
      OPENWEBUI_EMAIL=your_openwebui_email
      OPENWEBUI_PASSWORD=your_openwebui_password
      ```
