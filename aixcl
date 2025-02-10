@@ -29,7 +29,7 @@ function start() {
     for i in {1..30}; do
         if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
            curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200" && \
-           docker exec postgres-webui pg_isready -U webui >/dev/null 2>&1; then
+           docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
             echo "All services are up and running!"
             status
             return 0
@@ -47,7 +47,7 @@ function stop() {
     echo "Stopping Docker Compose deployment..."
     
     # Check if any of our services are running
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres-webui"; then
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"; then
         echo "Services are not running."
         return 0
     fi
@@ -59,7 +59,7 @@ function stop() {
     # Wait for containers to stop
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres-webui"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -78,7 +78,7 @@ function stop() {
 function restart() {
     echo "Restarting services..."
     stop
-    sleep 2
+    sleep 5
     start
 }
 
@@ -91,7 +91,13 @@ function logs() {
     docker logs --since=1h ollama
     
     echo -e "\nPostgreSQL logs (last 1 hour):"
-    docker logs --since=1h postgres-webui
+    docker logs --since=1h postgres
+
+    echo -e "\npgAdmin logs (last 1 hour):"
+    docker logs --since=1h pgadmin
+
+    echo -e "\nWatchtower logs (last 1 hour):"
+    docker logs --since=1h watchtower
 }
 
 function clean() {
@@ -123,7 +129,6 @@ function stats() {
     if command -v nvidia-smi &> /dev/null; then
         echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
         echo "-------------------"
-        #watch -n 2 nvidia-smi
         pipx run nvitop
     else
         echo "GPU monitoring not available: nvitop command not found"
@@ -149,10 +154,22 @@ function status() {
         echo "❌ Ollama container is not running"
     fi
 
-    if docker ps --format "{{.Names}}" | grep -q "postgres-webui"; then
+    if docker ps --format "{{.Names}}" | grep -q "postgres"; then
         echo "✅ PostgreSQL container is running"
     else
         echo "❌ PostgreSQL container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "pgadmin"; then
+        echo "✅ pgAdmin container is running"
+    else
+        echo "❌ pgAdmin container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "watchtower"; then
+        echo "✅ Watchtower container is running"
+    else
+        echo "❌ Watchtower container is not running"
     fi
     
     # Check if services are responding
@@ -167,18 +184,41 @@ function status() {
     fi
     
     # Check Open WebUI
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200"; then
-        echo "✅ Open WebUI is responding"
+    echo -n "Open WebUI status: "
+    WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null)
+    if [ "$WEBUI_STATUS" = "200" ]; then
+        echo "✅ Open WebUI is responding (HTTP 200)"
     else
-        echo "❌ Open WebUI is not responding"
+        echo "❌ Open WebUI is not responding (HTTP $WEBUI_STATUS)"
+        echo "Checking container logs:"
+        docker logs $CONTAINER_NAME --tail 5
     fi
 
     # Check PostgreSQL
-    if docker exec postgres-webui pg_isready -U webui >/dev/null 2>&1; then
+    echo -n "PostgreSQL status: "
+    if docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
         echo "✅ PostgreSQL is responding"
     else
         echo "❌ PostgreSQL is not responding"
+        echo "Checking PostgreSQL logs:"
+        docker logs postgres --tail 5
     fi
+
+    # Check pgAdmin
+    echo -n "pgAdmin status: "
+    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80 2>/dev/null)
+    if [ "$PGADMIN_STATUS" = "200" ]; then
+        echo "✅ pgAdmin is responding (HTTP 200)"
+    else
+        echo "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
+        echo "Checking pgAdmin logs:"
+        docker logs pgadmin --tail 5
+    fi
+
+    # Show container ports for debugging
+    echo -e "\nPort Mappings:"
+    echo "----------------"
+    docker ps --format "table {{.Names}}\t{{.Ports}}" | grep -E "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"
 }
 
 function help_menu() {
@@ -187,7 +227,7 @@ function help_menu() {
     echo "  start   Start the Docker Compose deployment"
     echo "  stop    Stop the Docker Compose deployment"
     echo "  restart Restart all services"
-    echo "  logs    Show logs for the open-webui container"
+    echo "  logs    Show logs for all containers"
     echo "  clean   Remove unused Docker containers, images, and volumes"
     echo "  stats   Show resource usage statistics"
     echo "  status  Check services status"
@@ -228,4 +268,3 @@ function main() {
 }
 
 main "$@"
-
