@@ -9,19 +9,89 @@ CONTAINER_NAME="open-webui"
 
 function start() {
     echo "Starting Docker Compose deployment..."
+    
+    # Check if services are already running
+    if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+        echo "Services are already running. Use 'stop' first if you want to restart."
+        exit 1
+    fi
+    
+    # Pull latest images
+    echo "Pulling latest images..."
+    $COMPOSE_CMD pull
+    
+    # Start services
+    echo "Starting services..."
     $COMPOSE_CMD up -d
-    echo "Deployment started."
+    
+    # Wait for services to be ready
+    echo "Waiting for services to be ready..."
+    for i in {1..30}; do
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
+           curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200" && \
+           docker exec postgres-webui pg_isready -U webui >/dev/null 2>&1; then
+            echo "All services are up and running!"
+            status
+            return 0
+        fi
+        echo "Waiting for services to become available... ($i/30)"
+        sleep 2
+    done
+    
+    echo "Error: Services did not start properly within timeout period"
+    status
+    exit 1
 }
 
 function stop() {
     echo "Stopping Docker Compose deployment..."
-    $COMPOSE_CMD down
-    echo "Deployment stopped."
+    
+    # Check if any of our services are running
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres-webui"; then
+        echo "Services are not running."
+        return 0
+    fi
+    
+    # Stop services gracefully
+    echo "Stopping services gracefully..."
+    $COMPOSE_CMD down --remove-orphans
+    
+    # Wait for containers to stop
+    echo "Waiting for containers to stop..."
+    for i in {1..15}; do
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres-webui"; then
+            echo "All services stopped successfully."
+            return 0
+        fi
+        echo "Waiting for services to stop... ($i/15)"
+        sleep 2
+    done
+    
+    # Force stop if graceful shutdown fails
+    echo "Warning: Services did not stop gracefully. Forcing shutdown..."
+    $COMPOSE_CMD down --remove-orphans -v
+    docker ps -q | xargs -r docker stop
+    
+    echo "All services have been stopped."
+}
+
+function restart() {
+    echo "Restarting services..."
+    stop
+    sleep 2
+    start
 }
 
 function logs() {
-    echo "Fetching logs for $CONTAINER_NAME (last 1 hour)..."
-    docker logs --since=1h $CONTAINER_NAME --follow
+    echo "Fetching logs..."
+    echo "Open WebUI logs (last 1 hour):"
+    docker logs --since=1h $CONTAINER_NAME
+    
+    echo -e "\nOllama logs (last 1 hour):"
+    docker logs --since=1h ollama
+    
+    echo -e "\nPostgreSQL logs (last 1 hour):"
+    docker logs --since=1h postgres-webui
 }
 
 function clean() {
@@ -39,7 +109,7 @@ function clean() {
     echo "Removing unused images..."
     docker image prune -a -f
     
-    # Remove unused volumes
+    # Remove unused volumes (including PostgreSQL data)
     echo "Removing unused volumes..."
     docker volume prune -f
     
@@ -78,6 +148,12 @@ function status() {
     else
         echo "❌ Ollama container is not running"
     fi
+
+    if docker ps --format "{{.Names}}" | grep -q "postgres-webui"; then
+        echo "✅ PostgreSQL container is running"
+    else
+        echo "❌ PostgreSQL container is not running"
+    fi
     
     # Check if services are responding
     echo -e "\nService Health:"
@@ -96,13 +172,21 @@ function status() {
     else
         echo "❌ Open WebUI is not responding"
     fi
+
+    # Check PostgreSQL
+    if docker exec postgres-webui pg_isready -U webui >/dev/null 2>&1; then
+        echo "✅ PostgreSQL is responding"
+    else
+        echo "❌ PostgreSQL is not responding"
+    fi
 }
 
 function help_menu() {
-    echo "Usage: $0 {start|stop|logs|clean|stats|status}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status}"
     echo "Commands:"
     echo "  start   Start the Docker Compose deployment"
     echo "  stop    Stop the Docker Compose deployment"
+    echo "  restart Restart all services"
     echo "  logs    Show logs for the open-webui container"
     echo "  clean   Remove unused Docker containers, images, and volumes"
     echo "  stats   Show resource usage statistics"
@@ -121,6 +205,9 @@ function main() {
             ;;
         stop)
             stop
+            ;;
+        restart)
+            restart
             ;;
         logs)
             logs
