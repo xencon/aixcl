@@ -5,7 +5,16 @@ services:
       - ./scripts/ollama.sh:/entrypoint.sh
     environment:
       - MODELS_BASE=${MODELS_BASE}
-      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_HOST=0.0.0.0
+      # CPU Threading options
+      - OLLAMA_CPU_THREADS=8        # Number of CPU threads to use
+      - OLLAMA_GPU_LAYERS=35        # Number of layers to offload to GPU
+      # Memory and batch size
+      - OLLAMA_NUMA=true           # Enable NUMA support for better memory performance
+      - OLLAMA_BATCH_SIZE=4096     # Batch size for processing (default varies by model)
+      # Cache settings
+      - OLLAMA_MMAP=true           # Enable memory mapping for faster loading
+      - OLLAMA_CACHE_SIZE=4096     # Size of the cache in MB
     container_name: ollama
     ports:
       - "11434:11434"
@@ -41,6 +50,9 @@ services:
       - OLLAMA_BASE_URL=http://localhost:11434
       - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+      # WebUI Performance settings
+      - WEBUI_CONCURRENCY=10       # Number of worker processes
+      - WEBUI_THREADS=4            # Number of threads per worker
     extra_hosts:
        - "host.docker.internal:host-gateway"
     depends_on:
@@ -49,6 +61,14 @@ services:
     network_mode: host
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
+    deploy:
+      resources:
+        limits:
+          cpus: '6'
+          memory: 24G
+        reservations:
+          cpus: '2'
+          memory: 4G
 
   postgres:
     image: postgres:latest

@@ -46,13 +46,67 @@ function clean() {
     echo "Clean up complete."
 }
 
+function stats() {
+    echo "Monitoring GPU resources..."
+    
+    # Check if nvidia-smi is available for GPU monitoring
+    if command -v nvidia-smi &> /dev/null; then
+        echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
+        echo "-------------------"
+        #watch -n 2 nvidia-smi
+        pipx run nvitop
+    else
+        echo "GPU monitoring not available: nvitop command not found"
+        exit 1
+    fi
+}
+
+function status() {
+    echo "Checking services status..."
+    
+    # Check if containers are running
+    echo "Container Status:"
+    echo "----------------"
+    if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+        echo "✅ Open WebUI container is running"
+    else
+        echo "❌ Open WebUI container is not running"
+    fi
+    
+    if docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "✅ Ollama container is running"
+    else
+        echo "❌ Ollama container is not running"
+    fi
+    
+    # Check if services are responding
+    echo -e "\nService Health:"
+    echo "----------------"
+    
+    # Check Ollama API
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+        echo "✅ Ollama API is responding"
+    else
+        echo "❌ Ollama API is not responding"
+    fi
+    
+    # Check Open WebUI
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200"; then
+        echo "✅ Open WebUI is responding"
+    else
+        echo "❌ Open WebUI is not responding"
+    fi
+}
+
 function help_menu() {
-    echo "Usage: $0 {start|stop|logs|clean}"
+    echo "Usage: $0 {start|stop|logs|clean|stats|status}"
     echo "Commands:"
     echo "  start   Start the Docker Compose deployment"
     echo "  stop    Stop the Docker Compose deployment"
     echo "  logs    Show logs for the open-webui container"
     echo "  clean   Remove unused Docker containers, images, and volumes"
+    echo "  stats   Show resource usage statistics"
+    echo "  status  Check services status"
     exit 1
 }
 
@@ -73,6 +127,12 @@ function main() {
             ;;
         clean)
             clean
+            ;;
+        stats)
+            stats
+            ;;
+        status)
+            status
             ;;
         *)
             help_menu
