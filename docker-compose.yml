@@ -5,20 +5,30 @@ services:
       - ./scripts/ollama.sh:/entrypoint.sh
     environment:
       - MODELS_BASE=${MODELS_BASE}
-        # Visit https://ollama.com/search for a list of
-        # available models and add to the MODELS_EXTRA array in .env
-      - MODELS_EXTRA=${MODELS_EXTRA}
+      - OLLAMA_HOST=0.0.0.0:11434
     container_name: ollama
+    ports:
+      - "11434:11434"
     pull_policy: always
     tty: true
     restart: unless-stopped
-    network_mode: host
     image: ollama/ollama:latest
     entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - ollama-network
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
+    ports:
+      - "3000:8080"
     volumes:
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
@@ -28,9 +38,11 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}
       - NVIDIA_VISIBLE_DEVICES=all
       - WEBUI_NAME=AIXCL
-      - "OLLAMA_BASE_URL=http://localhost:11434"
+      - OLLAMA_BASE_URL=http://localhost:11434
       - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+    extra_hosts:
+       - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
       - ollama
@@ -75,3 +87,7 @@ volumes:
   open-webui:
   open-webui-data:
   postgres-data:
+
+networks:
+  ollama-network:
+    driver: bridge
