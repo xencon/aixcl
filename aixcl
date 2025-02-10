@@ -126,7 +126,7 @@ function stats() {
     echo "Monitoring GPU resources..."
     
     # Check if nvidia-smi is available for GPU monitoring
-    if command -v nvidia-smi &> /dev/null; then
+    if command -v pipx run nvitop &> /dev/null; then
         echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
         echo "-------------------"
         pipx run nvitop
