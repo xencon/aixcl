@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -e  # Exit on error
+set -u  # Treat unset variables as an error
+set -o pipefail  # Catch errors in pipelines
+
+COMPOSE_CMD="docker-compose"
+CONTAINER_NAME="open-webui"
+
+function start() {
+    echo "Starting Docker Compose deployment..."
+    $COMPOSE_CMD up -d
+    echo "Deployment started."
+}
+
+function stop() {
+    echo "Stopping Docker Compose deployment..."
+    $COMPOSE_CMD down
+    echo "Deployment stopped."
+}
+
+function logs() {
+    echo "Fetching logs for $CONTAINER_NAME (last 1 hour)..."
+    docker logs --since=1h $CONTAINER_NAME --follow
+}
+
+function clean() {
+    echo "Cleaning up Docker resources..."
+    
+    # Stop all containers first
+    echo "Stopping all containers..."
+    $COMPOSE_CMD down
+    
+    # Remove all stopped containers
+    echo "Removing stopped containers..."
+    docker container prune -f
+    
+    # Remove unused images
+    echo "Removing unused images..."
+    docker image prune -a -f
+    
+    # Remove unused volumes
+    echo "Removing unused volumes..."
+    docker volume prune -f
+    
+    echo "Clean up complete."
+}
+
+function help_menu() {
+    echo "Usage: $0 {start|stop|logs|clean}"
+    echo "Commands:"
+    echo "  start   Start the Docker Compose deployment"
+    echo "  stop    Stop the Docker Compose deployment"
+    echo "  logs    Show logs for the open-webui container"
+    echo "  clean   Remove unused Docker containers, images, and volumes"
+    exit 1
+}
+
+function main() {
+    if [[ $# -ne 1 ]]; then
+        help_menu
+    fi
+
+    case "$1" in
+        start)
+            start
+            ;;
+        stop)
+            stop
+            ;;
+        logs)
+            logs
+            ;;
+        clean)
+            clean
+            ;;
+        *)
+            help_menu
+            ;;
+    esac
+}
+
+main "$@"
+
