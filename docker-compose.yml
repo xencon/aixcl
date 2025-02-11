@@ -1,3 +1,5 @@
+version: '3.8'  # Specify the version of the Compose file
+
 services:
   ollama:
     volumes:
@@ -25,13 +27,16 @@ services:
     entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
     deploy:
       resources:
+        limits:
+          cpus: '2.0'  # Limit to 2 CPUs
+          memory: 4G   # Limit to 4 GB of memory
         reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          cpus: '1.0'  # Reserve 1 CPU
+          memory: 2G   # Reserve 2 GB of memory
     networks:
       - ollama-network
+    mem_limit: 4g
+    cpus: '2.0'
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
@@ -62,11 +67,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '6'
-          memory: 24G
+          cpus: '1.0'  # Limit to 1 CPU
+          memory: 2G   # Limit to 2 GB of memory
         reservations:
-          cpus: '2'
-          memory: 4G
+          cpus: '0.5'  # Reserve 0.5 CPU
+          memory: 1G   # Reserve 1 GB of memory
+    mem_limit: 2g
+    cpus: '1.0'
 
   postgres:
     image: postgres:latest
@@ -79,6 +86,16 @@ services:
       - postgres-data:/var/lib/postgresql/data
     network_mode: host
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'  # Limit to 1 CPU
+          memory: 1G   # Limit to 1 GB of memory
+        reservations:
+          cpus: '0.5'  # Reserve 0.5 CPU
+          memory: 512M  # Reserve 512 MB of memory
+    mem_limit: 1g
+    cpus: '1.0'
 
   pgadmin:
     image: dpage/pgadmin4
