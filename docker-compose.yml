@@ -23,18 +23,6 @@ services:
     restart: unless-stopped
     image: ollama/ollama:latest
     entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
-    deploy:
-      resources:
-        limits:
-          cpus: '4.0'  # Limit to 4 CPUs (out of 6 available)
-          memory: 12G   # Limit to 12 GB of memory
-        reservations:
-          cpus: '2.0'  # Reserve 2 CPUs
-          memory: 6G    # Reserve 6 GB of memory
-    networks:
-      - ollama-network
-    mem_limit: 12G   # Limit to 12 GB of memory
-    cpus: '4.0'      # Limit to 4 CPUs (out of 6 available)
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
@@ -62,7 +50,6 @@ services:
     network_mode: host
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
-    deploy:
 
   postgres:
     image: postgres:latest
@@ -75,8 +62,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
     network_mode: host
     restart: always
-    deploy:
-
+  
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
