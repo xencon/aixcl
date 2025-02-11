@@ -50,6 +50,11 @@ services:
     network_mode: host
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]  # Adjust the health endpoint as necessary
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   postgres:
     image: postgres:latest
@@ -62,6 +67,11 @@ services:
       - postgres-data:/var/lib/postgresql/data
     network_mode: host
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]  # Check if PostgreSQL is ready
+      interval: 30s
+      timeout: 10s
+      retries: 3
   
   pgadmin:
     image: dpage/pgadmin4

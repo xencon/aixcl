@@ -84,20 +84,7 @@ function restart() {
 
 function logs() {
     echo "Fetching logs..."
-    echo "Open WebUI logs (last 1 hour):"
-    docker logs --since=1h $CONTAINER_NAME
-    
-    echo -e "\nOllama logs (last 1 hour):"
-    docker logs --since=1h ollama
-    
-    echo -e "\nPostgreSQL logs (last 1 hour):"
-    docker logs --since=1h postgres
-
-    echo -e "\npgAdmin logs (last 1 hour):"
-    docker logs --since=1h pgadmin
-
-    echo -e "\nWatchtower logs (last 1 hour):"
-    docker logs --since=1h watchtower
+    docker-compose logs --tail=0 --follow
 }
 
 function clean() {
