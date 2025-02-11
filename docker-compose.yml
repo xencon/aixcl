@@ -1,5 +1,3 @@
-version: '3.8'  # Specify the version of the Compose file
-
 services:
   ollama:
     volumes:
@@ -28,15 +26,15 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'  # Limit to 4 CPUs
-          memory: 16G   # Limit to 16 GB of memory
+          cpus: '4.0'  # Limit to 4 CPUs (out of 6 available)
+          memory: 12G   # Limit to 12 GB of memory
         reservations:
-          cpus: '2.0'  # Reserve 2 CPU
-          memory: 8G   # Reserve 8 GB of memory
+          cpus: '2.0'  # Reserve 2 CPUs
+          memory: 6G    # Reserve 6 GB of memory
     networks:
       - ollama-network
-    mem_limit: 16g
-    cpus: '2.0'
+    mem_limit: 12G   # Limit to 12 GB of memory
+    cpus: '4.0'      # Limit to 4 CPUs (out of 6 available)
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
@@ -65,15 +63,6 @@ services:
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
     deploy:
-      resources:
-        limits:
-          cpus: '1.0'  # Limit to 1 CPU
-          memory: 2G   # Limit to 2 GB of memory
-        reservations:
-          cpus: '0.5'  # Reserve 0.5 CPU
-          memory: 1G   # Reserve 1 GB of memory
-    mem_limit: 2g
-    cpus: '1.0'
 
   postgres:
     image: postgres:latest
@@ -87,15 +76,6 @@ services:
     network_mode: host
     restart: always
     deploy:
-      resources:
-        limits:
-          cpus: '1.0'  # Limit to 1 CPU
-          memory: 1G   # Limit to 1 GB of memory
-        reservations:
-          cpus: '0.5'  # Reserve 0.5 CPU
-          memory: 512M  # Reserve 512 MB of memory
-    mem_limit: 1g
-    cpus: '1.0'
 
   pgadmin:
     image: dpage/pgadmin4
