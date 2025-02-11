@@ -28,11 +28,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'  # Limit to 2 CPUs
-          memory: 16G   # Limit to 4 GB of memory
+          cpus: '4.0'  # Limit to 4 CPUs
+          memory: 16G   # Limit to 16 GB of memory
         reservations:
-          cpus: '2.0'  # Reserve 1 CPU
-          memory: 8G   # Reserve 2 GB of memory
+          cpus: '2.0'  # Reserve 2 CPU
+          memory: 8G   # Reserve 8 GB of memory
     networks:
       - ollama-network
     mem_limit: 16g
