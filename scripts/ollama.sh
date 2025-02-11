@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Start Ollama in the background.
 /bin/ollama serve &
