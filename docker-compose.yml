@@ -7,8 +7,8 @@ services:
       - MODELS_BASE=${MODELS_BASE}
       - OLLAMA_HOST=0.0.0.0
       # CPU Threading options - adjust based on your CPU cores
-      - OLLAMA_CPU_THREADS=4        # Conservative setting to leave resources for system
-      - OLLAMA_GPU_LAYERS=24        # Balanced for 6GB VRAM to avoid OOM
+      - OLLAMA_CPU_THREADS=4       # Conservative setting to leave resources for system
+      - OLLAMA_GPU_LAYERS=24       # Balanced for 6GB VRAM to avoid OOM
       # Memory and batch size
       - OLLAMA_NUMA=true           # Enable NUMA support
       - OLLAMA_BATCH_SIZE=2048     # Conservative batch size for 1660 Ti
@@ -51,7 +51,7 @@ services:
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]  # Adjust the health endpoint as necessary
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]  # Adjust the health endpoint as necessary
       interval: 30s
       timeout: 10s
       retries: 3
