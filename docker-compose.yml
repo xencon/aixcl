@@ -28,14 +28,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'  # Limit to 2 CPUs
-          memory: 4G   # Limit to 4 GB of memory
+          cpus: '4.0'  # Limit to 2 CPUs
+          memory: 16G   # Limit to 4 GB of memory
         reservations:
-          cpus: '1.0'  # Reserve 1 CPU
-          memory: 2G   # Reserve 2 GB of memory
+          cpus: '2.0'  # Reserve 1 CPU
+          memory: 8G   # Reserve 2 GB of memory
     networks:
       - ollama-network
-    mem_limit: 4g
+    mem_limit: 16g
     cpus: '2.0'
 
   open-webui:
