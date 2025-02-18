@@ -1,21 +1,26 @@
 # Security Policy
 
-## Supported Versions
-
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
-
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability in this project, please report it to us as soon as possible. We take security seriously and appreciate your help in keeping our project safe.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+### Steps to Report
+
+1. **Email us**: Send an email to [sbadakhc@gmail.com] with the details of the vulnerability.
+2. **Provide details**: Include as much information as possible, such as:
+   - A description of the vulnerability
+   - Steps to reproduce the issue
+   - Any relevant screenshots or logs
+
+## Responsible Disclosure
+
+We ask that you do not disclose the vulnerability publicly until we have had a chance to address it. We will work to resolve the issue as quickly as possible and will keep you updated on our progress.
+
+## Acknowledgments
+
+We appreciate the contributions of the security community in helping us maintain the security of our project.
+
+## Additional Resources
+
+For more information on GitHub's security policies, please refer to the [GitHub Security Advisories](https://docs.github.com/en/code-security/security-advisories).
+
