@@ -22,6 +22,7 @@ This project sets up a multi-container application using Docker Compose. It incl
   - `OLLAMA_BASE_URL`: Base URL for Ollama service.
   - `OPENWEBUI_EMAIL`: Email for authentication.
   - `OPENWEBUI_PASSWORD`: Password for authentication.
+  - **New**: `WEBUI_SECRET_KEY`: Secret key for securing the web UI.
 
 ### PostgreSQL
 - **Description**: A PostgreSQL database service for data storage.
@@ -61,22 +62,29 @@ This project sets up a multi-container application using Docker Compose. It incl
      MODELS_BASE=your_models_base
      OPENWEBUI_EMAIL=your_openwebui_email
      OPENWEBUI_PASSWORD=your_openwebui_password
+     WEBUI_SECRET_KEY=your_secret_key  # New: Add a secret key for the web UI
      ```
 
-3. **Run Docker Compose**:
+3. **Run the Deployment**:
+   - Use the `aixcl` script to start the Docker Compose deployment:
    ```bash
-   docker-compose up -d
+   ./aixcl start
    ```
+
+4. **Accessing Services**:
+   - **Open WebUI**: Navigate to `http://localhost:3000` in your web browser.
+   - **PgAdmin**: Navigate to `http://localhost:5050` in your web browser.
 
 ## Usage
 
-- **Access Open WebUI**: Navigate to `http://localhost:8080` in your web browser.
+- **Access Open WebUI**: Navigate to `http://localhost:3000` in your web browser.
 - **Access PgAdmin**: Navigate to `http://localhost:5050` in your web browser.
 
 ## Scripts
 
 - **ollama.sh**: Script to initialize the Ollama service.
 - **openwebui.sh**: Script to start the Open WebUI service.
+- **aixcl**: Main script to manage the Docker Compose deployment.
 
 ## Volumes
 
@@ -91,3 +99,10 @@ This project is licensed under the MIT License.
 ## Contributing
 
 We welcome contributions from the community! Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started.
+
+## New Features
+- **WebUI Secret Key**: Added support for a secret key to enhance security for the Open WebUI.
+- **Improved Health Checks**: Enhanced health checks for services to ensure they are running correctly.
+
+## Known Issues
+- **Performance**: Some users may experience performance issues with high concurrency settings. Adjust `WEBUI_CONCURRENCY` in the Docker Compose file as needed.
