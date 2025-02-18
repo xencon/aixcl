@@ -6,7 +6,7 @@ If you discover a security vulnerability in this project, please report it to us
 
 ### Steps to Report
 
-1. **Email us**: Send an email to [sbadakhc@gmail.com] with the details of the vulnerability.
+1. **Email us**: Send an email to [admin@xenithconsulting.com] with the details of the vulnerability.
 2. **Provide details**: Include as much information as possible, such as:
    - A description of the vulnerability
    - Steps to reproduce the issue
