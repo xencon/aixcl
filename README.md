@@ -1,7 +1,7 @@
 # AIXCL
 
 ## Overview
-This project sets up a multi-container application using Docker Compose. It includes services for Ollama, Open WebUI, PostgreSQL, PgAdmin, and Watchtower. The setup is designed to provide a robust environment for web-based UI and data management. 
+This project sets up a multi-container application using Docker Compose. It includes services for Ollama, Open WebUI, PostgreSQL, PgAdmin, and Watchtower. The setup is designed to provide a robust environment for integrating Large Language Models (LLMs) into your software development workflow.
 
 ### Integration of LLM into Software Development Workflow
 AIXCL is designed to facilitate the integration of Large Language Models (LLMs) into your software development workflow. By leveraging the capabilities of LLMs, developers can enhance productivity through features such as code generation, automated documentation, and intelligent code reviews. This project provides a seamless environment to experiment with and deploy LLMs, making it easier to incorporate AI-driven solutions into your development processes.
