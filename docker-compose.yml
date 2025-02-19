@@ -7,22 +7,28 @@ services:
       - MODELS_BASE=${MODELS_BASE}
       - OLLAMA_HOST=0.0.0.0
       # CPU Threading options - adjust based on your CPU cores
-      - OLLAMA_CPU_THREADS=4       # Conservative setting to leave resources for system
-      - OLLAMA_GPU_LAYERS=24       # Balanced for 6GB VRAM to avoid OOM
+      - OLLAMA_CPU_THREADS=${CPU_THREADS:-4}
+      - OLLAMA_GPU_LAYERS=${GPU_LAYERS:-24}
       # Memory and batch size
       - OLLAMA_NUMA=true           # Enable NUMA support
-      - OLLAMA_BATCH_SIZE=2048     # Conservative batch size for 1660 Ti
+      - OLLAMA_BATCH_SIZE=${BATCH_SIZE:-2048}
       # Cache settings
       - OLLAMA_MMAP=true           # Enable memory mapping
-      - OLLAMA_CACHE_SIZE=3072     # 3GB cache to leave room for system and other apps
+      - OLLAMA_CACHE_SIZE=${CACHE_SIZE:-3072}
     container_name: ollama
-    ports:
-      - "11434:11434"
     pull_policy: always
     tty: true
     restart: unless-stopped
     image: ollama/ollama:latest
     entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
+    deploy:
+      resources:
+        limits:
+          memory: ${OLLAMA_MEMORY_LIMIT:-8g}
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    network_mode: host
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
@@ -42,6 +48,9 @@ services:
       # WebUI Performance settings
       - WEBUI_CONCURRENCY=4        # Reduced concurrency for balanced performance
       - WEBUI_THREADS=2            # Conservative thread count
+      # Add error reporting and logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
     extra_hosts:
        - "host.docker.internal:host-gateway"
     depends_on:
@@ -51,7 +60,8 @@ services:
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]  # Adjust the health endpoint as necessary
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health", "||", "exit", "1"]
+      start_period: 30s
       interval: 30s
       timeout: 10s
       retries: 3
@@ -63,12 +73,15 @@ services:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
       POSTGRES_DB: $POSTGRES_DATABASE
+      POSTGRES_MAX_CONNECTIONS: ${PG_MAX_CONNECTIONS:-100}
+      POSTGRES_SHARED_BUFFERS: ${PG_SHARED_BUFFERS:-128MB}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - postgres-backups:/backups
     network_mode: host
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]  # Check if PostgreSQL is ready
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -92,13 +105,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: open-webui
     restart: always
+    network_mode: host
 
 volumes:
   ollama:
   open-webui:
   open-webui-data:
   postgres-data:
-
-networks:
-  ollama-network:
-    driver: bridge
+  postgres-backups:
