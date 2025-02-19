@@ -6,16 +6,6 @@ services:
     environment:
       - MODELS_BASE=${MODELS_BASE}
       - OLLAMA_HOST=0.0.0.0
-      # CPU Threading options - adjust based on your CPU cores
-      - OLLAMA_CPU_THREADS=4       # Conservative setting to leave resources for system
-      - OLLAMA_GPU_LAYERS=24       # Balanced for 6GB VRAM to avoid OOM
-      # Memory and batch size
-      - OLLAMA_NUMA=true           # Enable NUMA support
-      - OLLAMA_BATCH_SIZE=2048     # Conservative batch size for 1660 Ti
-      # Cache settings
-      - OLLAMA_MMAP=true           # Enable memory mapping
-      - OLLAMA_CACHE_SIZE=3072     # 3GB cache to leave room for system and other apps
-    container_name: ollama
     ports:
       - "11434:11434"
     pull_policy: always
