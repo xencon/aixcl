@@ -74,16 +74,15 @@ services:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
       POSTGRES_DB: $POSTGRES_DATABASE
-      # Add connection tuning
-      - POSTGRES_MAX_CONNECTIONS=${PG_MAX_CONNECTIONS:-100}
-      - POSTGRES_SHARED_BUFFERS=${PG_SHARED_BUFFERS:-128MB}
+      POSTGRES_MAX_CONNECTIONS: ${PG_MAX_CONNECTIONS:-100}
+      POSTGRES_SHARED_BUFFERS: ${PG_SHARED_BUFFERS:-128MB}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - postgres-backups:/backups
     network_mode: host
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]  # Check if PostgreSQL is ready
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 30s
       timeout: 10s
       retries: 3
