@@ -23,7 +23,7 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
 - **Description**: Ollama is a service that manages models. It uses a script located in the `scripts` folder to initialize.
 - **Image**: `ollama/ollama:latest`
 - **Environment Variables**:
-  - `MODELS_BASE`: Base models directory.
+  - `MODELS_BASE`: LLM models to install.
 
 ### Open WebUI
 - **Description**: A web-based UI service that interacts with a PostgreSQL database.
@@ -61,8 +61,8 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/yourproject.git
-   cd yourproject
+   git clone https://github.com/xencom/aixcl.git
+   cd aixcl
    ```
 
 2. **Environment Configuration**:
@@ -76,7 +76,7 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
      MODELS_BASE=your_models_base
      OPENWEBUI_EMAIL=your_openwebui_email
      OPENWEBUI_PASSWORD=your_openwebui_password
-     WEBUI_SECRET_KEY=your_secret_key  # New: Add a secret key for the web UI
+     WEBUI_SECRET_KEY=your_secret_key 
      ```
 
 3. **Run the Deployment**:
