@@ -16,8 +16,6 @@ services:
       - OLLAMA_MMAP=true           # Enable memory mapping
       - OLLAMA_CACHE_SIZE=${CACHE_SIZE:-3072}
     container_name: ollama
-    ports:
-      - "11434:11434"
     pull_policy: always
     tty: true
     restart: unless-stopped
@@ -30,6 +28,7 @@ services:
         reservations:
           devices:
             - capabilities: [gpu]
+    network_mode: host
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:latest
@@ -106,6 +105,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: open-webui
     restart: always
+    network_mode: host
 
 volumes:
   ollama:
@@ -113,7 +113,3 @@ volumes:
   open-webui-data:
   postgres-data:
   postgres-backups:
-
-networks:
-  ollama-network:
-    driver: bridge

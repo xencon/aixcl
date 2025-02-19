@@ -12,11 +12,6 @@ validate_models() {
         log "ERROR: MODELS_BASE environment variable is not set"
         exit 1
     fi
-
-    if ! echo "$MODELS_BASE" | jq empty 2>/dev/null; then
-        log "ERROR: MODELS_BASE is not valid JSON"
-        exit 1
-    fi
 }
 
 # Add system requirements check
@@ -82,7 +77,7 @@ while ! curl -s http://localhost:11434/api/version &>/dev/null; do
 done
 
 # Install models
-MODELS_ARRAY=($(echo $MODELS_BASE | jq -r '.[]'))
+read -ra MODELS_ARRAY <<< "$MODELS_BASE"
 log "Installing ${#MODELS_ARRAY[@]} models..."
 for model in "${MODELS_ARRAY[@]}"; do
     install_model "$model"
