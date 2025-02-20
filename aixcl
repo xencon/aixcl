@@ -213,21 +213,47 @@ function status() {
     docker ps --format "table {{.Names}}\t{{.Ports}}" | grep -E "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"
 }
 
+function install_model() {
+    if [ -z "$1" ]; then
+        echo "Error: Model name is required"
+        echo "Usage: $0 install-model <model-name>"
+        echo "Example: $0 install-model starcoder2:latest"
+        return 1
+    fi
+
+    echo "Installing model: $1"
+    
+    # Check if Ollama is running
+    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "Error: Ollama container is not running. Please start the services first."
+        return 1
+    fi
+
+    # Try to install the model
+    if docker exec ollama ollama pull "$1"; then
+        echo "✅ Successfully installed model: $1"
+    else
+        echo "❌ Failed to install model: $1"
+        return 1
+    fi
+}
+
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|install-model}"
     echo "Commands:"
-    echo "  start   Start the Docker Compose deployment"
-    echo "  stop    Stop the Docker Compose deployment"
-    echo "  restart Restart all services"
-    echo "  logs    Show logs for all containers"
-    echo "  clean   Remove unused Docker containers, images, and volumes"
-    echo "  stats   Show resource usage statistics"
-    echo "  status  Check services status"
+    echo "  start        Start the Docker Compose deployment"
+    echo "  stop         Stop the Docker Compose deployment"
+    echo "  restart      Restart all services"
+    echo "  logs         Show logs for all containers"
+    echo "  clean        Remove unused Docker containers, images, and volumes"
+    echo "  stats        Show resource usage statistics"
+    echo "  status       Check services status"
+    echo "  install-model <model-name>  Install a specific Ollama model"
     exit 1
 }
 
 function main() {
-    if [[ $# -ne 1 ]]; then
+    if [[ $# -lt 1 ]]; then
         help_menu
     fi
 
@@ -252,6 +278,9 @@ function main() {
             ;;
         status)
             status
+            ;;
+        install-model)
+            install_model "$2"
             ;;
         *)
             help_menu
