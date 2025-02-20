@@ -4,6 +4,11 @@ set -e  # Exit on error
 set -u  # Treat unset variables as an error
 set -o pipefail  # Catch errors in pipelines
 
+# Load environment variables from .env file
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 COMPOSE_CMD="docker-compose"
 CONTAINER_NAME="open-webui"
 
@@ -28,7 +33,7 @@ function start() {
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
         if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
-           curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | grep -q "200" && \
+           curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 2>/dev/null | grep -q "200" && \
            docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
             echo "All services are up and running!"
             status
@@ -172,7 +177,7 @@ function status() {
     
     # Check Open WebUI
     echo -n "Open WebUI status: "
-    WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null)
+    WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null)
     if [ "$WEBUI_STATUS" = "200" ]; then
         echo "✅ Open WebUI is responding (HTTP 200)"
     else
@@ -183,7 +188,7 @@ function status() {
 
     # Check PostgreSQL
     echo -n "PostgreSQL status: "
-    if docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
+    if docker exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
         echo "✅ PostgreSQL is responding"
     else
         echo "❌ PostgreSQL is not responding"
@@ -193,11 +198,11 @@ function status() {
 
     # Check pgAdmin
     echo -n "pgAdmin status: "
-    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80 2>/dev/null)
-    if [ "$PGADMIN_STATUS" = "200" ]; then
-        echo "✅ pgAdmin is responding (HTTP 200)"
+    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null)
+    if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
+        echo -e "✅ pgAdmin is responding (HTTP $PGADMIN_STATUS)\n"
     else
-        echo "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
+        echo -e "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)\n"
         echo "Checking pgAdmin logs:"
         docker logs pgadmin --tail 5
     fi
