@@ -23,7 +23,7 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
 - **Description**: Ollama is a service that manages models. It uses a script located in the `scripts` folder to initialize.
 - **Image**: `ollama/ollama:latest`
 - **Environment Variables**:
-  - `MODELS_BASE`: Base models directory.
+  - `MODELS`: LLM models.
 
 ### Open WebUI
 - **Description**: A web-based UI service that interacts with a PostgreSQL database.
@@ -44,7 +44,7 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
 - **Environment Variables**:
   - `POSTGRES_USER`: Database user.
   - `POSTGRES_PASSWORD`: Database password.
-  - `POSTGRES_DB`: Database name.
+  - `POSTGRES_DARABASE`: Database name.
 
 ### PgAdmin
 - **Description**: A web-based database management tool for PostgreSQL.
@@ -61,8 +61,8 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/yourproject.git
-   cd yourproject
+   git clone https://github.com/xencon/aixcl.git
+   cd aixcl
    ```
 
 2. **Environment Configuration**:
@@ -86,19 +86,14 @@ The `aixcl` script is a command-line interface (CLI) wrapper that simplifies the
    ```
 
 4. **Accessing Services**:
-   - **Open WebUI**: Navigate to `http://localhost:3000` in your web browser.
+   - **Open WebUI**: Navigate to `http://localhost:8080` in your web browser.
    - **PgAdmin**: Navigate to `http://localhost:5050` in your web browser.
-
-## Usage
-
-- **Access Open WebUI**: Navigate to `http://localhost:3000` in your web browser.
-- **Access PgAdmin**: Navigate to `http://localhost:5050` in your web browser.
 
 ## Scripts
 
-- **ollama.sh**: Script to initialize the Ollama service.
-- **openwebui.sh**: Script to start the Open WebUI service.
-- **aixcl**: Main script to manage the Docker Compose deployment.
+- **ollama.sh**: Starts the Ollama service.
+- **openwebui.sh**: Starts the Open WebUI service.
+- **aixcl**: Platform initialization script to manage the Docker Compose deployment.
 
 ## Volumes
 
