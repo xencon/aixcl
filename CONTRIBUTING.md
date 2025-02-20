@@ -1,53 +1,44 @@
 # Contributing to AIXCL
 
-Thank you for considering contributing to the AIXCL project! We welcome contributions from everyone. Here's how you can help.
+Thank you for your interest in contributing to AIXCL! We welcome contributions from the community to help make this project better.
 
 ## How to Contribute
 
-1. **Fork the Repository**:
-   - Click the "Fork" button at the top right of the repository page to create your own copy of the project.
+1. **Fork the Repository**
+   - Fork the repository to your GitHub account
+   - Clone your fork locally
 
-2. **Clone Your Fork**:
-   ```bash
-   git clone https://github.com/yourusername/aixcl.git
-   cd aixcl
-   ```
+2. **Create a Branch**
+   - Create a branch for your contribution
+   - Use a clear branch name that describes your feature/fix
 
-3. **Create a New Branch**:
-   - Create a new branch for your feature or bug fix:
-   ```bash
-   git checkout -b my-feature-branch
-   ```
+3. **Make Your Changes**
+   - Write clear, concise commit messages
+   - Keep changes focused and atomic
+   - Add tests if applicable
+   - Update documentation as needed
 
-4. **Make Your Changes**:
-   - Make your changes in the codebase. Ensure your code follows the project's coding style.
+4. **Submit a Pull Request**
+   - Push your changes to your fork
+   - Create a pull request from your branch to our main branch
+   - Describe your changes in the PR description
+   - Link any relevant issues
 
-5. **Test Your Changes**:
-   - Run any tests to ensure your changes work as expected.
+## Development Guidelines
 
-6. **Commit Your Changes**:
-   - Commit your changes with a clear message:
-   ```bash
-   git commit -m "Add a brief description of your changes"
-   ```
+- Follow existing code style and conventions
+- Test your changes thoroughly
+- Keep commits clean and well-organized
+- Document new features or changes
 
-7. **Push to Your Fork**:
-   ```bash
-   git push origin my-feature-branch
-   ```
+## Getting Help
 
-8. **Create a Pull Request**:
-   - Go to the original repository and click on "Pull Requests."
-   - Click "New Pull Request" and select your branch to create a pull request.
+- Open an issue for bugs or feature requests
+- Join our discussions for questions
+- Review existing issues and PRs before creating new ones
 
-## Guidelines
+## Code of Conduct
 
-- **Code Style**: Follow the existing code style in the project.
-- **Documentation**: Update documentation if your changes require it.
-- **Respect the Community**: Be respectful and constructive in discussions.
+Please note that this project follows our Code of Conduct. By participating, you are expected to uphold this code.
 
-## Questions?
-
-If you have any questions, feel free to open an issue or contact the maintainers.
-
-Thank you for contributing!
+Thank you for contributing to AIXCL!
