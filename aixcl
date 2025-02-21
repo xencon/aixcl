@@ -213,15 +213,15 @@ function status() {
     docker ps --format "table {{.Names}}\t{{.Ports}}" | grep -E "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"
 }
 
-function install_model() {
+function add() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
-        echo "Usage: $0 install-model <model-name>"
-        echo "Example: $0 install-model starcoder2:latest"
+        echo "Usage: $0 add <model-name>"
+        echo "Example: $0 add starcoder2:latest"
         return 1
     fi
 
-    echo "Installing model: $1"
+    echo "Adding model: $1"
     
     # Check if Ollama is running
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
@@ -229,26 +229,66 @@ function install_model() {
         return 1
     fi
 
-    # Try to install the model
+    # Try to add the model
     if docker exec ollama ollama pull "$1"; then
-        echo "✅ Successfully installed model: $1"
+        echo "✅ Successfully added model: $1"
     else
-        echo "❌ Failed to install model: $1"
+        echo "❌ Failed to add model: $1"
         return 1
     fi
 }
 
+function remove() {
+    if [ -z "$1" ]; then
+        echo "Error: Model name is required"
+        echo "Usage: $0 remove <model-name>"
+        echo "Example: $0 remove starcoder2:latest"
+        return 1
+    fi
+
+    echo "Removing model: $1"
+    
+    # Check if Ollama is running
+    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "Error: Ollama container is not running. Please start the services first."
+        return 1
+    fi
+
+    # Try to remove the model using the correct command
+    if docker exec ollama ollama rm "$1"; then  # Using 'rm' command
+        echo "✅ Successfully removed model: $1"
+    else
+        echo "❌ Failed to remove model: $1"
+        return 1
+    fi
+}
+
+function list() {
+    echo "Listing installed models..."
+    
+    # Check if Ollama is running
+    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "Error: Ollama container is not running. Please start the services first."
+        return 1
+    fi
+
+    # List installed models
+    docker exec ollama ollama list
+}
+
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|install-model}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list}"
     echo "Commands:"
-    echo "  start        Start the Docker Compose deployment"
-    echo "  stop         Stop the Docker Compose deployment"
-    echo "  restart      Restart all services"
-    echo "  logs         Show logs for all containers"
-    echo "  clean        Remove unused Docker containers, images, and volumes"
-    echo "  stats        Show resource usage statistics"
-    echo "  status       Check services status"
-    echo "  install-model <model-name>  Install a specific Ollama model"
+    echo "  start                Start the Docker Compose deployment"
+    echo "  stop                 Stop the Docker Compose deployment"
+    echo "  restart              Restart all services"
+    echo "  logs                 Show logs for all containers"
+    echo "  clean                Remove unused Docker containers, images, and volumes"
+    echo "  stats                Show resource usage statistics"
+    echo "  status               Check services status"
+    echo "  add <model-name>     Add a specific Ollama model"
+    echo "  remove <model-name>  Remove a specific Ollama model"
+    echo "  list                 List all installed models"
     exit 1
 }
 
@@ -279,8 +319,14 @@ function main() {
         status)
             status
             ;;
-        install-model)
-            install_model "$2"
+        add)
+            add "$2"
+            ;;
+        remove)
+            remove "$2"
+            ;;
+        list)
+            list
             ;;
         *)
             help_menu
