@@ -1,19 +1,17 @@
-# Pull Request
+# 🚀 Pull Request
 
-## Description
-
-Briefly describe the changes made in this pull request and why they are necessary.
+## What's Changed?
+<!-- Briefly describe what you've changed and why -->
 
 ## Related Issues
+<!-- Link any related issues (e.g., "Fixes #123") -->
 
-Mention any related issues (e.g., "Fixes #123").
+## Checklist
+- [ ] I've tested these changes
+- [ ] I've updated documentation (if needed)
+- [ ] My code follows the project's style
 
-## Changes Made
+## Screenshots (if applicable)
+<!-- Add screenshots if your changes include visual elements -->
 
-- Summarize the main changes in bullet points.
-
-## Additional Notes
-
-Provide any additional context or information that might help reviewers.
-
-Thank you for your contribution!
+Thanks for contributing to AIXCL! 💙
