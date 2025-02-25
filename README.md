@@ -95,6 +95,7 @@ AIXCL includes bash completion support to make using the CLI faster and easier:
 # Now you can use tab completion
 ./aixcl [TAB]          # Shows all commands
 ./aixcl add [TAB]      # Shows available models
+./aixcl logs [TAB]     # Shows available service logging
 ```
 
 For more details, see [BASH_COMPLETION.md](./BASH_COMPLETION.md).
