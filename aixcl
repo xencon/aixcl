@@ -286,6 +286,7 @@ function help_menu() {
     echo "  stop                 Stop the Docker Compose deployment"
     echo "  restart              Restart all services"
     echo "  logs                 Show logs for all containers"
+    echo "  logs <component>     Show logs for a specific component (e.g., open-webui, postgres, pgadmin)"
     echo "  clean                Remove unused Docker containers, images, and volumes"
     echo "  stats                Show resource usage statistics"
     echo "  status               Check services status"
