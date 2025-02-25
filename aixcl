@@ -6,30 +6,28 @@ set -o pipefail  # Catch errors in pipelines
 
 # Load environment variables from .env file
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    export $(grep -v '^#' .env | xargs)
 fi
 
-COMPOSE_CMD="docker-compose"
+# Allow custom Docker Compose file via environment variable
+COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
+COMPOSE_CMD="docker-compose -f $COMPOSE_FILE"
 CONTAINER_NAME="open-webui"
 
 function start() {
     echo "Starting Docker Compose deployment..."
     
-    # Check if services are already running
     if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
         echo "Services are already running. Use 'stop' first if you want to restart."
         exit 1
     fi
     
-    # Pull latest images
     echo "Pulling latest images..."
     $COMPOSE_CMD pull
     
-    # Start services
     echo "Starting services..."
     $COMPOSE_CMD up -d
     
-    # Wait for services to be ready
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
         if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
@@ -51,17 +49,14 @@ function start() {
 function stop() {
     echo "Stopping Docker Compose deployment..."
     
-    # Check if any of our services are running
     if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"; then
         echo "Services are not running."
         return 0
     fi
     
-    # Stop services gracefully
     echo "Stopping services gracefully..."
     $COMPOSE_CMD down --remove-orphans
     
-    # Wait for containers to stop
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
         if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"; then
@@ -72,7 +67,6 @@ function stop() {
         sleep 2
     done
     
-    # Force stop if graceful shutdown fails
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
     $COMPOSE_CMD down --remove-orphans -v
     docker ps -q | xargs -r docker stop
@@ -89,26 +83,22 @@ function restart() {
 
 function logs() {
     echo "Fetching logs..."
-    docker-compose logs --tail=0 --follow
+    $COMPOSE_CMD logs --tail=0 --follow
 }
 
 function clean() {
     echo "Cleaning up Docker resources..."
     
-    # Stop all containers first
     echo "Stopping all containers..."
     $COMPOSE_CMD down
     
-    # Remove all stopped containers
     echo "Removing stopped containers..."
     docker container prune -f
     
-    # Remove unused images
     echo "Removing unused images..."
     docker image prune -a -f
     
-    # Remove unused volumes (including PostgreSQL data)
-    echo "Removing unused volumes..."
+    echo "Removing unused volumes (including PostgreSQL data)..."
     docker volume prune -f
     
     echo "Clean up complete."
@@ -117,13 +107,16 @@ function clean() {
 function stats() {
     echo "Monitoring GPU resources..."
     
-    # Check if nvidia-smi is available for GPU monitoring
     if command -v pipx run nvitop &> /dev/null; then
         echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
         echo "-------------------"
         pipx run nvitop
+    elif command -v nvidia-smi &> /dev/null; then
+        echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
+        echo "-------------------"
+        watch -n 2 nvidia-smi
     else
-        echo "GPU monitoring not available: nvitop command not found"
+        echo "GPU monitoring not available: nvitop or nvidia-smi commands not found"
         exit 1
     fi
 }
@@ -131,7 +124,6 @@ function stats() {
 function status() {
     echo "Checking services status..."
     
-    # Check if containers are running
     echo "Container Status:"
     echo "----------------"
     if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
@@ -164,18 +156,15 @@ function status() {
         echo "❌ Watchtower container is not running"
     fi
     
-    # Check if services are responding
     echo -e "\nService Health:"
     echo "----------------"
     
-    # Check Ollama API
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
         echo "✅ Ollama API is responding"
     else
         echo "❌ Ollama API is not responding"
     fi
     
-    # Check Open WebUI
     echo -n "Open WebUI status: "
     WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null)
     if [ "$WEBUI_STATUS" = "200" ]; then
@@ -186,7 +175,6 @@ function status() {
         docker logs $CONTAINER_NAME --tail 5
     fi
 
-    # Check PostgreSQL
     echo -n "PostgreSQL status: "
     if docker exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
         echo "✅ PostgreSQL is responding"
@@ -196,7 +184,6 @@ function status() {
         docker logs postgres --tail 5
     fi
 
-    # Check pgAdmin
     echo -n "pgAdmin status: "
     PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null)
     if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
@@ -206,11 +193,6 @@ function status() {
         echo "Checking pgAdmin logs:"
         docker logs pgadmin --tail 5
     fi
-
-    # Show container ports for debugging
-    echo -e "\nPort Mappings:"
-    echo "----------------"
-    docker ps --format "table {{.Names}}\t{{.Ports}}" | grep -E "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"
 }
 
 function add() {
@@ -223,17 +205,16 @@ function add() {
 
     echo "Adding model: $1"
     
-    # Check if Ollama is running
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
         echo "Error: Ollama container is not running. Please start the services first."
         return 1
     fi
 
-    # Try to add the model
     if docker exec ollama ollama pull "$1"; then
         echo "✅ Successfully added model: $1"
     else
         echo "❌ Failed to add model: $1"
+        echo "Debug: Check if the model name is correct and the Ollama container is running."
         return 1
     fi
 }
@@ -248,17 +229,16 @@ function remove() {
 
     echo "Removing model: $1"
     
-    # Check if Ollama is running
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
         echo "Error: Ollama container is not running. Please start the services first."
         return 1
     fi
 
-    # Try to remove the model using the correct command
-    if docker exec ollama ollama rm "$1"; then  # Using 'rm' command
+    if docker exec ollama ollama rm "$1"; then
         echo "✅ Successfully removed model: $1"
     else
         echo "❌ Failed to remove model: $1"
+        echo "Debug: Check if the model name is correct and the Ollama container is running."
         return 1
     fi
 }
@@ -266,13 +246,11 @@ function remove() {
 function list() {
     echo "Listing installed models..."
     
-    # Check if Ollama is running
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
         echo "Error: Ollama container is not running. Please start the services first."
         return 1
     fi
 
-    # List installed models
     docker exec ollama ollama list
 }
 
@@ -320,7 +298,10 @@ function main() {
             status
             ;;
         add)
-            add "$2"
+            shift  # Remove the 'add' command from the arguments
+            for model in "$@"; do  # Loop through all remaining arguments
+                add "$model"  # Call the add function for each model
+            done
             ;;
         remove)
             remove "$2"
