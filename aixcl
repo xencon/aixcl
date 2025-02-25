@@ -264,18 +264,18 @@ function list() {
 function help_menu() {
     echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion}"
     echo "Commands:"
-    echo "  start                Start the Docker Compose deployment"
-    echo "  stop                 Stop the Docker Compose deployment"
+    echo "  start                Start the AIXCL stack"
+    echo "  stop                 Stop the AIXCL stack"
     echo "  restart              Restart all services"
     echo "  logs                 Show logs for all containers"
     echo "  clean                Remove unused Docker containers, images, and volumes"
     echo "  stats                Show resource usage statistics"
     echo "  status               Check services status"
-    echo "  add <model-name>     Add one or more Ollama models"
-    echo "  remove <model-name>  Remove one or more Ollama models"
-    echo "  list                 List all installed models"
+    echo "  add <model-name>     Add one or more LLM's"
+    echo "  remove <model-name>  Remove one or more LLM's"
+    echo "  list                 List all installed LLM's"
     echo "  help                 Show this help menu"
-    echo "  install-completion   Install bash completion for aixcl"
+    echo "  install-completion   Install bash completion"
     exit 1
 }
 
