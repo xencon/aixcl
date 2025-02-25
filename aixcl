@@ -87,8 +87,26 @@ function restart() {
 }
 
 function logs() {
-    echo "Fetching logs..."
-    $COMPOSE_CMD logs --tail=0 --follow
+    if [ $# -eq 0 ]; then
+        echo "Fetching logs for all services..."
+        $COMPOSE_CMD logs --tail=0 --follow
+    else
+        local container="$1"
+        local tail_count="${2:-50}"  # Default to 50 lines if not specified
+        
+        # Validate container name
+        case "$container" in
+            ollama|open-webui|postgres|pgadmin|watchtower)
+                echo "Fetching logs for $container..."
+                docker logs "$container" --tail="$tail_count" --follow
+                ;;
+            *)
+                echo "Error: Unknown container '$container'"
+                echo "Available containers: ollama, open-webui, postgres, pgadmin, watchtower"
+                return 1
+                ;;
+        esac
+    fi
 }
 
 function clean() {
@@ -267,7 +285,7 @@ function help_menu() {
     echo "  start                Start the AIXCL stack"
     echo "  stop                 Stop the AIXCL stack"
     echo "  restart              Restart all services"
-    echo "  logs                 Show logs for all containers"
+    echo "  logs [container] [n] Show logs for all containers or a specific container (with optional number of lines)"
     echo "  clean                Remove unused Docker containers, images, and volumes"
     echo "  stats                Show resource usage statistics"
     echo "  status               Check services status"
@@ -350,7 +368,8 @@ function main() {
             restart
             ;;
         logs)
-            logs
+            shift  # Remove the 'logs' command from the arguments
+            logs "$@"  # Pass all remaining arguments to the logs function
             ;;
         clean)
             clean

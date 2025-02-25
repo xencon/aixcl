@@ -53,6 +53,12 @@ _aixcl_completion() {
             fi
             return 0
             ;;
+        logs)
+            # For logs, suggest container names
+            local containers="ollama open-webui postgres pgadmin watchtower"
+            COMPREPLY=($(compgen -W "${containers}" -- "${cur}"))
+            return 0
+            ;;
         *)
             # Check if we're in a multi-model add or remove command
             if [[ ${COMP_CWORD} -gt 2 ]]; then
