@@ -296,6 +296,11 @@ function help_menu() {
     exit 1
 }
 
+function _command_completion() {
+    local commands=("start" "stop" "restart" "logs" "clean" "stats" "status" "add" "remove" "list")
+    COMPREPLY=($(compgen -W "${commands[*]}" -- "${1}"))
+}
+
 function main() {
     if [[ $# -lt 1 ]]; then
         help_menu
@@ -337,5 +342,8 @@ function main() {
             ;;
     esac
 }
+
+# Enable tab completion for the main script
+complete -F _command_completion ./aixcl
 
 main "$@"
