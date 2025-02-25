@@ -203,8 +203,9 @@ function status() {
 function add() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
-        echo "Usage: $0 add <model-name>"
+        echo "Usage: $0 add <model-name> [<model-name> ...]"
         echo "Example: $0 add starcoder2:latest"
+        echo "Example: $0 add starcoder2:latest nomic-embed-text:latest"
         return 1
     fi
 
@@ -227,8 +228,9 @@ function add() {
 function remove() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
-        echo "Usage: $0 remove <model-name>"
+        echo "Usage: $0 remove <model-name> [<model-name> ...]"
         echo "Example: $0 remove starcoder2:latest"
+        echo "Example: $0 remove starcoder2:latest nomic-embed-text:latest"
         return 1
     fi
 
@@ -269,8 +271,8 @@ function help_menu() {
     echo "  clean                Remove unused Docker containers, images, and volumes"
     echo "  stats                Show resource usage statistics"
     echo "  status               Check services status"
-    echo "  add <model-name>     Add a specific Ollama model"
-    echo "  remove <model-name>  Remove a specific Ollama model"
+    echo "  add <model-name>     Add one or more Ollama models"
+    echo "  remove <model-name>  Remove one or more Ollama models"
     echo "  list                 List all installed models"
     echo "  help                 Show this help menu"
     echo "  install-completion   Install bash completion for aixcl"
@@ -366,7 +368,10 @@ function main() {
             done
             ;;
         remove)
-            remove "$2"
+            shift  # Remove the 'remove' command from the arguments
+            for model in "$@"; do  # Loop through all remaining arguments
+                remove "$model"  # Call the remove function for each model
+            done
             ;;
         list)
             list
