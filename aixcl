@@ -298,7 +298,10 @@ function main() {
             status
             ;;
         add)
-            add "$2"
+            shift  # Remove the 'add' command from the arguments
+            for model in "$@"; do  # Loop through all remaining arguments
+                add "$model"  # Call the add function for each model
+            done
             ;;
         remove)
             remove "$2"
