@@ -14,6 +14,11 @@ COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
 COMPOSE_CMD="docker-compose -f $COMPOSE_FILE"
 CONTAINER_NAME="open-webui"
 
+# Source the autocomplete script if it exists
+if [ -f "$(dirname "$0")/aixcl_completion.sh" ]; then
+    source "$(dirname "$0")/aixcl_completion.sh"
+fi
+
 function start() {
     echo "Starting Docker Compose deployment..."
     
@@ -255,7 +260,7 @@ function list() {
 }
 
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion}"
     echo "Commands:"
     echo "  start                Start the Docker Compose deployment"
     echo "  stop                 Stop the Docker Compose deployment"
@@ -267,7 +272,64 @@ function help_menu() {
     echo "  add <model-name>     Add a specific Ollama model"
     echo "  remove <model-name>  Remove a specific Ollama model"
     echo "  list                 List all installed models"
+    echo "  help                 Show this help menu"
+    echo "  install-completion   Install bash completion for aixcl"
     exit 1
+}
+
+function install_completion() {
+    echo "Installing bash completion for aixcl..."
+    
+    # Get the script directory
+    SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+    COMPLETION_SCRIPT="${SCRIPT_DIR}/aixcl_completion.sh"
+    
+    if [[ ! -f "$COMPLETION_SCRIPT" ]]; then
+        echo "Error: Completion script not found at $COMPLETION_SCRIPT"
+        exit 1
+    fi
+    
+    # Determine the appropriate completion directory
+    if [[ -d "/etc/bash_completion.d" ]] && [[ -w "/etc/bash_completion.d" ]]; then
+        # System-wide installation (requires write permission)
+        COMPLETION_DIR="/etc/bash_completion.d"
+    elif [[ -d "$HOME/.local/share/bash-completion/completions" ]]; then
+        # User-specific installation (preferred)
+        COMPLETION_DIR="$HOME/.local/share/bash-completion/completions"
+    else
+        # Create user directory if it doesn't exist
+        COMPLETION_DIR="$HOME/.local/share/bash-completion/completions"
+        mkdir -p "$COMPLETION_DIR"
+    fi
+    
+    # Copy the completion script
+    cp "$COMPLETION_SCRIPT" "$COMPLETION_DIR/aixcl"
+    
+    echo "Bash completion installed to $COMPLETION_DIR/aixcl"
+    echo "To use it immediately, run: source $COMPLETION_DIR/aixcl"
+    echo "It will be automatically loaded in new shell sessions."
+    
+    # Add to .bashrc if not already there
+    if ! grep -q "source.*$COMPLETION_DIR/aixcl" "$HOME/.bashrc"; then
+        # First remove any old entries to prevent duplicates
+        if grep -q "Added by aixcl installer" "$HOME/.bashrc"; then
+            # Create a temporary file without the old entries
+            grep -v -A 3 "Added by aixcl installer" "$HOME/.bashrc" > "$HOME/.bashrc.tmp"
+            # Remove any blank lines that might have been created
+            sed -i '/^$/d' "$HOME/.bashrc.tmp"
+            # Replace the original file
+            mv "$HOME/.bashrc.tmp" "$HOME/.bashrc"
+        fi
+        
+        # Now add the new entry
+        echo "# Added by aixcl installer" >> "$HOME/.bashrc"
+        echo "if [ -f \"$COMPLETION_DIR/aixcl\" ]; then" >> "$HOME/.bashrc"
+        echo "    source \"$COMPLETION_DIR/aixcl\"" >> "$HOME/.bashrc"
+        echo "fi" >> "$HOME/.bashrc"
+        echo "Added sourcing to ~/.bashrc for persistent completion"
+    else
+        echo "Completion script already referenced in ~/.bashrc"
+    fi
 }
 
 function main() {
@@ -308,6 +370,12 @@ function main() {
             ;;
         list)
             list
+            ;;
+        help)
+            help_menu
+            ;;
+        install-completion)
+            install_completion
             ;;
         *)
             help_menu
