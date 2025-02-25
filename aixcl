@@ -9,7 +9,9 @@ if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-COMPOSE_CMD="docker-compose"
+# Allow custom Docker Compose file via environment variable
+COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
+COMPOSE_CMD="docker-compose -f $COMPOSE_FILE"
 CONTAINER_NAME="open-webui"
 
 function start() {
@@ -89,7 +91,7 @@ function restart() {
 
 function logs() {
     echo "Fetching logs..."
-    docker-compose logs --tail=0 --follow
+    $COMPOSE_CMD logs --tail=0 --follow
 }
 
 function clean() {
@@ -117,13 +119,17 @@ function clean() {
 function stats() {
     echo "Monitoring GPU resources..."
     
-    # Check if nvidia-smi is available for GPU monitoring
+    # Check if nvitop is available for GPU monitoring
     if command -v pipx run nvitop &> /dev/null; then
         echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
         echo "-------------------"
         pipx run nvitop
+    elif command -v nvidia-smi &> /dev/null; then
+        echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
+        echo "-------------------"
+        watch -n 2 nvidia-smi
     else
-        echo "GPU monitoring not available: nvitop command not found"
+        echo "GPU monitoring not available: nvitop or nvidia-smi commands not found"
         exit 1
     fi
 }
@@ -206,11 +212,6 @@ function status() {
         echo "Checking pgAdmin logs:"
         docker logs pgadmin --tail 5
     fi
-
-    # Show container ports for debugging
-    echo -e "\nPort Mappings:"
-    echo "----------------"
-    docker ps --format "table {{.Names}}\t{{.Ports}}" | grep -E "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"
 }
 
 function add() {
@@ -234,6 +235,7 @@ function add() {
         echo "✅ Successfully added model: $1"
     else
         echo "❌ Failed to add model: $1"
+        echo "Debug: Check if the model name is correct and the Ollama container is running."
         return 1
     fi
 }
@@ -259,6 +261,7 @@ function remove() {
         echo "✅ Successfully removed model: $1"
     else
         echo "❌ Failed to remove model: $1"
+        echo "Debug: Check if the model name is correct and the Ollama container is running."
         return 1
     fi
 }
