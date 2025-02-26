@@ -119,3 +119,5 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guideline
 
 ## License
 This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
+
+## Have fun!
