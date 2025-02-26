@@ -1,7 +1,7 @@
 # AIXCL
 
 ## Overview
-AIXCL is a simple Docker-based platform that helps you integrate Large Language Models (LLMs) into your development workflow. It sets up Ollama, Open WebUI, and supporting services with minimal effort.
+AIXCL is a simple Docker-based platform that helps you integrate Large Language Models (LLMs) into your development workflow. It sets up Ollama, Open WebUI, and supporting services with minimal effort. These can be directly accessed via your IDE using the https://www.continue.dev/ plugin. 
 
 ### What does it do?
 - Run LLMs locally on your machine
