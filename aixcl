@@ -19,6 +19,108 @@ if [ -f "$(dirname "$0")/aixcl_completion.sh" ]; then
     source "$(dirname "$0")/aixcl_completion.sh"
 fi
 
+function check_env() {
+    echo "Checking environment dependencies..."
+    local missing_deps=0
+
+    # Check Docker
+    if ! command -v docker &> /dev/null; then
+        echo "❌ Docker is not installed"
+        echo "   Install from: https://docs.docker.com/get-docker/"
+        missing_deps=1
+    else
+        echo "✅ Docker is installed"
+        # Check if Docker daemon is running
+        if ! docker info &> /dev/null; then
+            echo "❌ Docker daemon is not running"
+            echo "   Start with: sudo systemctl start docker"
+            missing_deps=1
+        else
+            echo "✅ Docker daemon is running"
+        fi
+    fi
+
+    # Check Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
+        echo "❌ Docker Compose is not installed"
+        echo "   Install from: https://docs.docker.com/compose/install/"
+        missing_deps=1
+    else
+        echo "✅ Docker Compose is installed"
+    fi
+
+    # Check NVIDIA drivers and toolkit (optional)
+    echo -e "\nChecking NVIDIA support..."
+    if ! command -v nvidia-smi &> /dev/null; then
+        echo "⚠️ NVIDIA drivers not found (optional)"
+        echo "   For GPU support, install NVIDIA drivers"
+    else
+        echo "✅ NVIDIA drivers installed"
+        # Check NVIDIA Container Toolkit
+        if ! dpkg -l | grep -q nvidia-container-toolkit; then
+            echo "⚠️ NVIDIA Container Toolkit not found (optional)"
+            echo "   For GPU support, install: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
+        else
+            echo "✅ NVIDIA Container Toolkit installed"
+        fi
+    fi
+
+    # Check .env file
+    echo -e "\nChecking configuration..."
+    if [ ! -f .env ]; then
+        echo "❌ .env file not found"
+        echo "   Create one from .env.example"
+        missing_deps=1
+    else
+        echo "✅ .env file exists"
+        # Check required environment variables
+        local required_vars=(
+            "POSTGRES_USER"
+            "POSTGRES_PASSWORD"
+            "POSTGRES_DATABASE"
+            "PGADMIN_EMAIL"
+            "PGADMIN_PASSWORD"
+            "OPENWEBUI_EMAIL"
+            "OPENWEBUI_PASSWORD"
+        )
+        
+        for var in "${required_vars[@]}"; do
+            if ! grep -q "^${var}=" .env || [ -z "$(grep "^${var}=" .env | cut -d'=' -f2)" ]; then
+                echo "❌ Missing or empty required variable: $var"
+                missing_deps=1
+            fi
+        done
+    fi
+
+    # Check available disk space
+    echo -e "\nChecking system resources..."
+    local required_space=10 # GB
+    local available_space=$(df -BG "$(pwd)" | awk 'NR==2 {print $4}' | sed 's/G//')
+    
+    if [ "$available_space" -lt "$required_space" ]; then
+        echo "❌ Insufficient disk space. Required: ${required_space}GB, Available: ${available_space}GB"
+        missing_deps=1
+    else
+        echo "✅ Sufficient disk space available"
+    fi
+
+    # Check memory
+    local total_mem=$(free -g | awk '/^Mem:/{print $2}')
+    if [ "$total_mem" -lt 8 ]; then
+        echo "⚠️ Low memory detected (${total_mem}GB). Recommended: 8GB+"
+    else
+        echo "✅ Sufficient memory available"
+    fi
+
+    if [ $missing_deps -eq 1 ]; then
+        echo -e "\n❌ Environment check failed. Please address the issues above."
+        return 1
+    else
+        echo -e "\n✅ Environment check passed! You're ready to run AIXCL."
+        return 0
+    fi
+}
+
 function start() {
     echo "Starting Docker Compose deployment..."
     
@@ -280,7 +382,7 @@ function list() {
 }
 
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion|check-env}"
     echo "Commands:"
     echo "  start                Start the AIXCL stack"
     echo "  stop                 Stop the AIXCL stack"
@@ -292,6 +394,7 @@ function help_menu() {
     echo "  add <model-name>     Add one or more LLM's"
     echo "  remove <model-name>  Remove one or more LLM's"
     echo "  list                 List all installed LLM's"
+    echo "  check-env           Check environment dependencies"
     echo "  help                 Show this help menu"
     echo "  install-completion   Install bash completion"
     exit 1
@@ -400,6 +503,9 @@ function main() {
             ;;
         install-completion)
             install_completion
+            ;;
+        check-env)
+            check_env
             ;;
         *)
             help_menu

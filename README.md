@@ -33,7 +33,7 @@ cp .env.example .env
 ## CLI Commands
 
 ```
-Usage: ./aixcl {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion}
+Usage: ./aixcl {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion|check-env}
 Commands:
   start                Start the Docker Compose deployment
   stop                 Stop the Docker Compose deployment
@@ -47,6 +47,7 @@ Commands:
   list                 List all installed models
   help                 Show this help menu
   install-completion   Install bash completion for aixcl
+  check-env            Check environment dependencies
 ```
 
 ## Services
