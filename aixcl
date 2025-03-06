@@ -57,11 +57,15 @@ function check_env() {
     else
         echo "✅ NVIDIA drivers installed"
         # Check NVIDIA Container Toolkit
-        if ! dpkg -l | grep -q nvidia-container-toolkit; then
+        if command -v nvidia-container-cli &> /dev/null; then
+            echo "✅ NVIDIA Container Toolkit installed"
+        elif command -v dpkg &> /dev/null && dpkg -l | grep -q nvidia-container-toolkit; then
+            echo "✅ NVIDIA Container Toolkit installed"
+        elif command -v rpm &> /dev/null && rpm -qa | grep -q nvidia-container-toolkit; then
+            echo "✅ NVIDIA Container Toolkit installed"
+        else
             echo "⚠️ NVIDIA Container Toolkit not found (optional)"
             echo "   For GPU support, install: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
-        else
-            echo "✅ NVIDIA Container Toolkit installed"
         fi
     fi
 
