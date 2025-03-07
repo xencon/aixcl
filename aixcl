@@ -66,6 +66,7 @@ function check_env() {
         else
             echo "⚠️ NVIDIA Container Toolkit not found (optional)"
             echo "   For GPU support, install: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
+            check_and_install_nvidia_toolkit
         fi
     fi
 
@@ -122,6 +123,57 @@ function check_env() {
     else
         echo -e "\n✅ Environment check passed! You're ready to run AIXCL."
         return 0
+    fi
+}
+
+    function command_exists() {
+    command -v "$1" &>/dev/null
+    }
+
+    #Install NVIDIA Container Toolkit on Ubuntu/Debian...
+    function install_nvidia_container_toolkit_deb() {
+        #if (yes) then
+        echo "Installing NVIDIA Container Toolkit on Debian/Ubuntu..."
+        sudo apt-get update
+        sudo apt-get install -y nvidia-container-toolkit
+        sudo systemctl restart docker
+       # else
+       # exit 1
+}
+
+    #Install NVIDIA Container Toolkit on Fedora/CentOS/RHEL (DNF-based)
+    function install_nvidia_container_toolkit_rpm() {
+        #if (yes)
+        echo "Installing NVIDIA Container Toolkit on Fedora/CentOS/RHEL..."
+        sudo dnf install -y nvidia-container-toolkit
+        sudo systemctl restart docker
+       # exit
+}
+
+    function install_nvidia_container_toolkit() {
+    echo "Installing NVIDIA Container Toolkit..."
+
+    if command_exists apt-get; then
+        install_nvidia_container_toolkit_deb
+    elif command_exists dnf; then
+        install_nvidia_container_toolkit_rpm
+    else
+        echo "⚠️ Could not detect a supported package manager (apt or dnf)."
+        exit 1
+    fi
+
+    echo "✅ NVIDIA Container Toolkit installed."
+}
+    function check_and_install_nvidia_toolkit() {
+    echo "Checking NVIDIA Container Toolkit..."
+    if command_exists nvidia-container-cli; then
+        echo "✅ NVIDIA Container Toolkit already installed."
+    elif ( command_exists dpkg && dpkg -l | grep -q nvidia-container-toolkit ) || \
+         ( command_exists rpm && rpm -qa | grep -q nvidia-container-toolkit ); then
+        echo "✅ NVIDIA Container Toolkit installed (package found)."
+    else
+        echo "⚠️ NVIDIA Container Toolkit not found (optional). Installing..."
+        install_nvidia_container_toolkit
     fi
 }
 
@@ -401,6 +453,7 @@ function help_menu() {
     echo "  check-env           Check environment dependencies"
     echo "  help                 Show this help menu"
     echo "  install-completion   Install bash completion"
+    echo "  install-nvidia-toolkit  Install Nvidia Toolkit"
     exit 1
 }
 
@@ -510,6 +563,9 @@ function main() {
             ;;
         check-env)
             check_env
+            ;;
+        install-nvidia-toolkit)
+            check_and_install_nvidia_toolkit
             ;;
         *)
             help_menu
