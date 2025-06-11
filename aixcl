@@ -520,75 +520,96 @@ function modify_docker_compose_for_macos() {
     local OS_TYPE=$(uname -s)
 
     if [[ "$OS_TYPE" == "Darwin" ]]; then
-        echo "Detected macOS. Ensuring platform: linux/arm64 and OLLAMA_LLM_LIBRARY=metal are set for ollama service in $COMPOSE_FILE."
-        echo "Commenting out NVIDIA-related deploy and runtime settings if present."
+        echo "Detected macOS. Adjusting $COMPOSE_FILE for linux/arm64 and CPU-only Ollama..."
 
-        # Create a backup before modifying the file
-        # cp "$COMPOSE_FILE" "${COMPOSE_FILE}.backup"
-
-        # Process YAML file correctly
         awk '
-            BEGIN {inside_ollama=0; inside_env=0; added_platform=0; added_env=0; inside_deploy=0; inside_runtime=0; indent=""}
-            /services:/ {print; next} 
-            /ollama:/ {
-                print;
-                inside_ollama=1;
-                next
-            }
-            inside_ollama && /^[^[:space:]]/ {
-                inside_ollama=0
-            }
-            inside_ollama && /platform: linux\/arm64/ {added_platform=1}
-
-
-            # Detect and comment out the full deploy section, preserving indentation
-            inside_ollama && /deploy:/ {
+        BEGIN {
+            inside_ollama=0;
+            inside_deploy=0;
+            inside_runtime=0;
+            inside_env=0;
+            added_platform=0;
+            added_env=0;
+        }
+        # Always print the services: header
+        /services:/ {
+            print; next
+        }
+        # Enter ollama service block
+        /^[[:space:]]*ollama:/ {
+            print;
+            inside_ollama=1;
+            next
+        }
+        # Exit ollama block when we see a new top-level key
+        inside_ollama && /^[^[:space:]]/ {
+            inside_ollama=0;
+        }
+        # Comment out deploy: subtree
+        inside_ollama && /^[[:space:]]*deploy:/ {
+            print "# " $0;
+            inside_deploy=1;
+            indent=match($0,/[^ ]/)-1;
+            next
+        }
+        inside_deploy {
+            if (match($0,/[^ ]/)-1 > indent) {
                 print "# " $0;
-                inside_deploy=1;
-                indent=match($0, /[^ ]/)-1;  # Capture indentation level
                 next
+            } else {
+                inside_deploy=0
             }
-            inside_deploy {
-                if (match($0, /[^ ]/)-1 > indent) {
-                    print "# " $0;
-                    next
-                } else {
-                    inside_deploy=0;  # Stop commenting when indentation level decreases
-                }
-            }
-
-            # Detect and comment out the runtime section, preserving indentation
-            inside_ollama && /runtime:/ {
+        }
+        # Comment out runtime: subtree
+        inside_ollama && /^[[:space:]]*runtime:/ {
+            print "# " $0;
+            inside_runtime=1;
+            indent=match($0,/[^ ]/)-1;
+            next
+        }
+        inside_runtime {
+            if (match($0,/[^ ]/)-1 > indent) {
                 print "# " $0;
-                inside_runtime=1;
-                indent=match($0, /[^ ]/)-1;  # Capture indentation level
                 next
+            } else {
+                inside_runtime=0
             }
-            inside_runtime {
-                if (match($0, /[^ ]/)-1 > indent) {
-                    print "# " $0;
-                    next
-                } else {
-                    inside_runtime=0;  # Stop commenting when indentation level decreases
-                }
+        }
+        # Inject platform: linux/arm64 once, just after the image: line
+        inside_ollama && /^[[:space:]]*image:/ && !added_platform {
+            print "    platform: linux/arm64";
+            added_platform=1
+        }
+        # Detect start of environment: block
+        inside_ollama && /^[[:space:]]*environment:/ {
+            print;
+            indent_env = match($0,/[^ ]/)-1;
+            inside_env=1;
+            if (!added_env) {
+                # two spaces deeper than the "environment:" indent
+                printf "%*s- OLLAMA_LLM_LIBRARY=cpu\n", indent_env+2, "";
+                added_env=1;
             }
+            next
+        }
+        # If we see an existing OLLAMA_LLM_LIBRARY line, mark it so we don’t add again
+        inside_ollama && $0 ~ /OLLAMA_LLM_LIBRARY/ {
+            added_env=1
+        }
+        # Exit environment block on next top-level key or when indent resets
+        inside_env && /^[[:space:]]*volumes:/ {
+            inside_env=0
+        }
+        inside_env && match($0,/[^ ]/) <= indent_env {
+            inside_env=0
+        }
+        # Finally, print every line we haven’t explicitly handled
+        { print }
+        ' "$COMPOSE_FILE" > /tmp/compose.tmp && mv /tmp/compose.tmp "$COMPOSE_FILE"
 
-            inside_ollama && !added_platform {
-                print "    platform: linux/arm64"
-                added_platform=1
-            }
-
-            inside_ollama && inside_env && /^[^[:space:]]/ {
-                inside_env=0
-            }
-
-            inside_ollama && /volumes:/ {inside_ollama=0}  # Stop modifying at volumes section
-            {print}
-        ' "$COMPOSE_FILE" > temp.yml && mv temp.yml "$COMPOSE_FILE"
-
-        echo "✅ Updated $COMPOSE_FILE: updated parameters of docker-compose file for MacOs."
+        echo "✅ $COMPOSE_FILE updated for macOS silicon (platform + CPU-only Ollama)."
     else
-        echo "Detected non-macOS system. No changes needed for $COMPOSE_FILE."
+        echo "Non-macOS detected, no changes made to $COMPOSE_FILE."
     fi
 }
 
