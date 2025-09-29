@@ -68,7 +68,7 @@ Commands:
 ./aixcl add starcoder2:latest
 
 # Add multiple models at once
-./aixcl add starcoder2:latest nomic-embed-text:latest deepseek-coder:latest
+./aixcl add starcoder2:latest nomic-embed-text:latest
 ```
 
 ### Removing Models
