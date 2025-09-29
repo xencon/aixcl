@@ -47,7 +47,7 @@ _aixcl_complete() {
             if docker ps --format "{{.Names}}" | grep -q "ollama"; then
                 if [[ "$prev" == "add" ]]; then
                     # For 'add', suggest some common models
-                    local models="starcoder2:latest nomic-embed-text:latest deepseek-coder:latest"
+                    local models="starcoder2:latest nomic-embed-text:latest"
                     COMPREPLY=( $(compgen -W "$models" -- "$cur") )
                 else
                     # For 'remove', list installed models
