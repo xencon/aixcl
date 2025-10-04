@@ -89,7 +89,7 @@ services:
       PGADMIN_LISTEN_PORT: 5050
     volumes:
       - ./backups:/var/lib/pgadmin/storage
-    user: "5050:5050"
+    user: "1000:1000"
     network_mode: host
     depends_on:
       - postgres
