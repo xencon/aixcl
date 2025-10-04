@@ -96,14 +96,6 @@ services:
     depends_on:
       - postgres
     restart: always
-    command: >
-      bash -c "
-        chown -R 1000:1000 /var/lib/pgadmin/storage &&
-        chmod -R 755 /var/lib/pgadmin/storage &&
-        find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \; &&
-        find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \; &&
-        /entrypoint.sh
-      "
 
   watchtower:
     image: containrrr/watchtower
