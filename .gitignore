@@ -30,6 +30,13 @@ yarn-error.log
 logs/
 *.log
 
+# pgAdmin runtime data
+pgadmin-data/
+
+# Database backups (user-generated)
+backups/*
+!backups/.gitkeep
+
 # Temporary files
 *.tmp
 *.swp
