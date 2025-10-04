@@ -91,7 +91,7 @@ services:
       - ./backups:/var/lib/pgadmin/storage
       - ./logs/pgadmin:/var/log/pgadmin
       - ./pgadmin-data:/var/lib/pgadmin
-    user: "5050:1000"
+    user: "0:0"
     network_mode: host
     depends_on:
       - postgres

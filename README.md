@@ -114,6 +114,14 @@ OPENWEBUI_EMAIL=your_openwebui_email
 OPENWEBUI_PASSWORD=your_openwebui_password
 ```
 
+### Environment File Options
+
+- **`.env`** - Main configuration file (required)
+- **`.env.local`** - Local overrides (optional, ignored by git)
+- **`docker-compose.override.yml`** - Local Docker Compose overrides (optional, ignored by git)
+
+The `.env.local` file can be used to override settings from `.env` without modifying the main configuration file. This is useful for local development or when you want to keep sensitive data separate from the main configuration.
+
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
