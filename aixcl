@@ -4,10 +4,49 @@ set -e  # Exit on error
 set -u  # Treat unset variables as an error
 set -o pipefail  # Catch errors in pipelines
 
+# Safe function to load environment variables from .env file
+load_env_file() {
+    local env_file="$1"
+    if [ -f "$env_file" ]; then
+        # Use a safer method to parse .env files
+        while IFS= read -r line || [ -n "$line" ]; do
+            # Skip empty lines and comments
+            [ -z "$line" ] && continue
+            [ "${line#\#}" != "$line" ] && continue
+            
+            # Extract key and value, handling quoted values
+            if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+                local key="${BASH_REMATCH[1]}"
+                local value="${BASH_REMATCH[2]}"
+                
+                # Remove leading/trailing whitespace from key
+                key="${key%"${key##*[![:space:]]}"}"
+                key="${key#"${key%%[![:space:]]*}"}"
+                
+                # Remove leading/trailing whitespace from value
+                value="${value%"${value##*[![:space:]]}"}"
+                value="${value#"${value%%[![:space:]]*}"}"
+                
+                # Remove surrounding quotes if present
+                if [[ "$value" =~ ^\".*\"$ ]]; then
+                    value="${value#\"}"
+                    value="${value%\"}"
+                elif [[ "$value" =~ ^\'.*\'$ ]]; then
+                    value="${value#\'}"
+                    value="${value%\'}"
+                fi
+                
+                # Only export if key is not empty
+                if [ -n "$key" ]; then
+                    export "$key"="$value"
+                fi
+            fi
+        done < "$env_file"
+    fi
+}
+
 # Load environment variables from .env file
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-fi
+load_env_file ".env"
 
 # Allow custom Docker Compose file via environment variable
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
@@ -135,7 +174,7 @@ function start() {
             cp .env.example .env
             echo "✅ Created .env file from .env.example"
             # Reload environment variables after creating .env file
-            export $(grep -v '^#' .env | xargs)
+            load_env_file ".env"
         else
             echo "❌ Error: Neither .env nor .env.example file found"
             echo "   Please create a .env file with the required configuration"
