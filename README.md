@@ -16,11 +16,7 @@ AIXCL is a simple Docker-based platform that helps you integrate Large Language 
 git clone https://github.com/xencon/aixcl.git
 cd aixcl
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your preferred settings
-
-# Start the services
+# Start the services (automatically creates .env from .env.example if needed)
 ./aixcl start
 
 # Add models you want to use
@@ -103,7 +99,9 @@ For more details, see [BASH_COMPLETION.md](./BASH_COMPLETION.md).
 
 ## Environment Configuration
 
-Create a `.env` file with these variables:
+The `.env` file is automatically created from `.env.example` when you run `./aixcl start` for the first time. You can then edit it with your preferred settings:
+
+**Required variables:**
 ```
 POSTGRES_USER=your_postgres_user
 POSTGRES_PASSWORD=your_postgres_password
@@ -116,9 +114,17 @@ OPENWEBUI_PASSWORD=your_openwebui_password
 
 ### Environment File Options
 
-- **`.env`** - Main configuration file (required)
+- **`.env`** - Main configuration file (automatically created from `.env.example`)
+- **`.env.example`** - Template configuration file (used to create `.env`)
 - **`.env.local`** - Local overrides (optional, ignored by git)
 - **`docker-compose.override.yml`** - Local Docker Compose overrides (optional, ignored by git)
+
+**Manual Setup (if needed):**
+If you prefer to create the `.env` file manually, you can copy it from the example:
+```bash
+cp .env.example .env
+# Edit .env with your preferred settings
+```
 
 The `.env.local` file can be used to override settings from `.env` without modifying the main configuration file. This is useful for local development or when you want to keep sensitive data separate from the main configuration.
 
