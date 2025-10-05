@@ -128,6 +128,21 @@ function check_env() {
 function start() {
     echo "Starting Docker Compose deployment..."
     
+    # Check for .env file and create from .env.example if missing
+    if [ ! -f .env ]; then
+        if [ -f .env.example ]; then
+            echo "⚠️  .env file not found. Copying from .env.example..."
+            cp .env.example .env
+            echo "✅ Created .env file from .env.example"
+            # Reload environment variables after creating .env file
+            export $(grep -v '^#' .env | xargs)
+        else
+            echo "❌ Error: Neither .env nor .env.example file found"
+            echo "   Please create a .env file with the required configuration"
+            exit 1
+        fi
+    fi
+    
     if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
         echo "Services are already running. Use 'stop' first if you want to restart."
         exit 1
