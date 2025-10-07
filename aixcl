@@ -36,9 +36,11 @@ load_env_file() {
                     value="${value%\'}"
                 fi
                 
-                # Only export if key is not empty
-                if [ -n "$key" ]; then
+                # Only export if key is not empty and contains valid characters
+                if [ -n "$key" ] && [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
                     export "$key"="$value"
+                else
+                    echo "⚠️ Skipping invalid environment variable key: '$key'"
                 fi
             fi
         done < "$env_file"
@@ -50,12 +52,26 @@ load_env_file ".env"
 
 # Allow custom Docker Compose file via environment variable
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
-COMPOSE_CMD="docker-compose -f $COMPOSE_FILE"
+
+# Sanitize COMPOSE_FILE
+# Reject any value containing non-alphanumeric, dash, underscore, dot or slash
+# Updated regex to properly handle file paths and prevent directory traversal
+if [[ ! "$COMPOSE_FILE" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$COMPOSE_FILE" =~ \.\. ]] || [[ "$COMPOSE_FILE" =~ ^/ ]]; then
+    echo "❌ Invalid COMPOSE_FILE value: $COMPOSE_FILE"
+    echo "   Allowed characters: A-Z, a-z, 0-9, ., _, -, /"
+    echo "   Cannot start with / or contain .."
+    exit 1
+fi
+
+# Use array for safer command construction
+COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE")
 CONTAINER_NAME="open-webui"
 
-# Source the autocomplete script if it exists
-if [ -f "$(dirname "$0")/aixcl_completion.sh" ]; then
-    source "$(dirname "$0")/aixcl_completion.sh"
+# Source the autocomplete script if it exists (with security validation)
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+COMPLETION_SCRIPT="${SCRIPT_DIR}/aixcl_completion.sh"
+if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
+    source "$COMPLETION_SCRIPT"
 fi
 
 function check_env() {
@@ -188,10 +204,10 @@ function start() {
     fi
     
     echo "Pulling latest images..."
-    $COMPOSE_CMD pull
+    "${COMPOSE_CMD[@]}" pull
     
     echo "Starting services..."
-    $COMPOSE_CMD up -d
+    "${COMPOSE_CMD[@]}" up -d
     
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
@@ -220,7 +236,7 @@ function stop() {
     fi
     
     echo "Stopping services gracefully..."
-    $COMPOSE_CMD down --remove-orphans
+    "${COMPOSE_CMD[@]}" down --remove-orphans
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
@@ -233,7 +249,7 @@ function stop() {
     done
     
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
-    $COMPOSE_CMD down --remove-orphans -v
+    "${COMPOSE_CMD[@]}" down --remove-orphans -v
     docker ps -q | xargs -r docker stop
     
     echo "All services have been stopped."
@@ -249,10 +265,16 @@ function restart() {
 function logs() {
     if [ $# -eq 0 ]; then
         echo "Fetching logs for all services..."
-        $COMPOSE_CMD logs --tail=0 --follow
+        "${COMPOSE_CMD[@]}" logs --tail=0 --follow
     else
         local container="$1"
         local tail_count="${2:-50}"  # Default to 50 lines if not specified
+        
+        # Validate tail_count
+        if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
+            echo "❌ tail count must be a number between 1 and 10000"
+            return 1
+        fi
         
         # Validate container name
         case "$container" in
@@ -273,7 +295,7 @@ function clean() {
     echo "Cleaning up Docker resources..."
     
     echo "Stopping all containers..."
-    $COMPOSE_CMD down
+    "${COMPOSE_CMD[@]}" down
     
     echo "Removing stopped containers..."
     docker container prune -f
@@ -355,11 +377,11 @@ function status() {
     else
         echo "❌ Open WebUI is not responding (HTTP $WEBUI_STATUS)"
         echo "Checking container logs:"
-        docker logs $CONTAINER_NAME --tail 5
+        docker logs "$CONTAINER_NAME" --tail 5
     fi
 
     echo -n "PostgreSQL status: "
-    if docker exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+    if docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
         echo "✅ PostgreSQL is responding"
     else
         echo "❌ PostgreSQL is not responding"
@@ -387,6 +409,14 @@ function add() {
         return 1
     fi
 
+    # Validate model name format
+    if [[ ! "$1" =~ ^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$ ]]; then
+        echo "❌ Invalid model name format: '$1'"
+        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes"
+        echo "   Optional tag format: model:tag (e.g., starcoder2:latest)"
+        return 1
+    fi
+
     echo "Adding model: $1"
     
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
@@ -409,6 +439,14 @@ function remove() {
         echo "Usage: $0 remove <model-name> [<model-name> ...]"
         echo "Example: $0 remove starcoder2:latest"
         echo "Example: $0 remove starcoder2:latest nomic-embed-text:latest"
+        return 1
+    fi
+
+    # Validate model name format
+    if [[ ! "$1" =~ ^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$ ]]; then
+        echo "❌ Invalid model name format: '$1'"
+        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes"
+        echo "   Optional tag format: model:tag (e.g., starcoder2:latest)"
         return 1
     fi
 
@@ -461,9 +499,8 @@ function help_menu() {
 function install_completion() {
     echo "Installing bash completion for aixcl..."
     
-    # Get the script directory
-    SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-    COMPLETION_SCRIPT="${SCRIPT_DIR}/aixcl_completion.sh"
+    # Get the script directory (already set globally)
+    # SCRIPT_DIR and COMPLETION_SCRIPT are already defined at script startup
     
     if [[ ! -f "$COMPLETION_SCRIPT" ]]; then
         echo "Error: Completion script not found at $COMPLETION_SCRIPT"
@@ -490,23 +527,32 @@ function install_completion() {
     echo "To use it immediately, run: source $COMPLETION_DIR/aixcl"
     echo "It will be automatically loaded in new shell sessions."
     
-    # Add to .bashrc if not already there
+    # Add to .bashrc if not already there (with safer file handling)
     if ! grep -q "source.*$COMPLETION_DIR/aixcl" "$HOME/.bashrc"; then
-        # First remove any old entries to prevent duplicates
+        # Create backup of .bashrc before modification
+        cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$(date +%s)"
+        
+        # Create a temporary file with atomic operations
+        local temp_bashrc="$(mktemp)"
+        
+        # Copy existing .bashrc content, removing old aixcl entries
         if grep -q "Added by aixcl installer" "$HOME/.bashrc"; then
-            # Create a temporary file without the old entries
-            grep -v -A 3 "Added by aixcl installer" "$HOME/.bashrc" > "$HOME/.bashrc.tmp"
-            # Remove any blank lines that might have been created
-            sed -i '/^$/d' "$HOME/.bashrc.tmp"
-            # Replace the original file
-            mv "$HOME/.bashrc.tmp" "$HOME/.bashrc"
+            grep -v -A 3 "Added by aixcl installer" "$HOME/.bashrc" | sed '/^$/d' > "$temp_bashrc"
+        else
+            cp "$HOME/.bashrc" "$temp_bashrc"
         fi
         
-        # Now add the new entry
-        echo "# Added by aixcl installer" >> "$HOME/.bashrc"
-        echo "if [ -f \"$COMPLETION_DIR/aixcl\" ]; then" >> "$HOME/.bashrc"
-        echo "    source \"$COMPLETION_DIR/aixcl\"" >> "$HOME/.bashrc"
-        echo "fi" >> "$HOME/.bashrc"
+        # Add new entry
+        cat >> "$temp_bashrc" << EOF
+
+# Added by aixcl installer
+if [ -f "$COMPLETION_DIR/aixcl" ]; then
+    source "$COMPLETION_DIR/aixcl"
+fi
+EOF
+        
+        # Atomically replace .bashrc
+        mv "$temp_bashrc" "$HOME/.bashrc"
         echo "Added sourcing to ~/.bashrc for persistent completion"
     else
         echo "Completion script already referenced in ~/.bashrc"
