@@ -81,25 +81,28 @@ services:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
       PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
       PGADMIN_LISTEN_PORT: 5050
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     volumes:
       - ./backups:/var/lib/pgadmin/storage
       - ./logs/pgadmin:/var/log/pgadmin
       - ./pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin-servers.json:/pgadmin4/servers.json
     user: "0:0"
     network_mode: host
     depends_on:
       - postgres
     restart: always
-    entrypoint: >
-      bash -c "
-        chown -R 1000:1000 /var/lib/pgadmin/storage /var/lib/pgadmin &&
-        chmod -R 755 /var/lib/pgadmin/storage /var/lib/pgadmin &&
-        find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \; &&
-        find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \; &&
-        find /var/lib/pgadmin -type d -exec chmod 755 {} \; &&
-        find /var/lib/pgadmin -type f -exec chmod 644 {} \; &&
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        chown -R 1000:1000 /var/lib/pgadmin/storage /var/lib/pgadmin
+        chmod -R 755 /var/lib/pgadmin/storage /var/lib/pgadmin
+        find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \;
+        find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \;
+        find /var/lib/pgadmin -type d -exec chmod 755 {} \;
+        find /var/lib/pgadmin -type f -exec chmod 644 {} \;
         exec /entrypoint.sh
-      "
 
   watchtower:
     image: containrrr/watchtower

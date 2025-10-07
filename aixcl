@@ -203,6 +203,31 @@ function check_env() {
     fi
 }
 
+function generate_pgadmin_config() {
+    echo "Generating pgAdmin server configuration..."
+    
+    # Create pgadmin-servers.json with populated environment values
+    cat > pgadmin-servers.json << EOF
+{
+  "Servers": {
+    "1": {
+      "Group": "Servers",
+      "Name": "AIXCL",
+      "Host": "localhost",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "${POSTGRES_USER}",
+      "Password": "${POSTGRES_PASSWORD}",
+      "SSLMode": "prefer",
+      "Favorite": true
+    }
+  }
+}
+EOF
+    
+    echo "✅ Generated pgadmin-servers.json with populated values"
+}
+
 function start() {
     echo "Starting Docker Compose deployment..."
     
@@ -220,6 +245,9 @@ function start() {
             exit 1
         fi
     fi
+    
+    # Generate pgAdmin configuration with populated values
+    generate_pgadmin_config
     
     # Set up compose command with GPU detection
     set_compose_cmd
