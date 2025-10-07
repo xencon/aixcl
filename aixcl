@@ -206,6 +206,13 @@ function check_env() {
 function generate_pgadmin_config() {
     echo "Generating pgAdmin server configuration..."
     
+    # Validate required environment variables
+    if [ -z "${POSTGRES_USER}" ] || [ -z "${POSTGRES_PASSWORD}" ]; then
+        echo "❌ Error: POSTGRES_USER and POSTGRES_PASSWORD must be set in .env file"
+        echo "   Please check your .env file and ensure these variables are configured"
+        return 1
+    fi
+    
     # Create pgadmin-servers.json with populated environment values
     cat > pgadmin-servers.json << EOF
 {
@@ -225,7 +232,10 @@ function generate_pgadmin_config() {
 }
 EOF
     
-    echo "✅ Generated pgadmin-servers.json with populated values"
+    # Set restrictive file permissions (read/write for owner only)
+    chmod 600 pgadmin-servers.json
+    
+    echo "✅ Generated pgadmin-servers.json with populated values and secure permissions"
 }
 
 function start() {
@@ -310,6 +320,12 @@ function stop() {
     docker ps -q | xargs -r docker stop
     
     echo "All services have been stopped."
+    
+    # Clean up pgAdmin configuration file for security
+    if [ -f "pgadmin-servers.json" ]; then
+        rm -f pgadmin-servers.json
+        echo "🧹 Cleaned up pgAdmin configuration file"
+    fi
 }
 
 function restart() {
@@ -368,6 +384,12 @@ function clean() {
     
     echo "Removing unused volumes (including PostgreSQL data)..."
     docker volume prune -f
+    
+    # Clean up pgAdmin configuration file for security
+    if [ -f "pgadmin-servers.json" ]; then
+        rm -f pgadmin-servers.json
+        echo "🧹 Cleaned up pgAdmin configuration file"
+    fi
     
     echo "Clean up complete."
 }
