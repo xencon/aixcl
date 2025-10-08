@@ -4,10 +4,12 @@
 AIXCL is a simple Docker-based platform that helps you integrate Large Language Models (LLMs) into your development workflow. It sets up Ollama, Open WebUI, and supporting services with minimal effort. These can be directly accessed via your IDE using the [continue](https://continue.dev) plugin.
 
 ### What does it do?
-- Run LLMs locally on your machine
+- Run LLMs locally on your machine (with automatic GPU detection)
 - Provide a friendly web interface to interact with models
 - Help you code, generate documentation, and review your work
 - Simplify model management with easy-to-use commands
+- Automatically configure database connections and services
+- Enhanced security with input validation and secure file operations
 
 ## Quick Start
 
@@ -46,14 +48,36 @@ Commands:
   check-env            Check environment dependencies
 ```
 
+## Features
+
+### 🚀 Automatic GPU Detection
+AIXCL automatically detects NVIDIA GPUs and configures Ollama to use them:
+- Seamlessly switches between CPU and GPU modes
+- No manual configuration required
+- Checks for NVIDIA drivers and container toolkit
+- Uses `docker-compose.gpu.yml` override when GPU is available
+
+### 🔐 Enhanced Security
+Recent security improvements include:
+- Command injection prevention with proper input validation
+- Secure environment variable handling
+- Path sanitization to prevent directory traversal
+- Safe file operations with atomic writes and backups
+- Restrictive file permissions (600) for sensitive configuration files
+
+### 🔧 Automatic Configuration
+- **Auto-creates `.env` file** from `.env.example` on first run
+- **pgAdmin server connection** automatically configured with database credentials
+- Secure credential handling with automatic cleanup on service stop
+
 ## Services
 
 | Service | Description | URL |
 |---------|-------------|-----|
-| **Ollama** | Runs LLMs locally | [ollama.com](https://ollama.com) |
+| **Ollama** | Runs LLMs locally (with GPU support when available) | [ollama.com](https://ollama.com) |
 | **Open WebUI** | Web interface for interacting with models | [http://localhost:8080](http://localhost:8080) |
 | **PostgreSQL** | Database for storing conversations and settings | - |
-| **pgAdmin** | Database management tool | [http://localhost:5050](http://localhost:5050) |
+| **pgAdmin** | Database management tool (auto-configured) | [http://localhost:5050](http://localhost:5050) |
 | **Watchtower** | Keeps containers up-to-date | - |
 
 ## Model Management
@@ -99,7 +123,7 @@ For more details, see [BASH_COMPLETION.md](./BASH_COMPLETION.md).
 
 ## Environment Configuration
 
-The `.env` file is automatically created from `.env.example` when you run `./aixcl start` for the first time. You can then edit it with your preferred settings:
+The `.env` file is **automatically created** from `.env.example` when you run `./aixcl start` for the first time. You can then edit it with your preferred settings.
 
 **Required variables:**
 ```
@@ -119,6 +143,14 @@ OPENWEBUI_PASSWORD=your_openwebui_password
 - **`.env.local`** - Local overrides (optional, ignored by git)
 - **`docker-compose.override.yml`** - Local Docker Compose overrides (optional, ignored by git)
 
+### Automatic pgAdmin Configuration
+
+When you start AIXCL, it automatically:
+1. Generates `pgadmin-servers.json` with your database credentials from `.env`
+2. Sets secure file permissions (600) to protect sensitive data
+3. Configures pgAdmin with a pre-connected server named "AIXCL"
+4. Cleans up the configuration file when services stop for security
+
 **Manual Setup (if needed):**
 If you prefer to create the `.env` file manually, you can copy it from the example:
 ```bash
@@ -127,6 +159,38 @@ cp .env.example .env
 ```
 
 The `.env.local` file can be used to override settings from `.env` without modifying the main configuration file. This is useful for local development or when you want to keep sensitive data separate from the main configuration.
+
+## GPU Support
+
+AIXCL automatically detects and configures NVIDIA GPU support:
+
+### Prerequisites for GPU Usage
+- NVIDIA GPU with compatible drivers
+- NVIDIA Container Toolkit installed
+- Docker configured for GPU support
+
+### Automatic Detection
+When you run `./aixcl start`, the system:
+1. Checks for NVIDIA GPU availability using `nvidia-smi`
+2. Verifies Docker GPU support
+3. Automatically adds `docker-compose.gpu.yml` if GPU is detected
+4. Runs Ollama with GPU acceleration enabled
+
+### Manual GPU Check
+```bash
+# Check environment dependencies including GPU support
+./aixcl check-env
+```
+
+The `check-env` command will show:
+- ✅ NVIDIA drivers status
+- ✅ NVIDIA Container Toolkit status
+- ⚠️ Warnings if GPU support is optional but not available
+
+### GPU Architecture
+- `docker-compose.yml` - Base configuration (CPU mode)
+- `docker-compose.gpu.yml` - GPU override (automatically applied when GPU detected)
+- Clean separation ensures CPU-only systems work seamlessly
 
 ## Contributing
 
