@@ -12,6 +12,7 @@ services:
     restart: unless-stopped
     image: ollama/ollama:latest
     # GPU resources are configured in docker-compose.gpu.yml when available
+    # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
       interval: 10s
