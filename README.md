@@ -24,8 +24,11 @@ cd aixcl
 # Add models you want to use
 ./aixcl add starcoder2:latest nomic-embed-text:latest
 
-# Access the web interface
+# Access the LLM engine web interface
 # Open http://localhost:8080 in your browser
+
+# Access the databse admin web interface
+# Open http://localhost:5050 in your browser
 ```
 
 ## CLI Commands
