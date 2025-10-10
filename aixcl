@@ -78,15 +78,37 @@ function has_nvidia() {
     return 1
 }
 
-# Build docker-compose command with optional GPU override if present
+# Detect if running on ARM64 architecture
+function is_arm64() {
+    local arch=$(uname -m)
+    case "$arch" in
+        arm64|aarch64)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Build docker-compose command with optional GPU and ARM overrides if present
 function set_compose_cmd() {
     local files=( -f "$COMPOSE_FILE" )
+    
+    # Check for ARM64 architecture
+    if is_arm64 && [ -f docker-compose.arm.yml ]; then
+        echo "Detected ARM64 architecture. Enabling ARM platform overrides."
+        files+=( -f docker-compose.arm.yml )
+    fi
+    
+    # Check for NVIDIA GPU
     if has_nvidia && [ -f docker-compose.gpu.yml ]; then
         echo "Detected NVIDIA GPU. Enabling GPU overrides."
         files+=( -f docker-compose.gpu.yml )
     else
         echo "No NVIDIA GPU detected. Running without GPU overrides."
     fi
+    
     COMPOSE_CMD=(docker-compose "${files[@]}")
 }
 
