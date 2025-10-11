@@ -1,0 +1,63 @@
+# Prometheus Configuration for AIXCL Monitoring
+
+global:
+  scrape_interval: 15s           # How frequently to scrape targets
+  evaluation_interval: 15s       # How frequently to evaluate rules
+  external_labels:
+    cluster: 'aixcl'
+    environment: 'development'
+
+# Alerting configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['localhost:9093']
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Node Exporter - System metrics (CPU, memory, disk, network)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          service: 'node-exporter'
+          instance: 'aixcl-host'
+
+  # cAdvisor - Docker container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['localhost:8081']
+        labels:
+          service: 'cadvisor'
+
+  # PostgreSQL Exporter - Database metrics
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['localhost:9187']
+        labels:
+          service: 'postgres'
+          database: 'aixcl'
+
+  # Ollama - LLM Engine (if metrics endpoint becomes available)
+  # Currently Ollama doesn't expose Prometheus metrics natively
+  # Monitor via cAdvisor container metrics instead
+  - job_name: 'ollama'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:11434']
+        labels:
+          service: 'ollama'
+    # Ollama may not expose /metrics endpoint - this is here for future compatibility
+    # If the endpoint doesn't exist, Prometheus will mark it as down but continue working
+

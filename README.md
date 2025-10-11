@@ -34,7 +34,7 @@ cd aixcl
 ## CLI Commands
 
 ```
-Usage: ./aixcl {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion|check-env}
+Usage: ./aixcl {start|stop|restart|logs|clean|stats|status|add|remove|list|metrics|dashboard|help|install-completion|check-env}
 Commands:
   start                Start the Docker Compose deployment
   stop                 Stop the Docker Compose deployment
@@ -46,6 +46,8 @@ Commands:
   add <model-name>     Add one or more Ollama models
   remove <model-name>  Remove one or more Ollama models
   list                 List all installed models
+  metrics              Open Prometheus metrics dashboard
+  dashboard            Open Grafana monitoring dashboard
   help                 Show this help menu
   install-completion   Install bash completion for aixcl
   check-env            Check environment dependencies
@@ -81,6 +83,11 @@ Recent security improvements include:
 | **Open WebUI** | Web interface for interacting with models | [http://localhost:8080](http://localhost:8080) |
 | **PostgreSQL** | Database for storing conversations and settings | - |
 | **pgAdmin** | Database management tool (auto-configured) | [http://localhost:5050](http://localhost:5050) |
+| **Prometheus** | Metrics collection and monitoring | [http://localhost:9090](http://localhost:9090) |
+| **Grafana** | Visualization and analytics dashboards | [http://localhost:3000](http://localhost:3000) |
+| **cAdvisor** | Container metrics exporter | [http://localhost:8081](http://localhost:8081) |
+| **Node Exporter** | System-level metrics exporter | - |
+| **Postgres Exporter** | PostgreSQL metrics exporter | - |
 | **Watchtower** | Keeps containers up-to-date | - |
 
 ## Model Management
@@ -108,6 +115,88 @@ Recent security improvements include:
 ./aixcl list
 ```
 
+## Monitoring & Metrics
+
+AIXCL includes comprehensive monitoring capabilities using Prometheus and Grafana to help you understand system performance, resource utilization, and LLM query patterns.
+
+### Quick Access
+
+```bash
+# Open Prometheus metrics interface
+./aixcl metrics
+
+# Open Grafana dashboards
+./aixcl dashboard
+```
+
+### What's Monitored
+
+#### System Metrics (via Node Exporter)
+- **CPU Usage**: Track overall CPU utilization and per-core usage
+- **Memory**: Monitor RAM usage, available memory, and swap
+- **Disk I/O**: View disk usage, read/write rates, and IOPS
+- **Network**: Track network traffic, bandwidth usage, and errors
+
+#### Container Metrics (via cAdvisor)
+- **Resource Usage**: CPU and memory consumption per container
+- **Network I/O**: Per-container network traffic
+- **Container Health**: Running status and health checks
+- Monitor all AIXCL services: Ollama, Open WebUI, PostgreSQL, pgAdmin, etc.
+
+#### Database Metrics (via Postgres Exporter)
+- **Query Performance**: Track query execution times
+- **Connection Pool**: Monitor active connections and connection limits
+- **Cache Hit Ratio**: Measure database cache efficiency
+- **Transaction Rates**: View commits, rollbacks, and transaction throughput
+- **Database Size**: Track database growth over time
+
+#### LLM Performance
+While Ollama doesn't natively expose Prometheus metrics, you can monitor:
+- **Container Resource Usage**: CPU/memory usage during model inference
+- **Database Query Patterns**: Open WebUI conversation storage patterns
+- **Response Times**: Via PostgreSQL query duration logs
+
+### Pre-built Dashboards
+
+AIXCL includes three pre-configured Grafana dashboards:
+
+1. **System Overview** (`/d/aixcl-system`)
+   - CPU, memory, disk, and network usage
+   - Host system performance metrics
+   - Real-time system health monitoring
+
+2. **Docker Containers** (`/d/aixcl-docker`)
+   - Per-container resource utilization
+   - Container status and health
+   - Network I/O per service
+
+3. **PostgreSQL Performance** (`/d/aixcl-postgres`)
+   - Query performance and transaction rates
+   - Connection pool monitoring
+   - Cache efficiency and database size
+
+### Accessing Monitoring Tools
+
+| Tool | URL | Default Credentials |
+|------|-----|---------------------|
+| **Grafana** | [http://localhost:3000](http://localhost:3000) | admin / admin |
+| **Prometheus** | [http://localhost:9090](http://localhost:9090) | No authentication |
+| **cAdvisor** | [http://localhost:8081](http://localhost:8081) | No authentication |
+
+**Note**: Change Grafana default password on first login for security.
+
+### Configuration
+
+Monitoring configuration files are located in:
+- `prometheus/prometheus.yml` - Prometheus scrape configuration
+- `grafana/provisioning/` - Grafana datasources and dashboards
+
+Customize these files to:
+- Adjust scrape intervals
+- Add custom metrics
+- Modify dashboard layouts
+- Configure alerting rules
+
 ## Bash Completion
 
 AIXCL includes bash completion support to make using the CLI faster and easier:
@@ -130,13 +219,22 @@ The `.env` file is **automatically created** from `.env.example` when you run `.
 
 **Required variables:**
 ```
+# Database
 POSTGRES_USER=your_postgres_user
 POSTGRES_PASSWORD=your_postgres_password
 POSTGRES_DATABASE=your_postgres_database
+
+# pgAdmin
 PGADMIN_EMAIL=your_pgadmin_email
 PGADMIN_PASSWORD=your_pgadmin_password
+
+# Open WebUI
 OPENWEBUI_EMAIL=your_openwebui_email
 OPENWEBUI_PASSWORD=your_openwebui_password
+
+# Grafana (Monitoring)
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=your_grafana_password
 ```
 
 ### Environment File Options

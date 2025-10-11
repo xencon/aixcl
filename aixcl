@@ -319,7 +319,7 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"; then
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter"; then
         echo "Services are not running."
         return 0
     fi
@@ -329,7 +329,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -376,13 +376,13 @@ function logs() {
         
         # Validate container name
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|watchtower)
+            ollama|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter)
                 echo "Fetching logs for $container..."
                 docker logs "$container" --tail="$tail_count" --follow
                 ;;
             *)
                 echo "Error: Unknown container '$container'"
-                echo "Available containers: ollama, open-webui, postgres, pgadmin, watchtower"
+                echo "Available containers: ollama, open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter"
                 return 1
                 ;;
         esac
@@ -467,6 +467,37 @@ function status() {
     else
         echo "❌ Watchtower container is not running"
     fi
+
+    # Monitoring services
+    if docker ps --format "{{.Names}}" | grep -q "prometheus"; then
+        echo "✅ Prometheus container is running"
+    else
+        echo "❌ Prometheus container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "grafana"; then
+        echo "✅ Grafana container is running"
+    else
+        echo "❌ Grafana container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "cadvisor"; then
+        echo "✅ cAdvisor container is running"
+    else
+        echo "❌ cAdvisor container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "node-exporter"; then
+        echo "✅ Node Exporter container is running"
+    else
+        echo "❌ Node Exporter container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "postgres-exporter"; then
+        echo "✅ Postgres Exporter container is running"
+    else
+        echo "❌ Postgres Exporter container is not running"
+    fi
     
     echo -e "\nService Health:"
     echo "----------------"
@@ -499,11 +530,27 @@ function status() {
     echo -n "pgAdmin status: "
     PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null)
     if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
-        echo -e "✅ pgAdmin is responding (HTTP $PGADMIN_STATUS)\n"
+        echo -e "✅ pgAdmin is responding (HTTP $PGADMIN_STATUS)"
     else
-        echo -e "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)\n"
+        echo -e "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
         echo "Checking pgAdmin logs:"
         docker logs pgadmin --tail 5
+    fi
+
+    echo -n "Prometheus status: "
+    PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null)
+    if [ "$PROMETHEUS_STATUS" = "200" ]; then
+        echo "✅ Prometheus is responding (HTTP $PROMETHEUS_STATUS)"
+    else
+        echo "❌ Prometheus is not responding (HTTP $PROMETHEUS_STATUS)"
+    fi
+
+    echo -n "Grafana status: "
+    GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null)
+    if [ "$GRAFANA_STATUS" = "200" ]; then
+        echo -e "✅ Grafana is responding (HTTP $GRAFANA_STATUS)\n"
+    else
+        echo -e "❌ Grafana is not responding (HTTP $GRAFANA_STATUS)\n"
     fi
 }
 
@@ -584,8 +631,63 @@ function list() {
     docker exec ollama ollama list
 }
 
+function metrics() {
+    echo "Opening Prometheus metrics dashboard..."
+    
+    if ! docker ps --format "{{.Names}}" | grep -q "prometheus"; then
+        echo "❌ Prometheus container is not running. Please start the services first."
+        return 1
+    fi
+    
+    # Check if Prometheus is responding
+    if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null | grep -q "200"; then
+        echo "❌ Prometheus is not responding yet. Please wait for it to start."
+        return 1
+    fi
+    
+    echo "Prometheus is available at: http://localhost:9090"
+    echo "Opening in default browser..."
+    
+    # Try to open in default browser
+    if command -v xdg-open &> /dev/null; then
+        xdg-open http://localhost:9090 2>/dev/null &
+    elif command -v open &> /dev/null; then
+        open http://localhost:9090 2>/dev/null &
+    else
+        echo "⚠️  Could not detect default browser. Please open http://localhost:9090 manually."
+    fi
+}
+
+function dashboard() {
+    echo "Opening Grafana monitoring dashboard..."
+    
+    if ! docker ps --format "{{.Names}}" | grep -q "grafana"; then
+        echo "❌ Grafana container is not running. Please start the services first."
+        return 1
+    fi
+    
+    # Check if Grafana is responding
+    if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null | grep -q "200"; then
+        echo "❌ Grafana is not responding yet. Please wait for it to start."
+        return 1
+    fi
+    
+    echo "Grafana is available at: http://localhost:3000"
+    echo "Default credentials: admin / admin (change on first login)"
+    echo "Opening in default browser..."
+    
+    # Try to open in default browser
+    if command -v xdg-open &> /dev/null; then
+        xdg-open http://localhost:3000 2>/dev/null &
+    elif command -v open &> /dev/null; then
+        open http://localhost:3000 2>/dev/null &
+    else
+        echo "⚠️  Could not detect default browser. Please open http://localhost:3000 manually."
+    fi
+}
+
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|help|install-completion|check-env}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|metrics|dashboard|help|install-completion|check-env}"
     echo "Commands:"
     echo "  start                Start the AIXCL stack"
     echo "  stop                 Stop the AIXCL stack"
@@ -597,7 +699,9 @@ function help_menu() {
     echo "  add <model-name>     Add one or more LLM's"
     echo "  remove <model-name>  Remove one or more LLM's"
     echo "  list                 List all installed LLM's"
-    echo "  check-env           Check environment dependencies"
+    echo "  metrics              Open Prometheus metrics dashboard"
+    echo "  dashboard            Open Grafana monitoring dashboard"
+    echo "  check-env            Check environment dependencies"
     echo "  help                 Show this help menu"
     echo "  install-completion   Install bash completion"
     exit 1
@@ -708,6 +812,12 @@ function main() {
             ;;
         list)
             list
+            ;;
+        metrics)
+            metrics
+            ;;
+        dashboard)
+            dashboard
             ;;
         help)
             help_menu
