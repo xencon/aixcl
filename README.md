@@ -131,24 +131,35 @@ AIXCL includes comprehensive monitoring capabilities using Prometheus and Grafan
 
 ### What's Monitored
 
+AIXCL provides comprehensive monitoring with **33 dashboard panels** across three dashboards, tracking system, container, and database metrics in real-time.
+
 #### System Metrics (via Node Exporter)
 - **CPU Usage**: Track overall CPU utilization and per-core usage
 - **Memory**: Monitor RAM usage, available memory, and swap
 - **Disk I/O**: View disk usage, read/write rates, and IOPS
-- **Network**: Track network traffic, bandwidth usage, and errors
+- **Network**: Track network traffic, bandwidth usage, errors, and drops
+- **System Load**: Monitor 1m, 5m, and 15m load averages
+- **System Uptime**: Track system availability
 
 #### Container Metrics (via cAdvisor)
 - **Resource Usage**: CPU and memory consumption per container
+- **Memory Limits**: Track usage as percentage of configured limits
 - **Network I/O**: Per-container network traffic
-- **Container Health**: Running status and health checks
-- Monitor all AIXCL services: Ollama, Open WebUI, PostgreSQL, pgAdmin, etc.
+- **Disk I/O**: Per-container disk read/write rates and IOPS
+- **Container Health**: Running status, uptime, and restart counts
+- **Process Count**: Monitor number of processes per container
+- Monitor all AIXCL services: Ollama, Open WebUI, PostgreSQL, pgAdmin, Prometheus, Grafana
 
 #### Database Metrics (via Postgres Exporter)
-- **Query Performance**: Track query execution times
+- **Query Performance**: Track query execution times and operation rates
 - **Connection Pool**: Monitor active connections and connection limits
 - **Cache Hit Ratio**: Measure database cache efficiency
 - **Transaction Rates**: View commits, rollbacks, and transaction throughput
 - **Database Size**: Track database growth over time
+- **Block I/O**: Monitor disk vs buffer reads and I/O timing
+- **Conflicts & Deadlocks**: Track database conflicts and deadlock rates
+- **Temporary Files**: Monitor temp file usage and size
+- **Row Statistics**: Track rows returned vs fetched
 
 #### LLM Performance
 While Ollama doesn't natively expose Prometheus metrics, you can monitor:
@@ -158,22 +169,35 @@ While Ollama doesn't natively expose Prometheus metrics, you can monitor:
 
 ### Pre-built Dashboards
 
-AIXCL includes three pre-configured Grafana dashboards:
+AIXCL includes three fully populated, pre-configured Grafana dashboards with live data:
 
-1. **System Overview** (`/d/aixcl-system`)
-   - CPU, memory, disk, and network usage
-   - Host system performance metrics
-   - Real-time system health monitoring
+1. **System Overview** (`/d/aixcl-system`) - **9 panels**
+   - CPU usage and system load average (1m, 5m, 15m)
+   - Memory usage and availability
+   - Disk usage, I/O rates, and IOPS
+   - Network I/O, errors, and packet drops
+   - System uptime tracking
 
-2. **Docker Containers** (`/d/aixcl-docker`)
-   - Per-container resource utilization
-   - Container status and health
-   - Network I/O per service
+2. **Docker Containers** (`/d/aixcl-docker`) - **10 panels**
+   - Per-container CPU and memory usage
+   - Memory usage as percentage of limits
+   - Container disk I/O rates and IOPS
+   - Container network traffic
+   - Container status, uptime, and restart counts
+   - Process count per container
 
-3. **PostgreSQL Performance** (`/d/aixcl-postgres`)
-   - Query performance and transaction rates
-   - Connection pool monitoring
-   - Cache efficiency and database size
+3. **PostgreSQL Performance** (`/d/aixcl-postgres`) - **14 panels**
+   - Active connections and max connection limits
+   - Database size and transaction rates
+   - Query operations (inserts, updates, deletes)
+   - Cache hit ratio and block I/O statistics
+   - Transaction activity (commits, rollbacks)
+   - Database conflicts and deadlocks
+   - Rows returned vs fetched
+   - Block I/O timing
+   - Temporary file usage
+
+**All dashboards refresh every 30 seconds** and display the last hour of data by default (configurable).
 
 ### Accessing Monitoring Tools
 
@@ -187,15 +211,20 @@ AIXCL includes three pre-configured Grafana dashboards:
 
 ### Configuration
 
-Monitoring configuration files are located in:
-- `prometheus/prometheus.yml` - Prometheus scrape configuration
-- `grafana/provisioning/` - Grafana datasources and dashboards
+**Ready to Use**: All monitoring is pre-configured with Prometheus datasource connected and dashboards populated with live data.
 
-Customize these files to:
-- Adjust scrape intervals
-- Add custom metrics
-- Modify dashboard layouts
-- Configure alerting rules
+Monitoring configuration files are located in:
+- `prometheus/prometheus.yml` - Prometheus scrape configuration (15s intervals)
+- `grafana/provisioning/datasources/` - Datasource configuration
+- `grafana/provisioning/dashboards/` - Pre-built dashboard definitions
+
+You can customize these files to:
+- Adjust scrape intervals and retention
+- Add custom metrics and exporters
+- Modify dashboard layouts and queries
+- Configure alerting rules and notifications
+
+For detailed information about the monitoring setup, see [DATASOURCE-CONNECTION-SUMMARY.md](./DATASOURCE-CONNECTION-SUMMARY.md).
 
 ## Bash Completion
 
