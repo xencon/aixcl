@@ -10,6 +10,7 @@ datasources:
     url: http://localhost:9090
     isDefault: true
     editable: true
+    basicAuth: false
     jsonData:
       httpMethod: POST
       timeInterval: 15s
