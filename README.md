@@ -237,7 +237,7 @@ You can customize these files to:
 - Modify dashboard layouts and queries
 - Configure alerting rules and notifications
 
-For detailed information about the monitoring setup, see [DATASOURCE-CONNECTION-SUMMARY.md](./DATASOURCE-CONNECTION-SUMMARY.md).
+For detailed information about the monitoring setup, see [MONITORING.md](./MONITORING.md).
 
 ## Bash Completion
 
@@ -252,8 +252,6 @@ AIXCL includes bash completion support to make using the CLI faster and easier:
 ./aixcl add [TAB]      # Shows available models
 ./aixcl logs [TAB]     # Shows available service logging
 ```
-
-For more details, see [BASH_COMPLETION.md](./BASH_COMPLETION.md).
 
 ## Environment Configuration
 

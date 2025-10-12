@@ -176,6 +176,27 @@ pg_stat_database_numbackends
 - NVIDIA drivers installed
 - Docker configured with NVIDIA Container Toolkit
 
+**Architecture Details**:
+- Image: `nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04`
+- Official NVIDIA exporter for production GPU monitoring
+- Uses NVIDIA Data Center GPU Manager (DCGM) for metrics collection
+- Exposes Prometheus-compatible metrics endpoint
+
+**Configuration**:
+The GPU exporter requires GPU access, configured in `docker-compose.gpu.yml`:
+
+```yaml
+services:
+  nvidia-gpu-exporter:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+```
+
 **Note**: On systems without NVIDIA GPUs, this exporter will fail to start, but all other monitoring services will continue to work normally.
 
 ## Dashboard Details
@@ -225,31 +246,48 @@ pg_stat_database_numbackends
 
 ### GPU Metrics Dashboard
 
-**Metrics Displayed**:
-- GPU Utilization: Real-time GPU compute usage percentage
-- GPU Memory Usage: VRAM consumption and allocation
-- GPU Temperature: Thermal monitoring in Celsius
-- GPU Power Usage: Current power consumption in Watts
-- GPU Fan Speed: Cooling fan RPM percentage
-- GPU Clock Speeds: Graphics and memory clock frequencies
-- Encoder/Decoder Utilization: Video encode/decode engine usage
-- GPU Information: Model name, driver version, CUDA version
-- Number of GPUs: Total GPUs detected in the system
+The GPU Metrics dashboard (`/d/aixcl-gpu`) includes **10 comprehensive panels**:
+
+1. **GPU Utilization** - Real-time GPU compute usage percentage across all GPUs
+2. **GPU Memory Usage** - VRAM consumption as percentage of total memory
+3. **GPU Temperature** - Thermal monitoring with color-coded warnings
+4. **GPU Power Usage** - Current power consumption in Watts
+5. **GPU Memory (Used/Free)** - Memory allocation tracking in MB
+6. **GPU SM Clock Speed** - Streaming Multiprocessor clock frequency
+7. **GPU Memory Clock Speed** - Memory clock frequency
+8. **GPU Memory Copy Utilization** - Memory copy engine usage percentage
+9. **PCIe Throughput** - PCIe transmit and receive bandwidth
+10. **GPU Information Table** - Model name, GPU ID, host information
+
+**Key Metrics Tracked**:
+- **GPU Utilization**: Monitor compute workload intensity
+- **Memory Usage**: Track VRAM allocation for LLM model loading
+- **Temperature**: Ensure GPUs stay within safe thermal limits (< 85°C)
+- **Power Consumption**: Monitor power efficiency and usage
+- **Clock Speeds**: Verify GPU is running at expected frequencies
+- **Fan Speed**: Ensure adequate cooling is maintained
 
 **Best For**:
-- Monitoring LLM model inference performance
-- Tracking GPU resource usage during Ollama operations
+- Monitoring LLM model inference performance during Ollama operations
+- Tracking GPU resource usage and memory allocation
 - Ensuring adequate cooling and power management
 - Identifying when GPU acceleration is active
 - Multi-GPU workload distribution analysis
 - Capacity planning for GPU-intensive workloads
+
+**Best Practices**:
+- Set up alerts for GPU temperature > 80°C
+- Monitor memory usage to ensure models fit in VRAM
+- Track power consumption for capacity planning
+- Verify GPU utilization to ensure hardware acceleration is active
+- Check fan speed if temperatures are high
 
 **Requirements**:
 - NVIDIA GPU hardware with compatible drivers
 - NVIDIA Container Toolkit configured in Docker
 - GPU access enabled via docker-compose.gpu.yml
 
-**Note**: Dashboard will show "No Data" on systems without NVIDIA GPUs. This is expected behavior and does not affect other monitoring features.
+**Note**: Dashboard will show "No Data" on systems without NVIDIA GPUs. This is expected behavior and does not affect other monitoring features. All other dashboards continue to work normally on CPU-only systems.
 
 ## Monitoring LLM Performance
 
@@ -282,6 +320,75 @@ Time LLM responses at the application level:
 - Use Open WebUI interface to interact with models
 - Observe response times in the UI
 - Compare performance across different models
+
+## GPU Monitoring
+
+### Accessing the GPU Dashboard
+
+1. **Start AIXCL services** (including monitoring stack):
+   ```bash
+   ./aixcl start
+   ```
+
+2. **Open Grafana**:
+   ```bash
+   ./aixcl dashboard
+   ```
+   Or navigate to: http://localhost:3000
+
+3. **Login** with default credentials:
+   - Username: `admin`
+   - Password: `admin` (change on first login)
+
+4. **Navigate to GPU Dashboard**:
+   - Click **Dashboards** → **Browse**
+   - Open **AIXCL** folder
+   - Select **AIXCL - GPU Metrics**
+   - Or go directly to: http://localhost:3000/d/aixcl-gpu
+
+### Monitoring LLM Inference with GPU
+
+The GPU dashboard is particularly useful for monitoring Ollama LLM operations:
+
+1. **Model Loading**: Watch GPU memory usage spike when loading models
+2. **Inference Performance**: Monitor GPU utilization during query processing
+3. **Thermal Management**: Ensure GPU temperature stays safe during extended use
+4. **Multi-GPU Workloads**: Track which GPUs are being utilized
+
+### GPU Metrics Reference
+
+#### Core DCGM Metrics
+
+| Metric | Description | Unit | Typical Range |
+|--------|-------------|------|---------------|
+| `DCGM_FI_DEV_GPU_UTIL` | GPU utilization percentage | % | 0-100 |
+| `DCGM_FI_DEV_FB_USED` | GPU framebuffer memory used | MB | 0 to total VRAM |
+| `DCGM_FI_DEV_FB_FREE` | GPU framebuffer memory free | MB | 0 to total VRAM |
+| `DCGM_FI_DEV_GPU_TEMP` | GPU temperature | °C | 30-85 |
+| `DCGM_FI_DEV_POWER_USAGE` | Power consumption | W | 0 to TDP |
+| `DCGM_FI_DEV_SM_CLOCK` | SM clock frequency | MHz | Varies by GPU |
+| `DCGM_FI_DEV_MEM_CLOCK` | Memory clock frequency | MHz | Varies by GPU |
+| `DCGM_FI_DEV_MEM_COPY_UTIL` | Memory copy utilization | % | 0-100 |
+| `DCGM_FI_DEV_PCIE_TX_THROUGHPUT` | PCIe transmit throughput | KB/s | Varies |
+| `DCGM_FI_DEV_PCIE_RX_THROUGHPUT` | PCIe receive throughput | KB/s | Varies |
+| `DCGM_FI_DRIVER_VERSION` | NVIDIA driver version | - | Version string |
+
+#### DCGM Metric Labels
+
+Each metric includes labels for multi-GPU systems:
+- `gpu`: GPU index/ID (e.g., "0", "1")
+- `modelName`: GPU model name (e.g., "NVIDIA RTX 4090")
+- `UUID`: Unique GPU identifier
+- `Hostname`: Host system name
+
+### Correlating Metrics Across Dashboards
+
+Use multiple dashboards to understand system behavior:
+
+1. **Ollama Container CPU spike** + **GPU at 100%** = Active LLM inference
+2. **High GPU memory usage** + **Ollama container active** = Model loaded in VRAM
+3. **GPU temperature rising** + **Fan speed increasing** = System adjusting cooling
+4. **Database writes** + **GPU activity** = Conversation being saved after LLM response
 
 ## Customization
 
@@ -382,6 +489,44 @@ Some metrics may not be available depending on:
 - PostgreSQL version (postgres_exporter compatibility)
 - System configuration (some node_exporter metrics require host access)
 
+### GPU Dashboard Shows "No Data"
+
+**Possible Causes**:
+1. **No NVIDIA GPU**: The system doesn't have an NVIDIA GPU
+2. **Missing Drivers**: NVIDIA drivers are not installed
+3. **Docker Configuration**: NVIDIA Container Toolkit not configured
+4. **Service Not Running**: nvidia-gpu-exporter container failed to start
+
+**Solutions**:
+
+1. **Check GPU availability**:
+   ```bash
+   nvidia-smi
+   ```
+   If this fails, NVIDIA drivers are not properly installed.
+
+2. **Check Docker NVIDIA runtime**:
+   ```bash
+   docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+   ```
+
+3. **Check exporter logs**:
+   ```bash
+   ./aixcl logs nvidia-gpu-exporter
+   ```
+
+4. **Verify Prometheus is scraping GPU metrics**:
+   - Open http://localhost:9090
+   - Go to **Status** → **Targets**
+   - Check `nvidia-gpu` job status
+
+**CPU-Only Systems**:
+The GPU monitoring dashboard is designed to gracefully handle systems without NVIDIA GPUs:
+- ✅ All other monitoring dashboards continue to work normally
+- ✅ Prometheus will mark the GPU exporter as "down" but continue operating
+- ✅ System, Docker, and PostgreSQL monitoring remain fully functional
+- ℹ️ The GPU dashboard will show "No Data" - this is expected behavior
+
 ## Best Practices
 
 ### Security
@@ -424,15 +569,31 @@ For issues or questions:
 ## Summary
 
 The AIXCL monitoring stack provides comprehensive visibility into:
-- ✅ System resource utilization
-- ✅ Container performance
-- ✅ Database health and performance
-- ✅ LLM inference resource usage (indirect)
+- ✅ System resource utilization (CPU, memory, disk, network)
+- ✅ Container performance (all AIXCL services)
+- ✅ Database health and performance (PostgreSQL metrics)
+- ✅ GPU hardware acceleration (NVIDIA GPUs)
+- ✅ LLM inference resource usage (indirect monitoring)
 
-Use this monitoring data to:
-- Optimize resource allocation
-- Identify performance bottlenecks
-- Plan capacity upgrades
-- Troubleshoot issues
-- Track usage patterns
+### Dashboard Summary
+
+- **System Overview** (9 panels): CPU, memory, disk I/O, network, load average, uptime
+- **Docker Containers** (10 panels): Container resources, disk I/O, memory %, restarts, uptime
+- **PostgreSQL Performance** (14 panels): Connections, transactions, cache hits, deadlocks, I/O timing
+- **GPU Metrics** (10 panels): GPU utilization, memory, temperature, power, clock speeds, PCIe throughput
+
+**Total:** 43 comprehensive monitoring panels
+
+### Use This Monitoring Data To:
+
+- ✅ Optimize resource allocation and efficiency
+- ✅ Identify performance bottlenecks across system layers
+- ✅ Plan capacity upgrades based on actual usage
+- ✅ Troubleshoot issues with historical context
+- ✅ Track usage patterns and trends over time
+- ✅ Monitor GPU acceleration for LLM workloads
+- ✅ Ensure thermal and power management
+- ✅ Correlate metrics across different system components
+
+The monitoring stack works on any platform (Linux, macOS, Windows WSL) and gracefully handles systems with or without NVIDIA GPUs.
 
