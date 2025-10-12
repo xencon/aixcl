@@ -7,3 +7,12 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+  
+  nvidia-gpu-exporter:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

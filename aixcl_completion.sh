@@ -26,10 +26,10 @@ _aixcl_complete() {
     _init_completion || return
 
     # List of all possible commands
-    local commands="start stop restart logs clean stats status add remove list help install-completion check-env"
+    local commands="start stop restart logs clean stats status add remove list metrics dashboard help install-completion check-env"
 
     # List of services for logs command
-    local services="ollama open-webui postgres pgadmin watchtower"
+    local services="ollama open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
 
     case "$prev" in
         'aixcl')
