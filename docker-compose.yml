@@ -196,6 +196,16 @@ services:
       - postgres
     restart: unless-stopped
 
+  nvidia-gpu-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
+    container_name: nvidia-gpu-exporter
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - DCGM_EXPORTER_LISTEN=:9400
+    # GPU resources are configured in docker-compose.gpu.yml when available
+    # This service will gracefully fail on systems without NVIDIA GPUs
+
 volumes:
   ollama:
   open-webui:

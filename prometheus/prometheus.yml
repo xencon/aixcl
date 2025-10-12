@@ -61,3 +61,12 @@ scrape_configs:
     # Ollama may not expose /metrics endpoint - this is here for future compatibility
     # If the endpoint doesn't exist, Prometheus will mark it as down but continue working
 
+  # NVIDIA DCGM Exporter - GPU metrics (utilization, memory, temperature, power)
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['localhost:9400']
+        labels:
+          service: 'nvidia-gpu'
+    # GPU exporter will only work on systems with NVIDIA GPUs and drivers
+    # On systems without GPUs, Prometheus will mark it as down but continue working
+

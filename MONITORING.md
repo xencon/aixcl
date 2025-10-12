@@ -91,6 +91,7 @@ pg_stat_database_numbackends
 1. **AIXCL - System Overview** (UID: `aixcl-system`)
 2. **AIXCL - Docker Containers** (UID: `aixcl-docker`)
 3. **AIXCL - PostgreSQL Performance** (UID: `aixcl-postgres`)
+4. **AIXCL - GPU Metrics** (UID: `aixcl-gpu`)
 
 **Accessing Dashboards**:
 - Navigate to http://localhost:3000
@@ -148,6 +149,35 @@ pg_stat_database_numbackends
 - Identify slow queries
 - Optimize database configuration
 
+### NVIDIA DCGM Exporter (Port 9400)
+
+**Purpose**: Exports NVIDIA GPU metrics for monitoring hardware acceleration using NVIDIA Data Center GPU Manager (DCGM)
+
+**Metrics Provided**:
+- GPU utilization percentage
+- GPU memory usage (used/total)
+- GPU temperature (Celsius)
+- GPU power consumption (Watts)
+- GPU fan speed percentage
+- GPU clock speeds (graphics and memory)
+- Encoder/decoder utilization
+- Number of GPUs detected
+- GPU information (model, driver version, CUDA version)
+
+**Use Cases**:
+- Monitor GPU utilization during LLM inference with Ollama
+- Track GPU memory usage for model loading
+- Ensure GPU temperatures stay within safe limits
+- Monitor power consumption and efficiency
+- Identify when GPU acceleration is being used
+
+**Requirements**:
+- NVIDIA GPU hardware
+- NVIDIA drivers installed
+- Docker configured with NVIDIA Container Toolkit
+
+**Note**: On systems without NVIDIA GPUs, this exporter will fail to start, but all other monitoring services will continue to work normally.
+
 ## Dashboard Details
 
 ### System Overview Dashboard
@@ -192,6 +222,34 @@ pg_stat_database_numbackends
 - Monitoring Open WebUI conversation storage
 - Identifying database bottlenecks
 - Query performance analysis
+
+### GPU Metrics Dashboard
+
+**Metrics Displayed**:
+- GPU Utilization: Real-time GPU compute usage percentage
+- GPU Memory Usage: VRAM consumption and allocation
+- GPU Temperature: Thermal monitoring in Celsius
+- GPU Power Usage: Current power consumption in Watts
+- GPU Fan Speed: Cooling fan RPM percentage
+- GPU Clock Speeds: Graphics and memory clock frequencies
+- Encoder/Decoder Utilization: Video encode/decode engine usage
+- GPU Information: Model name, driver version, CUDA version
+- Number of GPUs: Total GPUs detected in the system
+
+**Best For**:
+- Monitoring LLM model inference performance
+- Tracking GPU resource usage during Ollama operations
+- Ensuring adequate cooling and power management
+- Identifying when GPU acceleration is active
+- Multi-GPU workload distribution analysis
+- Capacity planning for GPU-intensive workloads
+
+**Requirements**:
+- NVIDIA GPU hardware with compatible drivers
+- NVIDIA Container Toolkit configured in Docker
+- GPU access enabled via docker-compose.gpu.yml
+
+**Note**: Dashboard will show "No Data" on systems without NVIDIA GPUs. This is expected behavior and does not affect other monitoring features.
 
 ## Monitoring LLM Performance
 

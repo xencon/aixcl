@@ -169,7 +169,7 @@ While Ollama doesn't natively expose Prometheus metrics, you can monitor:
 
 ### Pre-built Dashboards
 
-AIXCL includes three fully populated, pre-configured Grafana dashboards with live data:
+AIXCL includes four fully populated, pre-configured Grafana dashboards with live data:
 
 1. **System Overview** (`/d/aixcl-system`) - **9 panels**
    - CPU usage and system load average (1m, 5m, 15m)
@@ -197,7 +197,20 @@ AIXCL includes three fully populated, pre-configured Grafana dashboards with liv
    - Block I/O timing
    - Temporary file usage
 
-**All dashboards refresh every 30 seconds** and display the last hour of data by default (configurable).
+4. **GPU Metrics** (`/d/aixcl-gpu`) - **10 panels** (NVIDIA GPUs)
+   - GPU utilization percentage
+   - GPU memory usage and allocation
+   - GPU temperature monitoring
+   - GPU power consumption
+   - GPU memory used/free tracking
+   - GPU clock speeds (SM and memory)
+   - Memory copy utilization
+   - PCIe throughput (TX/RX)
+   - GPU information and specifications
+
+**All dashboards refresh automatically** (GPU dashboard: 10s, others: 30s) and display the last hour of data by default (configurable).
+
+**Note**: The GPU Metrics dashboard requires NVIDIA GPUs and drivers. On systems without NVIDIA GPUs, the dashboard will show no data but other monitoring features will continue to work normally.
 
 ### Accessing Monitoring Tools
 
