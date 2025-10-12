@@ -169,33 +169,6 @@ function check_env() {
         fi
     fi
 
-    # Check .env file
-    echo -e "\nChecking configuration..."
-    if [ ! -f .env ]; then
-        echo "❌ .env file not found"
-        echo "   Create one from .env.example"
-        missing_deps=1
-    else
-        echo "✅ .env file exists"
-        # Check required environment variables
-        local required_vars=(
-            "POSTGRES_USER"
-            "POSTGRES_PASSWORD"
-            "POSTGRES_DATABASE"
-            "PGADMIN_EMAIL"
-            "PGADMIN_PASSWORD"
-            "OPENWEBUI_EMAIL"
-            "OPENWEBUI_PASSWORD"
-        )
-        
-        for var in "${required_vars[@]}"; do
-            if ! grep -q "^${var}=" .env || [ -z "$(grep "^${var}=" .env | cut -d'=' -f2)" ]; then
-                echo "❌ Missing or empty required variable: $var"
-                missing_deps=1
-            fi
-        done
-    fi
-
     # Check available disk space
     echo -e "\nChecking system resources..."
     local required_space=10 # GB
