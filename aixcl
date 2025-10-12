@@ -319,7 +319,7 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter"; then
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
         echo "Services are not running."
         return 0
     fi
@@ -329,7 +329,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -376,13 +376,13 @@ function logs() {
         
         # Validate container name
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter)
+            ollama|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter)
                 echo "Fetching logs for $container..."
                 docker logs "$container" --tail="$tail_count" --follow
                 ;;
             *)
                 echo "Error: Unknown container '$container'"
-                echo "Available containers: ollama, open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter"
+                echo "Available containers: ollama, open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter"
                 return 1
                 ;;
         esac
@@ -497,6 +497,12 @@ function status() {
         echo "✅ Postgres Exporter container is running"
     else
         echo "❌ Postgres Exporter container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "nvidia-gpu-exporter"; then
+        echo "✅ NVIDIA GPU Exporter container is running"
+    else
+        echo "⚠️  NVIDIA GPU Exporter container is not running (expected on non-GPU systems)"
     fi
     
     echo -e "\nService Health:"
