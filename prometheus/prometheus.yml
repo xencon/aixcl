@@ -70,3 +70,17 @@ scrape_configs:
     # GPU exporter will only work on systems with NVIDIA GPUs and drivers
     # On systems without GPUs, Prometheus will mark it as down but continue working
 
+  # Loki - Log aggregation system metrics
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['localhost:3100']
+        labels:
+          service: 'loki'
+
+  # Promtail - Log collection agent metrics
+  - job_name: 'promtail'
+    static_configs:
+      - targets: ['localhost:9080']
+        labels:
+          service: 'promtail'
+

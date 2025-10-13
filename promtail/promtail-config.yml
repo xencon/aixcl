@@ -1,0 +1,82 @@
+# Promtail Configuration for AIXCL
+# Collects logs from Docker containers and ships to Loki
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker containers - automatically discovers all containers
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=aixcl"]
+    
+    relabel_configs:
+      # Container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      
+      # Container ID
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+      
+      # Compose service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
+      
+      # Compose project
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'compose_project'
+      
+      # Image name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_image']
+        target_label: 'image'
+      
+      # Log path
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+    
+    # Pipeline stages for log processing
+    pipeline_stages:
+      - docker: {}
+      
+      # Extract timestamp if available
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+      
+      # Add labels for filtering
+      - labels:
+          stream:
+          container:
+          compose_service:
+
+  # System logs (optional - for host machine logs)
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          host: aixcl-host
+          __path__: /var/log/*.log
+    
+    pipeline_stages:
+      - match:
+          selector: '{job="varlogs"}'
+          stages:
+            - timestamp:
+                source: timestamp
+                format: RFC3339
+
