@@ -147,6 +147,7 @@ services:
     network_mode: host
     depends_on:
       - prometheus
+      - loki
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
@@ -206,6 +207,35 @@ services:
     # GPU resources are configured in docker-compose.gpu.yml when available
     # This service will gracefully fail on systems without NVIDIA GPUs
 
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/promtail-config.yml
+    network_mode: host
+    depends_on:
+      - loki
+    restart: unless-stopped
+
 volumes:
   ollama:
   open-webui:
@@ -213,3 +243,4 @@ volumes:
   postgres-data:
   prometheus-data:
   grafana-data:
+  loki-data:
