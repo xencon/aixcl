@@ -1,0 +1,17 @@
+{
+  "name": "AIXCL Dev",
+  "image": "mcr.microsoft.com/devcontainers/cpp:ubuntu-22.04",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake"
+      ]
+    }
+  },
+
+  "postCreateCommand": "cmake -S . -B build && cmake --build build"
+}
+
