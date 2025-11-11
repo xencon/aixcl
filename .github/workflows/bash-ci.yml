@@ -1,0 +1,23 @@
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Run ShellCheck (linting)
+        uses: ludeeus/action-shellcheck@v2
+
+      - name: Test docker build
+        run: |
+          docker build -t aixcl-test .
+
