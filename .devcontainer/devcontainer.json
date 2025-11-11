@@ -1,17 +1,27 @@
 {
   "name": "AIXCL Dev",
-  "image": "mcr.microsoft.com/devcontainers/cpp:ubuntu-22.04",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": false,
+      "dockerDashCompose": true
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y jq",
+
+  "remoteUser": "vscode",
 
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-vscode.cpptools",
-        "ms-vscode.cmake-tools",
-        "twxs.cmake"
+        "timonwong.shellcheck",
+        "foxundermoon.shell-format"
       ]
     }
-  },
-
-  "postCreateCommand": "cmake -S . -B build && cmake --build build"
+  }
 }
 
