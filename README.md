@@ -13,12 +13,22 @@ AIXCL is a simple Docker-based platform that helps you integrate Large Language 
 - Automatically configure database connections and services
 - Enhanced security with input validation and secure file operations
 
+## System Requirements
+- Minimum 16 GB RAM
+- Minimum 128 GB free disk space
+
 ## Quick Start
 
 ```bash
 # Clone the repository
 git clone https://github.com/xencon/aixcl.git
 cd aixcl
+
+# Check system requirements and dependencies
+./aixcl check-env
+
+# Install CLI completion for bash shell
+./aixcl install-completion
 
 # Start the services (automatically creates .env from .env.example if needed)
 ./aixcl start
