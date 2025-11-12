@@ -389,23 +389,6 @@ function clean() {
     echo "Clean up complete."
 }
 
-function stats() {
-    echo "Monitoring GPU resources..."
-    
-    if command -v pipx run nvitop &> /dev/null; then
-        echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
-        echo "-------------------"
-        pipx run nvitop
-    elif command -v nvidia-smi &> /dev/null; then
-        echo "GPU Statistics (refreshing every 2 seconds, press Ctrl+C to exit):"
-        echo "-------------------"
-        watch -n 2 nvidia-smi
-    else
-        echo "GPU monitoring not available: nvitop or nvidia-smi commands not found"
-        exit 1
-    fi
-}
-
 function status() {
     echo "Checking services status..."
     
@@ -536,9 +519,9 @@ function status() {
 function add() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
-        echo "Usage: $0 add <model-name> [<model-name> ...]"
-        echo "Example: $0 add starcoder2:latest"
-        echo "Example: $0 add starcoder2:latest nomic-embed-text:latest"
+        echo "Usage: $0 models add <model-name> [<model-name> ...]"
+        echo "Example: $0 models add starcoder2:latest"
+        echo "Example: $0 models add starcoder2:latest nomic-embed-text:latest"
         return 1
     fi
 
@@ -569,9 +552,9 @@ function add() {
 function remove() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
-        echo "Usage: $0 remove <model-name> [<model-name> ...]"
-        echo "Example: $0 remove starcoder2:latest"
-        echo "Example: $0 remove starcoder2:latest nomic-embed-text:latest"
+        echo "Usage: $0 models remove <model-name> [<model-name> ...]"
+        echo "Example: $0 models remove starcoder2:latest"
+        echo "Example: $0 models remove starcoder2:latest nomic-embed-text:latest"
         return 1
     fi
 
@@ -599,6 +582,63 @@ function remove() {
     fi
 }
 
+function models() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: Models action is required"
+        echo "Usage: $0 models {add|remove|list} [<model-name> ...]"
+        echo "Examples:"
+        echo "  $0 models add starcoder2:latest"
+        echo "  $0 models remove starcoder2:latest nomic-embed-text:latest"
+        echo "  $0 models list"
+        return 1
+    fi
+
+    local action="$1"
+    shift
+
+    local status=0
+
+    case "$action" in
+        add)
+            if [[ $# -lt 1 ]]; then
+                echo "Error: At least one model name is required for add"
+                echo "Usage: $0 models add <model-name> [<model-name> ...]"
+                return 1
+            fi
+            for model in "$@"; do
+                if ! add "$model"; then
+                    status=1
+                fi
+            done
+            ;;
+        remove)
+            if [[ $# -lt 1 ]]; then
+                echo "Error: At least one model name is required for remove"
+                echo "Usage: $0 models remove <model-name> [<model-name> ...]"
+                return 1
+            fi
+            for model in "$@"; do
+                if ! remove "$model"; then
+                    status=1
+                fi
+            done
+            ;;
+        list)
+            if [[ $# -gt 0 ]]; then
+                echo "Warning: Ignoring extra arguments for 'models list'"
+            fi
+            list
+            ;;
+        *)
+            echo "Error: Unknown models action '$action'"
+            echo "Available actions: add, remove, list"
+            return 1
+            ;;
+    esac
+
+    return $status
+}
+
 function list() {
     echo "Listing installed models..."
     
@@ -610,76 +650,123 @@ function list() {
     docker exec ollama ollama list
 }
 
-function metrics() {
-    echo "Opening Prometheus metrics dashboard..."
-    
-    if ! docker ps --format "{{.Names}}" | grep -q "prometheus"; then
-        echo "❌ Prometheus container is not running. Please start the services first."
-        return 1
-    fi
-    
-    # Check if Prometheus is responding
-    if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null | grep -q "200"; then
-        echo "❌ Prometheus is not responding yet. Please wait for it to start."
-        return 1
-    fi
-    
-    echo "Prometheus is available at: http://localhost:9090"
-    echo "Opening in default browser..."
-    
-    # Try to open in default browser
+function open_url_in_browser() {
+    local url="$1"
+
     if command -v xdg-open &> /dev/null; then
-        xdg-open http://localhost:9090 2>/dev/null &
+        xdg-open "$url" 2>/dev/null &
     elif command -v open &> /dev/null; then
-        open http://localhost:9090 2>/dev/null &
+        open "$url" 2>/dev/null &
     else
-        echo "⚠️  Could not detect default browser. Please open http://localhost:9090 manually."
+        echo "⚠️  Could not detect default browser. Please open $url manually."
     fi
 }
 
-function dashboard() {
+function dashboard_grafana() {
     echo "Opening Grafana monitoring dashboard..."
-    
+
     if ! docker ps --format "{{.Names}}" | grep -q "grafana"; then
         echo "❌ Grafana container is not running. Please start the services first."
         return 1
     fi
-    
+
     # Check if Grafana is responding
     if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null | grep -q "200"; then
         echo "❌ Grafana is not responding yet. Please wait for it to start."
         return 1
     fi
-    
-    echo "Grafana is available at: http://localhost:3000"
+
+    local url="http://localhost:3000"
+    echo "Grafana is available at: $url"
     echo "Default credentials: admin / admin (change on first login)"
     echo "Opening in default browser..."
-    
-    # Try to open in default browser
-    if command -v xdg-open &> /dev/null; then
-        xdg-open http://localhost:3000 2>/dev/null &
-    elif command -v open &> /dev/null; then
-        open http://localhost:3000 2>/dev/null &
-    else
-        echo "⚠️  Could not detect default browser. Please open http://localhost:3000 manually."
+    open_url_in_browser "$url"
+}
+
+function dashboard_openwebui() {
+    echo "Opening Open WebUI dashboard..."
+
+    if ! docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+        echo "❌ Open WebUI container is not running. Please start the services first."
+        return 1
     fi
+
+    local health_status
+    health_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000")
+
+    if [ "$health_status" != "200" ]; then
+        echo "❌ Open WebUI is not responding yet (HTTP $health_status). Please wait for it to start."
+        return 1
+    fi
+
+    local url="http://localhost:8080"
+    echo "Open WebUI is available at: $url"
+    echo "Opening in default browser..."
+    open_url_in_browser "$url"
+}
+
+function dashboard_pgadmin() {
+    echo "Opening pgAdmin dashboard..."
+
+    if ! docker ps --format "{{.Names}}" | grep -q "pgadmin"; then
+        echo "❌ pgAdmin container is not running. Please start the services first."
+        return 1
+    fi
+
+    local pgadmin_status
+    pgadmin_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+
+    case "$pgadmin_status" in
+        200|302)
+            ;;
+        *)
+            echo "❌ pgAdmin is not responding yet (HTTP $pgadmin_status). Please wait for it to start."
+            return 1
+            ;;
+    esac
+
+    local url="http://localhost:5050"
+    echo "pgAdmin is available at: $url"
+    echo "Opening in default browser..."
+    open_url_in_browser "$url"
+}
+
+function dashboard() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: Missing dashboard target."
+        echo "Usage: $0 dashboard {openwebui|grafana|pgadmin}"
+        return 1
+    fi
+
+    case "$1" in
+        grafana)
+            dashboard_grafana
+            ;;
+        openwebui|open-webui|open_webui)
+            dashboard_openwebui
+            ;;
+        pgadmin)
+            dashboard_pgadmin
+            ;;
+        *)
+            echo "Error: Unknown dashboard target '$1'"
+            echo "Available targets: grafana, openwebui, pgadmin"
+            return 1
+            ;;
+    esac
 }
 
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|stats|status|add|remove|list|metrics|dashboard|help|install-completion|check-env}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|status|models|dashboard|help|install-completion|check-env}"
     echo "Commands:"
     echo "  start                Start the AIXCL stack"
     echo "  stop                 Stop the AIXCL stack"
     echo "  restart              Restart all services"
     echo "  logs [container] [n] Show logs for all containers or a specific container (with optional number of lines)"
     echo "  clean                Remove unused Docker containers, images, and volumes"
-    echo "  stats                Show resource usage statistics"
     echo "  status               Check services status"
-    echo "  add <model-name>     Add one or more LLM's"
-    echo "  remove <model-name>  Remove one or more LLM's"
-    echo "  list                 List all installed LLM's"
-    echo "  metrics              Open Prometheus metrics dashboard"
-    echo "  dashboard            Open Grafana monitoring dashboard"
+    echo "  models {add|remove|list} Manage LLM models"
+    echo "  dashboard <name>     Open a web dashboard (grafana, openwebui, pgadmin)"
     echo "  check-env            Check environment dependencies"
     echo "  help                 Show this help menu"
     echo "  install-completion   Install bash completion"
@@ -771,32 +858,16 @@ function main() {
         clean)
             clean
             ;;
-        stats)
-            stats
-            ;;
         status)
             status
             ;;
-        add)
-            shift  # Remove the 'add' command from the arguments
-            for model in "$@"; do  # Loop through all remaining arguments
-                add "$model"  # Call the add function for each model
-            done
-            ;;
-        remove)
-            shift  # Remove the 'remove' command from the arguments
-            for model in "$@"; do  # Loop through all remaining arguments
-                remove "$model"  # Call the remove function for each model
-            done
-            ;;
-        list)
-            list
-            ;;
-        metrics)
-            metrics
+        models)
+            shift
+            models "$@"
             ;;
         dashboard)
-            dashboard
+            shift
+            dashboard "$@"
             ;;
         help)
             help_menu
