@@ -149,6 +149,16 @@ function check_env() {
         echo "✅ Docker Compose is installed"
     fi
 
+    # Check Bash shell
+    echo -e "\nChecking shell environment..."
+    if ! command -v bash &> /dev/null; then
+        echo "❌ Bash shell is not installed"
+        echo "   Install bash to continue: https://www.gnu.org/software/bash/"
+        missing_deps=1
+    else
+        echo "✅ Bash shell is available"
+    fi
+
     # Check NVIDIA drivers and toolkit (optional)
     echo -e "\nChecking NVIDIA support..."
     if ! command -v nvidia-smi &> /dev/null; then
