@@ -34,7 +34,10 @@ cd aixcl
 ./aixcl start
 
 # Add models you want to use
-./aixcl add starcoder2:latest nomic-embed-text:latest
+./aixcl models add starcoder2:latest nomic-embed-text:latest
+
+# List installed models
+./aixcl models list
 
 # Access the LLM engine web interface
 # Open http://localhost:8080 in your browser
@@ -46,20 +49,16 @@ cd aixcl
 ## CLI Commands
 
 ```
-Usage: ./aixcl {start|stop|restart|logs|clean|stats|status|add|remove|list|metrics|dashboard|help|install-completion|check-env}
+Usage: ./aixcl {start|stop|restart|logs|clean|status|models|dashboard|help|install-completion|check-env}
 Commands:
   start                Start the Docker Compose deployment
   stop                 Stop the Docker Compose deployment
   restart              Restart all services
   logs                 Show logs for all containers
   clean                Remove unused Docker containers, images, and volumes
-  stats                Show resource usage statistics
   status               Check services status
-  add <model-name>     Add one or more Ollama models
-  remove <model-name>  Remove one or more Ollama models
-  list                 List all installed models
-  metrics              Open Prometheus metrics dashboard
-  dashboard            Open Grafana monitoring dashboard
+  models {add|remove|list} Manage Ollama models
+  dashboard <name>     Open a web dashboard (grafana, openwebui, pgadmin)
   help                 Show this help menu
   install-completion   Install bash completion for aixcl
   check-env            Check environment dependencies
@@ -107,24 +106,24 @@ Recent security improvements include:
 ### Adding Models
 ```bash
 # Add a single model
-./aixcl add starcoder2:latest
+./aixcl models add starcoder2:latest
 
 # Add multiple models at once
-./aixcl add starcoder2:latest nomic-embed-text:latest
+./aixcl models add starcoder2:latest nomic-embed-text:latest
 ```
 
 ### Removing Models
 ```bash
 # Remove a single model
-./aixcl remove starcoder2:latest
+./aixcl models remove starcoder2:latest
 
 # Remove multiple models at once
-./aixcl remove starcoder2:latest nomic-embed-text:latest
+./aixcl models remove starcoder2:latest nomic-embed-text:latest
 ```
 
 ### Listing Models
 ```bash
-./aixcl list
+./aixcl models list
 ```
 
 ## Monitoring & Metrics
@@ -134,11 +133,14 @@ AIXCL includes comprehensive monitoring capabilities using Prometheus and Grafan
 ### Quick Access
 
 ```bash
-# Open Prometheus metrics interface
-./aixcl metrics
+# Open Open WebUI dashboard
+./aixcl dashboard openwebui
 
 # Open Grafana dashboards
-./aixcl dashboard
+./aixcl dashboard grafana
+
+# Open pgAdmin dashboard
+./aixcl dashboard pgadmin
 ```
 
 ### What's Monitored
@@ -261,8 +263,9 @@ AIXCL includes bash completion support to make using the CLI faster and easier:
 
 # Now you can use tab completion
 ./aixcl [TAB]          # Shows all commands
-./aixcl add [TAB]      # Shows available models
-./aixcl logs [TAB]     # Shows available service logging
+./aixcl models add [TAB]   # Shows available models
+./aixcl models list        # Lists installed models
+./aixcl logs [TAB]         # Shows available service logging
 ```
 
 ## Environment Configuration

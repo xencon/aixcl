@@ -26,7 +26,7 @@ _aixcl_complete() {
     _init_completion || return
 
     # List of all possible commands
-    local commands="start stop restart logs clean stats status add remove list metrics dashboard help install-completion check-env"
+    local commands="start stop restart logs clean status models dashboard help install-completion check-env"
 
     # List of services for logs command
     local services="ollama open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
@@ -42,17 +42,35 @@ _aixcl_complete() {
             COMPREPLY=( $(compgen -W "$services" -- "$cur") )
             return 0
             ;;
+        'dashboard')
+            local dashboards="openwebui grafana pgadmin"
+            COMPREPLY=( $(compgen -W "$dashboards" -- "$cur") )
+            return 0
+            ;;
+        'models')
+            local model_actions="add remove list"
+            COMPREPLY=( $(compgen -W "$model_actions" -- "$cur") )
+            return 0
+            ;;
+        'list')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
+                COMPREPLY=()
+                return 0
+            fi
+            ;;
         'add'|'remove')
-            # If ollama is running, get list of available/installed models
-            if docker ps --format "{{.Names}}" | grep -q "ollama"; then
-                if [[ "$prev" == "add" ]]; then
-                    # For 'add', suggest some common models
-                    local models="starcoder2:latest nomic-embed-text:latest"
-                    COMPREPLY=( $(compgen -W "$models" -- "$cur") )
-                else
-                    # For 'remove', list installed models
-                    local installed_models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}')
-                    COMPREPLY=( $(compgen -W "$installed_models" -- "$cur") )
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
+                # If ollama is running, get list of available/installed models
+                if docker ps --format "{{.Names}}" | grep -q "ollama"; then
+                    if [[ "$prev" == "add" ]]; then
+                        # For 'add', suggest some common models
+                        local models="starcoder2:latest nomic-embed-text:latest"
+                        COMPREPLY=( $(compgen -W "$models" -- "$cur") )
+                    else
+                        # For 'remove', list installed models
+                        local installed_models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}')
+                        COMPREPLY=( $(compgen -W "$installed_models" -- "$cur") )
+                    fi
                 fi
             fi
             return 0
