@@ -151,6 +151,12 @@ function has_nvidia() {
 function confirm_continue_without_gpu() {
     local reason="$1"
     echo -e "$reason"
+
+    if [[ "${AIXCL_ALLOW_CPU_FALLBACK:-}" =~ ^(1|true|yes|on)$ ]]; then
+        echo "Environment variable AIXCL_ALLOW_CPU_FALLBACK is set. Continuing without GPU support."
+        return 0
+    fi
+
     if [ -t 0 ]; then
         while true; do
             read -r -p "Continue without GPU support? [y/N]: " response
@@ -169,7 +175,7 @@ function confirm_continue_without_gpu() {
             esac
         done
     else
-        echo "Non-interactive session detected. Aborting to avoid unexpected CPU fallback."
+        echo "Non-interactive session detected. Set AIXCL_ALLOW_CPU_FALLBACK=1 to continue without GPU support."
         exit 1
     fi
 }
