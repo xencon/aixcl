@@ -1,65 +1,31 @@
-name: Build & Test Docker Image
+name: Check Environment
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch: # allows manual runs from GitHub UI
 
 jobs:
-  build-and-test:
+  check-env:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout repo
+      # 1️⃣ Checkout your repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 3️⃣ Cache Docker layers (optional)
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      # 4️⃣ Install dependencies
+      # 2️⃣ Ensure required tools are installed
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq curl
+          sudo apt-get install -y bash curl jq
 
-      # 5️⃣ Build Docker image
-      - name: Build Docker image
-        run: |
-          docker build -t aixcl-test .
+      # 3️⃣ Make sure the script is executable
+      - name: Make aixcl executable
+        run: chmod +x ./aixcl
 
-      # 6️⃣ Run basic container test
-      - name: Run container sanity check
-        run: |
-          echo "Running basic container test..."
-          docker run --rm aixcl-test echo "✅ Container built and runs successfully!"
-
-      # 7️⃣ Run test scripts inside the container
-      - name: Run tests inside Docker container
-        run: |
-          echo "Checking for test scripts..."
-          if [ -f "./test.sh" ]; then
-            echo "Found test.sh — running inside container..."
-            docker run --rm -v "$PWD:/app" -w /app aixcl-test bash ./test.sh
-          elif [ -d "./tests" ]; then
-            echo "Found tests/ directory — running scripts inside container..."
-            for f in ./tests/*.sh; do
-              if [ -f "$f" ]; then
-                echo "Running $f inside container..."
-                docker run --rm -v "$PWD:/app" -w /app aixcl-test bash "$f"
-              fi
-            done
-          else
-            echo "No test.sh or tests/ folder found — skipping tests."
-          fi
+      # 4️⃣ Run your script with the 'check-env' argument
+      - name: Run aixcl check-env
+        run: ./aixcl check-env
