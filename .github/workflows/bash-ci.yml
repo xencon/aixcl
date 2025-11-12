@@ -19,7 +19,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3️⃣ Cache Docker layers
+      # 3️⃣ Cache Docker layers (optional)
       - name: Cache Docker layers
         uses: actions/cache@v4
         with:
@@ -34,17 +34,32 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq curl
 
-      # 5️⃣ Run ShellCheck only if .sh files exist
-      - name: Run ShellCheck (if .sh files exist)
-        run: |
-          if ls **/*.sh 1> /dev/null 2>&1; then
-            echo "Found shell scripts, running ShellCheck..."
-            docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable **/*.sh
-          else
-            echo "No shell scripts found, skipping ShellCheck."
-          fi
-
-      # 6️⃣ Build Docker image
+      # 5️⃣ Build Docker image
       - name: Build Docker image
         run: |
-          docker build -
+          docker build -t aixcl-test .
+
+      # 6️⃣ Run basic container test
+      - name: Run container sanity check
+        run: |
+          echo "Running basic container test..."
+          docker run --rm aixcl-test echo "✅ Container built and runs successfully!"
+
+      # 7️⃣ Run test scripts inside the container
+      - name: Run tests inside Docker container
+        run: |
+          echo "Checking for test scripts..."
+          if [ -f "./test.sh" ]; then
+            echo "Found test.sh — running inside container..."
+            docker run --rm -v "$PWD:/app" -w /app aixcl-test bash ./test.sh
+          elif [ -d "./tests" ]; then
+            echo "Found tests/ directory — running scripts inside container..."
+            for f in ./tests/*.sh; do
+              if [ -f "$f" ]; then
+                echo "Running $f inside container..."
+                docker run --rm -v "$PWD:/app" -w /app aixcl-test bash "$f"
+              fi
+            done
+          else
+            echo "No test.sh or tests/ folder found — skipping tests."
+          fi
