@@ -67,12 +67,82 @@ fi
 COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE")
 CONTAINER_NAME="open-webui"
 
-# Detect if NVIDIA GPU is available
-function has_nvidia() {
-    if command -v nvidia-smi >/dev/null 2>&1; then
-        nvidia-smi >/dev/null 2>&1 && return 0 || return 1
+# Detect if NVIDIA hardware is present
+function detect_nvidia_hardware() {
+    if command -v lspci >/dev/null 2>&1; then
+        if lspci -nn | grep -qi '\[10de:'; then
+            return 0
+        fi
     fi
-    if docker info 2>/dev/null | grep -qi "nvidia"; then
+
+    if [ -d /sys/bus/pci/devices ]; then
+        for device in /sys/bus/pci/devices/*; do
+            if [ -r "$device/vendor" ] && grep -qi "0x10de" "$device/vendor"; then
+                return 0
+            fi
+        done
+    fi
+
+    return 1
+}
+
+# Check if NVIDIA drivers are available and functional
+function nvidia_drivers_ready() {
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        nvidia-smi >/dev/null 2>&1 && return 0
+    fi
+    return 1
+}
+
+# Check if NVIDIA container toolkit or runtime integration is available
+function nvidia_toolkit_ready() {
+    if command -v nvidia-container-cli >/dev/null 2>&1; then
+        nvidia-container-cli --version >/dev/null 2>&1 && return 0
+        # Some versions of nvidia-container-cli do not require --version to succeed
+        return 0
+    fi
+
+    if command -v dpkg >/dev/null 2>&1 && dpkg -l | grep -q nvidia-container-toolkit; then
+        return 0
+    fi
+
+    if command -v rpm >/dev/null 2>&1 && rpm -qa | grep -q nvidia-container-toolkit; then
+        return 0
+    fi
+
+    if command -v docker >/dev/null 2>&1 && docker info 2>/dev/null | grep -qi "nvidia"; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Determine overall GPU support status
+function gpu_support_status() {
+    if ! detect_nvidia_hardware; then
+        echo "none"
+        return 1
+    fi
+
+    if ! nvidia_drivers_ready; then
+        echo "hardware_no_driver"
+        return 2
+    fi
+
+    if ! nvidia_toolkit_ready; then
+        echo "hardware_no_toolkit"
+        return 3
+    fi
+
+    echo "ready"
+    return 0
+}
+
+# Detect if NVIDIA GPU is available and ready for use
+function has_nvidia() {
+    local status
+    status=$(gpu_support_status)
+    if [ "$status" = "ready" ]; then
         return 0
     fi
     return 1
@@ -102,12 +172,31 @@ function set_compose_cmd() {
     fi
     
     # Check for NVIDIA GPU
-    if has_nvidia && [ -f docker-compose.gpu.yml ]; then
-        echo "Detected NVIDIA GPU. Enabling GPU overrides."
-        files+=( -f docker-compose.gpu.yml )
-    else
-        echo "No NVIDIA GPU detected. Running without GPU overrides."
-    fi
+    local gpu_status
+    gpu_status=$(gpu_support_status)
+    case "$gpu_status" in
+        ready)
+            if [ -f docker-compose.gpu.yml ]; then
+                echo "Detected NVIDIA GPU. Enabling GPU overrides."
+                files+=( -f docker-compose.gpu.yml )
+            else
+                echo "Detected NVIDIA GPU but docker-compose.gpu.yml is missing. Continuing without GPU overrides."
+            fi
+            ;;
+        hardware_no_driver)
+            echo "❌ NVIDIA hardware detected but drivers are not available or not functioning."
+            echo "   Install the appropriate NVIDIA drivers and ensure 'nvidia-smi' works."
+            exit 1
+            ;;
+        hardware_no_toolkit)
+            echo "❌ NVIDIA hardware detected but the NVIDIA Container Toolkit is not available."
+            echo "   Install the NVIDIA Container Toolkit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
+            exit 1
+            ;;
+        none|*)
+            echo "No NVIDIA GPU detected. Running without GPU overrides."
+            ;;
+    esac
     
     COMPOSE_CMD=(docker-compose "${files[@]}")
 }
@@ -122,6 +211,44 @@ fi
 function check_env() {
     echo "Checking environment dependencies..."
     local missing_deps=0
+
+    # Check operating system compatibility
+    echo -e "\nChecking operating system..."
+    if [ -f /etc/os-release ]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        local os_name="${NAME:-Unknown}"
+        local os_version="${VERSION_ID:-Unknown}"
+        echo "Detected OS: ${os_name} ${os_version}"
+        case "$os_name" in
+            Ubuntu)
+                case "$os_version" in
+                    22.04|24.04)
+                        echo "✅ Ubuntu ${os_version} is officially supported"
+                        ;;
+                    *)
+                        echo "⚠️ Ubuntu ${os_version} is not officially tested. Recommended versions: 22.04 LTS or 24.04 LTS."
+                        ;;
+                esac
+                ;;
+            *)
+                echo "⚠️ ${os_name} is not currently validated. Ubuntu 22.04 LTS or 24.04 LTS are recommended for the best experience."
+                ;;
+        esac
+    else
+        echo "⚠️ Could not determine OS version (missing /etc/os-release)."
+    fi
+
+    # Check bash availability
+    echo -e "\nChecking shell environment..."
+    if [ -x /bin/bash ]; then
+        local bash_version
+        bash_version=$(/bin/bash --version | head -n1)
+        echo "✅ Bash shell available (${bash_version})"
+    else
+        echo "❌ Bash shell not found at /bin/bash. Install bash to continue."
+        missing_deps=1
+    fi
 
     # Check Docker
     if ! command -v docker &> /dev/null; then
@@ -151,23 +278,34 @@ function check_env() {
 
     # Check NVIDIA drivers and toolkit (optional)
     echo -e "\nChecking NVIDIA support..."
-    if ! command -v nvidia-smi &> /dev/null; then
-        echo "⚠️ NVIDIA drivers not found (optional)"
-        echo "   For GPU support, install NVIDIA drivers"
-    else
-        echo "✅ NVIDIA drivers installed"
-        # Check NVIDIA Container Toolkit
-        if command -v nvidia-container-cli &> /dev/null; then
-            echo "✅ NVIDIA Container Toolkit installed"
-        elif command -v dpkg &> /dev/null && dpkg -l | grep -q nvidia-container-toolkit; then
-            echo "✅ NVIDIA Container Toolkit installed"
-        elif command -v rpm &> /dev/null && rpm -qa | grep -q nvidia-container-toolkit; then
-            echo "✅ NVIDIA Container Toolkit installed"
-        else
-            echo "⚠️ NVIDIA Container Toolkit not found (optional)"
-            echo "   For GPU support, install: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
-        fi
-    fi
+    local gpu_status
+    gpu_status=$(gpu_support_status)
+    case "$gpu_status" in
+        ready)
+            echo "✅ NVIDIA GPU detected and ready for use"
+            ;;
+        none)
+            if detect_nvidia_hardware; then
+                # Should not happen, but handle gracefully
+                echo "⚠️ NVIDIA hardware detected but status is unknown."
+            else
+                echo "ℹ️ No NVIDIA GPU detected (CPU mode only)."
+            fi
+            ;;
+        hardware_no_driver)
+            echo "❌ NVIDIA hardware detected but drivers are missing or not functional."
+            echo "   Install the appropriate NVIDIA drivers and ensure 'nvidia-smi' works."
+            missing_deps=1
+            ;;
+        hardware_no_toolkit)
+            echo "❌ NVIDIA hardware detected but the NVIDIA Container Toolkit is missing."
+            echo "   Install it from: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
+            missing_deps=1
+            ;;
+        *)
+            echo "⚠️ Unable to determine NVIDIA GPU status."
+            ;;
+    esac
 
     # Check available disk space
     echo -e "\nChecking system resources..."

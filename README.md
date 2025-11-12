@@ -14,6 +14,7 @@ AIXCL is a simple Docker-based platform that helps you integrate Large Language 
 - Enhanced security with input validation and secure file operations
 
 ## System Requirements
+- Ubuntu 22.04 LTS or 24.04 LTS (other distributions may require manual setup)
 - Minimum 16 GB RAM
 - Minimum 128 GB free disk space
 
@@ -70,8 +71,9 @@ Commands:
 AIXCL automatically detects NVIDIA GPUs and configures Ollama to use them:
 - Seamlessly switches between CPU and GPU modes
 - No manual configuration required
-- Checks for NVIDIA drivers and container toolkit
+- Detects NVIDIA hardware directly and validates drivers + container toolkit
 - Uses `docker-compose.gpu.yml` override when GPU is available
+- Fails fast when NVIDIA hardware is present but prerequisites are missing
 
 ### 🔐 Enhanced Security
 Recent security improvements include:
@@ -334,14 +336,17 @@ When you run `./aixcl start`, the system:
 
 ### Manual GPU Check
 ```bash
-# Check environment dependencies including GPU support
+# Check environment dependencies including OS, shell, and GPU support
 ./aixcl check-env
 ```
 
 The `check-env` command will show:
+- ✅ Detected operating system and whether it is officially supported
+- ✅ Bash shell availability
 - ✅ NVIDIA drivers status
 - ✅ NVIDIA Container Toolkit status
 - ⚠️ Warnings if GPU support is optional but not available
+- ❌ Errors if NVIDIA hardware is present but prerequisites are missing
 
 ### GPU Architecture
 - `docker-compose.yml` - Base configuration (CPU mode)
