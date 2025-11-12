@@ -1,23 +1,50 @@
+name: Build & Test Docker Image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # 2️⃣ Set up Docker Buildx (for advanced builds)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 3️⃣ Cache Docker layers (optional but speeds up builds)
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y jq curl
 
-      - name: Run ShellCheck (linting)
+      # 5️⃣ Run ShellCheck (lint shell scripts)
+      - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@v2
 
-      - name: Test docker build
+      # 6️⃣ Build Docker image (locally)
+      - name: Build Docker image
         run: |
           docker build -t aixcl-test .
 
+      # 7️⃣ Run container tests
+      - name: Run container test
+        run: |
+          echo "Running container test..."
+          docker run --rm aixcl-test echo "✅ Container built and runs successfully!"
