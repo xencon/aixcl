@@ -148,6 +148,32 @@ function has_nvidia() {
     return 1
 }
 
+function confirm_continue_without_gpu() {
+    local reason="$1"
+    echo -e "$reason"
+    if [ -t 0 ]; then
+        while true; do
+            read -r -p "Continue without GPU support? [y/N]: " response
+            case "${response:-N}" in
+                [yY]|[yY][eE][sS])
+                    echo "Continuing without GPU support."
+                    return 0
+                    ;;
+                [nN]|[nN][oO])
+                    echo "Aborting per user choice."
+                    exit 1
+                    ;;
+                *)
+                    echo "Please answer 'y' or 'n'."
+                    ;;
+            esac
+        done
+    else
+        echo "Non-interactive session detected. Aborting to avoid unexpected CPU fallback."
+        exit 1
+    fi
+}
+
 # Detect if running on ARM64 architecture
 function is_arm64() {
     local arch=$(uname -m)
@@ -184,14 +210,10 @@ function set_compose_cmd() {
             fi
             ;;
         hardware_no_driver)
-            echo "❌ NVIDIA hardware detected but drivers are not available or not functioning."
-            echo "   Install the appropriate NVIDIA drivers and ensure 'nvidia-smi' works."
-            exit 1
+            confirm_continue_without_gpu "❌ NVIDIA hardware detected but drivers are not available or not functioning.\n   Install the appropriate NVIDIA drivers and ensure 'nvidia-smi' works."
             ;;
         hardware_no_toolkit)
-            echo "❌ NVIDIA hardware detected but the NVIDIA Container Toolkit is not available."
-            echo "   Install the NVIDIA Container Toolkit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
-            exit 1
+            confirm_continue_without_gpu "❌ NVIDIA hardware detected but the NVIDIA Container Toolkit is not available.\n   Install the NVIDIA Container Toolkit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
             ;;
         none|*)
             echo "No NVIDIA GPU detected. Running without GPU overrides."
