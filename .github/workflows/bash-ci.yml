@@ -1,4 +1,6 @@
 name: Check Environment
+permissions:
+  contents: read
 
 on:
   push:
