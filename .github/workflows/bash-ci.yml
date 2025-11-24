@@ -16,7 +16,7 @@ jobs:
     steps:
       # 1️⃣ Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # 2️⃣ Install system dependencies
       - name: Install dependencies
