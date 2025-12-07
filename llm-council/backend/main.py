@@ -96,6 +96,24 @@ async def health():
     return {"status": "healthy", "service": "LLM Council API"}
 
 
+@app.get("/v1/models")
+async def list_models():
+    """
+    OpenAI-compatible models list endpoint for Continue plugin integration.
+    """
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "council",
+                "object": "model",
+                "created": int(time.time()),
+                "owned_by": "llm-council"
+            }
+        ]
+    }
+
+
 @app.get("/api/conversations", response_model=List[ConversationMetadata])
 async def list_conversations():
     """List all conversations (metadata only)."""

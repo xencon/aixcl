@@ -4,7 +4,8 @@
       "model": "council",
       "title": "LLM-Council (Multi-Model)",
       "provider": "openai",
-      "apiBase": "http://localhost:8000/v1"
+      "apiBase": "http://localhost:8000/v1",
+      "apiKey": "local"
     },
     {
       "model": "nomic-embed-text",
@@ -20,7 +21,8 @@
     "title": "LLM-Council Autocomplete",
     "provider": "openai",
     "model": "council",
-    "apiBase": "http://localhost:8000/v1"
+    "apiBase": "http://localhost:8000/v1",
+    "apiKey": "local"
   },
   "contextProviders": [
     {
