@@ -9,6 +9,7 @@ import uuid
 import json
 import asyncio
 import os
+import time
 
 from . import storage
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
@@ -49,6 +50,38 @@ class Conversation(BaseModel):
     created_at: str
     title: str
     messages: List[Dict[str, Any]]
+
+
+# OpenAI-compatible request/response models
+class ChatMessage(BaseModel):
+    """OpenAI-compatible chat message."""
+    role: str
+    content: str
+
+
+class ChatCompletionRequest(BaseModel):
+    """OpenAI-compatible chat completion request."""
+    model: str = "council"
+    messages: List[ChatMessage]
+    temperature: float = 0.7
+    stream: bool = False
+
+
+class ChatCompletionChoice(BaseModel):
+    """OpenAI-compatible choice."""
+    index: int
+    message: ChatMessage
+    finish_reason: str = "stop"
+
+
+class ChatCompletionResponse(BaseModel):
+    """OpenAI-compatible chat completion response."""
+    id: str
+    object: str = "chat.completion"
+    created: int
+    model: str
+    choices: List[ChatCompletionChoice]
+    usage: Dict[str, Any]
 
 
 @app.get("/")
@@ -128,6 +161,55 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
         "stage3": stage3_result,
         "metadata": metadata
     }
+
+
+@app.post("/v1/chat/completions")
+async def chat_completions(request: ChatCompletionRequest):
+    """
+    OpenAI-compatible chat completions endpoint for Continue plugin integration.
+    """
+    try:
+        # Extract the user message from the messages list
+        user_messages = [msg.content for msg in request.messages if msg.role == "user"]
+        if not user_messages:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        user_query = user_messages[-1]  # Use the last user message
+        
+        # Run the 3-stage council process
+        stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
+            user_query
+        )
+        
+        # Extract the final response from stage 3
+        final_content = stage3_result.get('content', '')
+        
+        # Create OpenAI-compatible response
+        response = ChatCompletionResponse(
+            id=f"chatcmpl-{uuid.uuid4().hex[:8]}",
+            created=int(time.time()),
+            model=request.model,
+            choices=[
+                ChatCompletionChoice(
+                    index=0,
+                    message=ChatMessage(
+                        role="assistant",
+                        content=final_content
+                    ),
+                    finish_reason="stop"
+                )
+            ],
+            usage={
+                "prompt_tokens": len(user_query.split()),  # Rough estimate
+                "completion_tokens": len(final_content.split()),  # Rough estimate
+                "total_tokens": len(user_query.split()) + len(final_content.split())
+            }
+        )
+        
+        return response.dict()
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/conversations/{conversation_id}/message/stream")

@@ -86,11 +86,23 @@ Recent security improvements include:
 - **pgAdmin server connection** automatically configured with database credentials
 - Secure credential handling with automatic cleanup on service stop
 
+### 🤝 Multi-Model LLM Orchestration (LLM-Council)
+AIXCL includes [LLM-Council](https://github.com/karpathy/llm-council), a multi-model orchestration framework that provides consensus-based responses:
+- **3-Stage Process**: First opinions from multiple models → Review stage → Final consensus response
+- **Chairman Model**: Uses `gemma3:latest` to review and synthesize responses
+- **Base Models**: Currently configured with `qwen2.5-coder:7b` and `granite-code:3b`
+- **IDE Integration**: Works seamlessly with the Continue plugin for enhanced code assistance
+- **Persistent Context**: Maintains conversation history across sessions
+- **API Endpoint**: Available at `http://localhost:8000/ask` for programmatic access
+
+The LLM-Council service automatically starts with the AIXCL stack and integrates with Ollama for local model inference.
+
 ## Services
 
 | Service | Description | URL |
 |---------|-------------|-----|
 | **Ollama** | Runs LLMs locally (with GPU support when available) | [ollama.com](https://ollama.com) |
+| **LLM-Council** | Multi-model LLM orchestration framework for consensus-based responses | [http://localhost:8000](http://localhost:8000) |
 | **Open WebUI** | Web interface for interacting with models | [http://localhost:8080](http://localhost:8080) |
 | **PostgreSQL** | Database for storing conversations and settings | - |
 | **pgAdmin** | Database management tool (auto-configured) | [http://localhost:5050](http://localhost:5050) |

@@ -1,21 +1,10 @@
 {
   "models": [
     {
-      "model": "council-AUTODETECT",
+      "model": "council",
       "title": "LLM-Council (Multi-Model)",
-      "provider": "llm-council",
-      "endpoint": "http://localhost:8000/ask",
-      "options": {
-        "baseModels": ["qwen2.5-coder:7b", "granite-code:3b"],
-        "consensusStrategy": "vote",
-        "chairmanModel": "gemma3:latest",
-        "num_ctx": 8192,
-        "temperature": 0.2,
-        "top_p": 0.9,
-        "num_gpu": 1,
-        "num_batch": 512,
-        "repeat_last_n": 64
-      }
+      "provider": "openai",
+      "apiBase": "http://localhost:8000/v1"
     },
     {
       "model": "nomic-embed-text",
@@ -29,18 +18,9 @@
   },
   "tabAutocompleteModel": {
     "title": "LLM-Council Autocomplete",
-    "provider": "llm-council",
-    "model": "council-AUTODETECT",
-    "endpoint": "http://localhost:8000/ask",
-    "options": {
-      "baseModels": ["qwen2.5-coder:7b", "granite-code:3b"],
-      "consensusStrategy": "vote",
-      "chairmanModel": "gemma3:latest",
-      "temperature": 0.05,
-      "num_ctx": 2048,
-      "num_gpu": 1,
-      "num_batch": 256
-    }
+    "provider": "openai",
+    "model": "council",
+    "apiBase": "http://localhost:8000/v1"
   },
   "contextProviders": [
     {

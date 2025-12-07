@@ -359,8 +359,9 @@ function start() {
     
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
-        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
+        if            curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
            curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 2>/dev/null | grep -q "200" && \
+           curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200" && \
            docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
             echo "All services are up and running!"
             status
@@ -381,7 +382,7 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
         echo "Services are not running."
         return 0
     fi
@@ -391,7 +392,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -438,13 +439,13 @@ function logs() {
         
         # Validate container name
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter)
+            ollama|open-webui|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter)
                 echo "Fetching logs for $container..."
                 docker logs "$container" --tail="$tail_count" --follow
                 ;;
             *)
                 echo "Error: Unknown container '$container'"
-                echo "Available containers: ollama, open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter"
+                echo "Available containers: ollama, open-webui, postgres, pgadmin, llm-council, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter"
                 return 1
                 ;;
         esac
@@ -505,6 +506,12 @@ function status() {
         echo "✅ pgAdmin container is running"
     else
         echo "❌ pgAdmin container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
+        echo "✅ LLM-Council container is running"
+    else
+        echo "❌ LLM-Council container is not running"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "watchtower"; then
@@ -586,6 +593,16 @@ function status() {
         echo -e "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
         echo "Checking pgAdmin logs:"
         docker logs pgadmin --tail 5
+    fi
+
+    echo -n "LLM-Council status: "
+    COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null)
+    if [ "$COUNCIL_STATUS" = "200" ]; then
+        echo -e "✅ LLM-Council is responding (HTTP $COUNCIL_STATUS)"
+    else
+        echo -e "❌ LLM-Council is not responding (HTTP $COUNCIL_STATUS)"
+        echo "Checking LLM-Council logs:"
+        docker logs llm-council --tail 5 2>/dev/null || echo "  (Container may not be running)"
     fi
 
     echo -n "Prometheus status: "
