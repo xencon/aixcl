@@ -224,7 +224,7 @@ async def chat_completions(request: ChatCompletionRequest):
             }
         )
         
-        return response.dict()
+        return response.model_dump()
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
