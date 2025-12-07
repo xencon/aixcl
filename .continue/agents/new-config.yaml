@@ -1,0 +1,94 @@
+{
+  "models": [
+    {
+      "model": "council",
+      "title": "LLM-Council (Multi-Model)",
+      "provider": "openai",
+      "apiBase": "http://localhost:8000/v1",
+      "apiKey": "local"
+    },
+    {
+      "model": "nomic-embed-text",
+      "title": "Nomic Embeddings",
+      "provider": "ollama"
+    }
+  ],
+  "embeddingsProvider": {
+    "provider": "ollama",
+    "model": "nomic-embed-text"
+  },
+  "tabAutocompleteModel": {
+    "title": "LLM-Council Autocomplete",
+    "provider": "openai",
+    "model": "council",
+    "apiBase": "http://localhost:8000/v1",
+    "apiKey": "local"
+  },
+  "contextProviders": [
+    {
+      "name": "code",
+      "params": {
+        "indexing": {
+          "autoIndex": true,
+          "batchSize": 2048,
+          "maxTokens": 1536,
+          "concurrency": 4,
+          "includeLargeFiles": false,
+          "extensions": [
+            ".py", ".ts", ".tsx", ".js", ".jsx", ".java",
+            ".c", ".cpp", ".cs", ".go", ".rs", ".php"
+          ]
+        }
+      }
+    },
+    {
+      "name": "docs",
+      "params": {
+        "indexing": {
+          "autoIndex": true,
+          "batchSize": 2048,
+          "maxTokens": 1536,
+          "concurrency": 2,
+          "extensions": [
+            ".md", ".txt"
+          ]
+        }
+      }
+    }
+  ],
+  "performance": {
+    "mode": "speed",
+    "gpu": {
+      "enabled": true,
+      "maxVRAM": "7GB"
+    },
+    "cpu": {
+      "threads": "auto",
+      "batchSize": 512
+    },
+    "memory": {
+      "cache": true,
+      "keepAlive": true,
+      "preloadModels": true
+    }
+  },
+  "customCommands": [
+    {
+      "name": "test",
+      "prompt": "{{{ input }}}\n\nWrite a comprehensive set of unit tests for the selected code. It should setup, run tests that check for correctness including important edge cases, and teardown. Ensure that the tests are complete and sophisticated. Give the tests just as chat output, don't edit any file.",
+      "description": "Write unit tests for highlighted code (via LLM-Council)"
+    },
+    {
+      "name": "refactor",
+      "prompt": "{{{ input }}}\n\nRefactor the selected code to improve readability, maintainability, and performance. Ensure the refactored code maintains the same functionality. Provide the refactored code as output.",
+      "description": "Refactor code using LLM-Council multi-model consensus"
+    },
+    {
+      "name": "complete",
+      "prompt": "{{{ input }}}\n\nComplete the selected code snippet. Ensure the completion is syntactically correct and follows best practices for the language. Provide the completed code.",
+      "description": "Complete code using LLM-Council"
+    }
+  ],
+  "docs": []
+}
+
