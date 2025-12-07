@@ -1,10 +1,14 @@
 {
   "models": [
     {
-      "model": "AUTODETECT",
-      "title": "Autodetect",
-      "provider": "ollama",
+      "model": "council-AUTODETECT",
+      "title": "LLM-Council (Multi-Model)",
+      "provider": "llm-council",
+      "endpoint": "http://localhost:8000/ask",
       "options": {
+        "baseModels": ["qwen2.5-coder:7b", "granite-code:3b"],
+        "consensusStrategy": "vote",
+        "chairmanModel": "gemma3:latest",
         "num_ctx": 8192,
         "temperature": 0.2,
         "top_p": 0.9,
@@ -24,10 +28,14 @@
     "model": "nomic-embed-text"
   },
   "tabAutocompleteModel": {
-    "title": "Qwen2.5 Coder 7b",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:7b",
+    "title": "LLM-Council Autocomplete",
+    "provider": "llm-council",
+    "model": "council-AUTODETECT",
+    "endpoint": "http://localhost:8000/ask",
     "options": {
+      "baseModels": ["qwen2.5-coder:7b", "granite-code:3b"],
+      "consensusStrategy": "vote",
+      "chairmanModel": "gemma3:latest",
       "temperature": 0.05,
       "num_ctx": 2048,
       "num_gpu": 1,
@@ -86,7 +94,17 @@
     {
       "name": "test",
       "prompt": "{{{ input }}}\n\nWrite a comprehensive set of unit tests for the selected code. It should setup, run tests that check for correctness including important edge cases, and teardown. Ensure that the tests are complete and sophisticated. Give the tests just as chat output, don't edit any file.",
-      "description": "Write unit tests for highlighted code"
+      "description": "Write unit tests for highlighted code (via LLM-Council)"
+    },
+    {
+      "name": "refactor",
+      "prompt": "{{{ input }}}\n\nRefactor the selected code to improve readability, maintainability, and performance. Ensure the refactored code maintains the same functionality. Provide the refactored code as output.",
+      "description": "Refactor code using LLM-Council multi-model consensus"
+    },
+    {
+      "name": "complete",
+      "prompt": "{{{ input }}}\n\nComplete the selected code snippet. Ensure the completion is syntactically correct and follows best practices for the language. Provide the completed code.",
+      "description": "Complete code using LLM-Council"
     }
   ],
   "docs": []

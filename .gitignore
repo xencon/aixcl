@@ -62,6 +62,9 @@ backups/*
 .continue/config.json
 !.continue/config.json.example
 
+# LLM-Council runtime data
+llm-council-data/
+
 # System files
 Thumbs.db
 ehthumbs.db
