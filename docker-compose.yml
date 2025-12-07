@@ -120,7 +120,7 @@ services:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
       - COUNCIL_MODELS=qwen2.5-coder:7b,granite-code:3b
-      - CHAIRMAN_MODEL=gemma3:latest
+      - CHAIRMAN_MODEL=gemma3:4b
       - DATA_DIR=/app/data
     volumes:
       - ./llm-council-data:/app/data
