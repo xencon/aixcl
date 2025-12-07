@@ -58,6 +58,10 @@ backups/*
 *.sublime-workspace
 *.sublime-project
 
+# Continue IDE plugin
+.continue/config.json
+!.continue/config.json.example
+
 # System files
 Thumbs.db
 ehthumbs.db
