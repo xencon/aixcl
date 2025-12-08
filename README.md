@@ -89,20 +89,37 @@ Recent security improvements include:
 ### 🤝 Multi-Model LLM Orchestration (LLM-Council)
 AIXCL includes [LLM-Council](https://github.com/karpathy/llm-council), a multi-model orchestration framework that provides consensus-based responses:
 - **3-Stage Process**: First opinions from multiple models → Review stage → Final consensus response
-- **Chairman Model**: Uses `gemma3:latest` to review and synthesize responses
+- **Chairman Model**: Uses `gemma3:4b` to review and synthesize responses
 - **Base Models**: Currently configured with `qwen2.5-coder:7b` and `granite-code:3b`
 - **IDE Integration**: Works seamlessly with the Continue plugin for enhanced code assistance
+- **Streaming Support**: Real-time streaming responses with OpenAI-compatible Server-Sent Events (SSE) format
+- **Markdown Formatting**: Automatic formatting of bullet points, numbered lists, and markdown structure for optimal rendering
 - **Persistent Context**: Maintains conversation history across sessions
-- **API Endpoint**: Available at `http://localhost:8000/ask` for programmatic access
+- **OpenAI-Compatible API**: Available at `http://localhost:8000/v1/chat/completions` for programmatic access
 
 The LLM-Council service automatically starts with the AIXCL stack and integrates with Ollama for local model inference.
+
+#### Streaming Responses
+LLM-Council supports streaming responses for real-time display in clients like the Continue plugin:
+- Character-based chunking (50 characters) for smooth real-time updates
+- Proper OpenAI-compatible Server-Sent Events (SSE) format
+- Automatic streaming when requested, or force streaming via configuration
+- Configurable via `FORCE_STREAMING` environment variable
+
+#### Markdown Formatting
+Responses are automatically formatted for optimal rendering in markdown viewers:
+- Normalizes bullet points (`*`, `-`, `•`) to standard markdown format
+- Normalizes numbered lists (`1.` and `1)`) formats
+- Ensures proper spacing around lists and headers
+- Preserves code blocks and indented content
+- Configurable via `ENABLE_MARKDOWN_FORMATTING` environment variable (default: `true`)
 
 ## Services
 
 | Service | Description | URL |
 |---------|-------------|-----|
 | **Ollama** | Runs LLMs locally (with GPU support when available) | [ollama.com](https://ollama.com) |
-| **LLM-Council** | Multi-model LLM orchestration framework for consensus-based responses | [http://localhost:8000](http://localhost:8000) |
+| **LLM-Council** | Multi-model LLM orchestration framework for consensus-based responses | [http://localhost:8000](http://localhost:8000) (API: `/v1/chat/completions`) |
 | **Open WebUI** | Web interface for interacting with models | [http://localhost:8080](http://localhost:8080) |
 | **PostgreSQL** | Database for storing conversations and settings | - |
 | **pgAdmin** | Database management tool (auto-configured) | [http://localhost:5050](http://localhost:5050) |
@@ -304,6 +321,21 @@ GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=your_grafana_password
 ```
 
+**Optional LLM-Council variables:**
+```
+# Force streaming mode (always return streaming responses)
+FORCE_STREAMING=false
+
+# Enable markdown formatting (format bullet points, lists, etc.)
+ENABLE_MARKDOWN_FORMATTING=true
+
+# Council models (comma-separated)
+COUNCIL_MODELS=qwen2.5-coder:7b,granite-code:3b
+
+# Chairman model (synthesizes final response)
+CHAIRMAN_MODEL=gemma3:4b
+```
+
 ### Environment File Options
 
 - **`.env`** - Main configuration file (automatically created from `.env.example`)
@@ -327,6 +359,56 @@ cp .env.example .env
 ```
 
 The `.env.local` file can be used to override settings from `.env` without modifying the main configuration file. This is useful for local development or when you want to keep sensitive data separate from the main configuration.
+
+## Continue Plugin Integration
+
+AIXCL is designed to work seamlessly with the [Continue](https://continue.dev) IDE plugin for AI-powered code assistance. The LLM-Council service provides an OpenAI-compatible API that Continue can use directly.
+
+### Configuration
+
+1. **Install Continue Plugin** in your IDE (VS Code, JetBrains, etc.)
+
+2. **Configure Continue** to use LLM-Council by adding this to your Continue config (`.continue/config.json`):
+
+```json
+{
+  "models": [
+    {
+      "model": "council",
+      "title": "LLM-Council (Multi-Model)",
+      "provider": "openai",
+      "apiBase": "http://localhost:8000/v1",
+      "apiKey": "local"
+    }
+  ]
+}
+```
+
+3. **Start AIXCL** services:
+   ```bash
+   ./aixcl start
+   ```
+
+4. **Select the Council model** in Continue's model selector
+
+### Features
+
+- **Multi-Model Consensus**: Get responses from multiple models reviewed and synthesized by a chairman model
+- **Streaming Support**: Real-time streaming responses for immediate feedback
+- **Markdown Formatting**: Automatically formatted responses with proper bullet points and numbered lists
+- **File Context**: Continue automatically includes file context in requests, which LLM-Council processes correctly
+- **Conversation History**: Maintains context across multiple interactions
+
+### Configuration Options
+
+You can customize LLM-Council behavior via environment variables in your `.env` file:
+
+- `FORCE_STREAMING=true` - Always return streaming responses (useful if Continue works better with streaming)
+- `ENABLE_MARKDOWN_FORMATTING=false` - Disable automatic markdown formatting (if you prefer raw responses)
+- `COUNCIL_MODELS=model1,model2` - Configure which models participate in the council
+- `CHAIRMAN_MODEL=model` - Set the model that synthesizes final responses
+
+See the example configuration in `.continue/config.json.example` for a complete setup.
 
 ## GPU Support
 
