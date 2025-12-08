@@ -20,20 +20,34 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
     Returns:
         List of dicts with 'model' and 'response' keys
     """
+    print("DEBUG: stage1_collect_responses called", flush=True)
+    print(f"DEBUG: COUNCIL_MODELS = {COUNCIL_MODELS}", flush=True)
+    print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}", flush=True)
+    
     messages = [{"role": "user", "content": user_query}]
+    print(f"DEBUG: messages = {messages}")
 
     # Query all models in parallel
+    print("DEBUG: calling query_models_parallel")
     responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    print(f"DEBUG: query_models_parallel returned {len(responses)} responses")
+    print(f"DEBUG: responses keys = {list(responses.keys())}")
 
     # Format results
     stage1_results = []
     for model, response in responses.items():
+        print(f"DEBUG: processing model {model}, response is None: {response is None}")
         if response is not None:  # Only include successful responses
+            content = response.get('content', '')
+            print(f"DEBUG: model {model} content length = {len(content)}")
             stage1_results.append({
                 "model": model,
-                "response": response.get('content', '')
+                "response": content
             })
+        else:
+            print(f"DEBUG: model {model} returned None, skipping")
 
+    print(f"DEBUG: stage1_collect_responses returning {len(stage1_results)} results")
     return stage1_results
 
 
@@ -51,8 +65,12 @@ async def stage2_collect_rankings(
     Returns:
         Tuple of (rankings list, label_to_model mapping)
     """
+    print("DEBUG: stage2_collect_rankings called")
+    print(f"DEBUG: stage1_results count = {len(stage1_results)}")
+    
     # Create anonymized labels for responses (Response A, Response B, etc.)
     labels = [chr(65 + i) for i in range(len(stage1_results))]  # A, B, C, ...
+    print(f"DEBUG: created labels = {labels}")
 
     # Create mapping from label to model name
     label_to_model = {
@@ -100,7 +118,9 @@ Now provide your evaluation and ranking:"""
     messages = [{"role": "user", "content": ranking_prompt}]
 
     # Get rankings from all council models in parallel
+    print("DEBUG: calling query_models_parallel for stage2")
     responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    print(f"DEBUG: stage2 query_models_parallel returned {len(responses)} responses")
 
     # Format results
     stage2_results = []
@@ -133,6 +153,11 @@ async def stage3_synthesize_final(
     Returns:
         Dict with 'model' and 'response' keys
     """
+    print("DEBUG: stage3_synthesize_final called", flush=True)
+    print(f"DEBUG: CHAIRMAN_MODEL = {CHAIRMAN_MODEL}", flush=True)
+    print(f"DEBUG: stage1_results count = {len(stage1_results)}")
+    print(f"DEBUG: stage2_results count = {len(stage2_results)}")
+    
     # Build comprehensive context for chairman
     stage1_text = "\n\n".join([
         f"Model: {result['model']}\nResponse: {result['response']}"
@@ -164,18 +189,25 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     messages = [{"role": "user", "content": chairman_prompt}]
 
     # Query the chairman model
+    print("DEBUG: calling query_model for chairman")
     response = await query_model(CHAIRMAN_MODEL, messages)
+    print(f"DEBUG: chairman query_model returned, is None: {response is None}")
 
     if response is None:
         # Fallback if chairman fails
+        print("DEBUG: chairman returned None, using fallback")
         return {
             "model": CHAIRMAN_MODEL,
             "response": "Error: Unable to generate final synthesis."
         }
 
+    content = response.get('content', '')
+    print(f"DEBUG: chairman content length = {len(content)}")
+    print(f"DEBUG: chairman content preview = {content[:200]}")
+    
     return {
         "model": CHAIRMAN_MODEL,
-        "response": response.get('content', '')
+        "response": content
     }
 
 
@@ -308,28 +340,41 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
     Returns:
         Tuple of (stage1_results, stage2_results, stage3_result, metadata)
     """
+    print("DEBUG: run_full_council called", flush=True)
+    print(f"DEBUG: user_query = {user_query[:100]}...", flush=True)
+    
     # Stage 1: Collect individual responses
+    print("DEBUG: starting stage1")
     stage1_results = await stage1_collect_responses(user_query)
+    print(f"DEBUG: stage1 completed, results count = {len(stage1_results)}")
 
     # If no models responded successfully, return error
     if not stage1_results:
-        return [], [], {
+        print("DEBUG: WARNING - stage1_results is empty, returning error")
+        error_result = {
             "model": "error",
             "response": "All models failed to respond. Please try again."
-        }, {}
+        }
+        print(f"DEBUG: returning error_result = {error_result}")
+        return [], [], error_result, {}
 
     # Stage 2: Collect rankings
+    print("DEBUG: starting stage2")
     stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
+    print(f"DEBUG: stage2 completed, results count = {len(stage2_results)}")
 
     # Calculate aggregate rankings
     aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
+    print(f"DEBUG: aggregate_rankings = {aggregate_rankings}")
 
     # Stage 3: Synthesize final answer
+    print("DEBUG: starting stage3")
     stage3_result = await stage3_synthesize_final(
         user_query,
         stage1_results,
         stage2_results
     )
+    print(f"DEBUG: stage3 completed, result = {stage3_result}")
 
     # Prepare metadata
     metadata = {
@@ -337,4 +382,5 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
         "aggregate_rankings": aggregate_rankings
     }
 
+    print("DEBUG: run_full_council returning")
     return stage1_results, stage2_results, stage3_result, metadata

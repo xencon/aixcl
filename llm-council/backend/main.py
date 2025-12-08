@@ -10,16 +10,28 @@ import json
 import asyncio
 import os
 import time
+import sys
 
 from . import storage
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
+from .config import BACKEND_MODE, COUNCIL_MODELS, CHAIRMAN_MODEL, OLLAMA_BASE_URL
 
 app = FastAPI(title="LLM Council API")
 
+# Print startup configuration
+print("=" * 60)
+print("DEBUG: LLM Council API starting up")
+print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}")
+print(f"DEBUG: COUNCIL_MODELS = {COUNCIL_MODELS}")
+print(f"DEBUG: CHAIRMAN_MODEL = {CHAIRMAN_MODEL}")
+print(f"DEBUG: OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
+print("=" * 60)
+
 # Enable CORS for local development
+# Continue plugin may run from various origins, so allow all localhost ports
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"],  # Allow all origins for Continue plugin compatibility
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -186,26 +198,141 @@ async def chat_completions(request: ChatCompletionRequest):
     """
     OpenAI-compatible chat completions endpoint for Continue plugin integration.
     """
+    print("DEBUG: chat_completions called", flush=True)
+    print(f"DEBUG: request.stream = {request.stream}", flush=True)
+    print(f"DEBUG: request.model = {request.model}", flush=True)
+    sys.stdout.flush()
     try:
-        # Extract the user message from the messages list
-        user_messages = [msg.content for msg in request.messages if msg.role == "user"]
-        if not user_messages:
+        # Log all messages to see what Continue is sending
+        print(f"DEBUG: received {len(request.messages)} messages", flush=True)
+        for i, msg in enumerate(request.messages):
+            print(f"DEBUG: message[{i}] role={msg.role}, content_length={len(msg.content)}", flush=True)
+            if len(msg.content) > 500:
+                print(f"DEBUG: message[{i}] content preview: {msg.content[:500]}...", flush=True)
+            else:
+                print(f"DEBUG: message[{i}] content: {msg.content}", flush=True)
+        
+        # Build the full context from all messages
+        # Continue sends file context in system messages and conversation in user/assistant messages
+        context_parts = []
+        user_queries = []
+        
+        for msg in request.messages:
+            if msg.role == "system":
+                # System messages often contain file context or instructions
+                context_parts.append(msg.content)
+            elif msg.role == "user":
+                # Collect all user messages (the last one is usually the actual query)
+                user_queries.append(msg.content)
+            elif msg.role == "assistant":
+                # Previous assistant responses for conversation context
+                context_parts.append(f"Previous response: {msg.content}")
+        
+        # The last user message is the actual query
+        if not user_queries:
             raise HTTPException(status_code=400, detail="No user message found")
         
-        user_query = user_messages[-1]  # Use the last user message
+        user_query = user_queries[-1]
+        
+        # If there's context (file contents, previous messages), prepend it
+        if context_parts:
+            context_text = "\n\n".join(context_parts)
+            # Build a comprehensive prompt that includes context
+            user_query = f"""Context and file contents:
+{context_text}
+
+User's question or request:
+{user_query}
+
+Please provide a helpful response based on the context provided above."""
+        
+        print(f"DEBUG: final user_query length = {len(user_query)}", flush=True)
+        print(f"DEBUG: user_query preview = {user_query[:500]}...", flush=True)
         
         # Run the 3-stage council process
+        print("DEBUG: about to call run_full_council", flush=True)
         stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
             user_query
         )
+        print(f"DEBUG: run_full_council returned")
+        print(f"DEBUG: stage1_results count = {len(stage1_results)}")
+        print(f"DEBUG: stage2_results count = {len(stage2_results)}")
+        print(f"DEBUG: stage3_result = {stage3_result}")
         
         # Extract the final response from stage 3
-        final_content = stage3_result.get('content', '')
+        # Note: stage3_result uses 'response' key, not 'content'
+        final_content = stage3_result.get('response', stage3_result.get('content', ''))
+        print(f"DEBUG: final_content length = {len(final_content)}", flush=True)
+        print(f"DEBUG: final_content preview = {final_content[:200]}", flush=True)
+        
+        # If content is empty, log the full stage3_result for debugging
+        if not final_content:
+            print(f"DEBUG: WARNING - final_content is empty!", flush=True)
+            print(f"DEBUG: stage3_result keys = {list(stage3_result.keys())}", flush=True)
+            print(f"DEBUG: stage3_result full = {stage3_result}", flush=True)
+            sys.stdout.flush()
+        
+        # Handle streaming if requested
+        if request.stream:
+            print("DEBUG: Streaming response requested", flush=True)
+            async def generate_stream():
+                response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
+                created_time = int(time.time())
+                
+                # Send content in chunks for streaming
+                words = final_content.split()
+                chunk_size = 10  # Send 10 words at a time
+                
+                for i in range(0, len(words), chunk_size):
+                    chunk = ' '.join(words[i:i+chunk_size])
+                    if i > 0:
+                        chunk = ' ' + chunk  # Add space before chunk (except first)
+                    
+                    chunk_data = {
+                        "id": response_id,
+                        "object": "chat.completion.chunk",
+                        "created": created_time,
+                        "model": request.model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {"role": "assistant", "content": chunk},
+                            "finish_reason": None
+                        }]
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+                
+                # Send final chunk with finish_reason
+                final_chunk = {
+                    "id": response_id,
+                    "object": "chat.completion.chunk",
+                    "created": created_time,
+                    "model": request.model,
+                    "choices": [{
+                        "index": 0,
+                        "delta": {},
+                        "finish_reason": "stop"
+                    }]
+                }
+                yield f"data: {json.dumps(final_chunk)}\n\n"
+                yield "data: [DONE]\n\n"
+            
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                }
+            )
+        
+        # Non-streaming response
+        response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
+        created_time = int(time.time())
         
         # Create OpenAI-compatible response
         response = ChatCompletionResponse(
-            id=f"chatcmpl-{uuid.uuid4().hex[:8]}",
-            created=int(time.time()),
+            id=response_id,
+            created=created_time,
             model=request.model,
             choices=[
                 ChatCompletionChoice(
@@ -224,9 +351,30 @@ async def chat_completions(request: ChatCompletionRequest):
             }
         )
         
-        return response.model_dump()
+        print("DEBUG: returning non-streaming response", flush=True)
+        response_dict = response.model_dump()
+        print(f"DEBUG: response dict keys = {list(response_dict.keys())}", flush=True)
+        print(f"DEBUG: response choices count = {len(response_dict.get('choices', []))}", flush=True)
+        if response_dict.get('choices'):
+            choice = response_dict['choices'][0]
+            print(f"DEBUG: choice keys = {list(choice.keys())}", flush=True)
+            print(f"DEBUG: message keys = {list(choice.get('message', {}).keys())}", flush=True)
+            content = choice.get('message', {}).get('content', '')
+            print(f"DEBUG: message content length = {len(content)}", flush=True)
+            print(f"DEBUG: message content first 100 chars = {content[:100]}", flush=True)
+            print(f"DEBUG: message content last 100 chars = {content[-100:]}", flush=True)
+        sys.stdout.flush()
+        
+        # Return the response dict (FastAPI will serialize to JSON automatically)
+        # Using model_dump() ensures proper serialization with all fields
+        # FastAPI will set Content-Type: application/json automatically
+        # Use model_dump(mode='json') to ensure proper JSON serialization
+        return response.model_dump(mode='json')
     
     except Exception as e:
+        print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}")
+        import traceback
+        print(f"DEBUG: Traceback:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
