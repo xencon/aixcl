@@ -9,6 +9,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.pdb
+venv
 
 # Docker
 *.log
