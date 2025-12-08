@@ -41,3 +41,13 @@ OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Data directory for conversation storage
 DATA_DIR = os.getenv("DATA_DIR", "data/conversations")
+
+# Force streaming mode (if True, always return streaming responses even if client doesn't request it)
+# This can be useful if clients like Continue plugin work better with streaming
+FORCE_STREAMING = os.getenv("FORCE_STREAMING", "false").lower() == "true"
+print(f"DEBUG: FORCE_STREAMING = {FORCE_STREAMING}")
+
+# Enable markdown formatting (if True, formats responses for better rendering in Continue plugin)
+# Formats bullet points, numbered lists, and ensures proper markdown structure
+ENABLE_MARKDOWN_FORMATTING = os.getenv("ENABLE_MARKDOWN_FORMATTING", "true").lower() == "true"
+print(f"DEBUG: ENABLE_MARKDOWN_FORMATTING = {ENABLE_MARKDOWN_FORMATTING}")

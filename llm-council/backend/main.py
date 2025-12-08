@@ -11,10 +11,119 @@ import asyncio
 import os
 import time
 import sys
+import re
 
 from . import storage
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
-from .config import BACKEND_MODE, COUNCIL_MODELS, CHAIRMAN_MODEL, OLLAMA_BASE_URL
+from .config import BACKEND_MODE, COUNCIL_MODELS, CHAIRMAN_MODEL, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING
+
+
+def format_markdown_response(content: str) -> str:
+    """
+    Format response content to ensure proper markdown rendering in Continue plugin.
+    Fixes bullet points, numbered lists, and other markdown formatting issues.
+    """
+    if not content:
+        return content
+    
+    lines = content.split('\n')
+    formatted_lines = []
+    in_list = False
+    list_type = None  # 'bullet' or 'numbered'
+    list_counter = 1  # For numbered lists
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        original_line = line
+        
+        # Check if this is a bullet point (various formats: -, *, •)
+        bullet_match = re.match(r'^[-*•]\s+(.+)$', stripped)
+        # Check if this is a numbered list item (1. or 1) format)
+        numbered_match = re.match(r'^(\d+)[.)]\s+(.+)$', stripped)
+        
+        if bullet_match:
+            # Normalize bullet points to use '- ' (standard markdown)
+            content_text = bullet_match.group(1)
+            if not in_list or list_type != 'bullet':
+                # Start new list, ensure blank line before
+                if formatted_lines and formatted_lines[-1].strip() and not formatted_lines[-1].startswith('-'):
+                    formatted_lines.append('')
+                in_list = True
+                list_type = 'bullet'
+                list_counter = 1
+            formatted_lines.append(f'- {content_text}')
+        elif numbered_match:
+            # Normalize numbered lists - preserve the number for better compatibility
+            number = int(numbered_match.group(1))
+            content_text = numbered_match.group(2)
+            if not in_list or list_type != 'numbered':
+                # Start new list, ensure blank line before
+                if formatted_lines and formatted_lines[-1].strip() and not re.match(r'^\d+[.)]', formatted_lines[-1].strip()):
+                    formatted_lines.append('')
+                in_list = True
+                list_type = 'numbered'
+                list_counter = number
+            # Use the actual number (markdown will render it correctly)
+            formatted_lines.append(f'{list_counter}. {content_text}')
+            list_counter += 1
+        else:
+            # Regular line
+            if in_list and stripped:
+                # End list if we hit a non-empty non-list line
+                # But check if it's a continuation (indented line after list item)
+                leading_spaces = len(original_line) - len(original_line.lstrip())
+                if leading_spaces < 2:  # Not significantly indented
+                    in_list = False
+                    list_type = None
+                    list_counter = 1
+                    # Add blank line after list for proper markdown rendering
+                    if formatted_lines and formatted_lines[-1].strip():
+                        formatted_lines.append('')
+            
+            # Preserve original line
+            if not stripped:
+                # Empty line - preserve it but limit consecutive empty lines
+                if formatted_lines and formatted_lines[-1].strip():
+                    formatted_lines.append('')
+            else:
+                # Check if line is in a code block
+                if stripped.startswith('```'):
+                    # Code block marker - preserve exactly
+                    formatted_lines.append(original_line)
+                elif original_line.startswith('    ') or original_line.startswith('\t'):
+                    # Indented line (code or nested content) - preserve indentation
+                    formatted_lines.append(original_line)
+                else:
+                    # Regular line - preserve as-is
+                    formatted_lines.append(original_line)
+    
+    # Join lines back together
+    formatted_content = '\n'.join(formatted_lines)
+    
+    # Fix common markdown issues:
+    # 1. Ensure proper spacing around headers (but not inside code blocks)
+    # Split by code blocks, fix headers, then rejoin
+    parts = re.split(r'(```[^\n]*\n.*?```)', formatted_content, flags=re.DOTALL)
+    fixed_parts = []
+    for part in parts:
+        if part.startswith('```'):
+            # Code block - don't modify
+            fixed_parts.append(part)
+        else:
+            # Regular content - fix headers
+            fixed = re.sub(r'\n(#{1,6}\s+.+)\n([^\n#\s])', r'\n\1\n\n\2', part)
+            fixed_parts.append(fixed)
+    formatted_content = ''.join(fixed_parts)
+    
+    # 2. Fix multiple consecutive blank lines (max 2, but preserve in code blocks)
+    # This is tricky with code blocks, so we'll be conservative
+    formatted_content = re.sub(r'\n{4,}', '\n\n\n', formatted_content)
+    
+    # 3. Ensure lists have proper spacing
+    # Lists should have a blank line before them (if not already)
+    formatted_content = re.sub(r'([^\n])\n([-*]|\d+[.)])', r'\1\n\n\2', formatted_content)
+    
+    return formatted_content
 
 app = FastAPI(title="LLM Council API")
 
@@ -262,8 +371,8 @@ Please provide a helpful response based on the context provided above."""
         # Extract the final response from stage 3
         # Note: stage3_result uses 'response' key, not 'content'
         final_content = stage3_result.get('response', stage3_result.get('content', ''))
-        print(f"DEBUG: final_content length = {len(final_content)}", flush=True)
-        print(f"DEBUG: final_content preview = {final_content[:200]}", flush=True)
+        print(f"DEBUG: final_content length (before formatting) = {len(final_content)}", flush=True)
+        print(f"DEBUG: final_content preview (before formatting) = {final_content[:200]}", flush=True)
         
         # If content is empty, log the full stage3_result for debugging
         if not final_content:
@@ -271,22 +380,48 @@ Please provide a helpful response based on the context provided above."""
             print(f"DEBUG: stage3_result keys = {list(stage3_result.keys())}", flush=True)
             print(f"DEBUG: stage3_result full = {stage3_result}", flush=True)
             sys.stdout.flush()
+        else:
+            # Format the content to ensure proper markdown rendering in Continue plugin
+            if ENABLE_MARKDOWN_FORMATTING:
+                original_length = len(final_content)
+                final_content = format_markdown_response(final_content)
+                print(f"DEBUG: Markdown formatting applied (length: {original_length} -> {len(final_content)})", flush=True)
+                print(f"DEBUG: final_content preview (after formatting) = {final_content[:200]}", flush=True)
+            else:
+                print(f"DEBUG: Markdown formatting disabled, using original content", flush=True)
         
-        # Handle streaming if requested
-        if request.stream:
+        # Handle streaming if requested or forced
+        should_stream = request.stream or FORCE_STREAMING
+        if should_stream:
+            if FORCE_STREAMING and not request.stream:
+                print("DEBUG: FORCE_STREAMING enabled, converting to streaming response", flush=True)
             print("DEBUG: Streaming response requested", flush=True)
             async def generate_stream():
                 response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
                 created_time = int(time.time())
                 
-                # Send content in chunks for streaming
-                words = final_content.split()
-                chunk_size = 10  # Send 10 words at a time
+                # OpenAI streaming format: first send role, then content chunks
+                # Send initial chunk with role (OpenAI does this)
+                initial_chunk = {
+                    "id": response_id,
+                    "object": "chat.completion.chunk",
+                    "created": created_time,
+                    "model": request.model,
+                    "choices": [{
+                        "index": 0,
+                        "delta": {"role": "assistant"},
+                        "finish_reason": None
+                    }]
+                }
+                yield f"data: {json.dumps(initial_chunk)}\n\n"
                 
-                for i in range(0, len(words), chunk_size):
-                    chunk = ' '.join(words[i:i+chunk_size])
-                    if i > 0:
-                        chunk = ' ' + chunk  # Add space before chunk (except first)
+                # Stream content in character-based chunks for smoother display
+                # Use smaller chunks (50-100 chars) for better real-time feel
+                chunk_size = 50
+                content_length = len(final_content)
+                
+                for i in range(0, content_length, chunk_size):
+                    chunk = final_content[i:i+chunk_size]
                     
                     chunk_data = {
                         "id": response_id,
@@ -295,11 +430,13 @@ Please provide a helpful response based on the context provided above."""
                         "model": request.model,
                         "choices": [{
                             "index": 0,
-                            "delta": {"role": "assistant", "content": chunk},
+                            "delta": {"content": chunk},
                             "finish_reason": None
                         }]
                     }
                     yield f"data: {json.dumps(chunk_data)}\n\n"
+                    # Small delay to simulate real-time generation (optional, can remove)
+                    await asyncio.sleep(0.01)
                 
                 # Send final chunk with finish_reason
                 final_chunk = {
@@ -322,6 +459,7 @@ Please provide a helpful response based on the context provided above."""
                 headers={
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",  # Disable buffering for nginx
                 }
             )
         
