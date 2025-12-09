@@ -1,6 +1,7 @@
 # Environment files
 .env
 .env.local
+.env.backup.*
 .pythonenv
 
 # Python
@@ -9,6 +10,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.pdb
+venv
 
 # Docker
 *.log
@@ -57,6 +59,13 @@ backups/*
 .idea/
 *.sublime-workspace
 *.sublime-project
+
+# Continue IDE plugin
+.continue/config.json
+!.continue/config.json.example
+
+# LLM-Council runtime data
+llm-council-data/
 
 # System files
 Thumbs.db

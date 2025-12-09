@@ -113,6 +113,28 @@ services:
     command: open-webui
     restart: always
 
+  llm-council:
+    build: ./llm-council
+    container_name: llm-council
+    environment:
+      - BACKEND_MODE=ollama
+      - OLLAMA_BASE_URL=http://localhost:11434
+      - COUNCIL_MODELS=qwen2.5-coder:7b,granite-code:3b
+      - CHAIRMAN_MODEL=gemma3:4b
+      - DATA_DIR=/app/data
+    volumes:
+      - ./llm-council-data:/app/data
+    network_mode: host
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
