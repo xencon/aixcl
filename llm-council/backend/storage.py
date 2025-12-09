@@ -14,8 +14,16 @@ def ensure_data_dir():
 
 
 def get_conversation_path(conversation_id: str) -> str:
-    """Get the file path for a conversation."""
-    return os.path.join(DATA_DIR, f"{conversation_id}.json")
+    """Get the file path for a conversation, ensuring it stays within DATA_DIR."""
+    # Build the raw path
+    raw_path = os.path.join(DATA_DIR, f"{conversation_id}.json")
+    # Normalize both raw_path and DATA_DIR
+    norm_data_dir = os.path.abspath(os.path.normpath(DATA_DIR))
+    norm_path = os.path.abspath(os.path.normpath(raw_path))
+    # Check that the normalized path is inside the data dir
+    if not norm_path.startswith(norm_data_dir + os.sep):
+        raise ValueError("Invalid conversation_id: Path traversal detected.")
+    return norm_path
 
 
 def create_conversation(conversation_id: str) -> Dict[str, Any]:
