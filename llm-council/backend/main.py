@@ -12,6 +12,7 @@ import os
 import time
 import sys
 import re
+import logging
 
 from . import storage
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
@@ -574,8 +575,10 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             yield f"data: {json.dumps({'type': 'complete'})}\n\n"
 
         except Exception as e:
-            # Send error event
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            # Log the exception with traceback
+            logging.exception("Exception in send_message_stream.event_generator")
+            # Send generic error event to user
+            yield f"data: {json.dumps({'type': 'error', 'message': 'An internal error has occurred.'})}\n\n"
 
     return StreamingResponse(
         event_generator(),
