@@ -68,6 +68,57 @@ fi
 COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE")
 CONTAINER_NAME="open-webui"
 
+# Define all services from docker-compose.yml
+# This list should match the services defined in docker-compose.yml
+ALL_SERVICES=(
+    "ollama"
+    "open-webui"
+    "postgres"
+    "pgadmin"
+    "watchtower"
+    "prometheus"
+    "grafana"
+    "cadvisor"
+    "node-exporter"
+    "postgres-exporter"
+    "nvidia-gpu-exporter"
+    "loki"
+    "promtail"
+)
+
+# Function to validate service name
+function is_valid_service() {
+    local service="$1"
+    for valid_service in "${ALL_SERVICES[@]}"; do
+        if [ "$service" = "$valid_service" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Function to get container name from service name
+function get_container_name() {
+    local service="$1"
+    case "$service" in
+        "open-webui")
+            echo "open-webui"
+            ;;
+        "node-exporter")
+            echo "node-exporter"
+            ;;
+        "postgres-exporter")
+            echo "postgres-exporter"
+            ;;
+        "nvidia-gpu-exporter")
+            echo "nvidia-gpu-exporter"
+            ;;
+        *)
+            echo "$service"
+            ;;
+    esac
+}
+
 # Detect if NVIDIA GPU is available
 function has_nvidia() {
     if command -v nvidia-smi >/dev/null 2>&1; then
@@ -421,6 +472,150 @@ function restart() {
     start
 }
 
+function start_service() {
+    if [ -z "$1" ]; then
+        echo "Error: Service name is required"
+        echo "Usage: $0 service start <service-name>"
+        echo "Available services: ${ALL_SERVICES[*]}"
+        return 1
+    fi
+    
+    local service="$1"
+    
+    # Validate service name
+    if ! is_valid_service "$service"; then
+        echo "❌ Error: Unknown service '$service'"
+        echo "Available services: ${ALL_SERVICES[*]}"
+        return 1
+    fi
+    
+    local container_name=$(get_container_name "$service")
+    
+    # Check if service is already running
+    if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+        echo "Service '$service' is already running."
+        return 0
+    fi
+    
+    # Set up compose command with GPU detection
+    set_compose_cmd
+    
+    echo "Starting service: $service..."
+    
+    # Check for .env file if needed (for services that require it)
+    if [ ! -f .env ] && [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; then
+        if [ -f .env.example ]; then
+            echo "⚠️  .env file not found. Copying from .env.example..."
+            cp .env.example .env
+            load_env_file ".env"
+        else
+            echo "❌ Error: .env file required for service '$service'"
+            return 1
+        fi
+    fi
+    
+    # Generate pgAdmin configuration if starting pgadmin
+    if [ "$service" = "pgadmin" ]; then
+        generate_pgadmin_config
+    fi
+    
+    # Start the specific service
+    if "${COMPOSE_CMD[@]}" up -d "$service"; then
+        echo "✅ Successfully started service: $service"
+        
+        # Wait a moment for the service to initialize
+        sleep 2
+        
+        # Check if the container is actually running
+        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            echo "Service '$service' is now running."
+        else
+            echo "⚠️  Service '$service' may not have started correctly. Check logs with: $0 logs $service"
+        fi
+        return 0
+    else
+        echo "❌ Failed to start service: $service"
+        return 1
+    fi
+}
+
+function stop_service() {
+    if [ -z "$1" ]; then
+        echo "Error: Service name is required"
+        echo "Usage: $0 service stop <service-name>"
+        echo "Available services: ${ALL_SERVICES[*]}"
+        return 1
+    fi
+    
+    local service="$1"
+    
+    # Validate service name
+    if ! is_valid_service "$service"; then
+        echo "❌ Error: Unknown service '$service'"
+        echo "Available services: ${ALL_SERVICES[*]}"
+        return 1
+    fi
+    
+    local container_name=$(get_container_name "$service")
+    
+    # Check if service is running
+    if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+        echo "Service '$service' is not running."
+        return 0
+    fi
+    
+    # Set up compose command with GPU detection
+    set_compose_cmd
+    
+    echo "Stopping service: $service..."
+    
+    # Stop the specific service
+    if "${COMPOSE_CMD[@]}" stop "$service"; then
+        echo "✅ Successfully stopped service: $service"
+        
+        # Clean up pgAdmin configuration if stopping pgadmin
+        if [ "$service" = "pgadmin" ] && [ -f "pgadmin-servers.json" ]; then
+            rm -f pgadmin-servers.json
+            echo "🧹 Cleaned up pgAdmin configuration file"
+        fi
+        return 0
+    else
+        echo "❌ Failed to stop service: $service"
+        return 1
+    fi
+}
+
+function service() {
+    if [[ $# -lt 2 ]]; then
+        echo "Error: Service action and name are required"
+        echo "Usage: $0 service {start|stop|restart} <service-name>"
+        echo "Available services: ${ALL_SERVICES[*]}"
+        return 1
+    fi
+    
+    local action="$1"
+    local service="$2"
+    
+    case "$action" in
+        start)
+            start_service "$service"
+            ;;
+        stop)
+            stop_service "$service"
+            ;;
+        restart)
+            stop_service "$service"
+            sleep 2
+            start_service "$service"
+            ;;
+        *)
+            echo "Error: Unknown service action '$action'"
+            echo "Available actions: start, stop, restart"
+            return 1
+            ;;
+    esac
+}
+
 function logs() {
     # Set up compose command with GPU detection
     set_compose_cmd
@@ -557,6 +752,18 @@ function status() {
     else
         echo "⚠️  NVIDIA GPU Exporter container is not running (expected on non-GPU systems)"
     fi
+
+    if docker ps --format "{{.Names}}" | grep -q "loki"; then
+        echo "✅ Loki container is running"
+    else
+        echo "❌ Loki container is not running"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "promtail"; then
+        echo "✅ Promtail container is running"
+    else
+        echo "❌ Promtail container is not running"
+    fi
     
     echo -e "\nService Health:"
     echo "----------------"
@@ -617,10 +824,30 @@ function status() {
     echo -n "Grafana status: "
     GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null)
     if [ "$GRAFANA_STATUS" = "200" ]; then
-        echo -e "✅ Grafana is responding (HTTP $GRAFANA_STATUS)\n"
+        echo "✅ Grafana is responding (HTTP $GRAFANA_STATUS)"
     else
-        echo -e "❌ Grafana is not responding (HTTP $GRAFANA_STATUS)\n"
+        echo "❌ Grafana is not responding (HTTP $GRAFANA_STATUS)"
     fi
+
+    echo -n "Loki status: "
+    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null)
+    if [ "$LOKI_STATUS" = "200" ]; then
+        echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
+    else
+        echo "❌ Loki is not responding (HTTP $LOKI_STATUS)"
+    fi
+
+    echo -n "Promtail status: "
+    if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
+        if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
+            echo "✅ Promtail is responding"
+        else
+            echo "⚠️  Promtail container is running but health check failed"
+        fi
+    else
+        echo "❌ Promtail container is not running"
+    fi
+    echo ""
 }
 
 function add() {
@@ -872,6 +1099,8 @@ function help_menu() {
     echo "  logs [container] [n] Show logs for all containers or a specific container (with optional number of lines)"
     echo "  clean                Remove unused Docker containers, images, and volumes"
     echo "  status               Check services status"
+    echo "  service {start|stop|restart} <name>  Control individual services"
+    echo "                        Available services: ${ALL_SERVICES[*]}"
     echo "  models {add|remove|list} Manage LLM models"
     echo "  dashboard <name>     Open a web dashboard (grafana, openwebui, pgadmin)"
     echo "  council {configure|list} Configure or list LLM Council models"
@@ -1420,6 +1649,10 @@ function main() {
             ;;
         status)
             status
+            ;;
+        service)
+            shift
+            service "$@"
             ;;
         models)
             shift
