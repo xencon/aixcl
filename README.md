@@ -3,13 +3,13 @@
 # AIXCL
 
 ## Overview
-AIXCL is a simple Docker-based platform that helps you integrate Large Language Models (LLMs) into your development workflow. It sets up Ollama, Open WebUI, and supporting services with minimal effort. These can be directly accessed via your IDE using the [continue](https://continue.dev) plugin.
+AIXCL is a simple container based platform that helps you integrate Large Language Models (LLMs) into your development workflow. It ships with Ollama, Open WebUI and LMM Coumncil as well as other auxiliary services. It offers integration with common IDE's by using the [continue](https://continue.dev) plugin.
 
 ### What does it do?
 - Run LLMs locally on your machine (with automatic GPU detection)
-- Provide a friendly web interface to interact with models
+- Provide a friendly web ui to interact with models and configure the server
+- Provide a powerful cli to manage models and the llm council
 - Help you code, generate documentation, and review your work
-- Simplify model management with easy-to-use commands
 - Automatically configure database connections and services
 - Enhanced security with input validation and secure file operations
 
@@ -39,6 +39,12 @@ cd aixcl
 # List installed models
 ./aixcl models list
 
+# Configure LLM Council (interactive setup)
+./aixcl council configure
+
+# View current council configuration
+./aixcl council list
+
 # Access the LLM engine web interface
 # Open http://localhost:8080 in your browser
 
@@ -49,7 +55,7 @@ cd aixcl
 ## CLI Commands
 
 ```
-Usage: ./aixcl {start|stop|restart|logs|clean|status|models|dashboard|help|install-completion|check-env}
+Usage: ./aixcl {start|stop|restart|logs|clean|status|models|dashboard|council|help|install-completion|check-env}
 Commands:
   start                Start the Docker Compose deployment
   stop                 Stop the Docker Compose deployment
@@ -59,6 +65,7 @@ Commands:
   status               Check services status
   models {add|remove|list} Manage Ollama models
   dashboard <name>     Open a web dashboard (grafana, openwebui, pgadmin)
+  council [configure|list] Configure or list LLM Council models
   help                 Show this help menu
   install-completion   Install bash completion for aixcl
   check-env            Check environment dependencies
@@ -153,6 +160,52 @@ Responses are automatically formatted for optimal rendering in markdown viewers:
 ### Listing Models
 ```bash
 ./aixcl models list
+```
+
+## LLM Council Configuration
+
+The LLM-Council service uses a multi-model consensus approach where multiple models collaborate to provide better responses. You can configure which models participate in the council and which model acts as the chairman.
+
+### Listing Current Council Configuration
+
+View the currently configured council models:
+
+```bash
+# List current council configuration (default action)
+./aixcl council
+
+# Or explicitly
+./aixcl council list
+```
+
+This displays:
+- **Chairman Model**: The model that synthesizes final responses
+- **Council Members**: List of models that participate in the consensus process
+- **Total Models**: Count of all models in the council
+- **Service Status**: Whether the LLM-Council service is running
+
+### Configuring the Council
+
+Configure which models participate in the council and select the chairman:
+
+```bash
+./aixcl council configure
+```
+
+This interactive command:
+1. Shows all available models from Ollama
+2. Lets you select the chairman model
+3. Lets you select council members (minimum 1 member + chairman, maximum 5 total models)
+4. Updates the `.env` file with your selections
+5. Optionally restarts the LLM-Council service to apply changes
+
+The configuration is stored in your `.env` file:
+- `COUNCIL_MODELS`: Comma-separated list of council member models
+- `CHAIRMAN_MODEL`: The chairman model that synthesizes responses
+
+**Note**: After configuring the council, restart the services to apply changes:
+```bash
+./aixcl restart
 ```
 
 ## Monitoring & Metrics
@@ -294,6 +347,7 @@ AIXCL includes bash completion support to make using the CLI faster and easier:
 ./aixcl [TAB]          # Shows all commands
 ./aixcl models add [TAB]   # Shows available models
 ./aixcl models list        # Lists installed models
+./aixcl council [TAB]      # Shows council subcommands (configure, list)
 ./aixcl logs [TAB]         # Shows available service logging
 ```
 
@@ -405,8 +459,14 @@ You can customize LLM-Council behavior via environment variables in your `.env` 
 
 - `FORCE_STREAMING=true` - Always return streaming responses (useful if Continue works better with streaming)
 - `ENABLE_MARKDOWN_FORMATTING=false` - Disable automatic markdown formatting (if you prefer raw responses)
-- `COUNCIL_MODELS=model1,model2` - Configure which models participate in the council
+- `COUNCIL_MODELS=model1,model2` - Configure which models participate in the council (comma-separated)
 - `CHAIRMAN_MODEL=model` - Set the model that synthesizes final responses
+
+**Easy Configuration**: Use the interactive configuration command instead of manually editing `.env`:
+```bash
+./aixcl council configure  # Interactive setup
+./aixcl council list       # Verify your configuration
+```
 
 See the example configuration in `.continue/config.json.example` for a complete setup.
 

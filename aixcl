@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 set -e  # Exit on error
@@ -863,7 +864,7 @@ function dashboard() {
 }
 
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|status|models|dashboard|help|install-completion|check-env}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|status|models|dashboard|council|help|install-completion|check-env}"
     echo "Commands:"
     echo "  start                Start the AIXCL stack"
     echo "  stop                 Stop the AIXCL stack"
@@ -873,6 +874,7 @@ function help_menu() {
     echo "  status               Check services status"
     echo "  models {add|remove|list} Manage LLM models"
     echo "  dashboard <name>     Open a web dashboard (grafana, openwebui, pgadmin)"
+    echo "  council {configure|list} Configure or list LLM Council models"
     echo "  check-env            Check environment dependencies"
     echo "  help                 Show this help menu"
     echo "  install-completion   Install bash completion"
@@ -942,6 +944,458 @@ EOF
     fi
 }
 
+function get_available_models() {
+    # Get list of available models from Ollama
+    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "❌ Error: Ollama container is not running. Please start the services first."
+        return 1
+    fi
+    
+    # Get models list, skip header line, extract model names
+    docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
+}
+
+function update_env_file() {
+    local council_models="$1"
+    local chairman_model="$2"
+    local env_file=".env"
+    
+    # Check if .env file exists
+    if [[ ! -f "$env_file" ]]; then
+        echo "❌ Error: .env file not found. Please run './aixcl start' first to create it."
+        return 1
+    fi
+    
+    # Create backup
+    cp "$env_file" "${env_file}.backup.$(date +%s)"
+    
+    # Update or add COUNCIL_MODELS
+    if grep -q "^COUNCIL_MODELS=" "$env_file"; then
+        # Update existing entry
+        if [[ "$(uname)" == "Darwin" ]]; then
+            # macOS uses BSD sed
+            sed -i '' "s|^COUNCIL_MODELS=.*|COUNCIL_MODELS=${council_models}|" "$env_file"
+        else
+            # Linux uses GNU sed
+            sed -i "s|^COUNCIL_MODELS=.*|COUNCIL_MODELS=${council_models}|" "$env_file"
+        fi
+    else
+        # Add new entry
+        echo "COUNCIL_MODELS=${council_models}" >> "$env_file"
+    fi
+    
+    # Update or add CHAIRMAN_MODEL
+    if grep -q "^CHAIRMAN_MODEL=" "$env_file"; then
+        # Update existing entry
+        if [[ "$(uname)" == "Darwin" ]]; then
+            sed -i '' "s|^CHAIRMAN_MODEL=.*|CHAIRMAN_MODEL=${chairman_model}|" "$env_file"
+        else
+            sed -i "s|^CHAIRMAN_MODEL=.*|CHAIRMAN_MODEL=${chairman_model}|" "$env_file"
+        fi
+    else
+        # Add new entry
+        echo "CHAIRMAN_MODEL=${chairman_model}" >> "$env_file"
+    fi
+    
+    echo "✅ Updated .env file with council configuration"
+    return 0
+}
+
+function list_council() {
+    echo "📋 Current LLM Council Configuration"
+    echo "===================================="
+    echo ""
+    
+    local env_file=".env"
+    
+    # Check if .env file exists
+    if [[ ! -f "$env_file" ]]; then
+        echo "❌ Error: .env file not found."
+        echo "   Please run './aixcl start' first to create it, then configure the council with './aixcl council configure'"
+        return 1
+    fi
+    
+    # Load environment variables from .env file
+    load_env_file "$env_file"
+    
+    # Get council models and chairman model from environment
+    local council_models="${COUNCIL_MODELS:-}"
+    local chairman_model="${CHAIRMAN_MODEL:-}"
+    
+    # Check if council is configured
+    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
+        echo "⚠️  Council is not configured yet."
+        echo ""
+        echo "To configure the council, run:"
+        echo "  ./aixcl council configure"
+        return 0
+    fi
+    
+    # Display chairman
+    if [[ -n "$chairman_model" ]]; then
+        echo "👑 Chairman Model:"
+        echo "   $chairman_model"
+    else
+        echo "👑 Chairman Model:"
+        echo "   ⚠️  Not set"
+    fi
+    
+    echo ""
+    
+    # Display council members
+    if [[ -n "$council_models" ]]; then
+        echo "👥 Council Members:"
+        # Split comma-separated models
+        IFS=',' read -ra MEMBERS <<< "$council_models"
+        local member_count=0
+        for member in "${MEMBERS[@]}"; do
+            # Trim whitespace
+            member=$(echo "$member" | xargs)
+            if [[ -n "$member" ]]; then
+                echo "   [$((++member_count))] $member"
+            fi
+        done
+        if [[ $member_count -eq 0 ]]; then
+            echo "   ⚠️  No members configured"
+        else
+            echo ""
+            echo "   Total members: $member_count"
+        fi
+    else
+        echo "👥 Council Members:"
+        echo "   ⚠️  Not set"
+    fi
+    
+    echo ""
+    
+    # Calculate total models (chairman + members)
+    local total_models=0
+    if [[ -n "$chairman_model" ]]; then
+        ((total_models++))
+    fi
+    if [[ -n "$council_models" ]]; then
+        IFS=',' read -ra MEMBERS <<< "$council_models"
+        for member in "${MEMBERS[@]}"; do
+            member=$(echo "$member" | xargs)
+            if [[ -n "$member" ]]; then
+                ((total_models++))
+            fi
+        done
+    fi
+    
+    echo "📊 Summary:"
+    echo "   Total models in council: $total_models"
+    echo ""
+    
+    # Check if LLM-Council service is running
+    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
+        echo "✅ LLM-Council service is running"
+        echo ""
+        echo "💡 This configuration is active and will be used for the next request."
+    else
+        echo "⚠️  LLM-Council service is not running"
+        echo ""
+        echo "💡 To apply this configuration:"
+        echo "   1. Start services: ./aixcl start"
+        echo "   2. Or restart LLM-Council: ./aixcl restart"
+    fi
+    
+    echo ""
+}
+
+function configure_council() {
+    echo "🔧 Configuring LLM Council"
+    echo "=========================="
+    echo ""
+    
+    # Check if Ollama is running
+    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "❌ Error: Ollama container is not running."
+        echo "   Please start the services first with: ./aixcl start"
+        return 1
+    fi
+    
+    # Get available models
+    echo "Fetching available models from Ollama..."
+    local available_models
+    available_models=$(get_available_models)
+    
+    if [[ -z "$available_models" ]]; then
+        echo "❌ Error: No models found in Ollama."
+        echo "   Please add models first with: ./aixcl models add <model-name>"
+        return 1
+    fi
+    
+    # Convert to array for easier handling
+    local models_array=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && models_array+=("$line")
+    done <<< "$available_models"
+    
+    local model_count=${#models_array[@]}
+    
+    if [[ $model_count -lt 2 ]]; then
+        echo "❌ Error: At least 2 models are required for the council (1 chairman + 1 member)."
+        echo "   You currently have $model_count model(s)."
+        echo "   Please add more models first with: ./aixcl models add <model-name>"
+        return 1
+    fi
+    
+    # Display available models
+    echo ""
+    echo "Available models:"
+    echo "-----------------"
+    local index=1
+    for model in "${models_array[@]}"; do
+        echo "  [$index] $model"
+        ((index++))
+    done
+    echo ""
+    
+    # Select chairman
+    local chairman_index
+    local chairman_model
+    while true; do
+        read -p "Select chairman model (1-$model_count): " chairman_index
+        if [[ "$chairman_index" =~ ^[0-9]+$ ]] && [[ "$chairman_index" -ge 1 ]] && [[ "$chairman_index" -le $model_count ]]; then
+            chairman_model="${models_array[$((chairman_index - 1))]}"
+            echo "✅ Selected chairman: $chairman_model"
+            break
+        else
+            echo "❌ Invalid selection. Please enter a number between 1 and $model_count."
+        fi
+    done
+    
+    # Select council members (up to 4 more, for a total of 5)
+    local council_members=()
+    local max_members=4
+    local current_count=0
+    local min_members_required=1  # At least 1 member required (plus chairman = 2 total)
+    
+    echo ""
+    echo "Select council members (at least 1 member required, up to $max_members more models):"
+    echo "Note: Chairman is already included. Total council size will be 1 + number of members selected."
+    echo ""
+    
+    # Disable exit on error for the interactive loop (we handle errors manually)
+    set +e
+    
+    # Ensure we enter the loop
+    while true; do
+        local remaining=$((max_members - current_count))
+        local total_selected=$((${#council_members[@]} + 1))  # +1 for chairman
+        
+        if [[ $total_selected -ge 5 ]]; then
+            echo ""
+            echo "✅ Maximum of 5 models reached (1 chairman + ${#council_members[@]} members)."
+            break
+        fi
+        
+        echo ""
+        echo "Currently selected:"
+        echo "  Chairman: $chairman_model"
+        if [[ ${#council_members[@]} -gt 0 ]]; then
+            echo "  Members:"
+            for member in "${council_members[@]}"; do
+                echo "    - $member"
+            done
+        else
+            echo "  Members: (none yet - at least 1 required)"
+        fi
+        echo ""
+        echo "Available models:"
+        local available_count=0
+        local index=1
+        for model in "${models_array[@]}"; do
+            local is_selected=0
+            local marker=""
+            if [[ "$model" == "$chairman_model" ]]; then
+                marker=" (chairman)"
+                is_selected=1
+            fi
+            for member in "${council_members[@]}"; do
+                if [[ "$model" == "$member" ]]; then
+                    marker=" (selected)"
+                    is_selected=1
+                    break
+                fi
+            done
+            if [[ $is_selected -eq 0 ]]; then
+                marker=""
+                ((available_count++))
+            fi
+            echo "  [$index] $model$marker"
+            ((index++))
+        done
+        
+        if [[ $available_count -eq 0 ]]; then
+            echo ""
+            echo "  (no more models available)"
+            break
+        fi
+        
+        # Build prompt message
+        local prompt_msg="Select model (1-$model_count)"
+        if [[ ${#council_members[@]} -ge $min_members_required ]]; then
+            prompt_msg="$prompt_msg, or 'done' to finish"
+            if [[ $remaining -gt 0 ]]; then
+                prompt_msg="$prompt_msg [$remaining remaining]"
+            fi
+        else
+            local needed=$((min_members_required - ${#council_members[@]}))
+            prompt_msg="$prompt_msg (at least $needed more required)"
+        fi
+        prompt_msg="$prompt_msg: "
+        
+        echo ""
+        read -p "$prompt_msg" selection
+        
+        # Handle 'done' option - only allow if minimum members are selected
+        if [[ "$selection" == "done" ]] || [[ "$selection" == "d" ]]; then
+            if [[ ${#council_members[@]} -lt $min_members_required ]]; then
+                local needed=$((min_members_required - ${#council_members[@]}))
+                echo "❌ At least $needed more member(s) required. Please select more models."
+                continue
+            else
+                echo "✅ Finished selecting council members."
+                break
+            fi
+        fi
+        
+        # Validate numeric selection
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 1 ]] && [[ "$selection" -le $model_count ]]; then
+            local selected_model="${models_array[$((selection - 1))]}"
+            
+            # Check if already selected
+            local already_selected=0
+            if [[ "$selected_model" == "$chairman_model" ]]; then
+                already_selected=1
+            fi
+            for member in "${council_members[@]}"; do
+                if [[ "$selected_model" == "$member" ]]; then
+                    already_selected=1
+                    break
+                fi
+            done
+            
+            if [[ $already_selected -eq 1 ]]; then
+                echo "❌ Model '$selected_model' is already selected. Please choose a different model."
+            else
+                council_members+=("$selected_model")
+                echo "✅ Added '$selected_model' to council members"
+                ((current_count++))
+            fi
+        else
+            echo "❌ Invalid selection. Please enter a number between 1 and $model_count"
+            if [[ ${#council_members[@]} -ge $min_members_required ]]; then
+                echo "   or type 'done' to finish."
+            fi
+        fi
+    done
+    
+    # Re-enable exit on error
+    set -e
+    
+    # Validate we have at least 2 models (chairman + at least 1 member)
+    local total_models=$((${#council_members[@]} + 1))
+    if [[ $total_models -lt 2 ]]; then
+        echo ""
+        echo "❌ Error: Council must have at least 2 models (1 chairman + 1 member)."
+        echo "   You selected only the chairman."
+        return 1
+    fi
+    
+    # Build council models string (comma-separated, excluding chairman)
+    local council_models_str=""
+    for member in "${council_members[@]}"; do
+        if [[ -z "$council_models_str" ]]; then
+            council_models_str="$member"
+        else
+            council_models_str="$council_models_str,$member"
+        fi
+    done
+    
+    # Show summary
+    echo ""
+    echo "=========================="
+    echo "Council Configuration Summary"
+    echo "=========================="
+    echo "Chairman: $chairman_model"
+    echo "Council Members (${#council_members[@]}):"
+    for member in "${council_members[@]}"; do
+        echo "  - $member"
+    done
+    echo "Total models: $total_models"
+    echo ""
+    echo "This will update:"
+    echo "  - .env file: COUNCIL_MODELS and CHAIRMAN_MODEL"
+    echo ""
+    
+    # Ask for confirmation
+    read -p "Apply this configuration? (yes/no): " confirm
+    if [[ "$confirm" != "yes" ]] && [[ "$confirm" != "y" ]]; then
+        echo "Configuration cancelled."
+        return 0
+    fi
+    
+    # Update .env file
+    if ! update_env_file "$council_models_str" "$chairman_model"; then
+        return 1
+    fi
+    
+    echo ""
+    echo "✅ Council configuration updated successfully!"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Restart the LLM-Council service to apply changes:"
+    echo "     ./aixcl restart"
+    echo "  2. The Continue plugin will automatically use the updated configuration"
+    echo ""
+    
+    # Ask if user wants to restart services
+    read -p "Restart LLM-Council service now? (yes/no): " restart_confirm
+    if [[ "$restart_confirm" == "yes" ]] || [[ "$restart_confirm" == "y" ]]; then
+        echo ""
+        echo "Restarting LLM-Council service..."
+        set_compose_cmd
+        if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
+            "${COMPOSE_CMD[@]}" restart llm-council
+            echo "✅ LLM-Council service restarted"
+        else
+            echo "⚠️  LLM-Council service is not running. Start services with: ./aixcl start"
+        fi
+    fi
+}
+
+function council_cmd() {
+    # Default to 'list' if no action is provided
+    if [[ $# -lt 1 ]]; then
+        list_council
+        return 0
+    fi
+
+    local action="$1"
+    shift
+
+    case "$action" in
+        configure)
+            configure_council
+            ;;
+        list)
+            list_council
+            ;;
+        *)
+            echo "Error: Unknown council action '$action'"
+            echo "Usage: $0 council [configure|list]"
+            echo "Examples:"
+            echo "  $0 council              - List current council configuration (default)"
+            echo "  $0 council list         - List current council configuration"
+            echo "  $0 council configure    - Configure council models and chairman"
+            return 1
+            ;;
+    esac
+}
+
 function main() {
     if [[ $# -lt 1 ]]; then
         help_menu
@@ -983,6 +1437,10 @@ function main() {
             ;;
         check-env)
             check_env
+            ;;
+        council)
+            shift
+            council_cmd "$@"
             ;;
         *)
             help_menu

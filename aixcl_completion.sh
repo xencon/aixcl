@@ -26,7 +26,7 @@ _aixcl_complete() {
     _init_completion || return
 
     # List of all possible commands
-    local commands="start stop restart logs clean status models dashboard help install-completion check-env"
+    local commands="start stop restart logs clean status models dashboard council help install-completion check-env"
 
     # List of services for logs command
     local services="ollama open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
@@ -52,8 +52,17 @@ _aixcl_complete() {
             COMPREPLY=( $(compgen -W "$model_actions" -- "$cur") )
             return 0
             ;;
+        'council')
+            local council_actions="configure list"
+            COMPREPLY=( $(compgen -W "$council_actions" -- "$cur") )
+            return 0
+            ;;
         'list')
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
+                COMPREPLY=()
+                return 0
+            fi
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "council" ]]; then
                 COMPREPLY=()
                 return 0
             fi
