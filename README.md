@@ -383,6 +383,14 @@ FORCE_STREAMING=false
 # Enable markdown formatting (format bullet points, lists, etc.)
 ENABLE_MARKDOWN_FORMATTING=true
 
+# Enable PostgreSQL storage for Continue conversations
+ENABLE_DB_STORAGE=true
+
+# PostgreSQL connection (optional, defaults to localhost:5432)
+# These are already set for Open WebUI, but can be overridden for LLM-Council
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
 # Council models (comma-separated)
 COUNCIL_MODELS=qwen2.5-coder:7b,granite-code:3b
 

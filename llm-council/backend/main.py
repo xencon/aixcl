@@ -15,8 +15,11 @@ import re
 import logging
 
 from . import storage
+from . import db
+from . import db_storage
+from .conversation_tracker import generate_conversation_id, extract_conversation_context
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
-from .config import BACKEND_MODE, COUNCIL_MODELS, CHAIRMAN_MODEL, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING
+from .config import BACKEND_MODE, COUNCIL_MODELS, CHAIRMAN_MODEL, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING, ENABLE_DB_STORAGE
 
 
 def format_markdown_response(content: str) -> str:
@@ -135,7 +138,22 @@ print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}")
 print(f"DEBUG: COUNCIL_MODELS = {COUNCIL_MODELS}")
 print(f"DEBUG: CHAIRMAN_MODEL = {CHAIRMAN_MODEL}")
 print(f"DEBUG: OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
+print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
 print("=" * 60)
+
+# Initialize database connection pool on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on startup."""
+    if ENABLE_DB_STORAGE:
+        await db.get_pool()
+        print("DEBUG: Database connection pool initialized")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connection pool on shutdown."""
+    await db.close_pool()
+    print("DEBUG: Database connection pool closed")
 
 # Enable CORS for local development
 # Continue plugin may run from various origins, so allow all localhost ports
@@ -307,6 +325,7 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
 async def chat_completions(request: ChatCompletionRequest):
     """
     OpenAI-compatible chat completions endpoint for Continue plugin integration.
+    Saves conversations to PostgreSQL if ENABLE_DB_STORAGE is enabled.
     """
     print("DEBUG: chat_completions called", flush=True)
     print(f"DEBUG: request.stream = {request.stream}", flush=True)
@@ -321,6 +340,39 @@ async def chat_completions(request: ChatCompletionRequest):
                 print(f"DEBUG: message[{i}] content preview: {msg.content[:500]}...", flush=True)
             else:
                 print(f"DEBUG: message[{i}] content: {msg.content}", flush=True)
+        
+        # Convert messages to dict format for processing
+        messages_dict = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+        
+        # Handle conversation tracking and database storage
+        conversation_id = None
+        is_new_conversation = False
+        
+        if ENABLE_DB_STORAGE:
+            # Generate or find conversation ID
+            conversation_id = generate_conversation_id(messages_dict)
+            
+            # Try to find existing conversation
+            existing_conv = await db_storage.get_continue_conversation(conversation_id)
+            
+            if existing_conv is None:
+                # Create new conversation
+                first_user_msg = None
+                for msg in messages_dict:
+                    if msg.get("role") == "user":
+                        first_user_msg = msg.get("content", "")
+                        break
+                
+                if first_user_msg:
+                    # Generate title from first message
+                    title = first_user_msg[:50] + "..." if len(first_user_msg) > 50 else first_user_msg
+                    existing_conv = await db_storage.create_continue_conversation(conversation_id, first_user_msg, title)
+                    is_new_conversation = True
+                    print(f"DEBUG: Created new conversation {conversation_id}", flush=True)
+                else:
+                    print(f"DEBUG: No user message found, skipping conversation creation", flush=True)
+            else:
+                print(f"DEBUG: Found existing conversation {conversation_id}", flush=True)
         
         # Build the full context from all messages
         # Continue sends file context in system messages and conversation in user/assistant messages
@@ -343,6 +395,11 @@ async def chat_completions(request: ChatCompletionRequest):
             raise HTTPException(status_code=400, detail="No user message found")
         
         user_query = user_queries[-1]
+        
+        # Save user message to database if enabled
+        if ENABLE_DB_STORAGE and conversation_id:
+            await db_storage.add_message_to_conversation(conversation_id, "user", user_query)
+            print(f"DEBUG: Saved user message to conversation {conversation_id}", flush=True)
         
         # If there's context (file contents, previous messages), prepend it
         if context_parts:
@@ -453,6 +510,21 @@ Please provide a helpful response based on the context provided above."""
                 }
                 yield f"data: {json.dumps(final_chunk)}\n\n"
                 yield "data: [DONE]\n\n"
+                
+                # Save assistant response to database after streaming completes
+                if ENABLE_DB_STORAGE and conversation_id:
+                    stage_data = {
+                        "stage1": stage1_results,
+                        "stage2": stage2_results,
+                        "stage3": stage3_result,
+                    }
+                    await db_storage.add_message_to_conversation(
+                        conversation_id,
+                        "assistant",
+                        final_content,
+                        stage_data
+                    )
+                    print(f"DEBUG: Saved assistant message to conversation {conversation_id}", flush=True)
             
             return StreamingResponse(
                 generate_stream(),
@@ -467,6 +539,21 @@ Please provide a helpful response based on the context provided above."""
         # Non-streaming response
         response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
         created_time = int(time.time())
+        
+        # Save assistant response to database if enabled
+        if ENABLE_DB_STORAGE and conversation_id:
+            stage_data = {
+                "stage1": stage1_results,
+                "stage2": stage2_results,
+                "stage3": stage3_result,
+            }
+            await db_storage.add_message_to_conversation(
+                conversation_id,
+                "assistant",
+                final_content,
+                stage_data
+            )
+            print(f"DEBUG: Saved assistant message to conversation {conversation_id}", flush=True)
         
         # Create OpenAI-compatible response
         response = ChatCompletionResponse(
@@ -588,6 +675,34 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             "Connection": "keep-alive",
         }
     )
+
+
+@app.delete("/v1/chat/completions/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """
+    Delete a Continue conversation from PostgreSQL.
+    
+    Args:
+        conversation_id: Conversation identifier
+        
+    Returns:
+        Success message or error
+    """
+    if not ENABLE_DB_STORAGE:
+        raise HTTPException(status_code=503, detail="Database storage is disabled")
+    
+    # Verify conversation exists and belongs to Continue
+    conversation = await db_storage.get_continue_conversation(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Delete conversation
+    success = await db_storage.delete_conversation(conversation_id)
+    
+    if success:
+        return {"status": "success", "message": f"Conversation {conversation_id} deleted"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to delete conversation")
 
 
 if __name__ == "__main__":
