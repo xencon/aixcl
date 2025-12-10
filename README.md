@@ -58,20 +58,31 @@ cd aixcl
 ## CLI Commands
 
 ```
-Usage: ./aixcl {start|stop|restart|logs|clean|status|models|dashboard|council|help|bash-completion|check-env}
-Commands:
-  start                Start the Docker Compose deployment
-  stop                 Stop the Docker Compose deployment
+Usage: ./aixcl <command> [options]
+
+Stack Management:
+  start                Start all services
+  stop                 Stop all services
   restart              Restart all services
-  logs                 Show logs for all containers
-  clean                Remove unused Docker containers, images, and volumes
-  status               Check services status
-  models [...]         Manage Ollama models
-  dashboard [...]      Open a web dashboard (grafana, openwebui, pgadmin)
-  council [...]        Configure or list LLM Council models
-  help                 Show this help menu
-  bash-completion      Install bash completion for aixcl
-  check-env            Check environment dependencies
+  status               Show service status
+  logs [container] [n] View logs (all or specific container, optional line count)
+  clean                Remove unused Docker resources
+
+Service Control:
+  service <action> <name>  Control individual service (start|stop|restart)
+                           Services: ollama open-webui postgres pgadmin watchtower 
+                           prometheus grafana cadvisor node-exporter 
+                           postgres-exporter nvidia-gpu-exporter loki promtail
+
+Models & Configuration:
+  models <action> [name]   Manage LLM models (add|remove|list)
+  council [action]          Configure LLM Council (configure|list)
+
+Utilities:
+  dashboard <name>          Open dashboard (grafana|openwebui|pgadmin)
+  check-env                 Verify environment setup
+  bash-completion           Install bash completion
+  help                      Show this help
 ```
 
 ## Features
