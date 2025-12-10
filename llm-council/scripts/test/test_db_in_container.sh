@@ -15,5 +15,5 @@ fi
 
 # Run the Python test script
 cd /app
-python3 test_db_connection.py
+python3 scripts/test/test_db_connection.py
 
