@@ -1260,28 +1260,66 @@ function list_council() {
         return 0
     fi
     
-    # Display chairman
+    # Get available models from Ollama (if running)
+    local available_models=""
+    local can_check_models=false
+    if docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        available_models=$(get_available_models)
+        if [[ -n "$available_models" ]]; then
+            can_check_models=true
+        fi
+    fi
+    
+    # Helper function to check if a model exists
+    model_exists() {
+        local model_to_check="$1"
+        if [[ "$can_check_models" == "true" ]]; then
+            echo "$available_models" | grep -q "^${model_to_check}$"
+        else
+            return 1
+        fi
+    }
+    
+    # Display chairman with existence check
+    echo "👑 Chairman Model:"
     if [[ -n "$chairman_model" ]]; then
-        echo "👑 Chairman Model:"
-        echo "   $chairman_model"
+        if model_exists "$chairman_model"; then
+            echo "   ✅ $chairman_model"
+        else
+            if [[ "$can_check_models" == "true" ]]; then
+                echo "   ❌ $chairman_model (not found in Ollama)"
+            else
+                echo "   ⚠️  $chairman_model (cannot verify - Ollama not running)"
+            fi
+        fi
     else
-        echo "👑 Chairman Model:"
         echo "   ⚠️  Not set"
     fi
     
     echo ""
     
-    # Display council members
+    # Display council members with existence check
     if [[ -n "$council_models" ]]; then
         echo "👥 Council Members:"
         # Split comma-separated models
         IFS=',' read -ra MEMBERS <<< "$council_models"
         local member_count=0
+        local existing_count=0
         for member in "${MEMBERS[@]}"; do
             # Trim whitespace
             member=$(echo "$member" | xargs)
             if [[ -n "$member" ]]; then
-                echo "   [$((++member_count))] $member"
+                ((member_count++))
+                if model_exists "$member"; then
+                    echo "   [$member_count] ✅ $member"
+                    ((existing_count++))
+                else
+                    if [[ "$can_check_models" == "true" ]]; then
+                        echo "   [$member_count] ❌ $member (not found in Ollama)"
+                    else
+                        echo "   [$member_count] ⚠️  $member (cannot verify - Ollama not running)"
+                    fi
+                fi
             fi
         done
         if [[ $member_count -eq 0 ]]; then
@@ -1289,6 +1327,11 @@ function list_council() {
         else
             echo ""
             echo "   Total members: $member_count"
+            if [[ "$can_check_models" == "true" ]]; then
+                if [[ $existing_count -lt $member_count ]]; then
+                    echo "   ⚠️  Only $existing_count of $member_count members are available in Ollama"
+                fi
+            fi
         fi
     else
         echo "👥 Council Members:"
@@ -1297,10 +1340,14 @@ function list_council() {
     
     echo ""
     
-    # Calculate total models (chairman + members)
+    # Calculate total models and existing models
     local total_models=0
+    local existing_models=0
     if [[ -n "$chairman_model" ]]; then
         ((total_models++))
+        if model_exists "$chairman_model"; then
+            ((existing_models++))
+        fi
     fi
     if [[ -n "$council_models" ]]; then
         IFS=',' read -ra MEMBERS <<< "$council_models"
@@ -1308,19 +1355,37 @@ function list_council() {
             member=$(echo "$member" | xargs)
             if [[ -n "$member" ]]; then
                 ((total_models++))
+                if model_exists "$member"; then
+                    ((existing_models++))
+                fi
             fi
         done
     fi
     
     echo "📊 Summary:"
     echo "   Total models in council: $total_models"
+    if [[ "$can_check_models" == "true" ]]; then
+        if [[ $existing_models -eq $total_models ]] && [[ $total_models -gt 0 ]]; then
+            echo "   ✅ All $existing_models models are available in Ollama"
+        elif [[ $existing_models -lt $total_models ]]; then
+            echo "   ⚠️  Only $existing_models of $total_models models are available in Ollama"
+        fi
+    else
+        echo "   ⚠️  Cannot verify model availability (Ollama not running)"
+    fi
     echo ""
     
     # Check if LLM-Council service is running
     if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
         echo "✅ LLM-Council service is running"
         echo ""
-        echo "💡 This configuration is active and will be used for the next request."
+        if [[ "$can_check_models" == "true" ]] && [[ $existing_models -lt $total_models ]]; then
+            echo "⚠️  Warning: Some configured models are not available in Ollama."
+            echo "   The council may not function correctly until all models are installed."
+            echo ""
+        else
+            echo "💡 This configuration is active and will be used for the next request."
+        fi
     else
         echo "⚠️  LLM-Council service is not running"
         echo ""
