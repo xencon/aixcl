@@ -1,20 +1,25 @@
 """Conversation ID generation and tracking for Continue plugin."""
 
-import hashlib
 import json
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+
+# Namespace UUID for generating deterministic UUIDs for Continue conversations
+# This is a fixed UUID used as a namespace for UUID v5 generation
+CONTINUE_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
 
 
 def generate_conversation_id(messages: List[Dict[str, Any]]) -> str:
     """
     Generate a stable conversation ID from the first user message.
+    Uses UUID v5 (name-based) to generate deterministic UUIDs.
     
     Args:
         messages: List of messages from Continue plugin
         
     Returns:
-        Conversation ID in format 'continue-{hash}'
+        Conversation ID as a valid UUID string
     """
     # Find the first user message
     first_user_message = None
@@ -26,12 +31,16 @@ def generate_conversation_id(messages: List[Dict[str, Any]]) -> str:
     if not first_user_message:
         # Fallback: use all messages to generate hash
         messages_str = json.dumps(messages, sort_keys=True)
-        hash_value = hashlib.sha256(messages_str.encode()).hexdigest()[:16]
+        name = f"continue:{messages_str}"
     else:
-        # Hash the first user message
-        hash_value = hashlib.sha256(first_user_message.encode()).hexdigest()[:16]
+        # Use the first user message as the name for UUID generation
+        name = f"continue:{first_user_message}"
     
-    return f"continue-{hash_value}"
+    # Generate a UUID v5 (name-based) from the message content
+    # This ensures deterministic UUIDs: same input = same UUID
+    conversation_uuid = uuid.uuid5(CONTINUE_NAMESPACE, name)
+    
+    return str(conversation_uuid)
 
 
 def extract_conversation_context(messages: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -92,9 +101,9 @@ def find_existing_conversation_id(messages: List[Dict[str, Any]], existing_conve
     if not first_user_msg:
         return None
     
-    # Hash the first user message
-    first_hash = hashlib.sha256(first_user_msg.encode()).hexdigest()[:16]
-    expected_id = f"continue-{first_hash}"
+    # Generate UUID from first user message (same logic as generate_conversation_id)
+    name = f"continue:{first_user_msg}"
+    expected_id = str(uuid.uuid5(CONTINUE_NAMESPACE, name))
     
     # Check if conversation with this ID exists
     for conv in existing_conversations:
