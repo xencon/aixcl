@@ -38,6 +38,10 @@ logs/
 pgadmin-data/
 pgadmin-servers.json
 
+# Open WebUI secret keys
+.webui_secret_key
+*.key
+
 # Database backups (user-generated)
 backups/*
 !backups/.gitkeep
