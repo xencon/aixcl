@@ -96,8 +96,8 @@ Recent security improvements include:
 ### 🤝 Multi-Model LLM Orchestration (LLM-Council)
 AIXCL includes [LLM-Council](https://github.com/karpathy/llm-council), a multi-model orchestration framework that provides consensus-based responses:
 - **3-Stage Process**: First opinions from multiple models → Review stage → Final consensus response
-- **Chairman Model**: Uses `gemma3:4b` to review and synthesize responses
-- **Base Models**: Currently configured with `qwen2.5-coder:7b` and `granite-code:3b`
+- **Chairman Model**: Uses `<model>` to review and synthesize responses
+- **Base Models**: Configured with `<model>` and `<model>`...
 - **IDE Integration**: Works seamlessly with the Continue plugin for enhanced code assistance
 - **Streaming Support**: Real-time streaming responses with OpenAI-compatible Server-Sent Events (SSE) format
 - **Markdown Formatting**: Automatic formatting of bullet points, numbered lists, and markdown structure for optimal rendering
