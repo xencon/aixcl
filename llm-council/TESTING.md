@@ -26,8 +26,7 @@ Test the API endpoints directly:
 sleep 30
 
 # 3. Run API test script
-cd llm-council
-./test_api.sh
+./llm-council/scripts/test/test_api.sh
 ```
 
 ### Method 2: Database Connection Test (Inside Container)
@@ -42,7 +41,7 @@ Test the database connection and operations:
 sleep 30
 
 # 3. Run database test inside container
-docker exec -it llm-council bash test_db_in_container.sh
+docker exec -it llm-council bash scripts/test/test_db_in_container.sh
 ```
 
 ### Method 3: Manual API Testing with curl

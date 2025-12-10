@@ -101,7 +101,8 @@ AIXCL includes [LLM-Council](https://github.com/karpathy/llm-council), a multi-m
 - **IDE Integration**: Works seamlessly with the Continue plugin for enhanced code assistance
 - **Streaming Support**: Real-time streaming responses with OpenAI-compatible Server-Sent Events (SSE) format
 - **Markdown Formatting**: Automatic formatting of bullet points, numbered lists, and markdown structure for optimal rendering
-- **Persistent Context**: Maintains conversation history across sessions
+- **Persistent Context**: Maintains conversation history across sessions using PostgreSQL
+- **Database Storage**: Automatic conversation persistence with PostgreSQL integration
 - **OpenAI-Compatible API**: Available at `http://localhost:8000/v1/chat/completions` for programmatic access
 
 The LLM-Council service automatically starts with the AIXCL stack and integrates with Ollama for local model inference.
@@ -422,6 +423,41 @@ cp .env.example .env
 
 The `.env.local` file can be used to override settings from `.env` without modifying the main configuration file. This is useful for local development or when you want to keep sensitive data separate from the main configuration.
 
+## Database Persistence
+
+AIXCL includes automatic PostgreSQL-based persistence for LLM-Council conversations, ensuring your conversation history is maintained across sessions and service restarts.
+
+### Features
+
+- **Automatic Schema Creation**: Database tables are created automatically on first startup
+- **Continue Plugin Integration**: Conversations from the Continue IDE plugin are automatically stored
+- **Conversation Tracking**: Each conversation is uniquely identified and can be retrieved by ID
+- **Message History**: Full conversation history with stage data (Stage 1, 2, 3 responses) is preserved
+- **Source Tracking**: Conversations are tagged by source (`openwebui` or `continue`) for easy filtering
+
+### Configuration
+
+Database persistence is enabled by default. To disable it, set in your `.env` file:
+```
+ENABLE_DB_STORAGE=false
+```
+
+The system automatically uses the same PostgreSQL database configured for Open WebUI, so no additional setup is required.
+
+### Database Utilities
+
+Utility scripts for database management are available in `scripts/db/`:
+- Migration scripts for schema updates
+- Query scripts for inspecting stored conversations
+- See `scripts/db/README.md` for details
+
+### Testing
+
+Test scripts are available in `llm-council/scripts/test/`:
+- `test_db_connection.py` - Comprehensive database connection and operation tests
+- `test_api.sh` - API endpoint integration tests
+- See `llm-council/scripts/test/README.md` for usage instructions
+
 ## Continue Plugin Integration
 
 AIXCL is designed to work seamlessly with the [Continue](https://continue.dev) IDE plugin for AI-powered code assistance. The LLM-Council service provides an OpenAI-compatible API that Continue can use directly.
@@ -459,7 +495,8 @@ AIXCL is designed to work seamlessly with the [Continue](https://continue.dev) I
 - **Streaming Support**: Real-time streaming responses for immediate feedback
 - **Markdown Formatting**: Automatically formatted responses with proper bullet points and numbered lists
 - **File Context**: Continue automatically includes file context in requests, which LLM-Council processes correctly
-- **Conversation History**: Maintains context across multiple interactions
+- **Persistent Conversation History**: All conversations are automatically saved to PostgreSQL and persist across sessions
+- **Conversation Continuity**: Continue conversations are tracked and can be resumed using conversation IDs
 
 ### Configuration Options
 

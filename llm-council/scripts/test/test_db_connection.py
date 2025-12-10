@@ -5,8 +5,8 @@ import asyncio
 import sys
 import os
 
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+# Add backend to path (go up two levels from scripts/test to llm-council root)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'backend'))
 
 from backend import db
 from backend import db_storage
