@@ -63,9 +63,9 @@ Commands:
   logs                 Show logs for all containers
   clean                Remove unused Docker containers, images, and volumes
   status               Check services status
-  models {add|remove|list} Manage Ollama models
-  dashboard <name>     Open a web dashboard (grafana, openwebui, pgadmin)
-  council [configure|list] Configure or list LLM Council models
+  models [...]         Manage Ollama models
+  dashboard [...]      Open a web dashboard (grafana, openwebui, pgadmin)
+  council [...]        Configure or list LLM Council models
   help                 Show this help menu
   install-completion   Install bash completion for aixcl
   check-env            Check environment dependencies
