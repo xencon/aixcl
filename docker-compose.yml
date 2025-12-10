@@ -10,7 +10,7 @@ services:
     pull_policy: always
     tty: true
     restart: unless-stopped
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.3.3
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
@@ -21,7 +21,7 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:latest
+    image: ghcr.io/open-webui/open-webui:1.30.0
     container_name: open-webui
     volumes:
       - open-webui:/app/backend/data
@@ -49,7 +49,7 @@ services:
       retries: 3
 
   postgres:
-    image: postgres:17
+    image: postgres:17.2
     container_name: postgres
     environment:
       POSTGRES_USER: $POSTGRES_USER
@@ -76,7 +76,7 @@ services:
       retries: 3
   
   pgadmin:
-    image: dpage/pgadmin4:9.0
+    image: dpage/pgadmin4:9.0.1
     container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
@@ -106,7 +106,7 @@ services:
         exec /entrypoint.sh
 
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:1.7.0
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -142,7 +142,7 @@ services:
       start_period: 40s
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.54.0
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -162,7 +162,7 @@ services:
       retries: 3
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.3.0
     container_name: grafana
     volumes:
       - grafana-data:/var/lib/grafana
@@ -184,7 +184,7 @@ services:
       retries: 3
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
@@ -201,7 +201,7 @@ services:
       - '--port=8081'
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.8.2
     container_name: node-exporter
     volumes:
       - /proc:/host/proc:ro
@@ -216,7 +216,7 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
+    image: prometheuscommunity/postgres-exporter:v0.16.2
     container_name: postgres-exporter
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}?sslmode=disable"
@@ -236,7 +236,7 @@ services:
     # This service will gracefully fail on systems without NVIDIA GPUs
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.3.0
     container_name: loki
     volumes:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml
@@ -251,7 +251,7 @@ services:
       retries: 3
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:3.3.0
     container_name: promtail
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml

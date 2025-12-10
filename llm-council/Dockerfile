@@ -1,16 +1,16 @@
 # LLM-Council Dockerfile for AIXCL Platform
 # Based on https://github.com/karpathy/llm-council
-FROM python:3.11-slim
+FROM python:3.11.14-slim
 
-# Install system dependencies
+# Install system dependencies with pinned versions where possible
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (Python package manager)
-RUN pip install --no-cache-dir uv
+# Install uv (Python package manager) - pinned to specific version
+RUN pip install --no-cache-dir uv==0.6.0
 
 # Set working directory
 WORKDIR /app
