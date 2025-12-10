@@ -8,7 +8,7 @@
 # To use this script:
 # 1. Source it directly: source /path/to/aixcl_completion.sh
 # 2. Or install it system-wide: sudo cp aixcl_completion.sh /etc/bash_completion.d/aixcl
-# 3. Or run: ./aixcl install-completion
+# 3. Or run: ./aixcl bash-completion
 #
 
 # Function to get available models from Ollama
@@ -26,7 +26,7 @@ _aixcl_complete() {
     _init_completion || return
 
     # List of all possible commands
-    local commands="start stop restart logs clean status models dashboard council help install-completion check-env"
+    local commands="start stop restart logs clean status models dashboard council help bash-completion check-env"
 
     # List of services for logs command
     local services="ollama open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"

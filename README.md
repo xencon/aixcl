@@ -28,7 +28,7 @@ cd aixcl
 ./aixcl check-env
 
 # Install CLI completion for bash shell
-./aixcl install-completion
+./aixcl bash-completion
 
 # Start the services (automatically creates .env from .env.example if needed)
 ./aixcl start
@@ -58,7 +58,7 @@ cd aixcl
 ## CLI Commands
 
 ```
-Usage: ./aixcl {start|stop|restart|logs|clean|status|models|dashboard|council|help|install-completion|check-env}
+Usage: ./aixcl {start|stop|restart|logs|clean|status|models|dashboard|council|help|bash-completion|check-env}
 Commands:
   start                Start the Docker Compose deployment
   stop                 Stop the Docker Compose deployment
@@ -70,7 +70,7 @@ Commands:
   dashboard [...]      Open a web dashboard (grafana, openwebui, pgadmin)
   council [...]        Configure or list LLM Council models
   help                 Show this help menu
-  install-completion   Install bash completion for aixcl
+  bash-completion      Install bash completion for aixcl
   check-env            Check environment dependencies
 ```
 
@@ -345,7 +345,7 @@ AIXCL includes bash completion support to make using the CLI faster and easier:
 
 ```bash
 # Install bash completion
-./aixcl install-completion
+./aixcl bash-completion
 
 # Now you can use tab completion
 ./aixcl [TAB]          # Shows all commands

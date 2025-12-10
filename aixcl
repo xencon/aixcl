@@ -1091,7 +1091,7 @@ function dashboard() {
 }
 
 function help_menu() {
-    echo "Usage: $0 {start|stop|restart|logs|clean|status|models|dashboard|council|help|install-completion|check-env}"
+    echo "Usage: $0 {start|stop|restart|logs|clean|status|models|dashboard|council|help|bash-completion|check-env}"
     echo "Commands:"
     echo "  start                Start the AIXCL stack"
     echo "  stop                 Stop the AIXCL stack"
@@ -1106,7 +1106,7 @@ function help_menu() {
     echo "  council {configure|list} Configure or list LLM Council models"
     echo "  check-env            Check environment dependencies"
     echo "  help                 Show this help menu"
-    echo "  install-completion   Install bash completion"
+    echo "  bash-completion      Install bash completion"
     exit 1
 }
 
@@ -1730,7 +1730,7 @@ function main() {
         help)
             help_menu
             ;;
-        install-completion)
+        bash-completion)
             install_completion
             ;;
         check-env)
