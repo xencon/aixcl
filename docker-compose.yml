@@ -122,6 +122,12 @@ services:
       - COUNCIL_MODELS=qwen2.5-coder:7b,granite-code:3b
       - CHAIRMAN_MODEL=gemma3:4b
       - DATA_DIR=/app/data
+      - POSTGRES_HOST=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+      - ENABLE_DB_STORAGE=true
     volumes:
       - ./llm-council-data:/app/data
     network_mode: host

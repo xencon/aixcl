@@ -51,3 +51,15 @@ print(f"DEBUG: FORCE_STREAMING = {FORCE_STREAMING}")
 # Formats bullet points, numbered lists, and ensures proper markdown structure
 ENABLE_MARKDOWN_FORMATTING = os.getenv("ENABLE_MARKDOWN_FORMATTING", "true").lower() == "true"
 print(f"DEBUG: ENABLE_MARKDOWN_FORMATTING = {ENABLE_MARKDOWN_FORMATTING}")
+
+# PostgreSQL configuration for conversation storage
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+POSTGRES_USER = os.getenv("POSTGRES_USER", "admin")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
+POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "admin")
+
+# Enable database storage for Continue conversations
+ENABLE_DB_STORAGE = os.getenv("ENABLE_DB_STORAGE", "true").lower() == "true"
+print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
+print(f"DEBUG: POSTGRES_HOST = {POSTGRES_HOST}, POSTGRES_DATABASE = {POSTGRES_DATABASE}")

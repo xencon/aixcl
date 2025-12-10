@@ -1,0 +1,11 @@
+{
+  "model": "council",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello, tell me about yourself"
+    }
+  ],
+  "stream": false
+}
+
