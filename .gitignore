@@ -18,6 +18,8 @@ venv
 *.seed
 *.pid.lock
 docker-compose.override.yml
+docker-compose.*.local.yml
+docker-compose.local.yml
 
 # Docker volumes
 volumes/
