@@ -23,7 +23,26 @@ _get_ollama_models() {
 
 _aixcl_complete() {
     local cur prev words cword
-    _init_completion || return
+    # Only initialize completion if we're actually in a completion context
+    # and _init_completion is available
+    if declare -f _init_completion >/dev/null 2>&1; then
+        # Suppress errors from _init_completion to prevent stack corruption errors
+        # when the script is interrupted (e.g., with Ctrl+C)
+        _init_completion 2>/dev/null || {
+            # If initialization fails, set variables manually
+            # This handles cases where the completion stack might be corrupted
+            words=("${COMP_WORDS[@]}")
+            cword=${COMP_CWORD:-0}
+            cur="${COMP_WORDS[COMP_CWORD]:-}"
+            prev="${COMP_WORDS[COMP_CWORD-1]:-}"
+        }
+    else
+        # Fallback if _init_completion is not available
+        words=("${COMP_WORDS[@]}")
+        cword=${COMP_CWORD:-0}
+        cur="${COMP_WORDS[COMP_CWORD]:-}"
+        prev="${COMP_WORDS[COMP_CWORD-1]:-}"
+    fi
 
     # List of all possible commands
     local commands="start stop restart logs clean status models dashboard council help bash-completion check-env"
