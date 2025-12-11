@@ -7,7 +7,7 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  
+
   nvidia-gpu-exporter:
     deploy:
       resources:
@@ -16,7 +16,7 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  
+
   llm-council:
     deploy:
       resources:

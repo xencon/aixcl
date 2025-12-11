@@ -1,0 +1,274 @@
+services:
+  ollama:
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    ports:
+      - "11434:11434"
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    image: localhost:5000/ollama_ollama:latest
+    # GPU resources are configured in docker-compose.gpu.yml when available
+    # ARM64 platform is configured in docker-compose.arm.yml when detected
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  open-webui:
+    image: localhost:5000/ghcr.io_open-webui_open-webui:latest
+    container_name: open-webui
+    volumes:
+      - open-webui:/app/backend/data
+      - open-webui-data:/app/data
+      - ./scripts/openwebui.sh:/app/backend/openwebui.sh
+    environment:
+      - DATA_DIR=/app/data
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}
+      - WEBUI_NAME=AIXCL
+      - OLLAMA_BASE_URL=http://localhost:11434
+      - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
+      - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - ollama
+    network_mode: host
+    restart: always
+    command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]  # Adjust the health endpoint as necessary
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: localhost:5000/postgres:17.2
+    container_name: postgres
+    environment:
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DATABASE: $POSTGRES_DATABASE
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    network_mode: host
+    restart: always
+    command: >
+      postgres
+      -c log_statement=all
+      -c log_destination=stderr
+      -c logging_collector=on
+      -c log_directory=/var/log/postgresql
+      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
+      -c log_rotation_age=1d
+      -c log_rotation_size=100MB
+      -c log_min_duration_statement=0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  pgadmin:
+    image: localhost:5000/dpage_pgadmin4:9.0
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
+      PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
+      PGADMIN_LISTEN_PORT: 5050
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    volumes:
+      - ./backups:/var/lib/pgadmin/storage
+      - ./logs/pgadmin:/var/log/pgadmin
+      - ./pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin-servers.json:/pgadmin4/servers.json
+    user: "0:0"
+    network_mode: host
+    depends_on:
+      - postgres
+    restart: always
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        chown -R 1000:1000 /var/lib/pgadmin/storage /var/lib/pgadmin
+        chmod -R 755 /var/lib/pgadmin/storage /var/lib/pgadmin
+        find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \;
+        find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \;
+        find /var/lib/pgadmin -type d -exec chmod 755 {} \;
+        find /var/lib/pgadmin -type f -exec chmod 644 {} \;
+        exec /entrypoint.sh
+
+  watchtower:
+    image: localhost:5000/containrrr_watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: open-webui
+    restart: always
+
+  llm-council:
+    build: ./llm-council
+    container_name: llm-council
+    environment:
+      - BACKEND_MODE=ollama
+      - OLLAMA_BASE_URL=http://localhost:11434
+      - COUNCIL_MODELS=codellama:7b,qwen3:latest
+      - CHAIRMAN_MODEL=qwen3:latest
+      - DATA_DIR=/app/data
+      - POSTGRES_HOST=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+      - ENABLE_DB_STORAGE=true
+    volumes:
+      - ./llm-council-data:/app/data
+    network_mode: host
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  prometheus:
+    image: localhost:5000/prom_prometheus:v2.54.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: localhost:5000/grafana_grafana:11.3.0
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=
+      - GF_SERVER_HTTP_PORT=3000
+    network_mode: host
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cadvisor:
+    image: localhost:5000/gcr.io_cadvisor_cadvisor:v0.49.1
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    network_mode: host
+    restart: unless-stopped
+    command:
+      - '--port=8081'
+
+  node-exporter:
+    image: localhost:5000/prom_node-exporter:v1.8.2
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    network_mode: host
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: localhost:5000/prometheuscommunity_postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}?sslmode=disable"
+    network_mode: host
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  nvidia-gpu-exporter:
+    image: localhost:5000/nvcr.io_nvidia_k8s_dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
+    container_name: nvidia-gpu-exporter
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - DCGM_EXPORTER_LISTEN=:9400
+    # GPU resources are configured in docker-compose.gpu.yml when available
+    # This service will gracefully fail on systems without NVIDIA GPUs
+
+  loki:
+    image: localhost:5000/grafana_loki:3.3.0
+    container_name: loki
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  promtail:
+    image: localhost:5000/grafana_promtail:3.3.0
+    container_name: promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/promtail-config.yml
+    network_mode: host
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  open-webui:
+  open-webui-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:

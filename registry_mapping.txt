@@ -1,0 +1,16 @@
+aixcl_llm-council:latest=localhost:5000/aixcl_llm-council:latest
+python:3.11.14-slim=localhost:5000/python:3.11.14-slim
+ollama/ollama:latest=localhost:5000/ollama_ollama:latest
+ghcr.io/open-webui/open-webui:latest=localhost:5000/ghcr.io_open-webui_open-webui:latest
+prometheuscommunity/postgres-exporter:latest=localhost:5000/prometheuscommunity_postgres-exporter:latest
+dpage/pgadmin4:9.0=localhost:5000/dpage_pgadmin4:9.0
+postgres:17.2=localhost:5000/postgres:17.2
+grafana/promtail:3.3.0=localhost:5000/grafana_promtail:3.3.0
+grafana/loki:3.3.0=localhost:5000/grafana_loki:3.3.0
+grafana/grafana:11.3.0=localhost:5000/grafana_grafana:11.3.0
+prom/prometheus:v2.54.0=localhost:5000/prom_prometheus:v2.54.0
+prom/node-exporter:v1.8.2=localhost:5000/prom_node-exporter:v1.8.2
+gcr.io/cadvisor/cadvisor:v0.49.1=localhost:5000/gcr.io_cadvisor_cadvisor:v0.49.1
+nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04=localhost:5000/nvcr.io_nvidia_k8s_dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
+containrrr/watchtower:latest=localhost:5000/containrrr_watchtower:latest
+registry:2=localhost:5000/registry:2
