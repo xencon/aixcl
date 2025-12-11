@@ -2,7 +2,6 @@
 
 import json
 import logging
-import time
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from . import db
@@ -48,8 +47,8 @@ async def create_continue_conversation(conversation_id: str, first_message: str,
             "created_via": "continue_plugin",
         }
         
-        # Get current timestamp as Unix timestamp (bigint)
-        current_timestamp = int(time.time() * 1000)  # milliseconds
+        # Get current timestamp as datetime object (TIMESTAMP type in PostgreSQL)
+        current_timestamp = datetime.utcnow()
         
         # Use a default user_id for Continue conversations
         user_id = "continue-user"
@@ -241,8 +240,8 @@ async def add_message_to_conversation(
         messages.append(new_message)
         
         # Update conversation in database
-        # Use Unix timestamp (milliseconds) for updated_at
-        current_timestamp = int(time.time() * 1000)
+        # Use datetime object for updated_at (TIMESTAMP type in PostgreSQL)
+        current_timestamp = datetime.utcnow()
         
         async with pool.acquire() as conn:
             await conn.execute(
@@ -278,8 +277,8 @@ async def update_conversation_title(conversation_id: str, title: str) -> bool:
         return False
     
     try:
-        # Use Unix timestamp (milliseconds) for updated_at
-        current_timestamp = int(time.time() * 1000)
+        # Use datetime object for updated_at (TIMESTAMP type in PostgreSQL)
+        current_timestamp = datetime.utcnow()
         
         async with pool.acquire() as conn:
             result = await conn.execute(
