@@ -69,20 +69,20 @@ Stack Management:
   clean                Remove unused Docker resources
 
 Service Control:
-  service <action> <name>  Control individual service (start|stop|restart)
+  service <action> [name]  Control individual service (start|stop|restart)
                            Services: ollama open-webui postgres pgadmin watchtower 
                            prometheus grafana cadvisor node-exporter 
                            postgres-exporter nvidia-gpu-exporter loki promtail
 
 Models & Configuration:
   models <action> [name]   Manage LLM models (add|remove|list)
-  council [action]          Configure LLM Council (configure|list)
+  council <action>         Configure LLM Council (configure|list)
 
 Utilities:
-  dashboard <name>          Open dashboard (grafana|openwebui|pgadmin)
-  check-env                 Verify environment setup
-  bash-completion           Install bash completion
-  help                      Show this help
+  dashboard [name]         Open dashboard (grafana|openwebui|pgadmin)
+  check-env                Verify environment setup
+  bash-completion          Install bash completion
+  help                     Show this help
 ```
 
 ## Features
