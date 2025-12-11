@@ -1,7 +1,8 @@
 """3-stage LLM Council orchestration."""
 
 from typing import List, Dict, Any, Tuple
-from .config import COUNCIL_MODELS, CHAIRMAN_MODEL, BACKEND_MODE
+from .config import BACKEND_MODE
+from .config_manager import get_council_models, get_chairman_model
 
 # Import appropriate backend based on configuration
 if BACKEND_MODE == "ollama":
@@ -21,7 +22,10 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
         List of dicts with 'model' and 'response' keys
     """
     print("DEBUG: stage1_collect_responses called", flush=True)
-    print(f"DEBUG: COUNCIL_MODELS = {COUNCIL_MODELS}", flush=True)
+    
+    # Get current council models dynamically
+    council_models = await get_council_models()
+    print(f"DEBUG: COUNCIL_MODELS = {council_models}", flush=True)
     print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}", flush=True)
     
     messages = [{"role": "user", "content": user_query}]
@@ -29,7 +33,7 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
 
     # Query all models in parallel
     print("DEBUG: calling query_models_parallel")
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    responses = await query_models_parallel(council_models, messages)
     print(f"DEBUG: query_models_parallel returned {len(responses)} responses")
     print(f"DEBUG: responses keys = {list(responses.keys())}")
 
@@ -119,7 +123,8 @@ Now provide your evaluation and ranking:"""
 
     # Get rankings from all council models in parallel
     print("DEBUG: calling query_models_parallel for stage2")
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    council_models = await get_council_models()
+    responses = await query_models_parallel(council_models, messages)
     print(f"DEBUG: stage2 query_models_parallel returned {len(responses)} responses")
 
     # Format results
@@ -154,7 +159,10 @@ async def stage3_synthesize_final(
         Dict with 'model' and 'response' keys
     """
     print("DEBUG: stage3_synthesize_final called", flush=True)
-    print(f"DEBUG: CHAIRMAN_MODEL = {CHAIRMAN_MODEL}", flush=True)
+    
+    # Get current chairman model dynamically
+    chairman_model = await get_chairman_model()
+    print(f"DEBUG: CHAIRMAN_MODEL = {chairman_model}", flush=True)
     print(f"DEBUG: stage1_results count = {len(stage1_results)}")
     print(f"DEBUG: stage2_results count = {len(stage2_results)}")
     
@@ -190,14 +198,14 @@ Provide a clear, well-reasoned final answer that represents the council's collec
 
     # Query the chairman model
     print("DEBUG: calling query_model for chairman")
-    response = await query_model(CHAIRMAN_MODEL, messages)
+    response = await query_model(chairman_model, messages)
     print(f"DEBUG: chairman query_model returned, is None: {response is None}")
 
     if response is None:
         # Fallback if chairman fails
         print("DEBUG: chairman returned None, using fallback")
         return {
-            "model": CHAIRMAN_MODEL,
+            "model": chairman_model,
             "response": "Error: Unable to generate final synthesis."
         }
 
@@ -206,7 +214,7 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     print(f"DEBUG: chairman content preview = {content[:200]}")
     
     return {
-        "model": CHAIRMAN_MODEL,
+        "model": chairman_model,
         "response": content
     }
 
@@ -311,8 +319,9 @@ Title:"""
 
     messages = [{"role": "user", "content": title_prompt}]
 
-    # Use gemini-2.5-flash for title generation (fast and cheap)
-    response = await query_model("google/gemini-2.5-flash", messages, timeout=30.0)
+    # Use chairman model for title generation
+    chairman_model = await get_chairman_model()
+    response = await query_model(chairman_model, messages, timeout=30.0)
 
     if response is None:
         # Fallback to a generic title
