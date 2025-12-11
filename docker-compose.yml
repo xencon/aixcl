@@ -119,8 +119,8 @@ services:
     environment:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
-      - COUNCIL_MODELS=qwen2.5-coder:7b,granite-code:3b
-      - CHAIRMAN_MODEL=gemma3:4b
+      - COUNCIL_MODELS=codellama:7b,qwen3:latest
+      - CHAIRMAN_MODEL=qwen3:latest
       - DATA_DIR=/app/data
       - POSTGRES_HOST=localhost
       - POSTGRES_PORT=5432
