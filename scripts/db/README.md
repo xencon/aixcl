@@ -12,6 +12,23 @@ Migration script to add the `source` column to existing `chat` tables. This is o
 docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < scripts/db/002_add_source_column.sql
 ```
 
+### `fix_peewee_migrations.sql` / `fix_peewee_migration.sh`
+Fix script for Open WebUI peewee migration issues. This script creates the `peewee_migrate_history` tracking table and marks completed migrations when the database schema already has the required columns (e.g., when migrations were run manually or via custom scripts).
+
+**Usage:**
+```bash
+# Using the bash script (recommended)
+./scripts/db/fix_peewee_migration.sh
+
+# Or directly with SQL
+docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < scripts/db/fix_peewee_migrations.sql
+```
+
+**When to use:**
+- When Open WebUI fails to start with errors like "column X already exists"
+- When the `peewee_migrate_history` table is missing but the schema already exists
+- After manually running migrations or restoring from a backup
+
 ## Query Scripts
 
 ### `query_continue_chats.sql`

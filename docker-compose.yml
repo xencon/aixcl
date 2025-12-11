@@ -27,6 +27,8 @@ services:
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
       - ./scripts/openwebui.sh:/app/backend/openwebui.sh
+      - ./scripts/db/patch_migration_005.py:/app/backend/patch_migration_005.py:ro
+      - ./scripts/db/patch_alembic_migration.sh:/app/backend/patch_alembic_migration.sh:ro
     environment:
       - DATA_DIR=/app/data
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}
