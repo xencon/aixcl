@@ -35,7 +35,8 @@ cp "$COMPOSE_FILE" "$LOCAL_COMPOSE"
 echo "Local compose ready: $LOCAL_COMPOSE"
 
 # --- Extract images dynamically ---
-images=$(grep -E "^\s*image:" "$COMPOSE_FILE" | awk '{print $2}')
+# Note: Using [[:space:]] instead of \s for POSIX compliance (works on macOS/BSD grep)
+images=$(grep -E "^[[:space:]]*image:" "$COMPOSE_FILE" | awk '{print $2}')
 
 for img in $images; do
     # Sanitize image name for local registry
