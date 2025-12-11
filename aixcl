@@ -1639,32 +1639,65 @@ function configure_council() {
         return 0
     fi
     
-    # Update .env file
+    # Update .env file for persistence
     if ! update_env_file "$council_models_str" "$chairman_model"; then
         return 1
     fi
     
-    echo ""
-    echo "✅ Council configuration updated successfully!"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Restart the LLM-Council service to apply changes:"
-    echo "     ./aixcl restart"
-    echo "  2. The Continue plugin will automatically use the updated configuration"
-    echo ""
-    
-    # Ask if user wants to restart services
-    read -p "Restart LLM-Council service now? (yes/no): " restart_confirm
-    if [[ "$restart_confirm" == "yes" ]] || [[ "$restart_confirm" == "y" ]]; then
+    # Try to update via API if service is running (dynamic update)
+    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
         echo ""
-        echo "Restarting LLM-Council service..."
-        set_compose_cmd
-        if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-            "${COMPOSE_CMD[@]}" restart llm-council
-            echo "✅ LLM-Council service restarted"
+        echo "🔄 Updating configuration via API (no restart required)..."
+        
+        # Build JSON payload
+        IFS=',' read -ra MODEL_ARRAY <<< "$council_models_str"
+        JSON_MODELS="["
+        for i in "${!MODEL_ARRAY[@]}"; do
+            if [ $i -gt 0 ]; then
+                JSON_MODELS="${JSON_MODELS}, "
+            fi
+            JSON_MODELS="${JSON_MODELS}\"${MODEL_ARRAY[i]}\""
+        done
+        JSON_MODELS="${JSON_MODELS}]"
+        
+        JSON_BODY="{\"council_models\": ${JSON_MODELS}, \"chairman_model\": \"${chairman_model}\"}"
+        
+        # Try to update via API
+        API_RESPONSE=$(curl -s -X PUT "http://localhost:8000/api/config" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_BODY" 2>&1)
+        
+        if echo "$API_RESPONSE" | grep -q '"status":"success"'; then
+            echo "✅ Configuration updated dynamically via API (no restart needed)"
+            echo "   Changes are active immediately for new requests"
         else
-            echo "⚠️  LLM-Council service is not running. Start services with: ./aixcl start"
+            echo "⚠️  API update failed, will use restart method"
+            echo "   Response: $API_RESPONSE"
+            
+            # Fall back to restart method
+            echo ""
+            echo "Next steps:"
+            echo "  1. Restart the LLM-Council service to apply changes:"
+            echo "     ./aixcl restart"
+            echo ""
+            
+            read -p "Restart LLM-Council service now? (yes/no): " restart_confirm
+            if [[ "$restart_confirm" == "yes" ]] || [[ "$restart_confirm" == "y" ]]; then
+                echo ""
+                echo "Restarting LLM-Council service..."
+                set_compose_cmd
+                "${COMPOSE_CMD[@]}" restart llm-council
+                echo "✅ LLM-Council service restarted"
+            fi
         fi
+    else
+        echo ""
+        echo "✅ Configuration saved to .env file"
+        echo ""
+        echo "Next steps:"
+        echo "  1. Start the LLM-Council service:"
+        echo "     ./aixcl start"
+        echo "  2. The configuration will be loaded automatically"
     fi
 }
 

@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import uuid
 import json
 import asyncio
@@ -19,7 +19,8 @@ from . import db
 from . import db_storage
 from .conversation_tracker import generate_conversation_id, extract_conversation_context
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
-from .config import BACKEND_MODE, COUNCIL_MODELS, CHAIRMAN_MODEL, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING, ENABLE_DB_STORAGE
+from .config import BACKEND_MODE, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING, ENABLE_DB_STORAGE
+from .config_manager import get_config, update_config, reload_config, validate_ollama_models
 
 
 def format_markdown_response(content: str) -> str:
@@ -135,19 +136,22 @@ app = FastAPI(title="LLM Council API")
 print("=" * 60)
 print("DEBUG: LLM Council API starting up")
 print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}")
-print(f"DEBUG: COUNCIL_MODELS = {COUNCIL_MODELS}")
-print(f"DEBUG: CHAIRMAN_MODEL = {CHAIRMAN_MODEL}")
 print(f"DEBUG: OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
 print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
+print("DEBUG: Configuration will be loaded dynamically on startup")
 print("=" * 60)
 
 # Initialize database connection pool on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database connection on startup."""
+    """Initialize database connection and config on startup."""
     if ENABLE_DB_STORAGE:
         await db.get_pool()
         print("DEBUG: Database connection pool initialized")
+    
+    # Initialize config manager (loads config from file or environment)
+    config = await get_config()
+    print(f"DEBUG: Configuration loaded: council_models={config['council_models']}, chairman={config['chairman_model']}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -234,6 +238,108 @@ async def root():
 async def health():
     """Health check endpoint for Docker."""
     return {"status": "healthy", "service": "LLM Council API"}
+
+
+@app.get("/api/config")
+async def get_council_config():
+    """
+    Get current council configuration.
+    """
+    config = await get_config()
+    return {
+        "council_models": config["council_models"],
+        "chairman_model": config["chairman_model"],
+        "backend_mode": config["backend_mode"],
+        "ollama_base_url": config.get("ollama_base_url", OLLAMA_BASE_URL),
+    }
+
+
+class UpdateConfigRequest(BaseModel):
+    """Request to update council configuration."""
+    council_models: Optional[List[str]] = None
+    chairman_model: Optional[str] = None
+
+
+@app.put("/api/config")
+async def update_council_config(request: UpdateConfigRequest):
+    """
+    Update council configuration dynamically.
+    Changes take effect immediately for new requests.
+    """
+    try:
+        # Validate models if provided
+        if request.council_models:
+            validation = await validate_ollama_models(request.council_models)
+            unavailable = [model for model, available in validation.items() if not available]
+            if unavailable:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Models not available in Ollama: {unavailable}"
+                )
+        
+        if request.chairman_model:
+            validation = await validate_ollama_models([request.chairman_model])
+            if not validation.get(request.chairman_model, False):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Chairman model not available in Ollama: {request.chairman_model}"
+                )
+        
+        # Update configuration
+        updated_config = await update_config(
+            council_models=request.council_models,
+            chairman_model=request.chairman_model
+        )
+        
+        return {
+            "status": "success",
+            "message": "Configuration updated successfully",
+            "config": {
+                "council_models": updated_config["council_models"],
+                "chairman_model": updated_config["chairman_model"],
+                "backend_mode": updated_config["backend_mode"],
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update configuration: {str(e)}")
+
+
+@app.post("/api/config/reload")
+async def reload_council_config():
+    """
+    Reload configuration from file/environment.
+    Useful after manual file edits or environment changes.
+    """
+    try:
+        config = await reload_config()
+        return {
+            "status": "success",
+            "message": "Configuration reloaded successfully",
+            "config": {
+                "council_models": config["council_models"],
+                "chairman_model": config["chairman_model"],
+                "backend_mode": config["backend_mode"],
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reload configuration: {str(e)}")
+
+
+@app.get("/api/config/validate")
+async def validate_models_endpoint(models: str):
+    """
+    Validate that models exist in Ollama.
+    
+    Query parameter: models (comma-separated list)
+    """
+    model_list = [m.strip() for m in models.split(",") if m.strip()]
+    validation = await validate_ollama_models(model_list)
+    return {
+        "validation": validation,
+        "all_available": all(validation.values())
+    }
 
 
 @app.get("/v1/models")
