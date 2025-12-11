@@ -56,8 +56,8 @@ async def create_continue_conversation(conversation_id: str, first_message: str,
         async with pool.acquire() as conn:
             result = await conn.fetchrow(
                 """
-                INSERT INTO chat (id, user_id, title, chat, meta, source, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO chat (id, user_id, title, chat, meta, source, created_at, updated_at, archived)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING id, title, chat, meta, source, created_at, updated_at
                 """,
                 conversation_id,
@@ -67,7 +67,8 @@ async def create_continue_conversation(conversation_id: str, first_message: str,
                 json.dumps(meta_data),
                 "continue",
                 current_timestamp,
-                current_timestamp
+                current_timestamp,
+                False  # archived
             )
         
         if result:
