@@ -657,13 +657,28 @@ function clean() {
     echo "Stopping all containers..."
     "${COMPOSE_CMD[@]}" down
     
+    # Remove postgres container and associated volumes specifically
+    if docker ps -a --format "{{.Names}}" | grep -q "^postgres$"; then
+        echo "Removing PostgreSQL container..."
+        docker rm -f postgres 2>/dev/null || true
+    fi
+    
+    # Remove postgres-related volumes
+    echo "Removing PostgreSQL volumes..."
+    docker volume ls --format "{{.Name}}" | grep -i postgres | while read -r volume; do
+        if [ -n "$volume" ]; then
+            echo "  Removing volume: $volume"
+            docker volume rm "$volume" 2>/dev/null || true
+        fi
+    done
+    
     echo "Removing stopped containers..."
     docker container prune -f
     
     echo "Removing unused images..."
     docker image prune -a -f
     
-    echo "Removing unused volumes (including PostgreSQL data)..."
+    echo "Removing unused volumes..."
     docker volume prune -f
     
     # Clean up pgAdmin configuration file for security
@@ -775,46 +790,46 @@ function status() {
     fi
     
     echo -n "Open WebUI status: "
-    WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null)
+    WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000")
     if [ "$WEBUI_STATUS" = "200" ]; then
         echo "✅ Open WebUI is responding (HTTP 200)"
     else
         echo "❌ Open WebUI is not responding (HTTP $WEBUI_STATUS)"
-        echo "Checking container logs:"
-        docker logs "$CONTAINER_NAME" --tail 5
+        echo "  Checking container logs (last 3 lines):"
+        timeout 2 docker logs "$CONTAINER_NAME" --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
     fi
 
     echo -n "PostgreSQL status: "
-    if docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
+    if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
         echo "✅ PostgreSQL is responding"
     else
         echo "❌ PostgreSQL is not responding"
-        echo "Checking PostgreSQL logs:"
-        docker logs postgres --tail 5
+        echo "  Checking PostgreSQL logs (last 3 lines):"
+        timeout 2 docker logs postgres --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
     fi
 
     echo -n "pgAdmin status: "
-    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null)
+    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
     if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
-        echo -e "✅ pgAdmin is responding (HTTP $PGADMIN_STATUS)"
+        echo "✅ pgAdmin is responding (HTTP $PGADMIN_STATUS)"
     else
-        echo -e "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
-        echo "Checking pgAdmin logs:"
-        docker logs pgadmin --tail 5
+        echo "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
+        echo "  Checking pgAdmin logs (last 3 lines):"
+        timeout 2 docker logs pgadmin --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
     fi
 
     echo -n "LLM-Council status: "
-    COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null)
+    COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null || echo "000")
     if [ "$COUNCIL_STATUS" = "200" ]; then
-        echo -e "✅ LLM-Council is responding (HTTP $COUNCIL_STATUS)"
+        echo "✅ LLM-Council is responding (HTTP $COUNCIL_STATUS)"
     else
-        echo -e "❌ LLM-Council is not responding (HTTP $COUNCIL_STATUS)"
-        echo "Checking LLM-Council logs:"
-        docker logs llm-council --tail 5 2>/dev/null || echo "  (Container may not be running)"
+        echo "❌ LLM-Council is not responding (HTTP $COUNCIL_STATUS)"
+        echo "  Checking LLM-Council logs (last 3 lines):"
+        timeout 2 docker logs llm-council --tail 3 2>/dev/null || echo "  (Logs unavailable or container may not be running)"
     fi
 
     echo -n "Prometheus status: "
-    PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null)
+    PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
     if [ "$PROMETHEUS_STATUS" = "200" ]; then
         echo "✅ Prometheus is responding (HTTP $PROMETHEUS_STATUS)"
     else
@@ -822,7 +837,7 @@ function status() {
     fi
 
     echo -n "Grafana status: "
-    GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null)
+    GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
     if [ "$GRAFANA_STATUS" = "200" ]; then
         echo "✅ Grafana is responding (HTTP $GRAFANA_STATUS)"
     else
@@ -830,7 +845,7 @@ function status() {
     fi
 
     echo -n "Loki status: "
-    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null)
+    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
     if [ "$LOKI_STATUS" = "200" ]; then
         echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
     else
@@ -846,6 +861,49 @@ function status() {
         fi
     else
         echo "❌ Promtail container is not running"
+    fi
+
+    echo -n "cAdvisor status: "
+    CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null)
+    if [ "$CADVISOR_STATUS" = "200" ]; then
+        echo "✅ cAdvisor is responding (HTTP $CADVISOR_STATUS)"
+    else
+        echo "❌ cAdvisor is not responding (HTTP $CADVISOR_STATUS)"
+    fi
+
+    echo -n "Node Exporter status: "
+    NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null)
+    if [ "$NODE_EXPORTER_STATUS" = "200" ]; then
+        echo "✅ Node Exporter is responding (HTTP $NODE_EXPORTER_STATUS)"
+    else
+        echo "❌ Node Exporter is not responding (HTTP $NODE_EXPORTER_STATUS)"
+    fi
+
+    echo -n "Postgres Exporter status: "
+    POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null)
+    if [ "$POSTGRES_EXPORTER_STATUS" = "200" ]; then
+        echo "✅ Postgres Exporter is responding (HTTP $POSTGRES_EXPORTER_STATUS)"
+    else
+        echo "❌ Postgres Exporter is not responding (HTTP $POSTGRES_EXPORTER_STATUS)"
+    fi
+
+    echo -n "NVIDIA GPU Exporter status: "
+    if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
+        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null)
+        if [ "$NVIDIA_GPU_EXPORTER_STATUS" = "200" ]; then
+            echo "✅ NVIDIA GPU Exporter is responding (HTTP $NVIDIA_GPU_EXPORTER_STATUS)"
+        else
+            echo "❌ NVIDIA GPU Exporter is not responding (HTTP $NVIDIA_GPU_EXPORTER_STATUS)"
+        fi
+    else
+        echo "⚠️  NVIDIA GPU Exporter container is not running (expected on non-GPU systems)"
+    fi
+
+    echo -n "Watchtower status: "
+    if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
+        echo "✅ Watchtower container is running (no HTTP endpoint to check)"
+    else
+        echo "❌ Watchtower container is not running"
     fi
     echo ""
 }

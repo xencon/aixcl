@@ -49,17 +49,16 @@ scrape_configs:
           service: 'postgres'
           database: 'aixcl'
 
-  # Ollama - LLM Engine (if metrics endpoint becomes available)
-  # Currently Ollama doesn't expose Prometheus metrics natively
-  # Monitor via cAdvisor container metrics instead
-  - job_name: 'ollama'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['localhost:11434']
-        labels:
-          service: 'ollama'
-    # Ollama may not expose /metrics endpoint - this is here for future compatibility
-    # If the endpoint doesn't exist, Prometheus will mark it as down but continue working
+  # Ollama - LLM Engine
+  # NOTE: Ollama doesn't expose Prometheus metrics natively
+  # Monitor via cAdvisor container metrics instead (container name: ollama)
+  # Uncomment below when/if Ollama adds native Prometheus metrics support
+  # - job_name: 'ollama'
+  #   metrics_path: '/metrics'
+  #   static_configs:
+  #     - targets: ['localhost:11434']
+  #       labels:
+  #         service: 'ollama'
 
   # NVIDIA DCGM Exporter - GPU metrics (utilization, memory, temperature, power)
   - job_name: 'nvidia-gpu'
