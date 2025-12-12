@@ -1234,29 +1234,14 @@ function dashboard() {
 }
 
 function help_menu() {
-    echo "Usage: $0 <command> [options]"
+    echo "Usage: ./aixcl <cmd> [options]"
     echo ""
-    echo "Stack Management:"
-    echo "  start                Start all services"
-    echo "  stop                 Stop all services"
-    echo "  restart              Restart all services"
-    echo "  status               Show service status"
-    echo "  logs [container] [n] View logs (all or specific container, optional line count)"
-    echo "  clean                Remove unused Docker resources"
-    echo ""
-    echo "Service Control:"
-    echo "  service <action> <name>  Control individual service (start|stop|restart)"
-    echo "                           Services: ${ALL_SERVICES[*]}"
-    echo ""
-    echo "Models & Configuration:"
-    echo "  models <action> [name]   Manage LLM models (add|remove|list)"
-    echo "  council [action]          Configure LLM Council (configure|status)"
-    echo ""
-    echo "Utilities:"
-    echo "  dashboard <name>          Open dashboard (grafana|openwebui|pgadmin)"
-    echo "  check-env                 Verify environment setup"
-    echo "  bash-completion           Install bash completion"
-    echo "  help                      Show this help"
+    echo "Stack: start | stop | restart | status | logs | clean"
+    echo "Service: service <action> <name>"
+    echo "Models: models <action> [name]"
+    echo "Council: council <action>"
+    echo "Dashboard: dashboard <name>"
+    echo "Utils: check-env | bash-completion | help"
     exit 1
 }
 
