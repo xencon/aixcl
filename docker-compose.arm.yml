@@ -1,6 +1,0 @@
-# Override file for ARM64 architecture (Apple Silicon, ARM-based systems)
-# This file is automatically applied when running on ARM64 architecture
-services:
-  ollama:
-    platform: linux/arm64
-
