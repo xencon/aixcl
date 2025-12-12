@@ -532,6 +532,23 @@ Please provide a helpful response based on the context provided above."""
         print(f"DEBUG: stage2_results count = {len(stage2_results)}")
         print(f"DEBUG: stage3_result = {stage3_result}")
         
+        # Check if stage3_result is an error result
+        if stage3_result.get('model') == 'error':
+            error_message = stage3_result.get('response', 'An error occurred while processing your request.')
+            print(f"DEBUG: Council returned error: {error_message}", flush=True)
+            # Return OpenAI-compatible error response
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": {
+                        "message": error_message,
+                        "type": "internal_error",
+                        "code": "council_error"
+                    }
+                }
+            )
+        
         # Extract the final response from stage 3
         # Note: stage3_result uses 'response' key, not 'content'
         final_content = stage3_result.get('response', stage3_result.get('content', ''))
@@ -544,6 +561,18 @@ Please provide a helpful response based on the context provided above."""
             print(f"DEBUG: stage3_result keys = {list(stage3_result.keys())}", flush=True)
             print(f"DEBUG: stage3_result full = {stage3_result}", flush=True)
             sys.stdout.flush()
+            # Return OpenAI-compatible error response for empty content
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": {
+                        "message": "The model returned an empty response. Please try again.",
+                        "type": "invalid_response_error",
+                        "code": "empty_response"
+                    }
+                }
+            )
         else:
             # Format the content to ensure proper markdown rendering in Continue plugin
             if ENABLE_MARKDOWN_FORMATTING:
@@ -563,74 +592,95 @@ Please provide a helpful response based on the context provided above."""
             async def generate_stream():
                 response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
                 created_time = int(time.time())
-                
-                # OpenAI streaming format: first send role, then content chunks
-                # Send initial chunk with role (OpenAI does this)
-                initial_chunk = {
-                    "id": response_id,
-                    "object": "chat.completion.chunk",
-                    "created": created_time,
-                    "model": request.model,
-                    "choices": [{
-                        "index": 0,
-                        "delta": {"role": "assistant"},
-                        "finish_reason": None
-                    }]
-                }
-                yield f"data: {json.dumps(initial_chunk)}\n\n"
-                
-                # Stream content in character-based chunks for smoother display
-                # Use smaller chunks (50-100 chars) for better real-time feel
-                chunk_size = 50
-                content_length = len(final_content)
-                
-                for i in range(0, content_length, chunk_size):
-                    chunk = final_content[i:i+chunk_size]
-                    
-                    chunk_data = {
+                try:
+                    # OpenAI streaming format: first send role, then content chunks
+                    # Send initial chunk with role (OpenAI does this)
+                    initial_chunk = {
                         "id": response_id,
                         "object": "chat.completion.chunk",
                         "created": created_time,
                         "model": request.model,
                         "choices": [{
                             "index": 0,
-                            "delta": {"content": chunk},
+                            "delta": {"role": "assistant"},
                             "finish_reason": None
                         }]
                     }
-                    yield f"data: {json.dumps(chunk_data)}\n\n"
-                    # Small delay to simulate real-time generation (optional, can remove)
-                    await asyncio.sleep(0.01)
-                
-                # Send final chunk with finish_reason
-                final_chunk = {
-                    "id": response_id,
-                    "object": "chat.completion.chunk",
-                    "created": created_time,
-                    "model": request.model,
-                    "choices": [{
-                        "index": 0,
-                        "delta": {},
-                        "finish_reason": "stop"
-                    }]
-                }
-                yield f"data: {json.dumps(final_chunk)}\n\n"
-                yield "data: [DONE]\n\n"
-                
-                # Save assistant response to database after streaming completes
-                if ENABLE_DB_STORAGE and conversation_id:
-                    stage_data = {
-                        "stage1": stage1_results,
-                        "stage2": stage2_results,
-                        "stage3": stage3_result,
+                    yield f"data: {json.dumps(initial_chunk)}\n\n"
+                    
+                    # Stream content in character-based chunks for smoother display
+                    # Use smaller chunks (50-100 chars) for better real-time feel
+                    chunk_size = 50
+                    content_length = len(final_content)
+                    
+                    for i in range(0, content_length, chunk_size):
+                        chunk = final_content[i:i+chunk_size]
+                        
+                        chunk_data = {
+                            "id": response_id,
+                            "object": "chat.completion.chunk",
+                            "created": created_time,
+                            "model": request.model,
+                            "choices": [{
+                                "index": 0,
+                                "delta": {"content": chunk},
+                                "finish_reason": None
+                            }]
+                        }
+                        yield f"data: {json.dumps(chunk_data)}\n\n"
+                        # Small delay to simulate real-time generation (optional, can remove)
+                        await asyncio.sleep(0.01)
+                    
+                    # Send final chunk with finish_reason
+                    final_chunk = {
+                        "id": response_id,
+                        "object": "chat.completion.chunk",
+                        "created": created_time,
+                        "model": request.model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": "stop"
+                        }]
                     }
-                    await db_storage.add_message_to_conversation(
-                        conversation_id,
-                        "assistant",
-                        final_content,
-                        stage_data
-                    )
-                    print(f"DEBUG: Saved assistant message to conversation {conversation_id}", flush=True)
+                    yield f"data: {json.dumps(final_chunk)}\n\n"
+                    yield "data: [DONE]\n\n"
+                    
+                    # Save assistant response to database after streaming completes
+                    if ENABLE_DB_STORAGE and conversation_id:
+                        stage_data = {
+                            "stage1": stage1_results,
+                            "stage2": stage2_results,
+                            "stage3": stage3_result,
+                        }
+                        await db_storage.add_message_to_conversation(
+                            conversation_id,
+                            "assistant",
+                            final_content,
+                            stage_data
+                        )
+                        print(f"DEBUG: Saved assistant message to conversation {conversation_id}", flush=True)
+                except Exception as stream_error:
+                    # Send error in OpenAI streaming format
+                    error_chunk = {
+                        "id": response_id,
+                        "object": "chat.completion.chunk",
+                        "created": created_time,
+                        "model": request.model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": None
+                        }],
+                        "error": {
+                            "message": str(stream_error),
+                            "type": "internal_error",
+                            "code": "stream_error"
+                        }
+                    }
+                    yield f"data: {json.dumps(error_chunk)}\n\n"
+                    yield "data: [DONE]\n\n"
+                    print(f"DEBUG: Error in stream: {stream_error}", flush=True)
             
             return StreamingResponse(
                 generate_stream(),
@@ -703,11 +753,29 @@ Please provide a helpful response based on the context provided above."""
         # Use model_dump(mode='json') to ensure proper JSON serialization
         return response.model_dump(mode='json')
     
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is (they're already properly formatted)
+        raise
     except Exception as e:
         print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}")
         import traceback
         print(f"DEBUG: Traceback:\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return OpenAI-compatible error response instead of HTTPException
+        from fastapi.responses import JSONResponse
+        error_message = str(e)
+        # Truncate very long error messages to avoid issues
+        if len(error_message) > 500:
+            error_message = error_message[:500] + "..."
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {
+                    "message": f"An error occurred while processing your request: {error_message}",
+                    "type": "internal_error",
+                    "code": "server_error"
+                }
+            }
+        )
 
 
 @app.post("/api/conversations/{conversation_id}/message/stream")

@@ -166,7 +166,7 @@ function set_compose_cmd() {
 
 # Source the autocomplete script if it exists (with security validation)
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-COMPLETION_SCRIPT="${SCRIPT_DIR}/aixcl_completion.sh"
+COMPLETION_SCRIPT="${SCRIPT_DIR}/bash_completion.sh"
 if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
     source "$COMPLETION_SCRIPT"
 fi
@@ -845,11 +845,23 @@ function status() {
     fi
 
     echo -n "Loki status: "
-    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
-    if [ "$LOKI_STATUS" = "200" ]; then
-        echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
+    if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
+        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+        if [ "$LOKI_STATUS" = "200" ]; then
+            echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
+        elif [ "$LOKI_STATUS" = "503" ]; then
+            echo "⚠️  Loki is starting up (HTTP $LOKI_STATUS - not ready yet)"
+        elif [ "$LOKI_STATUS" = "000" ]; then
+            echo "❌ Loki container is running but not responding (connection failed)"
+            echo "  Checking Loki logs (last 3 lines):"
+            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
+        else
+            echo "❌ Loki is not responding (HTTP $LOKI_STATUS)"
+            echo "  Checking Loki logs (last 3 lines):"
+            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
+        fi
     else
-        echo "❌ Loki is not responding (HTTP $LOKI_STATUS)"
+        echo "❌ Loki container is not running"
     fi
 
     echo -n "Promtail status: "
@@ -1165,7 +1177,7 @@ function help_menu() {
     echo ""
     echo "Models & Configuration:"
     echo "  models <action> [name]   Manage LLM models (add|remove|list)"
-    echo "  council [action]          Configure LLM Council (configure|list)"
+    echo "  council [action]          Configure LLM Council (configure|status)"
     echo ""
     echo "Utilities:"
     echo "  dashboard <name>          Open dashboard (grafana|openwebui|pgadmin)"
@@ -1263,44 +1275,232 @@ function update_env_file() {
     # Create backup
     cp "$env_file" "${env_file}.backup.$(date +%s)"
     
-    # Update or add COUNCIL_MODELS (quote the value to handle special characters)
-    local quoted_council_models="${council_models}"
-    if [[ "$(uname)" == "Darwin" ]]; then
-        # macOS uses BSD sed - escape special characters for sed
-        quoted_council_models=$(echo "$council_models" | sed 's/[[\.*^$()+?{|]/\\&/g')
-        if grep -q "^COUNCIL_MODELS=" "$env_file"; then
-            sed -i '' "s|^COUNCIL_MODELS=.*|COUNCIL_MODELS=${council_models}|" "$env_file"
-        else
-            echo "COUNCIL_MODELS=${council_models}" >> "$env_file"
-        fi
-    else
-        # Linux uses GNU sed
-        if grep -q "^COUNCIL_MODELS=" "$env_file"; then
-            sed -i "s|^COUNCIL_MODELS=.*|COUNCIL_MODELS=${council_models}|" "$env_file"
-        else
-            echo "COUNCIL_MODELS=${council_models}" >> "$env_file"
-        fi
-    fi
-    
-    # Update or add CHAIRMAN_MODEL (quote the value to handle special characters)
+    # Remove all existing COUNCIL_MODELS lines (including commented ones)
+    # This ensures we completely overwrite any existing configuration
     if [[ "$(uname)" == "Darwin" ]]; then
         # macOS uses BSD sed
-        if grep -q "^CHAIRMAN_MODEL=" "$env_file"; then
-            sed -i '' "s|^CHAIRMAN_MODEL=.*|CHAIRMAN_MODEL=${chairman_model}|" "$env_file"
-        else
-            echo "CHAIRMAN_MODEL=${chairman_model}" >> "$env_file"
-        fi
+        sed -i '' '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
+        sed -i '' '/^COUNCIL_MODELS=/d' "$env_file"
+        # Remove all existing CHAIRMAN_MODEL lines
+        sed -i '' '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
+        sed -i '' '/^CHAIRMAN_MODEL=/d' "$env_file"
+        # Add new values at the end
+        echo "COUNCIL_MODELS=${council_models}" >> "$env_file"
+        echo "CHAIRMAN_MODEL=${chairman_model}" >> "$env_file"
     else
         # Linux uses GNU sed
-        if grep -q "^CHAIRMAN_MODEL=" "$env_file"; then
-            sed -i "s|^CHAIRMAN_MODEL=.*|CHAIRMAN_MODEL=${chairman_model}|" "$env_file"
-        else
-            echo "CHAIRMAN_MODEL=${chairman_model}" >> "$env_file"
-        fi
+        sed -i '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
+        sed -i '/^COUNCIL_MODELS=/d' "$env_file"
+        # Remove all existing CHAIRMAN_MODEL lines
+        sed -i '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
+        sed -i '/^CHAIRMAN_MODEL=/d' "$env_file"
+        # Add new values at the end
+        echo "COUNCIL_MODELS=${council_models}" >> "$env_file"
+        echo "CHAIRMAN_MODEL=${chairman_model}" >> "$env_file"
     fi
     
     echo "✅ Updated .env file with council configuration"
     return 0
+}
+
+function status_council() {
+    echo "📋 LLM Council Status"
+    echo "===================="
+    echo ""
+    
+    # Check if services are running
+    local llm_council_running=false
+    local ollama_running=false
+    
+    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
+        llm_council_running=true
+    fi
+    
+    if docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        ollama_running=true
+    fi
+    
+    # Read configuration from .env file
+    local council_models=""
+    local chairman_model=""
+    local backend_mode="ollama"
+    local env_file=".env"
+    
+    if [[ ! -f "$env_file" ]]; then
+        echo "❌ Error: .env file not found."
+        echo "   Please run './aixcl start' first to create it, then configure the council with './aixcl council configure'"
+        return 1
+    fi
+    
+    # Read .env file
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ -z "$line" ]] && continue
+        [[ "${line#\#}" != "$line" ]] && continue
+        
+        if [[ "$line" =~ ^BACKEND_MODE[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+            backend_mode="${BASH_REMATCH[1]}"
+            backend_mode=$(echo "$backend_mode" | xargs | tr -d '"' | tr -d "'")
+        elif [[ "$line" =~ ^COUNCIL_MODELS[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+            council_models="${BASH_REMATCH[1]}"
+            council_models=$(echo "$council_models" | xargs | tr -d '"' | tr -d "'")
+        elif [[ "$line" =~ ^CHAIRMAN_MODEL[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+            chairman_model="${BASH_REMATCH[1]}"
+            chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
+        fi
+    done < "$env_file"
+    
+    echo "Configuration:"
+    echo "  Backend Mode: ${backend_mode:-ollama}"
+    echo ""
+    echo "  Chairman: ${chairman_model:-<not set>}"
+    echo "  Council Members: ${council_models:-<not set>}"
+    echo ""
+    
+    # Check if council is configured
+    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
+        echo "⚠️  Council is not configured yet."
+        echo ""
+        echo "To configure the council, run:"
+        echo "  ./aixcl council configure"
+        return 0
+    fi
+    
+    # Clean up values
+    council_models=$(echo "$council_models" | xargs | tr -d '"' | tr -d "'")
+    chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
+    
+    # Build list of all models (avoid duplicates) - use the config we determined above
+    local all_models=()
+    local seen_models=()
+    
+    # Add council members
+    if [[ -n "$council_models" ]]; then
+        IFS=',' read -ra MEMBERS <<< "$council_models"
+        for member in "${MEMBERS[@]}"; do
+            member=$(echo "$member" | xargs | tr -d '"' | tr -d "'")
+            if [[ -n "$member" ]]; then
+                local already_added=false
+                for seen in "${seen_models[@]}"; do
+                    if [[ "$seen" == "$member" ]]; then
+                        already_added=true
+                        break
+                    fi
+                done
+                if [[ "$already_added" == "false" ]]; then
+                    all_models+=("$member")
+                    seen_models+=("$member")
+                fi
+            fi
+        done
+    fi
+    
+    # Add chairman if not already in the list
+    if [[ -n "$chairman_model" ]]; then
+        local already_added=false
+        for seen in "${seen_models[@]}"; do
+            if [[ "$seen" == "$chairman_model" ]]; then
+                already_added=true
+                break
+            fi
+        done
+        if [[ "$already_added" == "false" ]]; then
+            all_models+=("$chairman_model")
+        fi
+    fi
+    
+    if [[ ${#all_models[@]} -eq 0 ]]; then
+        echo "❌ No models configured"
+        return 1
+    fi
+    
+    # Test operational status for each model
+    echo "Operational Status:"
+    echo "-------------------"
+    echo ""
+    
+    local operational_count=0
+    local total_count=${#all_models[@]}
+    
+    for model in "${all_models[@]}"; do
+        local role="Council Member"
+        if [[ "$model" == "$chairman_model" ]]; then
+            role="Chairman"
+        fi
+        
+        echo -n "  $model ($role): "
+        
+        # Test if model is operational
+        local is_operational=false
+        local status_msg=""
+        
+        if [[ "$backend_mode" == "ollama" ]] && [[ "$ollama_running" == "true" ]]; then
+            # Test model by sending a simple query to Ollama
+            local test_payload
+            test_payload=$(python3 -c "
+import json
+import sys
+model = sys.argv[1]
+payload = {
+    'model': model,
+    'messages': [{'role': 'user', 'content': 'Say OK'}],
+    'stream': False
+}
+print(json.dumps(payload))
+" "$model" 2>/dev/null)
+            
+            if [[ -n "$test_payload" ]]; then
+                local response
+                local status_code
+                response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:11434/api/chat \
+                    -H "Content-Type: application/json" \
+                    -d "$test_payload" 2>/dev/null)
+                
+                status_code=$(echo "$response" | tail -n1)
+                response_body=$(echo "$response" | sed '$d')
+                
+                if [[ "$status_code" == "200" ]] && echo "$response_body" | grep -q "message"; then
+                    is_operational=true
+                    operational_count=$((operational_count + 1))
+                fi
+            fi
+        elif [[ "$backend_mode" != "ollama" ]]; then
+            # For OpenRouter, assume operational (can't test without API key)
+            is_operational=true
+            operational_count=$((operational_count + 1))
+            status_msg=" (OpenRouter - not tested)"
+        fi
+        
+        if [[ "$is_operational" == "true" ]]; then
+            echo "✅ Operational$status_msg"
+        else
+            if [[ "$ollama_running" == "false" ]]; then
+                echo "⚠️  Cannot test (Ollama not running)"
+            else
+                echo "❌ Not Operational"
+            fi
+        fi
+    done
+    
+    echo ""
+    echo "Summary:"
+    echo "  Total Models: $total_count"
+    echo "  Operational: $operational_count"
+    echo "  Not Operational: $((total_count - operational_count))"
+    echo ""
+    
+    # Service status
+    if [[ "$llm_council_running" == "true" ]]; then
+        echo "✅ LLM-Council service is running"
+    else
+        echo "⚠️  LLM-Council service is not running"
+    fi
+    
+    if [[ "$ollama_running" == "true" ]]; then
+        echo "✅ Ollama service is running"
+    else
+        echo "⚠️  Ollama service is not running"
+    fi
+    echo ""
 }
 
 function list_council() {
@@ -1556,9 +1756,248 @@ function list_council() {
     echo ""
 }
 
+function test_council_operational() {
+    echo "🧪 Testing LLM Council Member Operational Status"
+    echo "=============================================="
+    echo ""
+    
+    # Check if LLM-Council service is running
+    if ! docker ps --format "{{.Names}}" | grep -q "llm-council"; then
+        echo "❌ Error: LLM-Council service is not running."
+        echo "   Please start the service first with: ./aixcl start"
+        return 1
+    fi
+    
+    # Check if Ollama is running
+    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+        echo "❌ Error: Ollama container is not running."
+        echo "   Please start the services first with: ./aixcl start"
+        return 1
+    fi
+    
+    # Get configuration from API
+    echo "1. Fetching council configuration from API..."
+    local config_response
+    config_response=$(curl -s http://localhost:8000/api/config 2>/dev/null)
+    
+    local council_models=""
+    local chairman_model=""
+    
+    # Try to parse JSON using Python (more reliable than bash regex)
+    if command -v python3 >/dev/null 2>&1 && [[ -n "$config_response" ]] && echo "$config_response" | grep -q "council_models"; then
+        # Use Python to parse JSON properly
+        council_models=$(echo "$config_response" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    models = data.get('council_models', [])
+    if isinstance(models, list):
+        print(','.join(models))
+    else:
+        print('')
+except:
+    print('')
+" 2>/dev/null)
+        
+        chairman_model=$(echo "$config_response" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('chairman_model', ''))
+except:
+    print('')
+" 2>/dev/null)
+    fi
+    
+    # Fallback to .env file if API parsing failed
+    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
+        echo "   ⚠️  Could not parse API response, reading from .env file..."
+        
+        local env_file=".env"
+        if [[ ! -f "$env_file" ]]; then
+            echo "   ❌ .env file not found"
+            return 1
+        fi
+        
+        while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" ]] && continue
+            [[ "${line#\#}" != "$line" ]] && continue
+            
+            if [[ "$line" =~ ^COUNCIL_MODELS[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+                council_models="${BASH_REMATCH[1]}"
+                council_models=$(echo "$council_models" | xargs)
+                if [[ "$council_models" =~ ^\"(.*)\"$ ]]; then
+                    council_models="${BASH_REMATCH[1]}"
+                elif [[ "$council_models" =~ ^\'(.*)\'$ ]]; then
+                    council_models="${BASH_REMATCH[1]}"
+                fi
+            elif [[ "$line" =~ ^CHAIRMAN_MODEL[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+                chairman_model="${BASH_REMATCH[1]}"
+                chairman_model=$(echo "$chairman_model" | xargs)
+                if [[ "$chairman_model" =~ ^\"(.*)\"$ ]]; then
+                    chairman_model="${BASH_REMATCH[1]}"
+                elif [[ "$chairman_model" =~ ^\'(.*)\'$ ]]; then
+                    chairman_model="${BASH_REMATCH[1]}"
+                fi
+            fi
+        done < "$env_file"
+    fi
+    
+    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
+        echo "   ❌ No council configuration found"
+        echo "   Please configure the council first with: ./aixcl council configure"
+        return 1
+    fi
+    
+    # Clean up extracted values
+    council_models=$(echo "$council_models" | xargs)
+    chairman_model=$(echo "$chairman_model" | xargs)
+    
+    echo "   ✅ Configuration loaded"
+    echo "   Council Models: $council_models"
+    echo "   Chairman Model: $chairman_model"
+    echo ""
+    
+    # Build list of all models to test (avoid duplicates)
+    local all_models=()
+    local seen_models=()
+    
+    # Add council members
+    if [[ -n "$council_models" ]]; then
+        IFS=',' read -ra MEMBERS <<< "$council_models"
+        for member in "${MEMBERS[@]}"; do
+            member=$(echo "$member" | xargs | tr -d '"' | tr -d "'")
+            if [[ -n "$member" ]]; then
+                # Check if already added
+                local already_added=false
+                for seen in "${seen_models[@]}"; do
+                    if [[ "$seen" == "$member" ]]; then
+                        already_added=true
+                        break
+                    fi
+                done
+                if [[ "$already_added" == "false" ]]; then
+                    all_models+=("$member")
+                    seen_models+=("$member")
+                fi
+            fi
+        done
+    fi
+    
+    # Add chairman if not already in the list
+    if [[ -n "$chairman_model" ]]; then
+        chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
+        local already_added=false
+        for seen in "${seen_models[@]}"; do
+            if [[ "$seen" == "$chairman_model" ]]; then
+                already_added=true
+                break
+            fi
+        done
+        if [[ "$already_added" == "false" ]]; then
+            all_models+=("$chairman_model")
+        fi
+    fi
+    
+    if [[ ${#all_models[@]} -eq 0 ]]; then
+        echo "❌ No models configured to test"
+        return 1
+    fi
+    
+    if [[ ${#all_models[@]} -eq 0 ]]; then
+        echo "❌ No models configured to test"
+        return 1
+    fi
+    
+    echo "2. Testing ${#all_models[@]} model(s) with a simple query..."
+    echo "   Models to test: ${all_models[*]}"
+    echo ""
+    
+    local operational_count=0
+    local total_count=${#all_models[@]}
+    
+    for model in "${all_models[@]}"; do
+        local role="Council Member"
+        if [[ "$model" == "$chairman_model" ]]; then
+            role="Chairman"
+        fi
+        
+        echo -n "   Testing $role: $model... "
+        
+        # Test model by sending a simple query to Ollama
+        # Use Python to properly construct JSON payload to avoid escaping issues
+        local test_payload
+        test_payload=$(python3 -c "
+import json
+import sys
+model = sys.argv[1]
+payload = {
+    'model': model,
+    'messages': [{'role': 'user', 'content': 'Say OK'}],
+    'stream': False
+}
+print(json.dumps(payload))
+" "$model" 2>/dev/null)
+        
+        if [[ -z "$test_payload" ]]; then
+            echo "❌ Not Operational"
+            echo "      Error: Failed to create test payload"
+            continue
+        fi
+        
+        local response
+        local status_code
+        response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:11434/api/chat \
+            -H "Content-Type: application/json" \
+            -d "$test_payload" 2>/dev/null)
+        
+        status_code=$(echo "$response" | tail -n1)
+        response_body=$(echo "$response" | sed '$d')
+        
+        if [[ "$status_code" == "200" ]] && echo "$response_body" | grep -q "message"; then
+            echo "✅ Operational"
+            operational_count=$((operational_count + 1))
+        else
+            echo "❌ Not Operational"
+            if [[ "$status_code" != "200" ]]; then
+                echo "      HTTP Status: $status_code"
+            fi
+            if echo "$response_body" | grep -q "error"; then
+                local error_msg
+                error_msg=$(echo "$response_body" | grep -o '"error":"[^"]*"' | sed 's/"error":"\(.*\)"/\1/' | head -1)
+                [[ -n "$error_msg" ]] && echo "      Error: $error_msg"
+            fi
+        fi
+    done
+    
+    echo ""
+    echo "=" | awk '{printf "=%.0s", $1; for(i=1;i<=65;i++) printf "="; print ""}'
+    echo "Summary"
+    echo "=" | awk '{printf "=%.0s", $1; for(i=1;i<=65;i++) printf "="; print ""}'
+    echo "Total Models: $total_count"
+    echo "Operational: $operational_count"
+    echo "Not Operational: $((total_count - operational_count))"
+    echo ""
+    
+    if [[ $operational_count -eq $total_count ]]; then
+        echo "✅ All council members are operational!"
+        return 0
+    else
+        echo "❌ Some council members are not operational"
+        echo ""
+        echo "Please check:"
+        echo "  - Are all models installed in Ollama? (./aixcl models list)"
+        echo "  - Are models loaded and ready? (docker logs ollama)"
+        echo "  - Check model names match exactly (including tags)"
+        return 1
+    fi
+}
+
 function configure_council() {
     echo "🔧 Configuring LLM Council"
     echo "=========================="
+    echo ""
+    echo "Note: This will ignore any existing .env configuration and create a new one."
     echo ""
     
     # Check if Ollama is running
@@ -1780,8 +2219,11 @@ function configure_council() {
     done
     echo "Total models: $total_models"
     echo ""
-    echo "This will update:"
-    echo "  - .env file: COUNCIL_MODELS and CHAIRMAN_MODEL"
+    echo "This will overwrite in .env file:"
+    echo "  - COUNCIL_MODELS: $council_models_str"
+    echo "  - CHAIRMAN_MODEL: $chairman_model"
+    echo ""
+    echo "⚠️  Note: Any existing council configuration in .env will be replaced."
     echo ""
     
     # Ask for confirmation
@@ -1791,7 +2233,7 @@ function configure_council() {
         exit 0
     fi
     
-    # Update .env file for persistence
+    # Update .env file for persistence (this will overwrite existing values)
     if ! update_env_file "$council_models_str" "$chairman_model"; then
         exit 1
     fi
@@ -1809,11 +2251,16 @@ function configure_council() {
     read -p "Restart LLM-Council service now? (yes/no): " restart_confirm
     if [[ "$restart_confirm" == "yes" ]] || [[ "$restart_confirm" == "y" ]]; then
         echo ""
-        echo "Restarting LLM-Council service..."
+        echo "Restarting LLM-Council service to apply new configuration..."
         set_compose_cmd
         if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-            "${COMPOSE_CMD[@]}" restart llm-council
-            echo "✅ LLM-Council service restarted"
+            # Stop, remove, and recreate the container to pick up new environment variables
+            # (docker-compose restart doesn't reload env vars, we need to recreate)
+            # Only affect llm-council service, not other services
+            "${COMPOSE_CMD[@]}" stop llm-council 2>/dev/null || true
+            "${COMPOSE_CMD[@]}" rm -f llm-council 2>/dev/null || true
+            "${COMPOSE_CMD[@]}" up -d llm-council
+            echo "✅ LLM-Council service restarted with new configuration"
         else
             echo "⚠️  LLM-Council service is not running. Start services with: ./aixcl start"
         fi
@@ -1822,9 +2269,9 @@ function configure_council() {
 }
 
 function council_cmd() {
-    # Default to 'list' if no action is provided
+    # Default to 'status' if no action is provided
     if [[ $# -lt 1 ]]; then
-        list_council
+        status_council
         return 0
     fi
 
@@ -1835,16 +2282,26 @@ function council_cmd() {
         configure)
             configure_council
             ;;
+        status)
+            status_council
+            ;;
         list)
-            list_council
+            # Deprecated: use 'status' instead
+            echo "⚠️  'list' is deprecated. Use 'status' instead."
+            status_council
+            ;;
+        test)
+            # Deprecated: use 'status' instead
+            echo "⚠️  'test' is deprecated. Use 'status' instead."
+            status_council
             ;;
         *)
             echo "Error: Unknown council action '$action'"
-            echo "Usage: $0 council [configure|list]"
+            echo "Usage: $0 council [configure|status]"
             echo "Examples:"
-            echo "  $0 council              - List current council configuration (default)"
-            echo "  $0 council list         - List current council configuration"
-            echo "  $0 council configure    - Configure council models and chairman"
+            echo "  $0 council              - Show council status (default)"
+            echo "  $0 council status      - Show council configuration and operational status"
+            echo "  $0 council configure  - Configure council models and chairman"
             return 1
             ;;
     esac
