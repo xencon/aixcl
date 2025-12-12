@@ -845,11 +845,23 @@ function status() {
     fi
 
     echo -n "Loki status: "
-    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
-    if [ "$LOKI_STATUS" = "200" ]; then
-        echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
+    if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
+        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+        if [ "$LOKI_STATUS" = "200" ]; then
+            echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
+        elif [ "$LOKI_STATUS" = "503" ]; then
+            echo "⚠️  Loki is starting up (HTTP $LOKI_STATUS - not ready yet)"
+        elif [ "$LOKI_STATUS" = "000" ]; then
+            echo "❌ Loki container is running but not responding (connection failed)"
+            echo "  Checking Loki logs (last 3 lines):"
+            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
+        else
+            echo "❌ Loki is not responding (HTTP $LOKI_STATUS)"
+            echo "  Checking Loki logs (last 3 lines):"
+            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
+        fi
     else
-        echo "❌ Loki is not responding (HTTP $LOKI_STATUS)"
+        echo "❌ Loki container is not running"
     fi
 
     echo -n "Promtail status: "
