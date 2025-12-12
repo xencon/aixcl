@@ -9,6 +9,50 @@ from .conversation_tracker import create_message_entry
 
 logger = logging.getLogger(__name__)
 
+# Cache for column existence checks
+_column_cache: Dict[str, bool] = {}
+
+
+async def _column_exists(column_name: str, table_name: str = "chat") -> bool:
+    """
+    Check if a column exists in the database table.
+    Caches the result to avoid repeated queries.
+    
+    Args:
+        column_name: Name of the column to check
+        table_name: Name of the table (default: 'chat')
+        
+    Returns:
+        True if column exists, False otherwise
+    """
+    cache_key = f"{table_name}.{column_name}"
+    if cache_key in _column_cache:
+        return _column_cache[cache_key]
+    
+    pool = await db.get_pool()
+    if pool is None:
+        return False
+    
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.fetchval(
+                """
+                SELECT COUNT(*) 
+                FROM information_schema.columns 
+                WHERE table_name = $1 AND column_name = $2
+                """,
+                table_name,
+                column_name
+            )
+            exists = result > 0
+            _column_cache[cache_key] = exists
+            return exists
+    except Exception as e:
+        logger.warning(f"Failed to check if column {column_name} exists: {e}")
+        # Default to False if check fails (safer - won't try to use non-existent column)
+        _column_cache[cache_key] = False
+        return False
+
 
 async def create_continue_conversation(conversation_id: str, first_message: str, title: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
@@ -47,29 +91,52 @@ async def create_continue_conversation(conversation_id: str, first_message: str,
             "created_via": "continue_plugin",
         }
         
-        # Get current timestamp as datetime object (TIMESTAMP type in PostgreSQL)
-        current_timestamp = datetime.utcnow()
+        # Get current timestamp as bigint (milliseconds since epoch) for Open WebUI schema
+        # Open WebUI uses bigint for created_at/updated_at, not TIMESTAMP
+        current_timestamp_ms = int(datetime.utcnow().timestamp() * 1000)
         
         # Use a default user_id for Continue conversations
         user_id = "continue-user"
         
+        # Check if archived column exists (for compatibility with Open WebUI schemas)
+        has_archived_column = await _column_exists("archived")
+        
         async with pool.acquire() as conn:
-            result = await conn.fetchrow(
-                """
-                INSERT INTO chat (id, user_id, title, chat, meta, source, created_at, updated_at, archived)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                RETURNING id, title, chat, meta, source, created_at, updated_at
-                """,
-                conversation_id,
-                user_id,
-                title,
-                json.dumps(conversation_data),
-                json.dumps(meta_data),
-                "continue",
-                current_timestamp,
-                current_timestamp,
-                False  # archived
-            )
+            if has_archived_column:
+                # Include archived column if it exists (for Open WebUI compatibility)
+                result = await conn.fetchrow(
+                    """
+                    INSERT INTO chat (id, user_id, title, chat, meta, source, created_at, updated_at, archived)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    RETURNING id, title, chat, meta, source, created_at, updated_at
+                    """,
+                    conversation_id,
+                    user_id,
+                    title,
+                    json.dumps(conversation_data),
+                    json.dumps(meta_data),
+                    "continue",
+                    current_timestamp_ms,
+                    current_timestamp_ms,
+                    False  # archived
+                )
+            else:
+                # Standard schema without archived column
+                result = await conn.fetchrow(
+                    """
+                    INSERT INTO chat (id, user_id, title, chat, meta, source, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    RETURNING id, title, chat, meta, source, created_at, updated_at
+                    """,
+                    conversation_id,
+                    user_id,
+                    title,
+                    json.dumps(conversation_data),
+                    json.dumps(meta_data),
+                    "continue",
+                    current_timestamp_ms,
+                    current_timestamp_ms
+                )
         
         if result:
             return {
@@ -241,8 +308,8 @@ async def add_message_to_conversation(
         messages.append(new_message)
         
         # Update conversation in database
-        # Use datetime object for updated_at (TIMESTAMP type in PostgreSQL)
-        current_timestamp = datetime.utcnow()
+        # Use bigint (milliseconds since epoch) for updated_at to match Open WebUI schema
+        current_timestamp_ms = int(datetime.utcnow().timestamp() * 1000)
         
         async with pool.acquire() as conn:
             await conn.execute(
@@ -252,7 +319,7 @@ async def add_message_to_conversation(
                 WHERE id = $3 AND source = 'continue'
                 """,
                 json.dumps({"messages": messages}),
-                current_timestamp,
+                current_timestamp_ms,
                 conversation_id
             )
         
@@ -278,8 +345,8 @@ async def update_conversation_title(conversation_id: str, title: str) -> bool:
         return False
     
     try:
-        # Use datetime object for updated_at (TIMESTAMP type in PostgreSQL)
-        current_timestamp = datetime.utcnow()
+        # Use bigint (milliseconds since epoch) for updated_at to match Open WebUI schema
+        current_timestamp_ms = int(datetime.utcnow().timestamp() * 1000)
         
         async with pool.acquire() as conn:
             result = await conn.execute(
@@ -289,7 +356,7 @@ async def update_conversation_title(conversation_id: str, title: str) -> bool:
                 WHERE id = $3 AND source = 'continue'
                 """,
                 title,
-                current_timestamp,
+                current_timestamp_ms,
                 conversation_id
             )
         
