@@ -2416,6 +2416,7 @@ function main() {
             council_cmd "$@"
             ;;
         *)
+            echo "Error: Unknown command '$1'" >&2
             help_menu
             ;;
     esac
