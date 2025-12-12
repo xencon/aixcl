@@ -2,7 +2,7 @@
 # Quick test to verify basic functionality
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AIXCL="${SCRIPT_DIR}/aixcl.sh"
+AIXCL="${SCRIPT_DIR}/aixcl"
 
 echo "Quick Baseline Test"
 echo "==================="
