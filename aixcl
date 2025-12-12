@@ -76,6 +76,7 @@ ALL_SERVICES=(
     "postgres"
     "pgadmin"
     "watchtower"
+    "llm-council"
     "prometheus"
     "grafana"
     "cadvisor"
@@ -434,7 +435,14 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+    # Build a regex pattern from ALL_SERVICES for checking running containers
+    local service_pattern="$CONTAINER_NAME"
+    for service in "${ALL_SERVICES[@]}"; do
+        local container_name=$(get_container_name "$service")
+        service_pattern="$service_pattern|$container_name"
+    done
+    
+    if ! docker ps --format "{{.Names}}" | grep -qE "$service_pattern"; then
         echo "Services are not running."
         return 0
     fi
@@ -444,7 +452,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$service_pattern"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -622,7 +630,8 @@ function logs() {
     
     if [ $# -eq 0 ]; then
         echo "Fetching logs for all services..."
-        "${COMPOSE_CMD[@]}" logs --tail=0 --follow
+        # Show last 100 lines from all services, then follow
+        "${COMPOSE_CMD[@]}" logs --tail=100 --follow
     else
         local container="$1"
         local tail_count="${2:-50}"  # Default to 50 lines if not specified
@@ -633,18 +642,25 @@ function logs() {
             return 1
         fi
         
-        # Validate container name
-        case "$container" in
-            ollama|open-webui|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter)
-                echo "Fetching logs for $container..."
-                docker logs "$container" --tail="$tail_count" --follow
-                ;;
-            *)
-                echo "Error: Unknown container '$container'"
-                echo "Available containers: ollama, open-webui, postgres, pgadmin, llm-council, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter"
-                return 1
-                ;;
-        esac
+        # Validate service name using the same validation as start/stop
+        if ! is_valid_service "$container"; then
+            echo "❌ Error: Unknown service '$container'"
+            echo "Available services: ${ALL_SERVICES[*]}"
+            return 1
+        fi
+        
+        # Get container name (handles service name to container name mapping)
+        local container_name=$(get_container_name "$container")
+        
+        # Check if container exists (running or stopped)
+        if ! docker ps -a --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            echo "⚠️  Container '$container_name' not found. It may not have been created yet."
+            echo "   Try starting the service first: $0 service start $container"
+            return 1
+        fi
+        
+        echo "Fetching logs for $container (container: $container_name)..."
+        docker logs "$container_name" --tail="$tail_count" --follow
     fi
 }
 
