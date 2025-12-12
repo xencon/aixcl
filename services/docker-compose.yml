@@ -116,7 +116,7 @@ services:
     restart: always
 
   llm-council:
-    build: ./llm-council
+    build: ../llm-council
     container_name: llm-council
     environment:
       - BACKEND_MODE=ollama

@@ -1,9 +1,11 @@
-
 #!/usr/bin/env bash
 
 set -e  # Exit on error
 set -u  # Treat unset variables as an error
 set -o pipefail  # Catch errors in pipelines
+
+# Get script directory early (needed for compose file paths)
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 # Safe function to load environment variables from .env file
 load_env_file() {
@@ -65,7 +67,8 @@ if [[ ! "$COMPOSE_FILE" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$COMPOSE_FILE" =~ \.\. ]
 fi
 
 # Use array for safer command construction
-COMPOSE_CMD=(docker-compose -f "$COMPOSE_FILE")
+COMPOSE_CMD=(docker-compose -f "${COMPOSE_FILE}")
+COMPOSE_WORKDIR="${SCRIPT_DIR}/services"
 CONTAINER_NAME="open-webui"
 
 # Define all services from docker-compose.yml
@@ -145,16 +148,17 @@ function is_arm64() {
 
 # Build docker-compose command with optional GPU and ARM overrides if present
 function set_compose_cmd() {
-    local files=( -f "$COMPOSE_FILE" )
+    local services_dir="${SCRIPT_DIR}/services"
+    local files=( -f "${COMPOSE_FILE}" )
     
     # Check for ARM64 architecture
-    if is_arm64 && [ -f docker-compose.arm.yml ]; then
+    if is_arm64 && [ -f "${services_dir}/docker-compose.arm.yml" ]; then
         echo "Detected ARM64 architecture. Enabling ARM platform overrides."
         files+=( -f docker-compose.arm.yml )
     fi
     
     # Check for NVIDIA GPU
-    if has_nvidia && [ -f docker-compose.gpu.yml ]; then
+    if has_nvidia && [ -f "${services_dir}/docker-compose.gpu.yml" ]; then
         echo "Detected NVIDIA GPU. Enabling GPU overrides."
         files+=( -f docker-compose.gpu.yml )
     else
@@ -162,6 +166,20 @@ function set_compose_cmd() {
     fi
     
     COMPOSE_CMD=(docker-compose "${files[@]}")
+    COMPOSE_WORKDIR="${services_dir}"
+}
+
+# Helper function to run docker-compose commands from the services directory
+function run_compose() {
+    if [ -z "${COMPOSE_WORKDIR}" ]; then
+        echo "❌ Error: COMPOSE_WORKDIR is not set. Please call set_compose_cmd() first."
+        return 1
+    fi
+    if [ ! -d "${COMPOSE_WORKDIR}" ]; then
+        echo "❌ Error: Services directory does not exist: ${COMPOSE_WORKDIR}"
+        return 1
+    fi
+    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@")
 }
 
 # Source the autocomplete script if it exists (with security validation)
@@ -404,10 +422,10 @@ function start() {
     fi
     
     echo "Pulling latest images..."
-    "${COMPOSE_CMD[@]}" pull
+    run_compose pull
     
     echo "Starting services..."
-    "${COMPOSE_CMD[@]}" up -d
+    run_compose up -d
     
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
@@ -440,7 +458,7 @@ function stop() {
     fi
     
     echo "Stopping services gracefully..."
-    "${COMPOSE_CMD[@]}" down --remove-orphans
+    run_compose down --remove-orphans
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
@@ -453,7 +471,7 @@ function stop() {
     done
     
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
-    "${COMPOSE_CMD[@]}" down --remove-orphans -v
+    run_compose down --remove-orphans -v
     docker ps -q | xargs -r docker stop
     
     echo "All services have been stopped."
@@ -520,7 +538,7 @@ function start_service() {
     fi
     
     # Start the specific service
-    if "${COMPOSE_CMD[@]}" up -d "$service"; then
+    if run_compose up -d "$service"; then
         echo "✅ Successfully started service: $service"
         
         # Wait a moment for the service to initialize
@@ -570,7 +588,7 @@ function stop_service() {
     echo "Stopping service: $service..."
     
     # Stop the specific service
-    if "${COMPOSE_CMD[@]}" stop "$service"; then
+    if run_compose stop "$service"; then
         echo "✅ Successfully stopped service: $service"
         
         # Clean up pgAdmin configuration if stopping pgadmin
@@ -617,12 +635,53 @@ function service() {
 }
 
 function logs() {
-    # Set up compose command with GPU detection
-    set_compose_cmd
-    
     if [ $# -eq 0 ]; then
-        echo "Fetching logs for all services..."
-        "${COMPOSE_CMD[@]}" logs --tail=0 --follow
+        echo "Fetching logs for all services (following)..."
+        echo "Press Ctrl+C to stop"
+        echo ""
+        
+        # Check if any containers are running
+        local services=("ollama" "open-webui" "postgres" "pgadmin" "llm-council" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
+        local found_any=false
+        local running_containers=()
+        
+        for service in "${services[@]}"; do
+            if docker ps --format "{{.Names}}" 2>/dev/null | grep -q "^${service}$"; then
+                found_any=true
+                running_containers+=("$service")
+            fi
+        done
+        
+        if [ "$found_any" = false ]; then
+            echo "⚠️  No services are currently running."
+            echo "   Start services with: ./aixcl start"
+            return 0
+        fi
+        
+        # Use docker logs directly for each running container
+        # Show last 100 lines then follow for each container
+        for service in "${running_containers[@]}"; do
+            echo "=== $service ==="
+            docker logs "$service" --tail=100 2>/dev/null || echo "  (no logs available)"
+            echo ""
+        done
+        
+        echo "Following new logs (Press Ctrl+C to stop)..."
+        echo ""
+        
+        # Follow logs from all containers in parallel using background processes
+        local pids=()
+        for service in "${running_containers[@]}"; do
+            (
+                docker logs "$service" --follow 2>/dev/null | while IFS= read -r line; do
+                    echo "[$service] $line"
+                done
+            ) &
+            pids+=($!)
+        done
+        
+        # Wait for all background processes
+        wait "${pids[@]}"
     else
         local container="$1"
         local tail_count="${2:-50}"  # Default to 50 lines if not specified
@@ -655,7 +714,7 @@ function clean() {
     set_compose_cmd
     
     echo "Stopping all containers..."
-    "${COMPOSE_CMD[@]}" down
+    run_compose down
     
     # Remove postgres container and associated volumes specifically
     if docker ps -a --format "{{.Names}}" | grep -q "^postgres$"; then
@@ -2271,9 +2330,9 @@ function configure_council() {
             # Stop, remove, and recreate the container to pick up new environment variables
             # (docker-compose restart doesn't reload env vars, we need to recreate)
             # Only affect llm-council service, not other services
-            "${COMPOSE_CMD[@]}" stop llm-council 2>/dev/null || true
-            "${COMPOSE_CMD[@]}" rm -f llm-council 2>/dev/null || true
-            "${COMPOSE_CMD[@]}" up -d llm-council
+            run_compose stop llm-council 2>/dev/null || true
+            run_compose rm -f llm-council 2>/dev/null || true
+            run_compose up -d llm-council
             echo "✅ LLM-Council service restarted with new configuration"
         else
             echo "⚠️  LLM-Council service is not running. Start services with: ./aixcl start"
