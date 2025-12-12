@@ -1,0 +1,126 @@
+AIXCL(1)                          User Commands                          AIXCL(1)
+
+NAME
+       aixcl - AI & Infrastructure Stack Control CLI
+
+SYNOPSIS
+       aixcl <command> <subcommand> [options]
+
+DESCRIPTION
+       AIXCL is a unified command-line tool for managing AI services, monitoring
+       stack, dashboards, and models. It provides a Docker-native workflow for
+       running LLMs locally, managing model configurations, and orchestrating
+       multiple AI services.
+
+COMMANDS
+       stack start
+              Start all services
+
+       stack stop
+              Stop all services
+
+       stack restart
+              Restart the entire stack
+
+       stack status
+              Show service status
+
+       stack logs [svc] [n]
+              Show logs for all or one service, optional line count
+
+       stack clean
+              Remove unused Docker resources
+
+       service <start|stop|restart> <name>
+              Control individual service
+
+              Supported services:
+              ollama, open-webui, postgres, pgadmin, watchtower, prometheus,
+              grafana, cadvisor, node-exporter, postgres-exporter,
+              nvidia-gpu-exporter, loki, promtail
+
+       models <add|remove|list> [name]
+              Manage LLM models
+
+              add     Add a model
+              remove  Remove a model
+              list    List installed models
+
+       council <configure|status|list>
+              Configure LLM Council behavior and members
+
+              configure  Configure council behavior and members
+              status     Show model status
+              list       List council configuration
+
+       dashboard <grafana|openwebui|pgadmin>
+              Launch dashboard in default browser
+
+              grafana    Open Grafana dashboard
+              openwebui  Open Open WebUI interface
+              pgadmin    Open pgAdmin database administration
+
+       utils check-env
+              Validate environment setup
+
+       utils bash-completion
+              Install bash completion support
+
+       help
+              Show help message
+
+EXAMPLES
+       Start the entire stack:
+              aixcl stack start
+
+       Restart a single service:
+              aixcl service restart postgres
+
+       Add a new LLM model:
+              aixcl models add phi3
+
+       Open Grafana:
+              aixcl dashboard grafana
+
+       Check environment requirements:
+              aixcl utils check-env
+
+ENVIRONMENT
+       AIXCL uses environment variables from .env file (auto-created from
+       .env.example on first run). Key variables include:
+
+       POSTGRES_USER
+              PostgreSQL username
+
+       POSTGRES_PASSWORD
+              PostgreSQL password
+
+       POSTGRES_DATABASE
+              PostgreSQL database name
+
+       COUNCIL_MODELS
+              Comma-separated list of council member models
+
+       CHAIRMAN_MODEL
+              Model used as chairman (synthesizes final response)
+
+FILES
+       ~/.env
+              Main configuration file (automatically created)
+
+       ~/.env.example
+              Template configuration file
+
+       ~/.env.local
+              Local overrides (optional, ignored by git)
+
+SEE ALSO
+       docker(1), docker-compose(1), ollama(1)
+
+AUTHOR
+       AIXCL Project
+
+BUGS
+       Report bugs at https://github.com/xencon/aixcl/issues
+
+AIXCL                            2024                             AIXCL(1)
