@@ -692,230 +692,244 @@ function clean() {
 
 function status() {
     echo "Checking services status..."
+    echo ""
     
-    echo "Container Status:"
-    echo "----------------"
-    if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-        echo "✅ Open WebUI container is running"
-    else
-        echo "❌ Open WebUI container is not running"
-    fi
-    
+    # Core Application Services
+    echo "Core"
     if docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        echo "✅ Ollama container is running"
+        echo "  ✅ Ollama"
     else
-        echo "❌ Ollama container is not running"
+        echo "  ❌ Ollama"
     fi
-
-    if docker ps --format "{{.Names}}" | grep -q "postgres"; then
-        echo "✅ PostgreSQL container is running"
+    
+    if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+        echo "  ✅ Open WebUI"
     else
-        echo "❌ PostgreSQL container is not running"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "pgadmin"; then
-        echo "✅ pgAdmin container is running"
-    else
-        echo "❌ pgAdmin container is not running"
+        echo "  ❌ Open WebUI"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-        echo "✅ LLM-Council container is running"
+        echo "  ✅ LLM-Council"
     else
-        echo "❌ LLM-Council container is not running"
+        echo "  ❌ LLM-Council"
     fi
 
-    if docker ps --format "{{.Names}}" | grep -q "watchtower"; then
-        echo "✅ Watchtower container is running"
+    # Database Services
+    echo ""
+    echo "Data"
+    if docker ps --format "{{.Names}}" | grep -q "postgres"; then
+        echo "  ✅ PostgreSQL"
     else
-        echo "❌ Watchtower container is not running"
+        echo "  ❌ PostgreSQL"
     fi
 
-    # Monitoring services
+    if docker ps --format "{{.Names}}" | grep -q "pgadmin"; then
+        echo "  ✅ pgAdmin"
+    else
+        echo "  ❌ pgAdmin"
+    fi
+
+    # Monitoring Services
+    echo ""
+    echo "Monitoring"
     if docker ps --format "{{.Names}}" | grep -q "prometheus"; then
-        echo "✅ Prometheus container is running"
+        echo "  ✅ Prometheus"
     else
-        echo "❌ Prometheus container is not running"
+        echo "  ❌ Prometheus"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "grafana"; then
-        echo "✅ Grafana container is running"
+        echo "  ✅ Grafana"
     else
-        echo "❌ Grafana container is not running"
+        echo "  ❌ Grafana"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "cadvisor"; then
-        echo "✅ cAdvisor container is running"
+        echo "  ✅ cAdvisor"
     else
-        echo "❌ cAdvisor container is not running"
+        echo "  ❌ cAdvisor"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "node-exporter"; then
-        echo "✅ Node Exporter container is running"
+        echo "  ✅ Node Exporter"
     else
-        echo "❌ Node Exporter container is not running"
+        echo "  ❌ Node Exporter"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "postgres-exporter"; then
-        echo "✅ Postgres Exporter container is running"
+        echo "  ✅ Postgres Exporter"
     else
-        echo "❌ Postgres Exporter container is not running"
+        echo "  ❌ Postgres Exporter"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "nvidia-gpu-exporter"; then
-        echo "✅ NVIDIA GPU Exporter container is running"
+        echo "  ✅ NVIDIA GPU Exporter"
     else
-        echo "⚠️  NVIDIA GPU Exporter container is not running (expected on non-GPU systems)"
+        echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
     fi
 
+    # Logging Services
+    echo ""
+    echo "Logging"
     if docker ps --format "{{.Names}}" | grep -q "loki"; then
-        echo "✅ Loki container is running"
+        echo "  ✅ Loki"
     else
-        echo "❌ Loki container is not running"
+        echo "  ❌ Loki"
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "promtail"; then
-        echo "✅ Promtail container is running"
+        echo "  ✅ Promtail"
     else
-        echo "❌ Promtail container is not running"
+        echo "  ❌ Promtail"
+    fi
+
+    # Utility Services
+    echo ""
+    echo "Utility"
+    if docker ps --format "{{.Names}}" | grep -q "watchtower"; then
+        echo "  ✅ Watchtower"
+    else
+        echo "  ❌ Watchtower"
     fi
     
-    echo -e "\nService Health:"
-    echo "----------------"
+    echo ""
+    echo "Service Health"
+    echo ""
     
+    # Core Application Services
+    echo "Core"
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
-        echo "✅ Ollama API is responding"
+        echo "  ✅ Ollama"
     else
-        echo "❌ Ollama API is not responding"
+        echo "  ❌ Ollama"
     fi
     
-    echo -n "Open WebUI status: "
     WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000")
     if [ "$WEBUI_STATUS" = "200" ]; then
-        echo "✅ Open WebUI is responding (HTTP 200)"
+        echo "  ✅ Open WebUI"
     else
-        echo "❌ Open WebUI is not responding (HTTP $WEBUI_STATUS)"
-        echo "  Checking container logs (last 3 lines):"
-        timeout 2 docker logs "$CONTAINER_NAME" --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
+        echo "  ❌ Open WebUI"
+        echo "    Checking container logs (last 3 lines):"
+        timeout 2 docker logs "$CONTAINER_NAME" --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
     fi
 
-    echo -n "PostgreSQL status: "
-    if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
-        echo "✅ PostgreSQL is responding"
-    else
-        echo "❌ PostgreSQL is not responding"
-        echo "  Checking PostgreSQL logs (last 3 lines):"
-        timeout 2 docker logs postgres --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
-    fi
-
-    echo -n "pgAdmin status: "
-    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
-    if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
-        echo "✅ pgAdmin is responding (HTTP $PGADMIN_STATUS)"
-    else
-        echo "❌ pgAdmin is not responding (HTTP $PGADMIN_STATUS)"
-        echo "  Checking pgAdmin logs (last 3 lines):"
-        timeout 2 docker logs pgadmin --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
-    fi
-
-    echo -n "LLM-Council status: "
     COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null || echo "000")
     if [ "$COUNCIL_STATUS" = "200" ]; then
-        echo "✅ LLM-Council is responding (HTTP $COUNCIL_STATUS)"
+        echo "  ✅ LLM-Council"
     else
-        echo "❌ LLM-Council is not responding (HTTP $COUNCIL_STATUS)"
-        echo "  Checking LLM-Council logs (last 3 lines):"
-        timeout 2 docker logs llm-council --tail 3 2>/dev/null || echo "  (Logs unavailable or container may not be running)"
+        echo "  ❌ LLM-Council"
+        echo "    Checking LLM-Council logs (last 3 lines):"
+        timeout 2 docker logs llm-council --tail 3 2>/dev/null || echo "    (Logs unavailable or container may not be running)"
     fi
 
-    echo -n "Prometheus status: "
+    # Database Services
+    echo ""
+    echo "Data"
+    if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
+        echo "  ✅ PostgreSQL"
+    else
+        echo "  ❌ PostgreSQL"
+        echo "    Checking PostgreSQL logs (last 3 lines):"
+        timeout 2 docker logs postgres --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
+    fi
+
+    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+    if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
+        echo "  ✅ pgAdmin"
+    else
+        echo "  ❌ pgAdmin"
+        echo "    Checking pgAdmin logs (last 3 lines):"
+        timeout 2 docker logs pgadmin --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
+    fi
+
+    # Monitoring Services
+    echo ""
+    echo "Monitoring"
     PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
     if [ "$PROMETHEUS_STATUS" = "200" ]; then
-        echo "✅ Prometheus is responding (HTTP $PROMETHEUS_STATUS)"
+        echo "  ✅ Prometheus"
     else
-        echo "❌ Prometheus is not responding (HTTP $PROMETHEUS_STATUS)"
+        echo "  ❌ Prometheus"
     fi
 
-    echo -n "Grafana status: "
     GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
     if [ "$GRAFANA_STATUS" = "200" ]; then
-        echo "✅ Grafana is responding (HTTP $GRAFANA_STATUS)"
+        echo "  ✅ Grafana"
     else
-        echo "❌ Grafana is not responding (HTTP $GRAFANA_STATUS)"
+        echo "  ❌ Grafana"
     fi
 
-    echo -n "Loki status: "
-    if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
-        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
-        if [ "$LOKI_STATUS" = "200" ]; then
-            echo "✅ Loki is responding (HTTP $LOKI_STATUS)"
-        elif [ "$LOKI_STATUS" = "503" ]; then
-            echo "⚠️  Loki is starting up (HTTP $LOKI_STATUS - not ready yet)"
-        elif [ "$LOKI_STATUS" = "000" ]; then
-            echo "❌ Loki container is running but not responding (connection failed)"
-            echo "  Checking Loki logs (last 3 lines):"
-            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
-        else
-            echo "❌ Loki is not responding (HTTP $LOKI_STATUS)"
-            echo "  Checking Loki logs (last 3 lines):"
-            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "  (Logs unavailable or timeout)"
-        fi
-    else
-        echo "❌ Loki container is not running"
-    fi
-
-    echo -n "Promtail status: "
-    if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
-        if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
-            echo "✅ Promtail is responding"
-        else
-            echo "⚠️  Promtail container is running but health check failed"
-        fi
-    else
-        echo "❌ Promtail container is not running"
-    fi
-
-    echo -n "cAdvisor status: "
     CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null)
     if [ "$CADVISOR_STATUS" = "200" ]; then
-        echo "✅ cAdvisor is responding (HTTP $CADVISOR_STATUS)"
+        echo "  ✅ cAdvisor"
     else
-        echo "❌ cAdvisor is not responding (HTTP $CADVISOR_STATUS)"
+        echo "  ❌ cAdvisor"
     fi
 
-    echo -n "Node Exporter status: "
     NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null)
     if [ "$NODE_EXPORTER_STATUS" = "200" ]; then
-        echo "✅ Node Exporter is responding (HTTP $NODE_EXPORTER_STATUS)"
+        echo "  ✅ Node Exporter"
     else
-        echo "❌ Node Exporter is not responding (HTTP $NODE_EXPORTER_STATUS)"
+        echo "  ❌ Node Exporter"
     fi
 
-    echo -n "Postgres Exporter status: "
     POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null)
     if [ "$POSTGRES_EXPORTER_STATUS" = "200" ]; then
-        echo "✅ Postgres Exporter is responding (HTTP $POSTGRES_EXPORTER_STATUS)"
+        echo "  ✅ Postgres Exporter"
     else
-        echo "❌ Postgres Exporter is not responding (HTTP $POSTGRES_EXPORTER_STATUS)"
+        echo "  ❌ Postgres Exporter"
     fi
 
-    echo -n "NVIDIA GPU Exporter status: "
     if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
         NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null)
         if [ "$NVIDIA_GPU_EXPORTER_STATUS" = "200" ]; then
-            echo "✅ NVIDIA GPU Exporter is responding (HTTP $NVIDIA_GPU_EXPORTER_STATUS)"
+            echo "  ✅ NVIDIA GPU Exporter"
         else
-            echo "❌ NVIDIA GPU Exporter is not responding (HTTP $NVIDIA_GPU_EXPORTER_STATUS)"
+            echo "  ❌ NVIDIA GPU Exporter"
         fi
     else
-        echo "⚠️  NVIDIA GPU Exporter container is not running (expected on non-GPU systems)"
+        echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
     fi
 
-    echo -n "Watchtower status: "
-    if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
-        echo "✅ Watchtower container is running (no HTTP endpoint to check)"
+    # Logging Services
+    echo ""
+    echo "Logging"
+    if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
+        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+        if [ "$LOKI_STATUS" = "200" ]; then
+            echo "  ✅ Loki"
+        elif [ "$LOKI_STATUS" = "503" ]; then
+            echo "  ⚠️  Loki (starting up)"
+        elif [ "$LOKI_STATUS" = "000" ]; then
+            echo "  ❌ Loki"
+            echo "    Checking Loki logs (last 3 lines):"
+            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
+        else
+            echo "  ❌ Loki"
+            echo "    Checking Loki logs (last 3 lines):"
+            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
+        fi
     else
-        echo "❌ Watchtower container is not running"
+        echo "  ❌ Loki"
+    fi
+
+    if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
+        if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
+            echo "  ✅ Promtail"
+        else
+            echo "  ❌ Promtail"
+        fi
+    else
+        echo "  ❌ Promtail"
+    fi
+
+    # Utility Services
+    echo ""
+    echo "Utility"
+    if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
+        echo "  ✅ Watchtower"
+    else
+        echo "  ❌ Watchtower"
     fi
     echo ""
 }

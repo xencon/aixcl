@@ -1,8 +1,9 @@
 """FastAPI backend for LLM Council."""
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import uuid
@@ -13,6 +14,7 @@ import time
 import sys
 import re
 import logging
+import traceback
 
 from . import storage
 from . import db
@@ -168,6 +170,56 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global exception handler to catch all unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions and return proper JSON response."""
+    print(f"DEBUG: Global exception handler caught: {type(exc).__name__}: {exc}", flush=True)
+    print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
+    
+    # If it's an HTTPException, let FastAPI handle it normally
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": {
+                    "message": exc.detail,
+                    "type": "http_exception",
+                    "code": f"http_{exc.status_code}"
+                }
+            }
+        )
+    
+    # For validation errors, return proper format
+    if isinstance(exc, RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "message": "Request validation failed",
+                    "type": "validation_error",
+                    "code": "invalid_request",
+                    "details": str(exc)
+                }
+            }
+        )
+    
+    # For all other exceptions, return 500 with error details
+    error_message = str(exc)
+    if len(error_message) > 500:
+        error_message = error_message[:500] + "..."
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "message": f"An internal error occurred: {error_message}",
+                "type": "internal_error",
+                "code": "server_error"
+            }
+        }
+    )
 
 
 class CreateConversationRequest(BaseModel):
@@ -537,7 +589,6 @@ Please provide a helpful response based on the context provided above."""
             error_message = stage3_result.get('response', 'An error occurred while processing your request.')
             print(f"DEBUG: Council returned error: {error_message}", flush=True)
             # Return OpenAI-compatible error response
-            from fastapi.responses import JSONResponse
             return JSONResponse(
                 status_code=500,
                 content={
@@ -562,7 +613,6 @@ Please provide a helpful response based on the context provided above."""
             print(f"DEBUG: stage3_result full = {stage3_result}", flush=True)
             sys.stdout.flush()
             # Return OpenAI-compatible error response for empty content
-            from fastapi.responses import JSONResponse
             return JSONResponse(
                 status_code=500,
                 content={
@@ -757,11 +807,10 @@ Please provide a helpful response based on the context provided above."""
         # Re-raise HTTPExceptions as-is (they're already properly formatted)
         raise
     except Exception as e:
-        print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}")
-        import traceback
-        print(f"DEBUG: Traceback:\n{traceback.format_exc()}")
+        print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}", flush=True)
+        print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
+        sys.stdout.flush()
         # Return OpenAI-compatible error response instead of HTTPException
-        from fastapi.responses import JSONResponse
         error_message = str(e)
         # Truncate very long error messages to avoid issues
         if len(error_message) > 500:

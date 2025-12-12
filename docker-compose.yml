@@ -121,8 +121,8 @@ services:
     environment:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
-      - COUNCIL_MODELS=codellama:7b,qwen3:latest
-      - CHAIRMAN_MODEL=qwen3:latest
+      - COUNCIL_MODELS=${COUNCIL_MODELS:-codellama:7b,qwen3:latest}
+      - CHAIRMAN_MODEL=${CHAIRMAN_MODEL:-qwen3:latest}
       - DATA_DIR=/app/data
       - POSTGRES_HOST=localhost
       - POSTGRES_PORT=5432
@@ -130,6 +130,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DATABASE=${POSTGRES_DATABASE}
       - ENABLE_DB_STORAGE=true
+      - FORCE_STREAMING=${FORCE_STREAMING:-true}
     volumes:
       - ./llm-council-data:/app/data
     network_mode: host
