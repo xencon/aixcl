@@ -39,6 +39,34 @@ service_start() {
     
     echo "Starting service: $service..."
     
+    # For services that may use registry images, we need to remove any existing
+    # container (running or stopped) to avoid docker-compose ContainerConfig KeyError bug.
+    # This happens with older docker-compose versions when containers were created from
+    # pulled registry images rather than locally built ones.
+    # Docker-compose may create containers with hash prefixes (e.g., 87e4f34ade77_llm-council),
+    # so we need to check for both exact name and prefixed versions.
+    
+    # Remove via docker-compose first (this handles prefixed containers that compose knows about)
+    "${COMPOSE_CMD[@]}" rm -f "$service" 2>/dev/null || true
+    
+    # Also explicitly remove containers with hash prefixes by finding all containers
+    # that end with the container name (to catch prefixed versions like 87e4f34ade77_llm-council)
+    # Use a more permissive pattern to catch any container containing the service name
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            container_id=$(echo "$line" | awk '{print $1}')
+            container_name_found=$(echo "$line" | awk '{print $2}')
+            # Match containers that end with the container name (exact or with prefix)
+            if [[ "$container_name_found" == *"${container_name}" ]] || [[ "$container_name_found" == "${container_name}" ]]; then
+                echo "Removing container: $container_name_found ($container_id)"
+                docker rm -f "$container_id" 2>/dev/null || true
+            fi
+        fi
+    done < <(docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -i "${container_name}" || true)
+    
+    # Remove by exact name as a final fallback
+    docker rm -f "$container_name" 2>/dev/null || true
+    
     # Check for .env file if needed (for services that require it)
     if [ ! -f "${SCRIPT_DIR}/.env" ] && [[ "$service" == "open-webui" || "$service" == "postgres" || "$service" == "pgadmin" ]]; then
         if [ -f "${SCRIPT_DIR}/.env.example" ]; then

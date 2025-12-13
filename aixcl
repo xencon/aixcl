@@ -76,6 +76,7 @@ CONTAINER_NAME="open-webui"
 ALL_SERVICES=(
     "ollama"
     "open-webui"
+    "llm-council"
     "postgres"
     "pgadmin"
     "watchtower"
@@ -98,6 +99,11 @@ function is_valid_service() {
         fi
     done
     return 1
+}
+
+# Get the actual Ollama container name (handles hash-prefixed containers)
+function get_ollama_container() {
+    docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^ollama$|_[0-9a-f]+_ollama$|^[0-9a-f]+_ollama$" | head -1
 }
 
 # Function to get container name from service name
@@ -184,7 +190,7 @@ function run_compose() {
 
 # Source the autocomplete script if it exists (with security validation)
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-COMPLETION_SCRIPT="${SCRIPT_DIR}/bash_completion.sh"
+COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
 if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
     source "$COMPLETION_SCRIPT"
 fi
@@ -430,7 +436,7 @@ function start() {
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
         if            curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
-           curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 2>/dev/null | grep -q "200" && \
+           curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null | grep -q "200" && \
            curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200" && \
            docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
             echo "All services are up and running!"
@@ -499,6 +505,7 @@ function start_service() {
     fi
     
     local service="$1"
+    local force_recreate="${2:-false}"  # Optional second parameter to force recreate
     
     # Validate service name
     if ! is_valid_service "$service"; then
@@ -509,14 +516,31 @@ function start_service() {
     
     local container_name=$(get_container_name "$service")
     
-    # Check if service is already running
-    if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+    # Set up compose command with GPU detection
+    set_compose_cmd
+    
+    # Check if service is already running (handle both exact name and hash-prefixed names)
+    if docker ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
         echo "Service '$service' is already running."
         return 0
     fi
     
-    # Set up compose command with GPU detection
-    set_compose_cmd
+    # Remove any existing containers (running or stopped) to avoid ContainerConfig errors
+    # This is especially important after rebuilds when docker-compose tries to recreate containers
+    echo "Cleaning up any existing containers for $service..."
+    run_compose rm -f "$service" 2>/dev/null || true
+    
+    # Also remove hash-prefixed containers directly via docker (handles edge cases)
+    local hash_prefixed=$(docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}')
+    if [ -n "$hash_prefixed" ]; then
+        echo "Removing hash-prefixed containers to avoid docker-compose issues..."
+        echo "$hash_prefixed" | while read -r container_id; do
+            docker rm -f "$container_id" 2>/dev/null || true
+        done
+    fi
+    
+    # Remove container by exact name if it exists
+    docker rm -f "$container_name" 2>/dev/null || true
     
     echo "Starting service: $service..."
     
@@ -538,23 +562,33 @@ function start_service() {
     fi
     
     # Start the specific service
-    if run_compose up -d "$service"; then
-        echo "✅ Successfully started service: $service"
-        
-        # Wait a moment for the service to initialize
-        sleep 2
-        
-        # Check if the container is actually running
-        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
-            echo "Service '$service' is now running."
+    # Use --force-recreate if explicitly requested (e.g., after a rebuild)
+    if [ "$force_recreate" = "true" ]; then
+        if run_compose up -d --force-recreate --no-deps "$service"; then
+            echo "✅ Successfully started service: $service (recreated)"
         else
-            echo "⚠️  Service '$service' may not have started correctly. Check logs with: $0 logs $service"
+            echo "❌ Failed to start service: $service"
+            return 1
         fi
-        return 0
     else
-        echo "❌ Failed to start service: $service"
-        return 1
+        if run_compose up -d "$service"; then
+            echo "✅ Successfully started service: $service"
+        else
+            echo "❌ Failed to start service: $service"
+            return 1
+        fi
     fi
+    
+    # Wait a moment for the service to initialize
+    sleep 2
+    
+    # Check if the container is actually running (handle both exact name and hash-prefixed names)
+    if docker ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
+        echo "Service '$service' is now running."
+    else
+        echo "⚠️  Service '$service' may not have started correctly. Check logs with: $0 logs $service"
+    fi
+    return 0
 }
 
 function stop_service() {
@@ -603,6 +637,77 @@ function stop_service() {
     fi
 }
 
+function needs_rebuild() {
+    local service="$1"
+    
+    # Services that require builds (have build context in docker-compose.yml)
+    case "$service" in
+        "llm-council")
+            local build_context="${SCRIPT_DIR}/llm-council"
+            local dockerfile="${build_context}/Dockerfile"
+            
+            if [ ! -d "$build_context" ] || [ ! -f "$dockerfile" ]; then
+                return 1  # Can't determine, assume no rebuild needed
+            fi
+            
+            # Check if image exists
+            if ! docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null | grep -q "^llm-council:latest$"; then
+                return 0  # Image doesn't exist, needs build
+            fi
+            
+            # Get image creation timestamp (Unix epoch)
+            local image_timestamp=$(docker inspect --format='{{.Created}}' llm-council:latest 2>/dev/null)
+            if [ -z "$image_timestamp" ]; then
+                return 0  # Can't inspect image, rebuild to be safe
+            fi
+            
+            # Convert image creation time to Unix timestamp
+            local image_epoch=$(date -d "$image_timestamp" +%s 2>/dev/null || echo "0")
+            if [ "$image_epoch" -eq 0 ]; then
+                # Try alternative date parsing (for different date formats)
+                image_epoch=$(date -d "$(echo "$image_timestamp" | sed 's/T/ /' | cut -d. -f1)" +%s 2>/dev/null || echo "0")
+            fi
+            
+            # Check if any critical source files are newer than the image
+            # Check Python files in backend directory (most likely to change)
+            local backend_dir="${build_context}/backend"
+            if [ -d "$backend_dir" ]; then
+                # Find the most recently modified Python file
+                local latest_py=$(find "$backend_dir" -type f -name "*.py" -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+                if [ -n "$latest_py" ] && [ -f "$latest_py" ]; then
+                    local file_epoch=$(stat -c %Y "$latest_py" 2>/dev/null || echo "0")
+                    if [ "$file_epoch" -gt "$image_epoch" ]; then
+                        return 0  # Source file is newer than image, needs rebuild
+                    fi
+                fi
+            fi
+            
+            # Check Dockerfile
+            if [ -f "$dockerfile" ]; then
+                local dockerfile_epoch=$(stat -c %Y "$dockerfile" 2>/dev/null || echo "0")
+                if [ "$dockerfile_epoch" -gt "$image_epoch" ]; then
+                    return 0  # Dockerfile is newer than image, needs rebuild
+                fi
+            fi
+            
+            # Check pyproject.toml
+            local pyproject="${build_context}/pyproject.toml"
+            if [ -f "$pyproject" ]; then
+                local pyproject_epoch=$(stat -c %Y "$pyproject" 2>/dev/null || echo "0")
+                if [ "$pyproject_epoch" -gt "$image_epoch" ]; then
+                    return 0  # pyproject.toml is newer than image, needs rebuild
+                fi
+            fi
+            
+            return 1  # No rebuild needed
+            ;;
+        *)
+            # Other services don't require builds (use pre-built images)
+            return 1
+            ;;
+    esac
+}
+
 function service() {
     if [[ $# -lt 2 ]]; then
         echo "Error: Service action and name are required"
@@ -622,9 +727,43 @@ function service() {
             stop_service "$service"
             ;;
         restart)
-            stop_service "$service"
-            sleep 2
-            start_service "$service"
+            echo "Restarting service: $service..."
+            
+            # Set up compose command early
+            set_compose_cmd
+            
+            # Check if service needs rebuild
+            if needs_rebuild "$service"; then
+                echo "🔨 Source code changes detected. Rebuilding $service..."
+                
+                # Stop and remove the service completely to avoid ContainerConfig errors
+                stop_service "$service" 2>/dev/null || true
+                
+                # Force remove any existing containers (including hash-prefixed ones)
+                echo "Removing existing containers for clean rebuild..."
+                run_compose rm -f "$service" 2>/dev/null || true
+                local container_name=$(get_container_name "$service")
+                docker rm -f "$container_name" 2>/dev/null || true
+                # Remove any hash-prefixed containers
+                docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
+                
+                # Rebuild the service
+                echo "Building $service..."
+                if run_compose build "$service"; then
+                    echo "✅ Successfully rebuilt $service"
+                else
+                    echo "❌ Failed to rebuild $service"
+                    return 1
+                fi
+                
+                # Start with force recreate after rebuild
+                start_service "$service" "true"
+            else
+                # Just stop without rebuild
+                stop_service "$service"
+                sleep 2
+                start_service "$service"
+            fi
             ;;
         *)
             echo "Error: Unknown service action '$action'"
@@ -646,7 +785,8 @@ function logs() {
         local running_containers=()
         
         for service in "${services[@]}"; do
-            if docker ps --format "{{.Names}}" 2>/dev/null | grep -q "^${service}$"; then
+            # Check for exact match or hash-prefixed match
+            if docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$"; then
                 found_any=true
                 running_containers+=("$service")
             fi
@@ -692,15 +832,29 @@ function logs() {
             return 1
         fi
         
-        # Validate container name
+        # Validate container name and find actual container (handle hash-prefixed names)
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter)
+            ollama|open-webui|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
                 echo "Fetching logs for $container..."
-                docker logs "$container" --tail="$tail_count" --follow
+                # Try exact name first, then hash-prefixed name
+                local actual_container
+                actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
+                if [ -n "$actual_container" ]; then
+                    docker logs "$actual_container" --tail="$tail_count" --follow
+                else
+                    # Try stopped containers too
+                    actual_container=$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
+                    if [ -n "$actual_container" ]; then
+                        docker logs "$actual_container" --tail="$tail_count" --follow
+                    else
+                        echo "Error: Container '$container' not found (checked for exact name and hash-prefixed variants)"
+                        return 1
+                    fi
+                fi
                 ;;
             *)
                 echo "Error: Unknown container '$container'"
-                echo "Available containers: ollama, open-webui, postgres, pgadmin, llm-council, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter"
+                echo "Available containers: ollama, open-webui, postgres, pgadmin, llm-council, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
                 return 1
                 ;;
         esac
@@ -1012,12 +1166,15 @@ function add() {
 
     echo "Adding model: $1"
     
-    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+    local ollama_container
+    ollama_container=$(get_ollama_container)
+    
+    if [ -z "$ollama_container" ]; then
         echo "Error: Ollama container is not running. Please start the services first."
         return 1
     fi
 
-    if docker exec ollama ollama pull "$1"; then
+    if docker exec "$ollama_container" ollama pull "$1"; then
         echo "✅ Successfully added model: $1"
     else
         echo "❌ Failed to add model: $1"
@@ -1045,12 +1202,15 @@ function remove() {
 
     echo "Removing model: $1"
     
-    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+    local ollama_container
+    ollama_container=$(get_ollama_container)
+    
+    if [ -z "$ollama_container" ]; then
         echo "Error: Ollama container is not running. Please start the services first."
         return 1
     fi
 
-    if docker exec ollama ollama rm "$1"; then
+    if docker exec "$ollama_container" ollama rm "$1"; then
         echo "✅ Successfully removed model: $1"
     else
         echo "❌ Failed to remove model: $1"
@@ -1119,12 +1279,15 @@ function models() {
 function list() {
     echo "Listing installed models..."
     
-    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
+    local ollama_container
+    ollama_container=$(get_ollama_container)
+    
+    if [ -z "$ollama_container" ]; then
         echo "Error: Ollama container is not running. Please start the services first."
         return 1
     fi
 
-    docker exec ollama ollama list
+    docker exec "$ollama_container" ollama list
 }
 
 function open_url_in_browser() {
@@ -1236,17 +1399,19 @@ function dashboard() {
 function help_menu() {
     echo "Usage: ./aixcl <cmd> [options]"
     echo ""
-    echo "Stack: start | stop | restart | status | logs | clean"
+    echo "Stack: stack <action> (start | stop | restart | status | logs | clean)"
     echo "Service: service <action> <name>"
     echo "Models: models <action> [name]"
     echo "Council: council <action>"
     echo "Dashboard: dashboard <name>"
-    echo "Utils: check-env | bash-completion | help"
+    echo "Utils: utils <action> (check-env | bash-completion)"
+    echo "Direct: check-env | bash-completion | help"
     exit 1
 }
 
 function install_completion() {
     echo "Installing bash completion for aixcl..."
+    echo "Cleaning up any existing completion files..."
     
     # Get the script directory (already set globally)
     # SCRIPT_DIR and COMPLETION_SCRIPT are already defined at script startup
@@ -1254,6 +1419,76 @@ function install_completion() {
     if [[ ! -f "$COMPLETION_SCRIPT" ]]; then
         echo "Error: Completion script not found at $COMPLETION_SCRIPT"
         exit 1
+    fi
+    
+    # Clean up existing completion files
+    local cleanup_dirs=(
+        "$HOME/.local/share/bash-completion/completions"
+        "/etc/bash_completion.d"
+    )
+    
+    for dir in "${cleanup_dirs[@]}"; do
+        if [[ -f "$dir/aixcl" ]]; then
+            echo "Removing existing completion file: $dir/aixcl"
+            rm -f "$dir/aixcl"
+        fi
+    done
+    
+    # Clean up .bashrc - remove any old aixcl completion references
+    if [[ -f "$HOME/.bashrc" ]]; then
+        echo "Cleaning up .bashrc..."
+        local temp_bashrc="$(mktemp)"
+        # Remove the entire completion block using sed
+        # Pattern: from "Added by aixcl installer" through the next standalone "fi"
+        sed '/Added by aixcl installer/,/^[[:space:]]*fi[[:space:]]*$/d' "$HOME/.bashrc" > "$temp_bashrc" || cp "$HOME/.bashrc" "$temp_bashrc"
+        
+        # Also remove any broken if/fi pairs where if contains aixcl but source was already removed
+        # This handles the case where only "if ... then" and "fi" remain
+        awk '
+            BEGIN { prev_line = ""; prev_prev_line = "" }
+            {
+                # Check if current line is "fi" and previous was an empty if statement for aixcl
+                if (/^[[:space:]]*fi[[:space:]]*$/) {
+                    if (prev_line ~ /^[[:space:]]*if[[:space:]]+\[.*aixcl.*\][[:space:]]*;[[:space:]]*then[[:space:]]*$/) {
+                        # This is an empty if/fi block for aixcl, skip both
+                        prev_line = ""
+                        prev_prev_line = ""
+                        next
+                    } else {
+                        # Normal fi, keep it
+                        if (prev_prev_line != "") print prev_prev_line
+                        if (prev_line != "") print prev_line
+                        print $0
+                        prev_prev_line = ""
+                        prev_line = ""
+                        next
+                    }
+                }
+                # Not a fi, so print previous lines if we have them
+                if (prev_prev_line != "") {
+                    print prev_prev_line
+                    prev_prev_line = ""
+                }
+                if (prev_line != "") {
+                    prev_prev_line = prev_line
+                }
+                prev_line = $0
+            }
+            END {
+                if (prev_prev_line != "") print prev_prev_line
+                if (prev_line != "") print prev_line
+            }
+        ' "$temp_bashrc" > "${temp_bashrc}.2" || cp "$temp_bashrc" "${temp_bashrc}.2"
+        mv "${temp_bashrc}.2" "$temp_bashrc"
+        
+        # Only replace if we actually removed something or if file is different
+        if ! cmp -s "$HOME/.bashrc" "$temp_bashrc"; then
+            cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$(date +%s)" 2>/dev/null || true
+            mv "$temp_bashrc" "$HOME/.bashrc"
+            echo "Cleaned up old completion references from .bashrc"
+        else
+            rm -f "$temp_bashrc"
+        fi
     fi
     
     # Determine the appropriate completion directory
@@ -1271,37 +1506,25 @@ function install_completion() {
     
     # Copy the completion script
     cp "$COMPLETION_SCRIPT" "$COMPLETION_DIR/aixcl"
+    chmod +x "$COMPLETION_DIR/aixcl"
     
-    echo "Bash completion installed to $COMPLETION_DIR/aixcl"
-    echo "To use it immediately, run: source $COMPLETION_DIR/aixcl"
-    echo "It will be automatically loaded in new shell sessions."
+    echo "✅ Bash completion installed to $COMPLETION_DIR/aixcl"
+    echo ""
+    echo "To use it immediately in this shell, run:"
+    echo "  source $COMPLETION_DIR/aixcl"
+    echo ""
+    echo "Or restart your shell. It will be automatically loaded in new shell sessions."
+    echo ""
     
-    # Add to .bashrc if not already there (with safer file handling)
-    if ! grep -q "source.*$COMPLETION_DIR/aixcl" "$HOME/.bashrc"; then
-        # Create backup of .bashrc before modification
-        cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$(date +%s)"
-        
-        # Create a temporary file with atomic operations
-        local temp_bashrc="$(mktemp)"
-        
-        # Copy existing .bashrc content, removing old aixcl entries
-        if grep -q "Added by aixcl installer" "$HOME/.bashrc"; then
-            grep -v -A 3 "Added by aixcl installer" "$HOME/.bashrc" | sed '/^$/d' > "$temp_bashrc"
-        else
-            cp "$HOME/.bashrc" "$temp_bashrc"
-        fi
-        
-        # Add new entry
-        cat >> "$temp_bashrc" << EOF
-
-# Added by aixcl installer
-if [ -f "$COMPLETION_DIR/aixcl" ]; then
-    source "$COMPLETION_DIR/aixcl"
-fi
-EOF
-        
-        # Atomically replace .bashrc
-        mv "$temp_bashrc" "$HOME/.bashrc"
+    # Add to .bashrc
+    local bashrc_entry="# Added by aixcl installer
+if [ -f \"$COMPLETION_DIR/aixcl\" ]; then
+    source \"$COMPLETION_DIR/aixcl\"
+fi"
+    
+    if ! grep -q "Added by aixcl installer" "$HOME/.bashrc" 2>/dev/null; then
+        echo "" >> "$HOME/.bashrc"
+        echo "$bashrc_entry" >> "$HOME/.bashrc"
         echo "Added sourcing to ~/.bashrc for persistent completion"
     else
         echo "Completion script already referenced in ~/.bashrc"
@@ -1316,7 +1539,11 @@ function get_available_models() {
     fi
     
     # Get models list, skip header line, extract model names
-    docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
+    local ollama_container
+    ollama_container=$(get_ollama_container)
+    if [ -n "$ollama_container" ]; then
+        docker exec "$ollama_container" ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
+    fi
 }
 
 function update_env_file() {
@@ -1694,11 +1921,13 @@ function list_council() {
                 
                 # Temporarily disable exit on error for docker commands
                 set +e
-                if docker ps --format "{{.Names}}" 2>/dev/null | grep -q "ollama" 2>/dev/null; then
+                local ollama_container
+                ollama_container=$(get_ollama_container)
+                if [ -n "$ollama_container" ]; then
                     ollama_running=true
                     # Check if model exists in Ollama by querying directly
                     local ollama_models=""
-                    ollama_models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}' 2>/dev/null)
+                    ollama_models=$(docker exec "$ollama_container" ollama list 2>/dev/null | awk 'NR>1 {print $1}' 2>/dev/null)
                     if echo "$ollama_models" 2>/dev/null | grep -q "^${member}$" 2>/dev/null; then
                         model_verified=true
                     fi
@@ -2311,19 +2540,96 @@ function configure_council() {
         echo ""
         echo "Restarting LLM-Council service to apply new configuration..."
         set_compose_cmd
+        # Stop if running
         if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-            # Stop, remove, and recreate the container to pick up new environment variables
-            # (docker-compose restart doesn't reload env vars, we need to recreate)
-            # Only affect llm-council service, not other services
             run_compose stop llm-council 2>/dev/null || true
-            run_compose rm -f llm-council 2>/dev/null || true
-            run_compose up -d llm-council
-            echo "✅ LLM-Council service restarted with new configuration"
-        else
-            echo "⚠️  LLM-Council service is not running. Start services with: ./aixcl start"
         fi
+        # Always remove the container to avoid docker-compose ContainerConfig KeyError
+        # when using images from registry (older docker-compose versions have this bug)
+        # This also handles the case where container exists but is stopped
+        run_compose rm -f llm-council 2>/dev/null || docker rm -f llm-council 2>/dev/null || true
+        run_compose build llm-council
+        run_compose up -d llm-council
+        echo "✅ LLM-Council service restarted with new configuration"
     fi
     exit 0
+}
+
+function utils_cmd() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: Utils action is required"
+        echo "Usage: $0 utils {check-env|bash-completion}"
+        echo "Examples:"
+        echo "  $0 utils check-env         - Verify environment setup"
+        echo "  $0 utils bash-completion   - Install bash completion"
+        return 1
+    fi
+
+    local action="$1"
+    shift
+
+    case "$action" in
+        check-env)
+            check_env
+            ;;
+        bash-completion)
+            install_completion
+            ;;
+        *)
+            echo "Error: Unknown utils action '$action'"
+            echo "Usage: $0 utils {check-env|bash-completion}"
+            echo "Examples:"
+            echo "  $0 utils check-env         - Verify environment setup"
+            echo "  $0 utils bash-completion   - Install bash completion"
+            return 1
+            ;;
+    esac
+}
+
+function stack_cmd() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: Stack action is required"
+        echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+        echo "Examples:"
+        echo "  $0 stack start         - Start all services"
+        echo "  $0 stack stop          - Stop all services"
+        echo "  $0 stack restart       - Restart the entire stack"
+        echo "  $0 stack status        - Show service status"
+        echo "  $0 stack logs          - Show logs for all services"
+        echo "  $0 stack logs ollama   - Show logs for a specific service"
+        echo "  $0 stack logs ollama 100 - Show last 100 lines for a service"
+        echo "  $0 stack clean         - Remove unused Docker resources"
+        return 1
+    fi
+
+    local action="$1"
+    shift
+
+    case "$action" in
+        start)
+            start
+            ;;
+        stop)
+            stop
+            ;;
+        restart)
+            restart
+            ;;
+        status)
+            status
+            ;;
+        logs)
+            logs "$@"
+            ;;
+        clean)
+            clean
+            ;;
+        *)
+            echo "Error: Unknown stack action '$action'"
+            echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+            return 1
+            ;;
+    esac
 }
 
 function council_cmd() {
@@ -2341,16 +2647,6 @@ function council_cmd() {
             configure_council
             ;;
         status)
-            status_council
-            ;;
-        list)
-            # Deprecated: use 'status' instead
-            echo "⚠️  'list' is deprecated. Use 'status' instead."
-            status_council
-            ;;
-        test)
-            # Deprecated: use 'status' instead
-            echo "⚠️  'test' is deprecated. Use 'status' instead."
             status_council
             ;;
         *)
@@ -2371,25 +2667,6 @@ function main() {
     fi
 
     case "$1" in
-        start)
-            start
-            ;;
-        stop)
-            stop
-            ;;
-        restart)
-            restart
-            ;;
-        logs)
-            shift  # Remove the 'logs' command from the arguments
-            logs "$@"  # Pass all remaining arguments to the logs function
-            ;;
-        clean)
-            clean
-            ;;
-        status)
-            status
-            ;;
         service)
             shift
             service "$@"
@@ -2410,6 +2687,14 @@ function main() {
             ;;
         check-env)
             check_env
+            ;;
+        utils)
+            shift
+            utils_cmd "$@"
+            ;;
+        stack)
+            shift
+            stack_cmd "$@"
             ;;
         council)
             shift

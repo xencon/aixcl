@@ -196,11 +196,29 @@ async def get_continue_conversation(conversation_id: str) -> Optional[Dict[str, 
             else:
                 updated_at_str = updated_at.isoformat() if hasattr(updated_at, 'isoformat') else str(updated_at)
             
+            # Parse chat data if it's a string (JSON)
+            chat_data = result["chat"]
+            if isinstance(chat_data, str):
+                try:
+                    chat_data = json.loads(chat_data)
+                except (json.JSONDecodeError, TypeError):
+                    logger.warning(f"Failed to parse chat JSON for conversation {result['id']}")
+                    chat_data = {"messages": []}
+            
+            # Parse meta data if it's a string (JSON)
+            meta_data = result["meta"]
+            if isinstance(meta_data, str):
+                try:
+                    meta_data = json.loads(meta_data)
+                except (json.JSONDecodeError, TypeError):
+                    logger.warning(f"Failed to parse meta JSON for conversation {result['id']}")
+                    meta_data = {}
+            
             return {
                 "id": str(result["id"]),
                 "title": result["title"],
-                "chat": result["chat"],
-                "meta": result["meta"],
+                "chat": chat_data,
+                "meta": meta_data,
                 "source": result["source"],
                 "created_at": created_at_str,
                 "updated_at": updated_at_str,
@@ -294,25 +312,32 @@ async def add_message_to_conversation(
         return False
     
     try:
+        print(f"DEBUG: [DB_STORAGE] add_message_to_conversation called: conv_id={conversation_id}, role={role}, content_len={len(content)}", flush=True)
+        
         # Get current conversation
         conversation = await get_continue_conversation(conversation_id)
         if not conversation:
+            print(f"DEBUG: [DB_STORAGE] ❌ Conversation {conversation_id} not found", flush=True)
             logger.warning(f"Conversation {conversation_id} not found")
             return False
         
+        print(f"DEBUG: [DB_STORAGE] ✅ Found conversation {conversation_id}, current messages: {len(conversation['chat'].get('messages', []))}", flush=True)
+        
         # Create new message entry
         new_message = create_message_entry(role, content, stage_data)
+        print(f"DEBUG: [DB_STORAGE] Created message entry: role={new_message.get('role')}, has_stage_data={bool(stage_data)}", flush=True)
         
         # Add message to conversation
         messages = conversation["chat"].get("messages", [])
         messages.append(new_message)
+        print(f"DEBUG: [DB_STORAGE] Updated messages list: {len(messages)} total messages", flush=True)
         
         # Update conversation in database
         # Use bigint (milliseconds since epoch) for updated_at to match Open WebUI schema
         current_timestamp_ms = int(datetime.utcnow().timestamp() * 1000)
         
         async with pool.acquire() as conn:
-            await conn.execute(
+            result = await conn.execute(
                 """
                 UPDATE chat
                 SET chat = $1, updated_at = $2
@@ -322,9 +347,14 @@ async def add_message_to_conversation(
                 current_timestamp_ms,
                 conversation_id
             )
+            print(f"DEBUG: [DB_STORAGE] UPDATE executed: {result}", flush=True)
         
+        print(f"DEBUG: [DB_STORAGE] ✅ Successfully added {role} message to conversation {conversation_id}", flush=True)
         return True
     except Exception as e:
+        print(f"DEBUG: [DB_STORAGE] ❌ EXCEPTION in add_message_to_conversation: {e}", flush=True)
+        import traceback
+        print(f"DEBUG: [DB_STORAGE] Traceback: {traceback.format_exc()}", flush=True)
         logger.error(f"Failed to add message to conversation: {e}")
         return False
 
@@ -428,7 +458,15 @@ async def list_continue_conversations(limit: int = 50, offset: int = 0) -> List[
         
         conversations = []
         for row in results:
-            messages = row["chat"].get("messages", []) if row["chat"] else []
+            # Parse chat data - it might be a JSON string or already a dict
+            chat_data = row["chat"]
+            if isinstance(chat_data, str):
+                try:
+                    import json
+                    chat_data = json.loads(chat_data)
+                except (json.JSONDecodeError, TypeError):
+                    chat_data = {}
+            messages = chat_data.get("messages", []) if chat_data else []
             
             # Handle timestamp conversion
             created_at = row["created_at"]

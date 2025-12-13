@@ -28,6 +28,10 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
     print(f"DEBUG: COUNCIL_MODELS = {council_models}", flush=True)
     print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}", flush=True)
     
+    if not council_models:
+        print("ERROR: No council models configured!", flush=True)
+        return []
+    
     messages = [{"role": "user", "content": user_query}]
     print(f"DEBUG: messages = {messages}")
 
@@ -39,6 +43,7 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
 
     # Format results
     stage1_results = []
+    failed_models = []
     for model, response in responses.items():
         print(f"DEBUG: processing model {model}, response is None: {response is None}")
         if response is not None:  # Only include successful responses
@@ -50,6 +55,16 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
             })
         else:
             print(f"DEBUG: model {model} returned None, skipping")
+            failed_models.append(model)
+
+    if failed_models:
+        print(f"WARNING: {len(failed_models)} model(s) failed: {', '.join(failed_models)}", flush=True)
+        print("This could mean:", flush=True)
+        print("  1. Models are not installed in Ollama", flush=True)
+        print("  2. Models are not loaded/ready", flush=True)
+        print("  3. Ollama service is not responding", flush=True)
+        print("  4. Check Ollama logs: docker logs ollama", flush=True)
+        print("  5. Verify models exist: docker exec ollama ollama list", flush=True)
 
     print(f"DEBUG: stage1_collect_responses returning {len(stage1_results)} results")
     return stage1_results
@@ -359,10 +374,16 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
 
     # If no models responded successfully, return error
     if not stage1_results:
-        print("DEBUG: WARNING - stage1_results is empty, returning error")
+        print("ERROR: stage1_results is empty - all models failed!", flush=True)
+        print("Troubleshooting steps:", flush=True)
+        print("  1. Check if Ollama is running: docker ps | grep ollama", flush=True)
+        print("  2. Check Ollama logs: docker logs ollama", flush=True)
+        print("  3. Verify models are installed: docker exec ollama ollama list", flush=True)
+        print("  4. Check council models in .env: COUNCIL_MODELS and CHAIRMAN_MODEL", flush=True)
+        print("  5. Test a model directly: docker exec ollama ollama run <model-name> 'test'", flush=True)
         error_result = {
             "model": "error",
-            "response": "All models failed to respond. Please try again."
+            "response": "All models failed to respond. Please check:\n1. Ollama service is running\n2. Models are installed and available\n3. Check logs: docker logs ollama\n4. Verify models: docker exec ollama ollama list"
         }
         print(f"DEBUG: returning error_result = {error_result}")
         return [], [], error_result, {}

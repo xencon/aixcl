@@ -8,7 +8,7 @@
 # To use this script:
 # 1. Source it directly: source /path/to/completion/aixcl.bash
 # 2. Or install it system-wide: sudo cp completion/aixcl.bash /etc/bash_completion.d/aixcl
-# 3. Or run: ./aixcl.sh utils bash-completion
+# 3. Or run: ./aixcl bash-completion
 #
 
 # Function to get available models from Ollama
@@ -23,60 +23,41 @@ _get_ollama_models() {
 
 _aixcl_complete() {
     local cur prev words cword
-    # Only initialize completion if we're actually in a completion context
-    # and _init_completion is available
-    if declare -f _init_completion >/dev/null 2>&1; then
-        # Suppress errors from _init_completion to prevent stack corruption errors
-        # when the script is interrupted (e.g., with Ctrl+C)
-        _init_completion 2>/dev/null || {
-            # If initialization fails, set variables manually
-            # This handles cases where the completion stack might be corrupted
-            words=("${COMP_WORDS[@]}")
-            cword=${COMP_CWORD:-0}
-            cur="${COMP_WORDS[COMP_CWORD]:-}"
-            prev="${COMP_WORDS[COMP_CWORD-1]:-}"
-        }
-    else
-        # Fallback if _init_completion is not available
-        words=("${COMP_WORDS[@]}")
-        cword=${COMP_CWORD:-0}
-        cur="${COMP_WORDS[COMP_CWORD]:-}"
-        prev="${COMP_WORDS[COMP_CWORD-1]:-}"
-    fi
-
-    # List of all possible commands (new nested structure)
-    local commands="stack service models dashboard utils council help"
-
+    COMPREPLY=()
+    
+    # Disable default filename completion to prevent showing files/directories like "tests"
+    compopt -o default 2>/dev/null || true
+    
+    # Get current word and previous word
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+    
+    # List of all possible commands
+    local commands="stack service models dashboard utils council help bash-completion check-env"
+    
     # List of all services (must match ALL_SERVICES in lib/common.sh)
-    local services="ollama open-webui postgres pgadmin watchtower llm-council prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
-
-    # Handle the case where the command might be './aixcl.sh' or just 'aixcl'
-    # Get the actual command name (last word before current)
-    local cmd_name="${words[0]}"
-    # Extract just the filename if it's a path
-    if [[ "$cmd_name" == *"/"* ]]; then
-        cmd_name=$(basename "$cmd_name")
+    local services="ollama open-webui llm-council postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
+    
+    # If we're completing the first argument (right after the command)
+    if (( cword == 1 )); then
+        COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
+        return 0
     fi
     
+    # Handle subcommands
     case "$prev" in
-        'aixcl.sh'|'./aixcl.sh'|'aixcl')
-            # Complete with available commands
-            COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
-            return 0
-            ;;
         'stack')
-            # Complete with stack subcommands
             local stack_actions="start stop restart status logs clean"
             COMPREPLY=( $(compgen -W "$stack_actions" -- "$cur") )
             return 0
             ;;
         'logs')
-            # Complete with available services
             COMPREPLY=( $(compgen -W "$services" -- "$cur") )
             return 0
             ;;
         'service')
-            # Complete with service actions
             local service_actions="start stop restart"
             COMPREPLY=( $(compgen -W "$service_actions" -- "$cur") )
             return 0
@@ -104,7 +85,7 @@ _aixcl_complete() {
             return 0
             ;;
         'council')
-            local council_actions="configure status list"
+            local council_actions="configure status"
             COMPREPLY=( $(compgen -W "$council_actions" -- "$cur") )
             return 0
             ;;
@@ -118,17 +99,18 @@ _aixcl_complete() {
                 return 0
             fi
             ;;
-        'list'|'status')
-            # These commands don't take arguments
-            COMPREPLY=()
-            return 0
-            ;;
     esac
     
-    # Default: no completion
-    COMPREPLY=()
+    # If we reach here and COMPREPLY is empty, explicitly prevent filename completion
+    if [ ${#COMPREPLY[@]} -eq 0 ]; then
+        COMPREPLY=()
+        return 0
+    fi
+    
     return 0
 }
 
 # Register the completion function
-complete -F _aixcl_complete aixcl.sh aixcl
+# This will work for: aixcl, ./aixcl, /path/to/aixcl, etc.
+# -o default is not set, so filename completion won't be used as fallback
+complete -F _aixcl_complete aixcl

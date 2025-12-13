@@ -11,13 +11,17 @@ source "${BASH_SOURCE%/*}/color.sh"
 
 # Get available models from Ollama
 get_available_models() {
-    if ! is_container_running "ollama"; then
+    # Find the actual Ollama container name (handle hash-prefixed containers)
+    local ollama_container
+    ollama_container=$(get_ollama_container)
+    
+    if [ -z "$ollama_container" ]; then
         print_error "Ollama container is not running. Please start the services first."
         return 1
     fi
     
     # Get models list, skip header line, extract model names
-    docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
+    docker exec "$ollama_container" ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
 }
 
 # Update .env file with council configuration

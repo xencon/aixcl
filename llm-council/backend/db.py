@@ -74,6 +74,7 @@ async def ensure_schema():
     try:
         # Read and execute the migration SQL
         from pathlib import Path
+        import re
         
         migration_file = Path(__file__).parent / "migrations" / "001_create_chat_table.sql"
         
@@ -83,18 +84,77 @@ async def ensure_schema():
             
             async with pool.acquire() as conn:
                 # Execute migration SQL (may contain multiple statements)
-                # Split by semicolon and execute each statement
-                statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
+                # Handle dollar-quoted strings properly (e.g., DO $$ ... END $$;)
+                # Split by semicolon, but preserve dollar-quoted blocks
+                statements = []
+                current_statement = ""
+                in_dollar_quote = False
+                dollar_tag = None
+                
+                i = 0
+                while i < len(migration_sql):
+                    # Check for dollar-quote start/end
+                    if migration_sql[i] == '$':
+                        # Look ahead for dollar-quote pattern: $tag$ or $$
+                        dollar_match = re.match(r'\$([^$]*)\$', migration_sql[i:])
+                        if dollar_match:
+                            tag = dollar_match.group(1) if dollar_match.group(1) else ""
+                            full_match = f'${tag}$'
+                            
+                            if not in_dollar_quote:
+                                # Starting a dollar-quoted string
+                                in_dollar_quote = True
+                                dollar_tag = tag
+                                current_statement += full_match
+                                i += len(full_match)
+                                continue
+                            elif tag == dollar_tag:
+                                # Ending the dollar-quoted string
+                                in_dollar_quote = False
+                                dollar_tag = None
+                                current_statement += full_match
+                                i += len(full_match)
+                                continue
+                    
+                    current_statement += migration_sql[i]
+                    
+                    # If we're not in a dollar-quote and hit a semicolon, it's a statement boundary
+                    if not in_dollar_quote and migration_sql[i] == ';':
+                        stmt = current_statement.strip()
+                        if stmt:
+                            statements.append(stmt)
+                        current_statement = ""
+                    
+                    i += 1
+                
+                # Add any remaining statement
+                if current_statement.strip():
+                    statements.append(current_statement.strip())
+                
+                # Execute each statement
                 for statement in statements:
                     if statement:
-                        await conn.execute(statement)
+                        try:
+                            await conn.execute(statement)
+                        except Exception as stmt_error:
+                            # Some errors are expected (e.g., "already exists", "does not exist")
+                            error_msg = str(stmt_error).lower()
+                            if any(phrase in error_msg for phrase in [
+                                "already exists", "duplicate", "does not exist", "no operator class"
+                            ]):
+                                # These are expected in some cases, log as debug
+                                logger.debug(f"Expected migration message: {stmt_error}")
+                            else:
+                                # Re-raise unexpected errors
+                                raise
             
             logger.info("Database schema verified/created")
         else:
             logger.warning(f"Migration file not found: {migration_file}")
     except Exception as e:
         # If table already exists, that's okay
-        if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
+        error_msg = str(e).lower()
+        if "already exists" in error_msg or "duplicate" in error_msg:
             logger.info("Database schema already exists")
         else:
             logger.error(f"Failed to ensure database schema: {e}")
