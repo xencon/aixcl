@@ -470,7 +470,20 @@ Utility scripts for database management are available in `scripts/db/`:
 Test scripts are available in `llm-council/scripts/test/`:
 - `test_db_connection.py` - Comprehensive database connection and operation tests
 - `test_api.sh` - API endpoint integration tests
+- `test_continue_integration.py` - **Full Continue plugin → LLM Council → Database integration test**
 - See `llm-council/scripts/test/README.md` for usage instructions
+
+**Quick Test:**
+```bash
+# Test the full Continue integration flow (using uv - recommended)
+cd llm-council
+uv sync  # Install dependencies if needed
+uv run python scripts/test/test_continue_integration.py
+
+# Or using direct Python (if httpx is installed)
+cd llm-council
+python3 scripts/test/test_continue_integration.py
+```
 
 ## Continue Plugin Integration
 
@@ -509,6 +522,31 @@ AIXCL is designed to work seamlessly with the [Continue](https://continue.dev) I
 - **Streaming Support**: Real-time streaming responses for immediate feedback
 - **Markdown Formatting**: Automatically formatted responses with proper bullet points and numbered lists
 - **File Context**: Continue automatically includes file context in requests, which LLM-Council processes correctly
+- **Database Persistence**: All conversations are automatically stored in PostgreSQL for history and analysis
+
+### Testing the Integration
+
+To verify that Continue plugin integration is working correctly:
+
+```bash
+# Run the comprehensive integration test (using uv - recommended)
+cd llm-council
+uv sync  # Install dependencies if needed
+uv run python scripts/test/test_continue_integration.py
+
+# Or using direct Python
+cd llm-council
+python3 scripts/test/test_continue_integration.py
+```
+
+This test will:
+1. Send a test prompt via the OpenAI-compatible API (simulating Continue plugin)
+2. Verify the LLM Council response
+3. Verify the conversation is stored in PostgreSQL
+4. Verify conversation structure includes stage data (stage1, stage2, stage3)
+5. Test conversation continuity with follow-up messages
+
+See `llm-council/scripts/test/README.md` for more details.
 - **Persistent Conversation History**: All conversations are automatically saved to PostgreSQL and persist across sessions
 - **Conversation Continuity**: Continue conversations are tracked and can be resumed using conversation IDs
 

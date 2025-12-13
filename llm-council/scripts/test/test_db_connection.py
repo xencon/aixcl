@@ -6,7 +6,41 @@ import sys
 import os
 
 # Add backend to path (go up two levels from scripts/test to llm-council root)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'backend'))
+# This matches the pattern used in test_continue_integration.py
+script_dir = os.path.dirname(os.path.abspath(__file__))
+llm_council_dir = os.path.dirname(os.path.dirname(script_dir))
+backend_dir = os.path.join(llm_council_dir, 'backend')
+
+# Verify we're in the right place
+if not os.path.exists(backend_dir) or not os.path.exists(os.path.join(llm_council_dir, 'pyproject.toml')):
+    print("❌ Error: Cannot find llm-council directory structure")
+    print(f"   Script location: {script_dir}")
+    print(f"   Expected llm-council dir: {llm_council_dir}")
+    print(f"   Backend dir exists: {os.path.exists(backend_dir)}")
+    print(f"   Current working directory: {os.getcwd()}")
+    print("\n   Please run this script from the llm-council directory:")
+    print("   cd llm-council")
+    print("   uv run python scripts/test/test_db_connection.py")
+    print("   # or")
+    print("   python3 scripts/test/test_db_connection.py")
+    sys.exit(1)
+
+# Change to llm-council directory to ensure relative imports work
+# This is important when running with uv run
+try:
+    os.chdir(llm_council_dir)
+except OSError:
+    print(f"⚠️  Warning: Could not change to llm-council directory: {llm_council_dir}")
+    print(f"   Current directory: {os.getcwd()}")
+
+# Add llm-council directory to Python path (so 'backend' can be imported)
+# This is the parent directory, so 'from backend import ...' will work
+if llm_council_dir not in sys.path:
+    sys.path.insert(0, llm_council_dir)
+
+# Also add backend directory explicitly (for compatibility)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 from backend import db
 from backend import db_storage

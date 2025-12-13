@@ -3,6 +3,12 @@
 .env.local
 .env.backup.*
 .pythonenv
+venv/
+.env/
+.envrc
+.venv/
+env/
+ENV/
 
 # Python
 __pycache__/
@@ -10,7 +16,6 @@ __pycache__/
 *.pyo
 *.pyd
 *.pdb
-venv
 
 # Docker
 *.log
@@ -77,3 +82,6 @@ llm-council-data/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Build docs
+build-docs/

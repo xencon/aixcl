@@ -15,12 +15,45 @@ utils_check_env() {
 # Utils bash-completion command
 utils_bash_completion() {
     echo "Installing bash completion for aixcl..."
+    echo "Cleaning up any existing completion files..."
     
     COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
     
     if [[ ! -f "$COMPLETION_SCRIPT" ]]; then
         print_error "Completion script not found at $COMPLETION_SCRIPT"
         exit 1
+    fi
+    
+    # Clean up existing completion files
+    local cleanup_dirs=(
+        "$HOME/.local/share/bash-completion/completions"
+        "/etc/bash_completion.d"
+    )
+    
+    for dir in "${cleanup_dirs[@]}"; do
+        if [[ -f "$dir/aixcl" ]]; then
+            echo "Removing existing completion file: $dir/aixcl"
+            rm -f "$dir/aixcl"
+        fi
+    done
+    
+    # Clean up .bashrc - remove any old aixcl completion references
+    if [[ -f "$HOME/.bashrc" ]]; then
+        echo "Cleaning up .bashrc..."
+        local temp_bashrc="$(mktemp)"
+        # Remove all lines related to aixcl completion
+        grep -v "Added by aixcl installer" "$HOME/.bashrc" | \
+        grep -v "source.*bash-completion.*aixcl" | \
+        grep -v "source.*completions/aixcl" > "$temp_bashrc" || true
+        
+        # Only replace if we actually removed something or if file is different
+        if ! cmp -s "$HOME/.bashrc" "$temp_bashrc"; then
+            cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$(date +%s)" 2>/dev/null || true
+            mv "$temp_bashrc" "$HOME/.bashrc"
+            echo "Cleaned up old completion references from .bashrc"
+        else
+            rm -f "$temp_bashrc"
+        fi
     fi
     
     # Determine the appropriate completion directory
@@ -38,43 +71,33 @@ utils_bash_completion() {
     
     # Copy the completion script
     cp "$COMPLETION_SCRIPT" "$COMPLETION_DIR/aixcl"
+    chmod +x "$COMPLETION_DIR/aixcl"
     
     print_success "Bash completion installed to $COMPLETION_DIR/aixcl"
-    echo "To use it immediately, run: source $COMPLETION_DIR/aixcl"
-    echo "It will be automatically loaded in new shell sessions."
+    echo ""
+    echo "To use it immediately in this shell, run:"
+    echo "  source $COMPLETION_DIR/aixcl"
+    echo ""
+    echo "Or restart your shell. It will be automatically loaded in new shell sessions."
+    echo ""
     
-    # Add to .bashrc if not already there (with safer file handling)
-    if ! grep -q "source.*$COMPLETION_DIR/aixcl" "$HOME/.bashrc" 2>/dev/null; then
-        # Create backup of .bashrc before modification
-        if [ -f "$HOME/.bashrc" ]; then
-            cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$(date +%s)"
-        fi
-        
-        # Create a temporary file with atomic operations
-        local temp_bashrc="$(mktemp)"
-        
-        # Copy existing .bashrc content, removing old aixcl entries
-        if [ -f "$HOME/.bashrc" ] && grep -q "Added by aixcl installer" "$HOME/.bashrc"; then
-            grep -v -A 3 "Added by aixcl installer" "$HOME/.bashrc" | sed '/^$/d' > "$temp_bashrc"
-        elif [ -f "$HOME/.bashrc" ]; then
-            cp "$HOME/.bashrc" "$temp_bashrc"
-        else
-            touch "$temp_bashrc"
-        fi
-        
-        # Add new entry
-        cat >> "$temp_bashrc" << EOF
-
-# Added by aixcl installer
-if [ -f "$COMPLETION_DIR/aixcl" ]; then
-    source "$COMPLETION_DIR/aixcl"
-fi
-EOF
-        
-        # Atomically replace .bashrc
-        mv "$temp_bashrc" "$HOME/.bashrc"
+    # Add to .bashrc
+    local bashrc_entry="# Added by aixcl installer
+if [ -f \"$COMPLETION_DIR/aixcl\" ]; then
+    source \"$COMPLETION_DIR/aixcl\"
+fi"
+    
+    if ! grep -q "Added by aixcl installer" "$HOME/.bashrc" 2>/dev/null; then
+        echo "" >> "$HOME/.bashrc"
+        echo "$bashrc_entry" >> "$HOME/.bashrc"
         echo "Added sourcing to ~/.bashrc for persistent completion"
     else
         echo "Completion script already referenced in ~/.bashrc"
     fi
+    
+    echo ""
+    echo "Installation complete! To test:"
+    echo "  1. Source it now: source $COMPLETION_DIR/aixcl"
+    echo "  2. Or restart your shell"
+    echo "  3. Then try: ./aixcl <TAB>"
 }

@@ -43,6 +43,9 @@ stack_start() {
     echo "Pulling latest images..."
     "${COMPOSE_CMD[@]}" pull
     
+    echo "Building LLM-Council service..."
+    "${COMPOSE_CMD[@]}" build llm-council
+    
     echo "Starting services..."
     "${COMPOSE_CMD[@]}" up -d
     
@@ -145,6 +148,27 @@ stack_logs() {
 # Stack clean command
 stack_clean() {
     echo "Cleaning up Docker resources..."
+    echo ""
+    print_warning "⚠️  WARNING: This will remove unused Docker resources."
+    echo "   This includes stopped containers, unused images, and unused volumes."
+    echo "   IMPORTANT: Ollama models are stored in Docker volumes."
+    echo "   If Ollama container is not running, its volume may be considered 'unused' and deleted!"
+    echo ""
+    
+    # Check if Ollama volume exists and container is not running
+    if docker volume ls --format "{{.Name}}" | grep -q "^ollama$"; then
+        if ! docker ps --format "{{.Names}}" | grep -q "^ollama$"; then
+            print_error "⚠️  WARNING: Ollama container is not running but volume exists!"
+            echo "   The Ollama volume contains your downloaded models."
+            echo "   Running 'docker volume prune' may delete it and all your models!"
+            echo ""
+            read -p "Do you want to continue? This may delete your Ollama models! (yes/no): " confirm
+            if [ "$confirm" != "yes" ]; then
+                echo "Cleanup cancelled."
+                return 0
+            fi
+        fi
+    fi
     
     # Set up compose command with GPU detection
     set_compose_cmd
@@ -173,8 +197,23 @@ stack_clean() {
     echo "Removing unused images..."
     docker image prune -a -f
     
-    echo "Removing unused volumes..."
+    # Protect Ollama volume from being pruned
+    echo "Removing unused volumes (protecting Ollama volume)..."
+    # List volumes before prune
+    local volumes_before=$(docker volume ls -q)
+    
+    # Run prune
     docker volume prune -f
+    
+    # Check if Ollama volume was deleted
+    if echo "$volumes_before" | grep -q "^ollama$"; then
+        if ! docker volume ls -q | grep -q "^ollama$"; then
+            print_error "⚠️  WARNING: Ollama volume was deleted! All models are lost."
+            echo "   You will need to re-download models with: ./aixcl models add <model-name>"
+        else
+            echo "✅ Ollama volume preserved"
+        fi
+    fi
     
     # Clean up pgAdmin configuration file for security
     if [ -f "${SCRIPT_DIR}/pgadmin-servers.json" ]; then

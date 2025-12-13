@@ -21,14 +21,13 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:latest
+    image: ghcr.io/open-webui/open-webui:v0.6.40
     container_name: open-webui
+    pull_policy: always
     volumes:
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
       - ../scripts/openwebui.sh:/app/backend/openwebui.sh
-      - ../scripts/db/patch_migration_005.py:/app/backend/patch_migration_005.py:ro
-      - ../scripts/db/patch_alembic_migration.sh:/app/backend/patch_alembic_migration.sh:ro
     environment:
       - DATA_DIR=/app/data
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}
@@ -45,10 +44,12 @@ services:
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]  # Adjust the health endpoint as necessary
+      # Try /health first, fallback to root endpoint if /health doesn't exist
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health > /dev/null 2>&1 || curl -f http://localhost:8080/ > /dev/null 2>&1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
 
   postgres:
     image: postgres:17.2
@@ -116,7 +117,10 @@ services:
     restart: always
 
   llm-council:
-    build: ../llm-council
+    build:
+      context: ../llm-council
+      dockerfile: Dockerfile
+    image: llm-council:latest
     container_name: llm-council
     environment:
       - BACKEND_MODE=ollama

@@ -42,10 +42,16 @@ set_compose_cmd() {
     COMPOSE_CMD=(docker-compose "${files[@]}")
 }
 
-# Check if a container is running
+# Check if a container is running (handles both exact name and hash-prefixed names)
 is_container_running() {
     local container_name="$1"
-    docker ps --format "{{.Names}}" 2>/dev/null | grep -q "^${container_name}$"
+    # Check for exact match or hash-prefixed match (e.g., "a9f302029b81_ollama")
+    docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"
+}
+
+# Get the actual Ollama container name (handles hash-prefixed containers)
+get_ollama_container() {
+    docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^ollama$|_[0-9a-f]+_ollama$|^[0-9a-f]+_ollama$" | head -1
 }
 
 # Check if any service containers are running

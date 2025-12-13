@@ -633,12 +633,42 @@ Please provide a helpful response based on the context provided above."""
             else:
                 print(f"DEBUG: Markdown formatting disabled, using original content", flush=True)
         
+        # Save assistant response to database BEFORE deciding on streaming
+        # This ensures it's saved regardless of streaming mode
+        if ENABLE_DB_STORAGE and conversation_id:
+            try:
+                print(f"DEBUG: [SAVE] About to save assistant message to conversation {conversation_id}", flush=True)
+                print(f"DEBUG: [SAVE] ENABLE_DB_STORAGE={ENABLE_DB_STORAGE}, conversation_id={conversation_id}", flush=True)
+                print(f"DEBUG: [SAVE] final_content length={len(final_content)}", flush=True)
+                stage_data = {
+                    "stage1": stage1_results,
+                    "stage2": stage2_results,
+                    "stage3": stage3_result,
+                }
+                save_result = await db_storage.add_message_to_conversation(
+                    conversation_id,
+                    "assistant",
+                    final_content,
+                    stage_data
+                )
+                if save_result:
+                    print(f"DEBUG: [SAVE] ✅ Successfully saved assistant message to conversation {conversation_id}", flush=True)
+                else:
+                    print(f"DEBUG: [SAVE] ❌ add_message_to_conversation returned False for conversation {conversation_id}", flush=True)
+            except Exception as save_error:
+                print(f"DEBUG: [SAVE] ❌ EXCEPTION saving assistant message: {save_error}", flush=True)
+                import traceback
+                print(f"DEBUG: [SAVE] Traceback: {traceback.format_exc()}", flush=True)
+        else:
+            print(f"DEBUG: [SAVE] ⚠️ Skipping save - ENABLE_DB_STORAGE={ENABLE_DB_STORAGE}, conversation_id={conversation_id}", flush=True)
+        
         # Handle streaming if requested or forced
         should_stream = request.stream or FORCE_STREAMING
         if should_stream:
             if FORCE_STREAMING and not request.stream:
                 print("DEBUG: FORCE_STREAMING enabled, converting to streaming response", flush=True)
             print("DEBUG: Streaming response requested", flush=True)
+            
             async def generate_stream():
                 response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
                 created_time = int(time.time())
@@ -695,21 +725,6 @@ Please provide a helpful response based on the context provided above."""
                     }
                     yield f"data: {json.dumps(final_chunk)}\n\n"
                     yield "data: [DONE]\n\n"
-                    
-                    # Save assistant response to database after streaming completes
-                    if ENABLE_DB_STORAGE and conversation_id:
-                        stage_data = {
-                            "stage1": stage1_results,
-                            "stage2": stage2_results,
-                            "stage3": stage3_result,
-                        }
-                        await db_storage.add_message_to_conversation(
-                            conversation_id,
-                            "assistant",
-                            final_content,
-                            stage_data
-                        )
-                        print(f"DEBUG: Saved assistant message to conversation {conversation_id}", flush=True)
                 except Exception as stream_error:
                     # Send error in OpenAI streaming format
                     error_chunk = {

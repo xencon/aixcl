@@ -65,22 +65,44 @@ def _save_config_to_file(config: Dict[str, Any]) -> bool:
 async def get_config() -> Dict[str, Any]:
     """
     Get current configuration (thread-safe).
-    Loads from file if available, otherwise from environment.
+    Environment variables are the source of truth. File is only used if it matches
+    environment (indicating it was updated via API). Otherwise, environment takes precedence.
     """
     global _config_cache
     
     async with _config_lock:
         if _config_cache is None:
-            # Try to load from file first
+            # Always load from environment first (source of truth)
+            env_config = _load_default_config()
+            
+            # Check if file exists
             file_config = _load_config_from_file()
             if file_config:
-                _config_cache = file_config
-                print(f"DEBUG: Loaded config from file: {_config_cache}")
+                # Compare critical config values
+                file_models = set(file_config.get("council_models", []))
+                env_models = set(env_config.get("council_models", []))
+                file_chairman = file_config.get("chairman_model", "")
+                env_chairman = env_config.get("chairman_model", "")
+                
+                # If environment values differ from file, environment takes precedence
+                if file_models != env_models or file_chairman != env_chairman:
+                    print(f"DEBUG: Environment config differs from file config")
+                    print(f"DEBUG:   File models: {file_config.get('council_models')}")
+                    print(f"DEBUG:   Env models: {env_config.get('council_models')}")
+                    print(f"DEBUG:   File chairman: {file_config.get('chairman_model')}")
+                    print(f"DEBUG:   Env chairman: {env_config.get('chairman_model')}")
+                    print(f"DEBUG: Using environment config (source of truth)")
+                    _config_cache = env_config
+                    # Update file to match environment
+                    _save_config_to_file(_config_cache)
+                else:
+                    # File matches environment, use file (may have additional API-updated fields)
+                    _config_cache = file_config
+                    print(f"DEBUG: Loaded config from file (matches environment): {_config_cache}")
             else:
-                # Fall back to environment/defaults
-                _config_cache = _load_default_config()
+                # No file exists, use environment and save to file
+                _config_cache = env_config
                 print(f"DEBUG: Loaded config from environment: {_config_cache}")
-                # Save to file for persistence
                 _save_config_to_file(_config_cache)
         
         return _config_cache.copy()

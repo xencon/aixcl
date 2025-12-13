@@ -464,14 +464,17 @@ council_configure() {
         echo ""
         echo "Restarting LLM-Council service to apply new configuration..."
         set_compose_cmd
+        # Stop if running
         if is_container_running "llm-council"; then
             "${COMPOSE_CMD[@]}" stop llm-council 2>/dev/null || true
-            "${COMPOSE_CMD[@]}" rm -f llm-council 2>/dev/null || true
-            "${COMPOSE_CMD[@]}" up -d llm-council
-            print_success "LLM-Council service restarted with new configuration"
-        else
-            print_warning "LLM-Council service is not running. Start services with: aixcl stack start"
         fi
+        # Always remove the container to avoid docker-compose ContainerConfig KeyError
+        # when using images from registry (older docker-compose versions have this bug)
+        # This also handles the case where container exists but is stopped
+        "${COMPOSE_CMD[@]}" rm -f llm-council 2>/dev/null || docker rm -f llm-council 2>/dev/null || true
+        "${COMPOSE_CMD[@]}" build llm-council
+        "${COMPOSE_CMD[@]}" up -d llm-council
+        print_success "LLM-Council service restarted with new configuration"
     fi
     exit 0
 }

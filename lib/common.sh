@@ -48,6 +48,7 @@ load_env_file() {
 ALL_SERVICES=(
     "ollama"
     "open-webui"
+    "llm-council"
     "postgres"
     "pgadmin"
     "watchtower"
