@@ -18,18 +18,27 @@ _config_lock = asyncio.Lock()
 
 def _load_default_config() -> Dict[str, Any]:
     """Load default configuration from environment variables."""
-    if BACKEND_MODE == "ollama":
-        council_models_str = os.getenv("COUNCIL_MODELS", "codellama:7b,qwen3:latest")
-        council_models = [m.strip() for m in council_models_str.split(",") if m.strip()]
-        chairman_model = os.getenv("CHAIRMAN_MODEL", "qwen3:latest")
-    else:
-        council_models = [
-            "openai/gpt-5.1",
-            "google/gemini-3-pro-preview",
-            "anthropic/claude-sonnet-4.5",
-            "x-ai/grok-4",
-        ]
-        chairman_model = os.getenv("CHAIRMAN_MODEL", "google/gemini-3-pro-preview")
+    # Read council models from individual COUNCILLOR-XX environment variables
+    council_models = []
+    # Support up to 4 council members (COUNCILLOR-01 through COUNCILLOR-04) for a total of 5 models (1 chairman + 4 councillors)
+    for i in range(1, 5):
+        councillor_var = f"COUNCILLOR-{i:02d}"
+        model = os.getenv(councillor_var)
+        if model and model.strip():
+            council_models.append(model.strip())
+    
+    # Fallback to legacy COUNCIL_MODELS format for backward compatibility
+    if not council_models:
+        council_models_str = os.getenv("COUNCIL_MODELS")
+        if council_models_str:
+            council_models = [m.strip() for m in council_models_str.split(",") if m.strip()]
+    
+    # Read chairman model from CHAIRMAN environment variable
+    chairman_model = os.getenv("CHAIRMAN")
+    
+    # Fallback to legacy CHAIRMAN_MODEL for backward compatibility
+    if not chairman_model:
+        chairman_model = os.getenv("CHAIRMAN_MODEL")
     
     return {
         "council_models": council_models,

@@ -433,9 +433,13 @@ council_configure() {
     done
     echo "Total models: $total_models"
     echo ""
-    echo "This will overwrite in .env file:"
-    echo "  - COUNCIL_MODELS: $council_models_str"
-    echo "  - CHAIRMAN_MODEL: $chairman_model"
+    echo "This will update .env file with new format:"
+    echo "  - CHAIRMAN: $chairman_model"
+    local index=1
+    for member in "${council_members[@]}"; do
+        echo "  - COUNCILLOR-$(printf "%02d" $index): $member"
+        ((index++))
+    done
     echo ""
     print_warning "Note: Any existing council configuration in .env will be replaced."
     echo ""
