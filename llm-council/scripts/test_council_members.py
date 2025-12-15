@@ -71,7 +71,7 @@ async def test_model_operational(model: str, backend_mode: str) -> Dict[str, any
     try:
         if backend_mode == "ollama":
             # Test via Ollama directly
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 payload = {
                     "model": model,
                     "messages": [{"role": "user", "content": TEST_QUERY}],
@@ -105,7 +105,7 @@ async def test_model_operational(model: str, backend_mode: str) -> Dict[str, any
         return {
             "operational": False,
             "response_time": 0.0,
-            "error": "Timeout - model did not respond within 30 seconds",
+            "error": "Timeout - model did not respond within 15 seconds",
             "response_preview": None
         }
     except httpx.HTTPStatusError as e:

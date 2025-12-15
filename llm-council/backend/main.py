@@ -176,7 +176,13 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch all unhandled exceptions and return proper JSON response."""
     print(f"DEBUG: Global exception handler caught: {type(exc).__name__}: {exc}", flush=True)
-    print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
+    try:
+        print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
+    except Exception:
+        # Fallback if traceback fails
+        import sys
+        import traceback as tb
+        print(f"DEBUG: Traceback (fallback):\n{''.join(tb.format_exception(*sys.exc_info()))}", flush=True)
     
     # If it's an HTTPException, let FastAPI handle it normally
     if isinstance(exc, HTTPException):
@@ -588,16 +594,25 @@ Please provide a helpful response based on the context provided above."""
         if stage3_result.get('model') == 'error':
             error_message = stage3_result.get('response', 'An error occurred while processing your request.')
             print(f"DEBUG: Council returned error: {error_message}", flush=True)
-            # Return OpenAI-compatible error response
+            # Return OpenAI-compatible error response with both id and conversation_id
+            response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
+            created_time = int(time.time())
+            error_response = {
+                "id": response_id,
+                "created": created_time,
+                "model": request.model,
+                "error": {
+                    "message": error_message,
+                    "type": "internal_error",
+                    "code": "council_error"
+                }
+            }
+            # Include conversation_id in error response if available (for Continue plugin compatibility)
+            if conversation_id:
+                error_response["conversation_id"] = conversation_id
             return JSONResponse(
                 status_code=500,
-                content={
-                    "error": {
-                        "message": error_message,
-                        "type": "internal_error",
-                        "code": "council_error"
-                    }
-                }
+                content=error_response
             )
         
         # Extract the final response from stage 3
@@ -823,7 +838,12 @@ Please provide a helpful response based on the context provided above."""
         raise
     except Exception as e:
         print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}", flush=True)
-        print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
+        try:
+            print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
+        except Exception:
+            # Fallback if traceback fails
+            import traceback as tb
+            print(f"DEBUG: Traceback (fallback):\n{''.join(tb.format_exception(*sys.exc_info()))}", flush=True)
         sys.stdout.flush()
         # Return OpenAI-compatible error response instead of HTTPException
         error_message = str(e)

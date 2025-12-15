@@ -125,14 +125,15 @@ services:
     environment:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
-      - COUNCIL_MODELS=${COUNCIL_MODELS:-codellama:7b,qwen3:latest}
-      - CHAIRMAN_MODEL=${CHAIRMAN_MODEL:-qwen3:latest}
+      - COUNCIL_MODELS=${COUNCIL_MODELS:-deepseek-coder:6.7b,gemma:7b,qwen2.5:7b}
+      - CHAIRMAN_MODEL=${CHAIRMAN_MODEL:-llama3.2:3b}
       - DATA_DIR=/app/data
       - POSTGRES_HOST=localhost
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+      - POSTGRES_CONTINUE_DATABASE=${POSTGRES_CONTINUE_DATABASE:-continue}
       - ENABLE_DB_STORAGE=true
       - FORCE_STREAMING=${FORCE_STREAMING:-true}
     volumes:
