@@ -125,8 +125,14 @@ services:
     environment:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
-      - COUNCIL_MODELS=${COUNCIL_MODELS:-deepseek-coder:6.7b,gemma:7b,qwen2.5:7b}
-      - CHAIRMAN_MODEL=${CHAIRMAN_MODEL:-llama3.2:3b}
+      - CHAIRMAN=${CHAIRMAN}
+      - COUNCILLOR-01=${COUNCILLOR-01}
+      - COUNCILLOR-02=${COUNCILLOR-02}
+      - COUNCILLOR-03=${COUNCILLOR-03}
+      - COUNCILLOR-04=${COUNCILLOR-04}
+      # Legacy support for backward compatibility
+      - COUNCIL_MODELS=${COUNCIL_MODELS}
+      - CHAIRMAN_MODEL=${CHAIRMAN_MODEL}
       - DATA_DIR=/app/data
       - POSTGRES_HOST=localhost
       - POSTGRES_PORT=5432
