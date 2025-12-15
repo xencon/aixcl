@@ -671,6 +671,11 @@ test_database_connection() {
     }
     
     # Check if uv is available (preferred method)
+    # Add ~/.local/bin to PATH for uv if it exists
+    if [ -d "$HOME/.local/bin" ]; then
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    
     if command -v uv &> /dev/null; then
         echo "Using uv to run database tests..."
         if uv run python scripts/test/test_db_connection.py; then
@@ -682,6 +687,15 @@ test_database_connection() {
         fi
     elif command -v python3 &> /dev/null; then
         echo "Using python3 to run database tests..."
+        # Try to install asyncpg if missing - use uv if available, otherwise try pip
+        if ! python3 -c "import asyncpg" 2>/dev/null; then
+            echo "⚠️  asyncpg not found. Attempting to install..."
+            if command -v uv &> /dev/null; then
+                uv pip install asyncpg 2>/dev/null || echo "   Could not install asyncpg with uv"
+            else
+                python3 -m pip install --user asyncpg 2>/dev/null || echo "   Could not install asyncpg. Please install manually: pip install asyncpg"
+            fi
+        fi
         if python3 scripts/test/test_db_connection.py; then
             print_success "Database connection tests passed"
             record_test "pass" "Database connection tests passed"
@@ -910,10 +924,23 @@ test_continue_integration() {
         echo "Using python3 to run Continue integration tests..."
         # Check if httpx is installed
         if ! python3 -c "import httpx" 2>/dev/null; then
-            print_error "httpx not installed. Install with: pip install httpx"
-            record_test "fail" "httpx not available for Continue integration tests"
-            cd "$SCRIPT_DIR" || true
-            return
+            echo "⚠️  httpx not found. Attempting to install..."
+            # Try uv first, then pip
+            if command -v uv &> /dev/null; then
+                uv pip install httpx 2>/dev/null || {
+                    print_error "httpx not installed. Install with: uv pip install httpx"
+                    record_test "fail" "httpx not available for Continue integration tests"
+                    cd "$SCRIPT_DIR" || true
+                    return
+                }
+            else
+                python3 -m pip install --user httpx 2>/dev/null || {
+                    print_error "httpx not installed. Install with: pip install httpx"
+                    record_test "fail" "httpx not available for Continue integration tests"
+                    cd "$SCRIPT_DIR" || true
+                    return
+                }
+            fi
         fi
         if python3 scripts/test/test_continue_integration.py; then
             print_success "Continue integration tests passed"

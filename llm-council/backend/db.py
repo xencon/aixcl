@@ -9,6 +9,7 @@ from .config import (
     POSTGRES_USER,
     POSTGRES_PASSWORD,
     POSTGRES_DATABASE,
+    POSTGRES_CONTINUE_DATABASE,
     ENABLE_DB_STORAGE,
 )
 
@@ -34,8 +35,8 @@ async def get_pool() -> Optional[asyncpg.Pool]:
         return _pool
     
     try:
-        # Build connection string
-        dsn = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}"
+        # Build connection string using continue database (separate from admin/Open WebUI database)
+        dsn = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_CONTINUE_DATABASE}"
         
         # Create connection pool
         _pool = await asyncpg.create_pool(
@@ -45,7 +46,7 @@ async def get_pool() -> Optional[asyncpg.Pool]:
             command_timeout=60,
         )
         
-        logger.info(f"Database connection pool created for {POSTGRES_DATABASE}")
+        logger.info(f"Database connection pool created for {POSTGRES_CONTINUE_DATABASE}")
         
         # Verify connection and create schema if needed
         await ensure_schema()

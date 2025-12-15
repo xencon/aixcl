@@ -59,7 +59,12 @@ POSTGRES_USER = os.getenv("POSTGRES_USER", "admin")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
 POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "admin")
 
+# Continue plugin database (separate from admin/Open WebUI database)
+# This ensures continue conversations are stored in their own database
+POSTGRES_CONTINUE_DATABASE = os.getenv("POSTGRES_CONTINUE_DATABASE", "continue")
+
 # Enable database storage for Continue conversations
 ENABLE_DB_STORAGE = os.getenv("ENABLE_DB_STORAGE", "true").lower() == "true"
 print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
 print(f"DEBUG: POSTGRES_HOST = {POSTGRES_HOST}, POSTGRES_DATABASE = {POSTGRES_DATABASE}")
+print(f"DEBUG: POSTGRES_CONTINUE_DATABASE = {POSTGRES_CONTINUE_DATABASE}")
