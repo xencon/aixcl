@@ -81,7 +81,6 @@ cd aixcl
 ```bash
 # Add models
 ./aixcl models add <model:latest>
-./aixcl models add phi3:latest qwen2.5:7b
 
 # Remove models
 ./aixcl models remove <model:latest>
