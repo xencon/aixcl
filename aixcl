@@ -40,10 +40,23 @@ load_env_file() {
                 fi
                 
                 # Only export if key is not empty and contains valid characters
-                if [ -n "$key" ] && [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-                    export "$key"="$value"
-                else
-                    echo "⚠️ Skipping invalid environment variable key: '$key'"
+                # Note: Bash cannot export variables with hyphens
+                # Docker Compose reads these directly from .env file, so we don't need to export them
+                # We'll only export standard bash-compatible variable names
+                if [ -n "$key" ]; then
+                    # Check if variable name contains hyphens (Docker Compose compatible but not bash exportable)
+                    if [[ "$key" =~ - ]]; then
+                        # Variable contains hyphen - docker-compose will read it from .env directly
+                        # We can't export it in bash, but that's fine - docker-compose handles it
+                        # Silently skip (don't show warning) since this is expected behavior
+                        :
+                    # Check if variable name is bash-compatible (no hyphens)
+                    elif [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+                        # Standard bash variable name - safe to export
+                        export "$key"="$value"
+                    else
+                        echo "⚠️ Skipping invalid environment variable key: '$key'" >&2
+                    fi
                 fi
             fi
         done < "$env_file"
@@ -155,18 +168,20 @@ function is_arm64() {
 # Build docker-compose command with optional GPU and ARM overrides if present
 function set_compose_cmd() {
     local services_dir="${SCRIPT_DIR}/services"
-    local files=( -f "${COMPOSE_FILE}" )
+    # Use full path for compose file
+    local compose_file="${services_dir}/${COMPOSE_FILE}"
+    local files=( -f "$compose_file" )
     
     # Check for ARM64 architecture
     if is_arm64 && [ -f "${services_dir}/docker-compose.arm.yml" ]; then
         echo "Detected ARM64 architecture. Enabling ARM platform overrides."
-        files+=( -f docker-compose.arm.yml )
+        files+=( -f "${services_dir}/docker-compose.arm.yml" )
     fi
     
     # Check for NVIDIA GPU
     if has_nvidia && [ -f "${services_dir}/docker-compose.gpu.yml" ]; then
         echo "Detected NVIDIA GPU. Enabling GPU overrides."
-        files+=( -f docker-compose.gpu.yml )
+        files+=( -f "${services_dir}/docker-compose.gpu.yml" )
     else
         echo "No NVIDIA GPU detected. Running without GPU overrides."
     fi
@@ -373,8 +388,11 @@ function generate_pgadmin_config() {
         return 1
     fi
     
+    # Use SCRIPT_DIR to ensure we're writing to the correct location
+    local pgadmin_config="${SCRIPT_DIR}/pgadmin-servers.json"
+    
     # Create pgadmin-servers.json with populated environment values
-    cat > pgadmin-servers.json << EOF
+    cat > "$pgadmin_config" << EOF
 {
   "Servers": {
     "1": {
@@ -393,7 +411,7 @@ function generate_pgadmin_config() {
 EOF
     
     # Set restrictive file permissions (read/write for owner only)
-    chmod 600 pgadmin-servers.json
+    chmod 600 "$pgadmin_config"
     
     echo "✅ Generated pgadmin-servers.json with populated values and secure permissions"
 }
@@ -402,15 +420,20 @@ function start() {
     echo "Starting Docker Compose deployment..."
     
     # Check for .env file and create from .env.example if missing
-    if [ ! -f .env ]; then
-        if [ -f .env.example ]; then
+    # Use SCRIPT_DIR to ensure we're looking in the correct location
+    local env_file="${SCRIPT_DIR}/.env"
+    local env_example="${SCRIPT_DIR}/.env.example"
+    
+    if [ ! -f "$env_file" ]; then
+        if [ -f "$env_example" ]; then
             echo "⚠️  .env file not found. Copying from .env.example..."
-            cp .env.example .env
+            cp "$env_example" "$env_file"
             echo "✅ Created .env file from .env.example"
             # Reload environment variables after creating .env file
-            load_env_file ".env"
+            load_env_file "$env_file"
         else
             echo "❌ Error: Neither .env nor .env.example file found"
+            echo "   Expected .env.example at: $env_example"
             echo "   Please create a .env file with the required configuration"
             exit 1
         fi
@@ -1551,76 +1574,112 @@ function update_env_file() {
     local chairman_model="$2"
     local env_file=".env"
     
+    # Validate inputs
+    if [[ -z "$chairman_model" ]]; then
+        echo "❌ Error: Chairman model is required"
+        return 1
+    fi
+    
+    if [[ -z "$council_models" ]]; then
+        echo "❌ Error: At least one council member is required"
+        return 1
+    fi
+    
     # Check if .env file exists
     if [[ ! -f "$env_file" ]]; then
-        echo "❌ Error: .env file not found. Please run './aixcl start' first to create it."
+        echo "❌ Error: .env file not found at: $env_file"
+        echo "   Please run './aixcl start' first to create it."
         return 1
     fi
     
     # Create backup
-    cp "$env_file" "${env_file}.backup.$(date +%s)"
+    cp "$env_file" "${env_file}.backup.$(date +%s)" || {
+        echo "❌ Error: Failed to create backup of .env file"
+        return 1
+    }
     
-    # Remove all existing LLM Council configuration (old and new format)
+    # Remove all existing LLM Council configuration
     # This ensures we completely overwrite any existing configuration
+    # Remove entire section including all comment lines and variables
     if [[ "$(uname)" == "Darwin" ]]; then
         # macOS uses BSD sed
-        # Remove old format
+        # Remove section header and all related comments
+        sed -i '' '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
+        sed -i '' '/^[[:space:]]*#.*Chairman/d' "$env_file"
+        sed -i '' '/^[[:space:]]*#.*Council Members/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
-        sed -i '' '/^COUNCIL_MODELS=/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
-        sed -i '' '/^CHAIRMAN_MODEL=/d' "$env_file"
-        # Remove new format
         sed -i '' '/^[[:space:]]*#.*CHAIRMAN=/d' "$env_file"
-        sed -i '' '/^CHAIRMAN=/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*COUNCILLOR-/d' "$env_file"
-        sed -i '' '/^COUNCILLOR-/d' "$env_file"
+        # Remove variable assignments
+        sed -i '' '/^[[:space:]]*COUNCIL_MODELS=/d' "$env_file"
+        sed -i '' '/^[[:space:]]*CHAIRMAN_MODEL=/d' "$env_file"
+        sed -i '' '/^[[:space:]]*CHAIRMAN=/d' "$env_file"
+        sed -i '' '/^[[:space:]]*COUNCILLOR-/d' "$env_file"
+        # Remove "Configure with" comment lines
+        sed -i '' '/^[[:space:]]*#.*Configure with.*council configure/d' "$env_file"
     else
         # Linux uses GNU sed
-        # Remove old format
+        # Remove section header and all related comments
+        sed -i '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
+        sed -i '/^[[:space:]]*#.*Chairman/d' "$env_file"
+        sed -i '/^[[:space:]]*#.*Council Members/d' "$env_file"
         sed -i '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
-        sed -i '/^COUNCIL_MODELS=/d' "$env_file"
         sed -i '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
-        sed -i '/^CHAIRMAN_MODEL=/d' "$env_file"
-        # Remove new format
         sed -i '/^[[:space:]]*#.*CHAIRMAN=/d' "$env_file"
-        sed -i '/^CHAIRMAN=/d' "$env_file"
         sed -i '/^[[:space:]]*#.*COUNCILLOR-/d' "$env_file"
-        sed -i '/^COUNCILLOR-/d' "$env_file"
+        # Remove variable assignments
+        sed -i '/^[[:space:]]*COUNCIL_MODELS=/d' "$env_file"
+        sed -i '/^[[:space:]]*CHAIRMAN_MODEL=/d' "$env_file"
+        sed -i '/^[[:space:]]*CHAIRMAN=/d' "$env_file"
+        sed -i '/^[[:space:]]*COUNCILLOR-/d' "$env_file"
+        # Remove "Configure with" comment lines
+        sed -i '/^[[:space:]]*#.*Configure with.*council configure/d' "$env_file"
     fi
     
-    # Add new format: CHAIRMAN and COUNCILLOR-XX
-    echo "" >> "$env_file"
-    echo "# LLM Council Configuration" >> "$env_file"
-    echo "# Chairman model - synthesizes final response" >> "$env_file"
-    echo "CHAIRMAN=${chairman_model}" >> "$env_file"
-    echo "" >> "$env_file"
-    echo "# Council Members - Individual models that participate in the council" >> "$env_file"
-    echo "# Up to 4 councillors supported (total of 5 models: 1 chairman + 4 councillors)" >> "$env_file"
-    
-    # Split council_models by comma and write individual COUNCILLOR-XX variables
-    if [[ -n "$council_models" ]]; then
-        IFS=',' read -ra MODELS <<< "$council_models"
-        local index=1
-        for model in "${MODELS[@]}"; do
-            model=$(echo "$model" | xargs)  # Trim whitespace
-            if [[ -n "$model" ]] && [[ $index -le 4 ]]; then
-                echo "COUNCILLOR-$(printf "%02d" $index)=${model}" >> "$env_file"
-                ((index++))
-            fi
-        done
-        # Add empty slots for remaining councillors
-        while [[ $index -le 4 ]]; do
-            echo "COUNCILLOR-$(printf "%02d" $index)=" >> "$env_file"
-            ((index++))
-        done
+    # Remove consecutive blank lines (more than 2 in a row) to clean up the file
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS: Use awk to remove excessive blank lines
+        awk 'BEGIN{blank=0} /^[[:space:]]*$/{blank++; if(blank<=1) print; next} {blank=0; print}' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
     else
-        # No councillors, add empty slots
-        for i in {1..4}; do
-            echo "COUNCILLOR-$(printf "%02d" $i)=" >> "$env_file"
-        done
+        # Linux: Use awk to remove excessive blank lines
+        awk 'BEGIN{blank=0} /^[[:space:]]*$/{blank++; if(blank<=1) print; next} {blank=0; print}' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
     fi
     
-    echo "✅ Updated .env file with council configuration (new format: CHAIRMAN and COUNCILLOR-XX)"
+    # Ensure file ends with newline before appending
+    if [[ -s "$env_file" ]] && [[ "$(tail -c 1 "$env_file" 2>/dev/null)" != "" ]]; then
+        echo "" >> "$env_file" || {
+            echo "❌ Error: Failed to append newline to .env file"
+            return 1
+        }
+    fi
+    
+    # Add legacy format: CHAIRMAN_MODEL and COUNCIL_MODELS (bash-compatible)
+    {
+        echo ""
+        echo "# LLM Council Configuration"
+        echo "# Chairman model - synthesizes final response"
+        echo "CHAIRMAN_MODEL=${chairman_model}"
+        echo ""
+        echo "# Council Members - Comma-separated list of models that participate in the council"
+        echo "COUNCIL_MODELS=${council_models}"
+    } >> "$env_file" || {
+        echo "❌ Error: Failed to write council configuration to .env file"
+        return 1
+    }
+    
+    # Verify the values were written correctly
+    if ! grep -q "^CHAIRMAN_MODEL=${chairman_model}$" "$env_file" 2>/dev/null; then
+        echo "❌ Error: Failed to verify CHAIRMAN_MODEL was written correctly"
+        return 1
+    fi
+    
+    if ! grep -q "^COUNCIL_MODELS=${council_models}$" "$env_file" 2>/dev/null; then
+        echo "❌ Error: Failed to verify COUNCIL_MODELS was written correctly"
+        return 1
+    fi
+    
+    echo "✅ Updated .env file with council configuration (CHAIRMAN_MODEL and COUNCIL_MODELS)"
     return 0
 }
 
@@ -1645,11 +1704,12 @@ function status_council() {
     local council_models=""
     local chairman_model=""
     local backend_mode="ollama"
-    local env_file=".env"
+    # Use SCRIPT_DIR to ensure we're looking in the correct location
+    local env_file="${SCRIPT_DIR}/.env"
     
     if [[ ! -f "$env_file" ]]; then
         echo "❌ Error: .env file not found."
-        echo "   Please run './aixcl start' first to create it, then configure the council with './aixcl council configure'"
+        echo "   Please run './aixcl stack start' first to create it, then configure the council with './aixcl council configure'"
         return 1
     fi
     
@@ -1829,12 +1889,13 @@ function list_council() {
     echo "===================================="
     echo ""
     
-    local env_file=".env"
+    # Use SCRIPT_DIR to ensure we're looking in the correct location
+    local env_file="${SCRIPT_DIR}/.env"
     
     # Check if .env file exists
     if [[ ! -f "$env_file" ]]; then
         echo "❌ Error: .env file not found."
-        echo "   Please run './aixcl start' first to create it, then configure the council with './aixcl council configure'"
+        echo "   Please run './aixcl stack start' first to create it, then configure the council with './aixcl council configure'"
         return 1
     fi
     
@@ -2542,13 +2603,9 @@ function configure_council() {
     done
     echo "Total models: $total_models"
     echo ""
-    echo "This will update .env file with new format:"
-    echo "  - CHAIRMAN: $chairman_model"
-    local index=1
-    for member in "${council_members[@]}"; do
-        echo "  - COUNCILLOR-$(printf "%02d" $index): $member"
-        ((index++))
-    done
+    echo "This will update .env file with:"
+    echo "  - CHAIRMAN_MODEL: $chairman_model"
+    echo "  - COUNCIL_MODELS: $council_models_str"
     echo ""
     echo "⚠️  Note: Any existing council configuration in .env will be replaced."
     echo ""
@@ -2673,10 +2730,15 @@ function stack_cmd() {
 }
 
 function council_cmd() {
-    # Default to 'status' if no action is provided
+    # Require an action - show usage if none provided
     if [[ $# -lt 1 ]]; then
-        status_council
-        return 0
+        echo "Error: Council action is required"
+        echo "Usage: $0 council [configure|status|list]"
+        echo "Examples:"
+        echo "  $0 council status      - Show council configuration and operational status"
+        echo "  $0 council configure  - Configure council models and chairman"
+        echo "  $0 council list        - List council configuration and available models"
+        return 1
     fi
 
     local action="$1"
@@ -2689,13 +2751,16 @@ function council_cmd() {
         status)
             status_council
             ;;
+        list)
+            list_council
+            ;;
         *)
             echo "Error: Unknown council action '$action'"
-            echo "Usage: $0 council [configure|status]"
+            echo "Usage: $0 council [configure|status|list]"
             echo "Examples:"
-            echo "  $0 council              - Show council status (default)"
             echo "  $0 council status      - Show council configuration and operational status"
             echo "  $0 council configure  - Configure council models and chairman"
+            echo "  $0 council list        - List council configuration and available models"
             return 1
             ;;
     esac

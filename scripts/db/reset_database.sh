@@ -9,7 +9,7 @@ fi
 
 # Default values if not set
 POSTGRES_USER=${POSTGRES_USER:-admin}
-POSTGRES_DATABASE=${POSTGRES_DATABASE:-admin}
+POSTGRES_DATABASE=${POSTGRES_DATABASE:-webui}
 
 echo "=== Resetting Open WebUI Database ==="
 echo "Database: $POSTGRES_DATABASE"

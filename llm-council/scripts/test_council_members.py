@@ -151,22 +151,88 @@ async def main():
     council_models = config.get("council_models", [])
     chairman_model = config.get("chairman_model", "")
     
+    # If configuration is empty, try reloading it
+    if not council_models and not chairman_model:
+        print("   ⚠️  Configuration is empty, attempting to reload from environment...")
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.post(f"{API_BASE_URL}/api/config/reload")
+                if response.status_code == 200:
+                    print("   ✅ Configuration reloaded, fetching again...")
+                    config = await get_council_config()
+                    if config:
+                        council_models = config.get("council_models", [])
+                        chairman_model = config.get("chairman_model", "")
+                else:
+                    print(f"   ⚠️  Reload failed (HTTP {response.status_code})")
+        except Exception as e:
+            print(f"   ⚠️  Could not reload config: {e}")
+    
     print(f"   Backend Mode: {backend_mode}")
     print(f"   Council Members: {len(council_models)}")
-    print(f"   Chairman: {chairman_model}")
+    if council_models:
+        print(f"   Council Models: {', '.join(council_models)}")
+    print(f"   Chairman: {chairman_model if chairman_model else '(not set)'}")
     print()
+    
+    # Check if configuration is empty
+    if not council_models and not chairman_model:
+        print("   ⚠️  WARNING: Council configuration is empty!")
+        print()
+        print("   Attempting to reload configuration from environment...")
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.post(f"{API_BASE_URL}/api/config/reload")
+                if response.status_code == 200:
+                    print("   ✅ Reload endpoint called successfully, fetching config again...")
+                    config = await get_council_config()
+                    if config:
+                        council_models = config.get("council_models", [])
+                        chairman_model = config.get("chairman_model", "")
+                        if council_models or chairman_model:
+                            print("   ✅ Configuration loaded after reload!")
+                        else:
+                            print("   ⚠️  Configuration still empty after reload")
+                else:
+                    print(f"   ⚠️  Reload failed (HTTP {response.status_code})")
+        except Exception as e:
+            print(f"   ⚠️  Could not reload config: {e}")
+        
+        if not council_models and not chairman_model:
+            print()
+            print("   ❌ Council configuration is still empty after reload attempt.")
+            print("   This indicates the llm-council container was started before")
+            print("   the .env file had council configuration.")
+            print()
+            print("   SOLUTION: Restart the llm-council container to pick up environment variables:")
+            print("     ./aixcl service restart llm-council")
+            print("   OR:")
+            print("     ./aixcl stack restart")
+            print()
+        print("=" * 70)
+        print("Summary")
+        print("=" * 70)
+        print("Total Members: 0")
+        print("Operational: 0")
+        print("Not Operational: 0")
+        print()
+        print("⚠️  Council is not configured - no members to test")
+        return 0
     
     # Validate models exist (for Ollama)
     if backend_mode == "ollama":
         print("3. Validating models exist in Ollama...")
         all_models = council_models + ([chairman_model] if chairman_model else [])
-        validation = await validate_models_in_ollama(all_models)
-        
-        for model in all_models:
-            if validation.get(model, False):
-                print(f"   ✅ {model} - exists in Ollama")
-            else:
-                print(f"   ❌ {model} - not found in Ollama")
+        if all_models:
+            validation = await validate_models_in_ollama(all_models)
+            
+            for model in all_models:
+                if validation.get(model, False):
+                    print(f"   ✅ {model} - exists in Ollama")
+                else:
+                    print(f"   ❌ {model} - not found in Ollama")
+        else:
+            print("   ⚠️  No models to validate")
         print()
     
     # Test each council member
@@ -179,49 +245,67 @@ async def main():
     if chairman_model:
         all_members.append(("Chairman", chairman_model))
     
-    results = {}
-    for role, model in all_members:
-        print(f"   Testing {role}: {model}...", end=" ", flush=True)
-        result = await test_model_operational(model, backend_mode)
-        results[model] = result
+    if not all_members:
+        print("   ⚠️  No council members configured to test")
+        print()
+    else:
+        results = {}
+        for role, model in all_members:
+            print(f"   Testing {role}: {model}...", end=" ", flush=True)
+            result = await test_model_operational(model, backend_mode)
+            results[model] = result
+            
+            if result["operational"]:
+                print(f"✅ Operational ({result['response_time']}s)")
+                if result.get("response_preview"):
+                    print(f"      Response preview: {result['response_preview']}")
+            else:
+                print(f"❌ Not Operational")
+                if result.get("error"):
+                    print(f"      Error: {result['error']}")
         
-        if result["operational"]:
-            print(f"✅ Operational ({result['response_time']}s)")
-            if result.get("response_preview"):
-                print(f"      Response preview: {result['response_preview']}")
+        print()
+        
+        # Summary
+        print("=" * 70)
+        print("Summary")
+        print("=" * 70)
+        
+        operational_count = sum(1 for r in results.values() if r["operational"])
+        total_count = len(results)
+        
+        print(f"Total Members: {total_count}")
+        print(f"Operational: {operational_count}")
+        print(f"Not Operational: {total_count - operational_count}")
+        print()
+        
+        if operational_count == total_count and total_count > 0:
+            print("✅ All council members are operational!")
+            return 0
+        elif total_count == 0:
+            print("⚠️  No council members configured")
+            return 0
         else:
-            print(f"❌ Not Operational")
-            if result.get("error"):
-                print(f"      Error: {result['error']}")
+            print("❌ Some council members are not operational")
+            print()
+            print("Non-operational members:")
+            for role, model in all_members:
+                if not results[model]["operational"]:
+                    print(f"  - {role}: {model}")
+                    if results[model].get("error"):
+                        print(f"    Error: {results[model]['error']}")
+            return 1
     
-    print()
-    
-    # Summary
+    # If we get here, no members were configured
     print("=" * 70)
     print("Summary")
     print("=" * 70)
-    
-    operational_count = sum(1 for r in results.values() if r["operational"])
-    total_count = len(results)
-    
-    print(f"Total Members: {total_count}")
-    print(f"Operational: {operational_count}")
-    print(f"Not Operational: {total_count - operational_count}")
+    print("Total Members: 0")
+    print("Operational: 0")
+    print("Not Operational: 0")
     print()
-    
-    if operational_count == total_count:
-        print("✅ All council members are operational!")
-        return 0
-    else:
-        print("❌ Some council members are not operational")
-        print()
-        print("Non-operational members:")
-        for role, model in all_members:
-            if not results[model]["operational"]:
-                print(f"  - {role}: {model}")
-                if results[model].get("error"):
-                    print(f"    Error: {results[model]['error']}")
-        return 1
+    print("⚠️  Council is not configured - no members to test")
+    return 0
 
 
 if __name__ == "__main__":

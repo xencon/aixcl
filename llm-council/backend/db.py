@@ -35,7 +35,7 @@ async def get_pool() -> Optional[asyncpg.Pool]:
         return _pool
     
     try:
-        # Build connection string using continue database (separate from admin/Open WebUI database)
+        # Build connection string using continue database (separate from webui/Open WebUI database)
         dsn = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_CONTINUE_DATABASE}"
         
         # Create connection pool

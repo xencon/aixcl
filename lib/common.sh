@@ -34,10 +34,23 @@ load_env_file() {
                 fi
                 
                 # Only export if key is not empty and contains valid characters
-                if [ -n "$key" ] && [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-                    export "$key"="$value"
-                else
-                    echo "⚠️ Skipping invalid environment variable key: '$key'" >&2
+                # Note: Bash cannot export variables with hyphens
+                # Docker Compose reads these directly from .env file, so we don't need to export them
+                # We'll only export standard bash-compatible variable names
+                if [ -n "$key" ]; then
+                    # Check if variable name contains hyphens (Docker Compose compatible but not bash exportable)
+                    if [[ "$key" =~ - ]]; then
+                        # Variable contains hyphen - docker-compose will read it from .env directly
+                        # We can't export it in bash, but that's fine - docker-compose handles it
+                        # Silently skip (don't show warning) since this is expected behavior
+                        :
+                    # Check if variable name is bash-compatible (no hyphens)
+                    elif [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+                        # Standard bash variable name - safe to export
+                        export "$key"="$value"
+                    else
+                        echo "⚠️ Skipping invalid environment variable key: '$key'" >&2
+                    fi
                 fi
             fi
         done < "$env_file"

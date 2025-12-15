@@ -4,6 +4,46 @@ This directory contains utility SQL scripts for managing and querying the AIXCL 
 
 ## Migration Scripts
 
+### `migrate_admin_to_webui.sh`
+Migration script to rename the admin database to webui. This script creates the webui database and optionally migrates data from the admin database.
+
+**Usage:**
+```bash
+./scripts/db/migrate_admin_to_webui.sh
+```
+
+**What it does:**
+- Checks if admin database exists
+- Creates webui database if it doesn't exist
+- Optionally migrates data from admin to webui
+- Provides verification steps
+
+**When to use:**
+- When upgrading from admin database to webui database
+- As part of the database renaming process
+
+### `drop_admin_database.sh`
+Script to safely drop the admin database after migration to webui is complete and verified.
+
+**Usage:**
+```bash
+./scripts/db/drop_admin_database.sh
+```
+
+**WARNING:** This will permanently delete the admin database and all its data!
+
+**What it does:**
+- Verifies webui database exists
+- Shows database information
+- Requires explicit confirmation
+- Terminates active connections
+- Drops the admin database
+
+**When to use:**
+- After successfully migrating to webui database
+- After verifying all services work with webui database
+- Only when you're certain the migration was successful
+
 ### `002_add_source_column.sql`
 Migration script to add the `source` column to existing `chat` tables. This is only needed for databases that were created before the source column was added to the main migration. New installations automatically include this column via `001_create_chat_table.sql`.
 
