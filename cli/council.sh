@@ -38,7 +38,7 @@ council_status() {
         return 1
     fi
     
-    # Read .env file
+    # Read .env file - use legacy format (CHAIRMAN_MODEL and COUNCIL_MODELS)
     while IFS= read -r line || [ -n "$line" ]; do
         [[ -z "$line" ]] && continue
         [[ "${line#\#}" != "$line" ]] && continue
@@ -433,13 +433,9 @@ council_configure() {
     done
     echo "Total models: $total_models"
     echo ""
-    echo "This will update .env file with new format:"
-    echo "  - CHAIRMAN: $chairman_model"
-    local index=1
-    for member in "${council_members[@]}"; do
-        echo "  - COUNCILLOR-$(printf "%02d" $index): $member"
-        ((index++))
-    done
+    echo "This will update .env file with:"
+    echo "  - CHAIRMAN_MODEL: $chairman_model"
+    echo "  - COUNCIL_MODELS: $council_models_str"
     echo ""
     print_warning "Note: Any existing council configuration in .env will be replaced."
     echo ""

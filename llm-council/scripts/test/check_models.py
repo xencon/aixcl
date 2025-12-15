@@ -9,27 +9,14 @@ import subprocess
 import json
 
 # Get models from environment
-# Support new format: CHAIRMAN and COUNCILLOR-XX
-chairman_model = os.getenv("CHAIRMAN")
-if not chairman_model:
-    chairman_model = os.getenv("CHAIRMAN_MODEL", "")
+# Read from CHAIRMAN_MODEL and COUNCIL_MODELS environment variables
+chairman_model = os.getenv("CHAIRMAN_MODEL", "")
 
-# Read council models from individual COUNCILLOR-XX environment variables
+# Read council models from COUNCIL_MODELS environment variable (comma-separated list)
 council_models = []
-# Support up to 4 council members (COUNCILLOR-01 through COUNCILLOR-04) for a total of 5 models (1 chairman + 4 councillors)
-for i in range(1, 5):
-    councillor_var = f"COUNCILLOR-{i:02d}"
-    model = os.getenv(councillor_var)
-    if model and model.strip():
-        council_models.append(model.strip())
-
-# Fallback to legacy COUNCIL_MODELS format for backward compatibility
-if not council_models:
-    council_models_str = os.getenv("COUNCIL_MODELS", "")
-    if council_models_str:
-        council_models = [m.strip() for m in council_models_str.split(',') if m.strip()]
-else:
-    council_models_str = ""  # Not used when using COUNCILLOR-XX format
+council_models_str = os.getenv("COUNCIL_MODELS", "")
+if council_models_str:
+    council_models = [m.strip() for m in council_models_str.split(',') if m.strip()]
 
 print("=" * 70)
 print("Ollama Model Availability Check")

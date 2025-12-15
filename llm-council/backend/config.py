@@ -16,32 +16,19 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 # Council members - model identifiers
-# Read from individual environment variables: COUNCILLOR-01, COUNCILLOR-02, etc.
+# Read from COUNCIL_MODELS environment variable (comma-separated list)
 # For Ollama mode: use Ollama model names (e.g., "qwen2.5-coder:7b")
 # For OpenRouter mode: use OpenRouter identifiers (e.g., "openai/gpt-5.1")
 COUNCIL_MODELS = []
-# Support up to 4 council members (COUNCILLOR-01 through COUNCILLOR-04) for a total of 5 models (1 chairman + 4 councillors)
-for i in range(1, 5):
-    councillor_var = f"COUNCILLOR-{i:02d}"
-    model = os.getenv(councillor_var)
-    if model and model.strip():
-        COUNCIL_MODELS.append(model.strip())
-
-# Fallback to legacy COUNCIL_MODELS format for backward compatibility
-if not COUNCIL_MODELS:
-    council_models_str = os.getenv("COUNCIL_MODELS")
-    if council_models_str:
-        COUNCIL_MODELS = [m.strip() for m in council_models_str.split(",") if m.strip()]
+council_models_str = os.getenv("COUNCIL_MODELS")
+if council_models_str:
+    COUNCIL_MODELS = [m.strip() for m in council_models_str.split(",") if m.strip()]
 
 print(f"DEBUG: COUNCIL_MODELS = {COUNCIL_MODELS}")
 
 # Chairman model - synthesizes final response
-# Read from CHAIRMAN environment variable
-CHAIRMAN_MODEL = os.getenv("CHAIRMAN")
-
-# Fallback to legacy CHAIRMAN_MODEL for backward compatibility
-if not CHAIRMAN_MODEL:
-    CHAIRMAN_MODEL = os.getenv("CHAIRMAN_MODEL")
+# Read from CHAIRMAN_MODEL environment variable
+CHAIRMAN_MODEL = os.getenv("CHAIRMAN_MODEL")
 
 print(f"DEBUG: CHAIRMAN_MODEL = {CHAIRMAN_MODEL}")
 print(f"DEBUG: OLLAMA_BASE_URL = {os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')}")
@@ -67,9 +54,9 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 POSTGRES_USER = os.getenv("POSTGRES_USER", "admin")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
-POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "admin")
+POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "webui")
 
-# Continue plugin database (separate from admin/Open WebUI database)
+# Continue plugin database (separate from webui/Open WebUI database)
 # This ensures continue conversations are stored in their own database
 POSTGRES_CONTINUE_DATABASE = os.getenv("POSTGRES_CONTINUE_DATABASE", "continue")
 

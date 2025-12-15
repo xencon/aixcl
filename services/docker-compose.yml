@@ -125,12 +125,6 @@ services:
     environment:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
-      - CHAIRMAN=${CHAIRMAN}
-      - COUNCILLOR-01=${COUNCILLOR-01}
-      - COUNCILLOR-02=${COUNCILLOR-02}
-      - COUNCILLOR-03=${COUNCILLOR-03}
-      - COUNCILLOR-04=${COUNCILLOR-04}
-      # Legacy support for backward compatibility
       - COUNCIL_MODELS=${COUNCIL_MODELS}
       - CHAIRMAN_MODEL=${CHAIRMAN_MODEL}
       - DATA_DIR=/app/data

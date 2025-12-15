@@ -30,75 +30,111 @@ update_env_file() {
     local chairman_model="$2"
     local env_file="${SCRIPT_DIR}/.env"
     
+    # Validate inputs
+    if [[ -z "$chairman_model" ]]; then
+        print_error "Chairman model is required"
+        return 1
+    fi
+    
+    if [[ -z "$council_models" ]]; then
+        print_error "At least one council member is required"
+        return 1
+    fi
+    
     # Check if .env file exists
     if [[ ! -f "$env_file" ]]; then
-        print_error ".env file not found. Please run 'aixcl stack start' first to create it."
+        print_error ".env file not found at: $env_file"
+        print_error "Please run 'aixcl stack start' first to create it."
         return 1
     fi
     
     # Create backup
-    cp "$env_file" "${env_file}.backup.$(date +%s)"
+    cp "$env_file" "${env_file}.backup.$(date +%s)" || {
+        print_error "Failed to create backup of .env file"
+        return 1
+    }
     
-    # Remove all existing LLM Council configuration (old and new format)
+    # Remove all existing LLM Council configuration
     # This ensures we completely overwrite any existing configuration
+    # Remove entire section including all comment lines and variables
     if [[ "$(uname)" == "Darwin" ]]; then
         # macOS uses BSD sed
-        # Remove old format
+        # Remove section header and all related comments
+        sed -i '' '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
+        sed -i '' '/^[[:space:]]*#.*Chairman/d' "$env_file"
+        sed -i '' '/^[[:space:]]*#.*Council Members/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
-        sed -i '' '/^COUNCIL_MODELS=/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
-        sed -i '' '/^CHAIRMAN_MODEL=/d' "$env_file"
-        # Remove new format
         sed -i '' '/^[[:space:]]*#.*CHAIRMAN=/d' "$env_file"
-        sed -i '' '/^CHAIRMAN=/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*COUNCILLOR-/d' "$env_file"
-        sed -i '' '/^COUNCILLOR-/d' "$env_file"
+        # Remove variable assignments
+        sed -i '' '/^[[:space:]]*COUNCIL_MODELS=/d' "$env_file"
+        sed -i '' '/^[[:space:]]*CHAIRMAN_MODEL=/d' "$env_file"
+        sed -i '' '/^[[:space:]]*CHAIRMAN=/d' "$env_file"
+        sed -i '' '/^[[:space:]]*COUNCILLOR-/d' "$env_file"
+        # Remove "Configure with" comment lines
+        sed -i '' '/^[[:space:]]*#.*Configure with.*council configure/d' "$env_file"
     else
         # Linux uses GNU sed
-        # Remove old format
+        # Remove section header and all related comments
+        sed -i '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
+        sed -i '/^[[:space:]]*#.*Chairman/d' "$env_file"
+        sed -i '/^[[:space:]]*#.*Council Members/d' "$env_file"
         sed -i '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
-        sed -i '/^COUNCIL_MODELS=/d' "$env_file"
         sed -i '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
-        sed -i '/^CHAIRMAN_MODEL=/d' "$env_file"
-        # Remove new format
         sed -i '/^[[:space:]]*#.*CHAIRMAN=/d' "$env_file"
-        sed -i '/^CHAIRMAN=/d' "$env_file"
         sed -i '/^[[:space:]]*#.*COUNCILLOR-/d' "$env_file"
-        sed -i '/^COUNCILLOR-/d' "$env_file"
+        # Remove variable assignments
+        sed -i '/^[[:space:]]*COUNCIL_MODELS=/d' "$env_file"
+        sed -i '/^[[:space:]]*CHAIRMAN_MODEL=/d' "$env_file"
+        sed -i '/^[[:space:]]*CHAIRMAN=/d' "$env_file"
+        sed -i '/^[[:space:]]*COUNCILLOR-/d' "$env_file"
+        # Remove "Configure with" comment lines
+        sed -i '/^[[:space:]]*#.*Configure with.*council configure/d' "$env_file"
     fi
     
-    # Add new format: CHAIRMAN and COUNCILLOR-XX
-    echo "" >> "$env_file"
-    echo "# LLM Council Configuration" >> "$env_file"
-    echo "# Chairman model - synthesizes final response" >> "$env_file"
-    echo "CHAIRMAN=${chairman_model}" >> "$env_file"
-    echo "" >> "$env_file"
-    echo "# Council Members - Individual models that participate in the council" >> "$env_file"
-    echo "# Up to 4 councillors supported (total of 5 models: 1 chairman + 4 councillors)" >> "$env_file"
-    
-    # Split council_models by comma and write individual COUNCILLOR-XX variables
-    if [[ -n "$council_models" ]]; then
-        IFS=',' read -ra MODELS <<< "$council_models"
-        local index=1
-        for model in "${MODELS[@]}"; do
-            model=$(echo "$model" | xargs)  # Trim whitespace
-            if [[ -n "$model" ]] && [[ $index -le 4 ]]; then
-                echo "COUNCILLOR-$(printf "%02d" $index)=${model}" >> "$env_file"
-                ((index++))
-            fi
-        done
-        # Add empty slots for remaining councillors
-        while [[ $index -le 4 ]]; do
-            echo "COUNCILLOR-$(printf "%02d" $index)=" >> "$env_file"
-            ((index++))
-        done
+    # Remove consecutive blank lines (more than 2 in a row) to clean up the file
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS: Use awk to remove excessive blank lines
+        awk 'BEGIN{blank=0} /^[[:space:]]*$/{blank++; if(blank<=1) print; next} {blank=0; print}' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
     else
-        # No councillors, add empty slots
-        for i in {1..4}; do
-            echo "COUNCILLOR-$(printf "%02d" $i)=" >> "$env_file"
-        done
+        # Linux: Use awk to remove excessive blank lines
+        awk 'BEGIN{blank=0} /^[[:space:]]*$/{blank++; if(blank<=1) print; next} {blank=0; print}' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
     fi
     
-    print_success "Updated .env file with council configuration (new format: CHAIRMAN and COUNCILLOR-XX)"
+    # Ensure file ends with newline before appending
+    if [[ -s "$env_file" ]] && [[ "$(tail -c 1 "$env_file" 2>/dev/null)" != "" ]]; then
+        echo "" >> "$env_file" || {
+            print_error "Failed to append newline to .env file"
+            return 1
+        }
+    fi
+    
+    # Add legacy format: CHAIRMAN_MODEL and COUNCIL_MODELS (bash-compatible)
+    {
+        echo ""
+        echo "# LLM Council Configuration"
+        echo "# Chairman model - synthesizes final response"
+        echo "CHAIRMAN_MODEL=${chairman_model}"
+        echo ""
+        echo "# Council Members - Comma-separated list of models that participate in the council"
+        echo "COUNCIL_MODELS=${council_models}"
+    } >> "$env_file" || {
+        print_error "Failed to write council configuration to .env file"
+        return 1
+    }
+    
+    # Verify the values were written correctly
+    if ! grep -q "^CHAIRMAN_MODEL=${chairman_model}$" "$env_file" 2>/dev/null; then
+        print_error "Failed to verify CHAIRMAN_MODEL was written correctly"
+        return 1
+    fi
+    
+    if ! grep -q "^COUNCIL_MODELS=${council_models}$" "$env_file" 2>/dev/null; then
+        print_error "Failed to verify COUNCIL_MODELS was written correctly"
+        return 1
+    fi
+    
+    print_success "Updated .env file with council configuration (CHAIRMAN_MODEL and COUNCIL_MODELS)"
     return 0
 }
