@@ -7,9 +7,9 @@ AIXCL is a container-based platform that helps you integrate Large Language Mode
 AIXCL provides a complete local LLM development environment:
 - Run LLMs locally on your machine (with automatic GPU detection)
 - Web UI to interact with models and configure the server
-- CLI to manage models and the LLM council
+- CLI for services control, managing models and the LLM council
 - IDE integration via the Continue plugin for AI-powered code assistance
-- Database integration to allow saving dialogues for future training 
+- Database integration for saving dialogues and future training context 
 
 ## System Requirements
 
@@ -106,7 +106,7 @@ cd aixcl
 # Open dashboards in your browser
 ./aixcl dashboard openwebui    # Web UI (http://localhost:8080)
 ./aixcl dashboard grafana      # Monitoring (http://localhost:3000)
-./aixcl dashboard pgadmin     # Database admin (http://localhost:5050)
+./aixcl dashboard pgadmin      # Database admin (http://localhost:5050)
 ```
 
 ### Testing
