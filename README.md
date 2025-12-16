@@ -9,7 +9,30 @@ AIXCL provides a complete local LLM development environment:
 - Web UI to interact with models and configure the server
 - CLI for services control, managing models and the LLM council
 - IDE integration via the Continue plugin for AI-powered code assistance
-- Database integration for saving dialogues and future training context 
+- Database integration for saving dialogues and future training context
+
+## Architecture
+
+AIXCL follows a strict governance model that separates **Runtime Core** from **Operational Services**:
+
+### Runtime Core (Strict - Always Enabled)
+The core runtime defines what AIXCL is and is always present:
+- **Ollama**: LLM inference engine
+- **LLM-Council**: Multi-model orchestration and coordination
+- **Continue**: VS Code plugin for AI-powered code assistance
+
+These components are non-negotiable and must be present in every deployment.
+
+### Operational Services (Guided - Profile-Dependent)
+Operational services support, observe, or operate the runtime:
+- **Persistence**: PostgreSQL, pgAdmin
+- **Observability**: Prometheus, Grafana, Loki, Promtail, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+- **UI**: Open WebUI
+- **Automation**: Watchtower
+
+Operational services are optional and can be enabled based on deployment profiles (core, dev, ops, full).
+
+For detailed architectural documentation, see [`aixcl_governance/`](./aixcl_governance/). 
 
 ## System Requirements
 
@@ -117,6 +140,17 @@ bash tests/end-to-end-tests.sh
 # Test Open WebUI service
 bash tests/test_webui.sh
 ```
+
+## Governance
+
+AIXCL maintains strict architectural invariants to preserve platform integrity. The governance model defines:
+
+- **Runtime Core**: Fixed, non-negotiable components that define the product
+- **Operational Services**: Optional services that support the runtime
+- **Service Contracts**: Dependency rules and boundaries for each service
+- **Profiles**: Declarative compositions of operational services
+
+See [`aixcl_governance/`](./aixcl_governance/) for complete architectural documentation, service contracts, and AI assistant guidance.
 
 ## License
 

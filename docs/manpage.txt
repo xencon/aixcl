@@ -12,6 +12,10 @@ DESCRIPTION
        running LLMs locally, managing model configurations, and orchestrating
        multiple AI services.
 
+       AIXCL follows a governance model that separates Runtime Core (always
+       enabled) from Operational Services (profile-dependent). See
+       aixcl_governance/ for architectural documentation.
+
 COMMANDS
        stack start
               Start all services
@@ -34,10 +38,15 @@ COMMANDS
        service <start|stop|restart> <name>
               Control individual service
 
-              Supported services:
-              ollama, open-webui, postgres, pgadmin, watchtower, prometheus,
-              grafana, cadvisor, node-exporter, postgres-exporter,
-              nvidia-gpu-exporter, loki, promtail
+              Runtime Core Services (always enabled):
+              ollama, llm-council
+
+              Operational Services (profile-dependent):
+              open-webui, postgres, pgadmin, watchtower, prometheus, grafana,
+              cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter,
+              loki, promtail
+
+              Note: Continue is a VS Code plugin, not a containerized service.
 
        models <add|remove|list> [name]
               Manage LLM models
@@ -113,6 +122,25 @@ FILES
 
        ~/.env.local
               Local overrides (optional, ignored by git)
+
+ARCHITECTURE
+       AIXCL separates services into two categories:
+
+       Runtime Core (Strict)
+              Always enabled, required for AIXCL to function:
+              - Ollama: LLM inference engine
+              - LLM-Council: Multi-model orchestration
+              - Continue: VS Code plugin for IDE integration
+
+       Operational Services (Guided)
+              Profile-dependent, support/observe the runtime:
+              - Persistence: postgres, pgadmin
+              - Observability: prometheus, grafana, loki, promtail, cadvisor,
+                node-exporter, postgres-exporter, nvidia-gpu-exporter
+              - UI: open-webui
+              - Automation: watchtower
+
+       See aixcl_governance/ for complete architectural documentation.
 
 SEE ALSO
        docker(1), docker-compose(1), ollama(1)
