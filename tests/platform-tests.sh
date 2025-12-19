@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-End Test Suite for AIXCL
+# Platform Test Suite for AIXCL
 # This script consolidates all test files from the repository into a single comprehensive test suite.
 #
 # Test Categories:
@@ -12,7 +12,7 @@
 # 6. Council Members - Council model availability and operational status
 #
 # Usage:
-#   ./tests/end-to-end-tests.sh
+#   ./tests/platform-tests.sh
 #
 # Exit Codes:
 #   0 - All tests passed
@@ -1030,7 +1030,7 @@ test_council_members() {
 # ============================================================================
 main() {
     echo "=========================================="
-    echo "AIXCL End-to-End Test Suite"
+    echo "AIXCL Platform Test Suite"
     echo "=========================================="
     echo ""
     echo "This script consolidates all test files from the repository."

@@ -55,12 +55,11 @@ COMMANDS
               remove  Remove a model
               list    List installed models
 
-       council <configure|status|list>
+       council <configure|status>
               Configure LLM Council behavior and members
 
               configure  Configure council behavior and members
-              status     Show model status
-              list       List council configuration
+              status     Show council configuration and operational status
 
        dashboard <grafana|openwebui|pgadmin>
               Launch dashboard in default browser

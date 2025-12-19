@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Council management commands (configure, status, list)
+# Council management commands (configure, status)
 
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -207,11 +207,6 @@ print(json.dumps(payload))
         print_warning "Ollama service is not running"
     fi
     echo ""
-}
-
-# Council list command (shows configuration)
-council_list() {
-    council_status
 }
 
 # Council configure command (interactive)
