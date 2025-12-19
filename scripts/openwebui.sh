@@ -25,11 +25,28 @@ while ! curl -s http://localhost:8080/health > /dev/null; do
   sleep 1
 done
 echo "Creating admin user..."
-curl \
-  -X POST "http://localhost:8080/api/v1/auths/signup" \
-  -H "accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d "{ \"email\": \"${OPENWEBUI_EMAIL}\", \"password\": \"${OPENWEBUI_PASSWORD}\", \"name\": \"Admin\" }"
+# Use jq to safely construct JSON payload to prevent injection
+if command -v jq >/dev/null 2>&1; then
+  JSON_PAYLOAD=$(jq -n \
+    --arg email "${OPENWEBUI_EMAIL}" \
+    --arg password "${OPENWEBUI_PASSWORD}" \
+    '{email: $email, password: $password, name: "Admin"}')
+  curl \
+    -X POST "http://localhost:8080/api/v1/auths/signup" \
+    -H "accept: application/json" \
+    -H "Content-Type: application/json" \
+    -d "${JSON_PAYLOAD}"
+else
+  # Fallback: use curl's --data-urlencode for safer parameter passing
+  # Note: This requires the API to accept form-encoded data, which may not work
+  # If jq is not available, consider installing it: apt-get install jq
+  echo "Warning: jq not found. Using basic JSON construction (may be unsafe with special characters)." >&2
+  curl \
+    -X POST "http://localhost:8080/api/v1/auths/signup" \
+    -H "accept: application/json" \
+    -H "Content-Type: application/json" \
+    -d "{ \"email\": \"${OPENWEBUI_EMAIL}\", \"password\": \"${OPENWEBUI_PASSWORD}\", \"name\": \"Admin\" }"
+fi
 echo "Shutting down webui..."
 kill $webui_pid
 
