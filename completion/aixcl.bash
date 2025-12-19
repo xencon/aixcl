@@ -5,6 +5,11 @@
 # This script provides command completion for the aixcl command-line tool.
 # It offers suggestions for commands and model names when using the add/remove commands.
 #
+# Governance Model:
+# - Runtime Core (Strict): Always enabled, never optional (ollama, llm-council)
+# - Operational Services (Guided): Profile-dependent, support/observe runtime
+# - See aixcl_governance/ for full architectural documentation
+#
 # To use this script:
 # 1. Source it directly: source /path/to/completion/aixcl.bash
 # 2. Or install it system-wide: sudo cp completion/aixcl.bash /etc/bash_completion.d/aixcl
@@ -37,8 +42,21 @@ _aixcl_complete() {
     # List of all possible commands
     local commands="stack service models dashboard utils council help bash-completion check-env"
     
-    # List of all services (must match ALL_SERVICES in lib/common.sh)
-    local services="ollama open-webui llm-council postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
+    # Service categorization per AIXCL governance model (aixcl_governance/00_invariants.md)
+    # Runtime Core (Strict): Always enabled, required for AIXCL to function
+    # Note: Continue is a VS Code plugin, not a containerized service
+    local runtime_core_services="ollama llm-council"
+    
+    # Operational Services (Guided): Profile-dependent, support/observe runtime
+    # - Persistence: postgres, pgadmin
+    # - Observability: prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+    # - UI: open-webui
+    # - Automation: watchtower
+    local operational_services="open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
+    
+    # Combined list of all services (for backward compatibility and general completion)
+    # Must match ALL_SERVICES in lib/common.sh
+    local services="$runtime_core_services $operational_services"
     
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then
@@ -54,6 +72,7 @@ _aixcl_complete() {
             return 0
             ;;
         'logs')
+            # Complete with all services (runtime core + operational)
             COMPREPLY=( $(compgen -W "$services" -- "$cur") )
             return 0
             ;;
@@ -64,6 +83,8 @@ _aixcl_complete() {
             ;;
         'start'|'stop'|'restart')
             # If previous word was 'service', complete with service names
+            # Note: Runtime core services (ollama, llm-council) should always be running
+            # Operational services are profile-dependent
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
                 COMPREPLY=( $(compgen -W "$services" -- "$cur") )
                 return 0

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Governance Model and Architecture Documentation
+- **Governance Framework**: Added comprehensive architectural governance model in `aixcl_governance/`
+  - Runtime Core vs Operational Services separation
+  - Service contracts defining dependencies and boundaries
+  - Profile definitions (core, dev, ops, full)
+  - AI guidance for preserving architectural invariants
+  - Stack status specification
+- **Documentation Updates**: Updated README.md, docs, and manpage to reflect governance model
+- **Bash Completion**: Updated completion script to reflect service categorization
+
+### Added
+
 #### Database Persistence for LLM-Council
 - **PostgreSQL Integration**: Added automatic PostgreSQL-based storage for LLM-Council conversations
   - Automatic schema creation on startup via `ensure_schema()` function

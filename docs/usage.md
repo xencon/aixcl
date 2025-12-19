@@ -1,5 +1,28 @@
 # AIXCL Usage Guide
 
+## Architecture Overview
+
+AIXCL follows a governance model that separates **Runtime Core** from **Operational Services**:
+
+### Runtime Core (Strict - Always Enabled)
+These services define what AIXCL is and are always present:
+- **Ollama**: LLM inference engine
+- **LLM-Council**: Multi-model orchestration and coordination
+- **Continue**: VS Code plugin for AI-powered code assistance
+
+Runtime core services are non-negotiable and must be running for AIXCL to function.
+
+### Operational Services (Guided - Profile-Dependent)
+These services support, observe, or operate the runtime:
+- **Persistence**: PostgreSQL (database), pgAdmin (database admin)
+- **Observability**: Prometheus (metrics), Grafana (dashboards), Loki (logs), Promtail (log shipping), cAdvisor (container metrics), node-exporter (host metrics), postgres-exporter (database metrics), nvidia-gpu-exporter (GPU metrics)
+- **UI**: Open WebUI (web interface)
+- **Automation**: Watchtower (automatic container updates)
+
+Operational services are optional and can be enabled based on deployment profiles (core, dev, ops, full).
+
+For detailed architectural documentation, service contracts, and profiles, see [`aixcl_governance/`](../aixcl_governance/).
+
 ## Quick Start
 
 ### 1. Check Environment
@@ -214,6 +237,9 @@ This comprehensive status check shows:
 - **Container Status:** Which containers are running
 - **Service Health:** HTTP endpoints responding correctly
 - **Logs:** Recent log entries for failed services
+- **Runtime vs Operational:** Status output distinguishes between runtime core (critical) and operational services (informational)
+
+Note: Runtime core services (ollama, llm-council) health is critical. Operational services health is informational and graceful degradation is acceptable.
 
 ## Maintenance
 

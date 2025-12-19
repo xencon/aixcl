@@ -200,6 +200,11 @@ function run_compose() {
         echo "❌ Error: Services directory does not exist: ${COMPOSE_WORKDIR}"
         return 1
     fi
+    # Export ENABLE_DB_STORAGE explicitly if it's set, to ensure it's available to docker-compose
+    # This fixes the issue where the variable might not be visible in the subshell
+    if [ -n "${ENABLE_DB_STORAGE:-}" ]; then
+        export ENABLE_DB_STORAGE
+    fi
     (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@")
 }
 
@@ -417,7 +422,85 @@ EOF
 }
 
 function start() {
-    echo "Starting Docker Compose deployment..."
+    local profile=""
+    local profile_specified=false
+    
+    # Source profile library early (needed for validation and service lists)
+    if ! type is_valid_profile >/dev/null 2>&1; then
+        if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
+            source "${SCRIPT_DIR}/cli/lib/profile.sh"
+        else
+            echo "❌ Error: Profile library not found at ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
+            exit 1
+        fi
+    fi
+    
+    # Parse arguments for profile
+    local remaining_args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --profile|-p)
+                if [[ -z "$2" ]]; then
+                    echo "❌ Error: Profile name is required after --profile" >&2
+                    echo "Usage: aixcl stack start [--profile <profile>]"
+                    echo ""
+                    echo "Available profiles:"
+                    list_profiles
+                    exit 1
+                fi
+                profile="$2"
+                profile_specified=true
+                shift 2
+                ;;
+            *)
+                remaining_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+    
+    # If no profile specified, show available profiles and prompt
+    if [ "$profile_specified" = false ]; then
+        # Ensure VALID_PROFILES is defined
+        if [ -z "${VALID_PROFILES+x}" ] || [ ${#VALID_PROFILES[@]} -eq 0 ]; then
+            echo "❌ Error: Profile definitions not loaded. VALID_PROFILES is not set." >&2
+            echo "   Expected profile library at: ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
+            exit 1
+        fi
+        
+        echo "Available profiles:"
+        echo "==================="
+        echo ""
+        local profile_index=1
+        for valid_profile in "${VALID_PROFILES[@]}"; do
+            echo "  [$profile_index] $valid_profile: $(get_profile_description "$valid_profile")"
+            ((profile_index++))
+        done
+        echo ""
+        echo "Usage: ./aixcl stack start --profile <profile>"
+        echo "       ./aixcl stack start -p <profile>"
+        echo ""
+        echo "Examples:"
+        echo "  ./aixcl stack start --profile core   # Minimal runtime (CI, constrained systems)"
+        echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
+        echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
+        echo "  ./aixcl stack start --profile full   # Complete stack (default)"
+        echo ""
+        echo "For detailed profile information, see: aixcl_governance/02_profiles.md"
+        exit 0
+    fi
+    
+    # Validate profile
+    if ! is_valid_profile "$profile"; then
+        echo "❌ Error: Invalid profile: $profile" >&2
+        echo "Valid profiles: core, dev, ops, full"
+        echo ""
+        list_profiles
+        exit 1
+    fi
+    
+    echo "Starting Docker Compose deployment with profile: $profile"
+    print_profile_info "$profile"
     
     # Check for .env file and create from .env.example if missing
     # Use SCRIPT_DIR to ensure we're looking in the correct location
@@ -439,40 +522,122 @@ function start() {
         fi
     fi
     
-    # Generate pgAdmin configuration with populated values
-    generate_pgadmin_config
+    # Get services for this profile
+    local profile_services
+    profile_services=($(get_profile_services "$profile"))
+    
+    # Generate pgAdmin configuration if pgadmin is in the profile
+    local has_pgadmin=false
+    for service in "${profile_services[@]}"; do
+        if [ "$service" = "pgadmin" ]; then
+            has_pgadmin=true
+            break
+        fi
+    done
+    
+    if [ "$has_pgadmin" = true ]; then
+        generate_pgadmin_config
+    fi
     
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-        echo "Services are already running. Use 'stop' first if you want to restart."
+    # Check if any runtime core services are running
+    local core_running=false
+    for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+        if docker ps --format "{{.Names}}" | grep -q "^${service}$"; then
+            core_running=true
+            break
+        fi
+    done
+    
+    if [ "$core_running" = true ]; then
+        echo "⚠️  Some services are already running. Use 'stop' first if you want to restart."
         exit 1
     fi
+    
+    # Set profile-specific environment variables (per contract) BEFORE any docker-compose commands
+    # Core profile: ENABLE_DB_STORAGE=false (file-based persistence, no PostgreSQL dependency)
+    # Other profiles: ENABLE_DB_STORAGE=true (database storage available)
+    # Export early to ensure it's available to all docker-compose commands (pull, build, up)
+    export ENABLE_DB_STORAGE=$(get_profile_db_storage_enabled "$profile")
+    echo "Setting ENABLE_DB_STORAGE=${ENABLE_DB_STORAGE} for profile: $profile"
     
     echo "Pulling latest images..."
     run_compose pull
     
-    echo "Starting services..."
-    run_compose up -d
+    echo "Building LLM-Council service..."
+    run_compose build llm-council
     
-    echo "Waiting for services to be ready..."
-    for i in {1..30}; do
-        if            curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" && \
-           curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null | grep -q "200" && \
-           curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200" && \
-           docker exec postgres pg_isready -U webui >/dev/null 2>&1; then
-            echo "All services are up and running!"
-            status
-            return 0
+    if [ "$profile" = "core" ]; then
+        echo "Note: Core profile uses file-based persistence (runtime core independence per contract)"
+    fi
+    
+    echo "Starting services for profile: $profile..."
+    run_compose up -d "${profile_services[@]}"
+    
+    echo "Waiting for runtime core services to be ready..."
+    local max_attempts=30
+    local attempt=1
+    local all_ready=false
+    
+    while [ $attempt -le $max_attempts ]; do
+        local ollama_ready=false
+        local council_ready=false
+        
+        # Check Ollama
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+            ollama_ready=true
         fi
-        echo "Waiting for services to become available... ($i/30)"
+        
+        # Check LLM-Council
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200"; then
+            council_ready=true
+        fi
+        
+        if [ "$ollama_ready" = true ] && [ "$council_ready" = true ]; then
+            all_ready=true
+            break
+        fi
+        
+        echo "Waiting for runtime core services to become available... ($attempt/$max_attempts)"
         sleep 2
+        attempt=$((attempt + 1))
     done
     
-    echo "Error: Services did not start properly within timeout period"
-    status
-    exit 1
+    if [ "$all_ready" = true ]; then
+        echo "Runtime core services are up and running!"
+        
+        # For profiles that include postgres, wait for it too
+        local has_postgres=false
+        for service in "${profile_services[@]}"; do
+            if [ "$service" = "postgres" ]; then
+                has_postgres=true
+                break
+            fi
+        done
+        
+        if [ "$has_postgres" = true ]; then
+            echo "Waiting for PostgreSQL to be ready..."
+            local pg_attempt=1
+            while [ $pg_attempt -le 15 ]; do
+                if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
+                    echo "PostgreSQL is ready!"
+                    break
+                fi
+                echo "Waiting for PostgreSQL... ($pg_attempt/15)"
+                sleep 2
+                pg_attempt=$((pg_attempt + 1))
+            done
+        fi
+        
+        status
+        return 0
+    else
+        echo "❌ Error: Runtime core services did not start properly within timeout period"
+        status
+        exit 1
+    fi
 }
 
 function stop() {
@@ -523,7 +688,15 @@ function start_service() {
     if [ -z "$1" ]; then
         echo "Error: Service name is required"
         echo "Usage: $0 service start <service-name>"
-        echo "Available services: ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Runtime Core Services (always enabled):"
+        echo "  ollama, llm-council"
+        echo ""
+        echo "Operational Services (profile-dependent):"
+        echo "  ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Note: Continue is a VS Code plugin, not a containerized service"
+        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
         return 1
     fi
     
@@ -533,7 +706,11 @@ function start_service() {
     # Validate service name
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
-        echo "Available services: ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo ""
+        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
         return 1
     fi
     
@@ -618,7 +795,11 @@ function stop_service() {
     if [ -z "$1" ]; then
         echo "Error: Service name is required"
         echo "Usage: $0 service stop <service-name>"
-        echo "Available services: ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo ""
+        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
         return 1
     fi
     
@@ -627,7 +808,11 @@ function stop_service() {
     # Validate service name
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
-        echo "Available services: ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo ""
+        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
         return 1
     fi
     
@@ -735,7 +920,12 @@ function service() {
     if [[ $# -lt 2 ]]; then
         echo "Error: Service action and name are required"
         echo "Usage: $0 service {start|stop|restart} <service-name>"
-        echo "Available services: ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo ""
+        echo "Note: Continue is a VS Code plugin, not a containerized service"
+        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
         return 1
     fi
     
@@ -877,7 +1067,11 @@ function logs() {
                 ;;
             *)
                 echo "Error: Unknown container '$container'"
-                echo "Available containers: ollama, open-webui, postgres, pgadmin, llm-council, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
+                echo ""
+                echo "Runtime Core Services: ollama, llm-council"
+                echo "Operational Services: open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
+                echo ""
+                echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
                 return 1
                 ;;
         esac
@@ -930,218 +1124,94 @@ function status() {
     echo "Checking services status..."
     echo ""
     
-    # Core Application Services
-    echo "Core"
-    if docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        echo "  ✅ Ollama"
-    else
-        echo "  ❌ Ollama"
-    fi
+    # Helper function to check both container status and health
+    check_service_status() {
+        local service_name="$1"
+        local container_name="$2"
+        local health_check_cmd="$3"
+        local is_critical="${4:-false}"
+        
+        # Check container status
+        local container_running=false
+        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            container_running=true
+            local container_status="✅"
+        else
+            container_status="❌"
+        fi
+        
+        # Check health (only if container is running)
+        local health_status=""
+        if [ "$container_running" = "true" ] && [ -n "$health_check_cmd" ]; then
+            local health_result
+            health_result=$(eval "$health_check_cmd" 2>/dev/null)
+            if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "healthy" ]; then
+                health_status=" (Healthy)"
+            else
+                health_status=" (Unhealthy)"
+                if [ "$is_critical" = "true" ]; then
+                    echo "    Checking ${service_name} logs (last 3 lines):"
+                    timeout 2 docker logs "${container_name}" --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
+                fi
+            fi
+        fi
+        
+        echo "  ${container_status} ${service_name}${health_status}"
+    }
     
-    if docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-        echo "  ✅ Open WebUI"
-    else
-        echo "  ❌ Open WebUI"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-        echo "  ✅ LLM-Council"
-    else
-        echo "  ❌ LLM-Council"
-    fi
-
-    # Database Services
-    echo ""
-    echo "Data"
-    if docker ps --format "{{.Names}}" | grep -q "postgres"; then
-        echo "  ✅ PostgreSQL"
-    else
-        echo "  ❌ PostgreSQL"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "pgadmin"; then
-        echo "  ✅ pgAdmin"
-    else
-        echo "  ❌ pgAdmin"
-    fi
-
-    # Monitoring Services
-    echo ""
-    echo "Monitoring"
-    if docker ps --format "{{.Names}}" | grep -q "prometheus"; then
-        echo "  ✅ Prometheus"
-    else
-        echo "  ❌ Prometheus"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "grafana"; then
-        echo "  ✅ Grafana"
-    else
-        echo "  ❌ Grafana"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "cadvisor"; then
-        echo "  ✅ cAdvisor"
-    else
-        echo "  ❌ cAdvisor"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "node-exporter"; then
-        echo "  ✅ Node Exporter"
-    else
-        echo "  ❌ Node Exporter"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "postgres-exporter"; then
-        echo "  ✅ Postgres Exporter"
-    else
-        echo "  ❌ Postgres Exporter"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "nvidia-gpu-exporter"; then
-        echo "  ✅ NVIDIA GPU Exporter"
-    else
-        echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
-    fi
-
-    # Logging Services
-    echo ""
-    echo "Logging"
-    if docker ps --format "{{.Names}}" | grep -q "loki"; then
-        echo "  ✅ Loki"
-    else
-        echo "  ❌ Loki"
-    fi
-
-    if docker ps --format "{{.Names}}" | grep -q "promtail"; then
-        echo "  ✅ Promtail"
-    else
-        echo "  ❌ Promtail"
-    fi
-
-    # Utility Services
-    echo ""
-    echo "Utility"
-    if docker ps --format "{{.Names}}" | grep -q "watchtower"; then
-        echo "  ✅ Watchtower"
-    else
-        echo "  ❌ Watchtower"
-    fi
+    # Runtime Core (Strict - Always Enabled) per governance model
+    echo "Runtime Core (Strict - Always Enabled)"
+    check_service_status "Ollama" "ollama" 'curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null' "true"
     
-    echo ""
-    echo "Service Health"
-    echo ""
+    check_service_status "LLM-Council" "llm-council" 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null' "true"
     
-    # Core Application Services
-    echo "Core"
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
-        echo "  ✅ Ollama"
-    else
-        echo "  ❌ Ollama"
-    fi
+    # Note: Continue is a VS Code plugin, not a containerized service
     
-    WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000")
-    if [ "$WEBUI_STATUS" = "200" ]; then
-        echo "  ✅ Open WebUI"
-    else
-        echo "  ❌ Open WebUI"
-        echo "    Checking container logs (last 3 lines):"
-        timeout 2 docker logs "$CONTAINER_NAME" --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
-    fi
-
-    COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null || echo "000")
-    if [ "$COUNCIL_STATUS" = "200" ]; then
-        echo "  ✅ LLM-Council"
-    else
-        echo "  ❌ LLM-Council"
-        echo "    Checking LLM-Council logs (last 3 lines):"
-        timeout 2 docker logs llm-council --tail 3 2>/dev/null || echo "    (Logs unavailable or container may not be running)"
-    fi
-
-    # Database Services
+    # Operational Services (Guided - Profile-Dependent) per governance model
     echo ""
-    echo "Data"
-    if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
-        echo "  ✅ PostgreSQL"
-    else
-        echo "  ❌ PostgreSQL"
-        echo "    Checking PostgreSQL logs (last 3 lines):"
-        timeout 2 docker logs postgres --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
-    fi
-
+    echo "Operational Services (Guided - Profile-Dependent)"
+    
+    # UI Services
+    check_service_status "Open WebUI" "$CONTAINER_NAME" 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000"' "false"
+    
+    # Persistence Services
+    check_service_status "PostgreSQL" "postgres" 'if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then echo "healthy"; else echo "unhealthy"; fi' "false"
+    
     PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
-    if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
-        echo "  ✅ pgAdmin"
-    else
-        echo "  ❌ pgAdmin"
-        echo "    Checking pgAdmin logs (last 3 lines):"
-        timeout 2 docker logs pgadmin --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
-    fi
+    check_service_status "pgAdmin" "pgadmin" "echo $PGADMIN_STATUS" "false"
 
-    # Monitoring Services
-    echo ""
-    echo "Monitoring"
+    # Observability Services
     PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
-    if [ "$PROMETHEUS_STATUS" = "200" ]; then
-        echo "  ✅ Prometheus"
-    else
-        echo "  ❌ Prometheus"
-    fi
+    check_service_status "Prometheus" "prometheus" "echo $PROMETHEUS_STATUS" "false"
 
     GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
-    if [ "$GRAFANA_STATUS" = "200" ]; then
-        echo "  ✅ Grafana"
-    else
-        echo "  ❌ Grafana"
-    fi
+    check_service_status "Grafana" "grafana" "echo $GRAFANA_STATUS" "false"
 
-    CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null)
-    if [ "$CADVISOR_STATUS" = "200" ]; then
-        echo "  ✅ cAdvisor"
-    else
-        echo "  ❌ cAdvisor"
-    fi
+    CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
+    check_service_status "cAdvisor" "cadvisor" "echo $CADVISOR_STATUS" "false"
 
-    NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null)
-    if [ "$NODE_EXPORTER_STATUS" = "200" ]; then
-        echo "  ✅ Node Exporter"
-    else
-        echo "  ❌ Node Exporter"
-    fi
+    NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
+    check_service_status "Node Exporter" "node-exporter" "echo $NODE_EXPORTER_STATUS" "false"
 
-    POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null)
-    if [ "$POSTGRES_EXPORTER_STATUS" = "200" ]; then
-        echo "  ✅ Postgres Exporter"
-    else
-        echo "  ❌ Postgres Exporter"
-    fi
+    POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
+    check_service_status "Postgres Exporter" "postgres-exporter" "echo $POSTGRES_EXPORTER_STATUS" "false"
 
     if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
-        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null)
-        if [ "$NVIDIA_GPU_EXPORTER_STATUS" = "200" ]; then
-            echo "  ✅ NVIDIA GPU Exporter"
-        else
-            echo "  ❌ NVIDIA GPU Exporter"
-        fi
+        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+        check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "echo $NVIDIA_GPU_EXPORTER_STATUS" "false"
     else
         echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
     fi
 
-    # Logging Services
-    echo ""
-    echo "Logging"
+    # (Loki and Promtail are part of Observability)
     if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
         LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
         if [ "$LOKI_STATUS" = "200" ]; then
-            echo "  ✅ Loki"
+            echo "  ✅ Loki (Healthy)"
         elif [ "$LOKI_STATUS" = "503" ]; then
             echo "  ⚠️  Loki (starting up)"
-        elif [ "$LOKI_STATUS" = "000" ]; then
-            echo "  ❌ Loki"
-            echo "    Checking Loki logs (last 3 lines):"
-            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
         else
-            echo "  ❌ Loki"
+            echo "  ❌ Loki (Unhealthy)"
             echo "    Checking Loki logs (last 3 lines):"
             timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
         fi
@@ -1151,17 +1221,15 @@ function status() {
 
     if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
         if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
-            echo "  ✅ Promtail"
+            echo "  ✅ Promtail (Healthy)"
         else
-            echo "  ❌ Promtail"
+            echo "  ❌ Promtail (Unhealthy)"
         fi
     else
         echo "  ❌ Promtail"
     fi
 
-    # Utility Services
-    echo ""
-    echo "Utility"
+    # Automation Services
     if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
         echo "  ✅ Watchtower"
     else
@@ -1422,13 +1490,45 @@ function dashboard() {
 function help_menu() {
     echo "Usage: ./aixcl <cmd> [options]"
     echo ""
-    echo "Stack: stack <action> (start | stop | restart | status | logs | clean)"
+    echo "Stack: stack <action> [options]"
+    echo "  stack start --profile <profile>     - Start services with specified profile (required)"
+    echo "  stack start -p <profile>            - Short form: Start with profile"
+    echo "  stack start                         - Show available profiles"
+    echo "  stack stop                          - Stop all services"
+    echo "  stack restart                       - Restart services"
+    echo "  stack status                        - Show service status"
+    echo "  stack logs [service] [lines]        - Show logs"
+    echo "  stack clean                         - Clean Docker resources"
+    echo ""
+    echo "  Profiles (required for stack start):"
+    echo "    core  - Minimal runtime (Ollama, LLM-Council only, file-based persistence)"
+    echo "    dev   - Developer workstation (core + UI + DB)"
+    echo "    ops   - Observability-focused (core + monitoring/logging)"
+    echo "    full  - Complete stack with all features"
+    echo ""
     echo "Service: service <action> <name>"
+    echo "  Runtime Core (always enabled): ollama, llm-council"
+    echo "  Operational Services (profile-dependent): see aixcl_governance/02_profiles.md"
+    echo ""
     echo "Models: models <action> [name]"
+    echo "  models add <name>                   - Add model(s) to Ollama"
+    echo "  models remove <name>                - Remove model(s) from Ollama"
+    echo "  models list                         - List installed models"
+    echo ""
     echo "Council: council <action>"
+    echo "  council configure                   - Configure council models and chairman"
+    echo "  council status                      - Show council configuration and status"
+    echo ""
     echo "Dashboard: dashboard <name>"
-    echo "Utils: utils <action> (check-env | bash-completion)"
-    echo "Direct: check-env | bash-completion | help"
+    echo "  dashboard openwebui                 - Open Open WebUI"
+    echo "  dashboard grafana                   - Open Grafana monitoring"
+    echo "  dashboard pgadmin                   - Open pgAdmin database admin"
+    echo ""
+    echo "Utils: utils <action>"
+    echo "  utils check-env                     - Verify environment setup"
+    echo "  utils bash-completion               - Install bash completion"
+    echo ""
+    echo "For detailed profile definitions, see: aixcl_governance/02_profiles.md"
     exit 1
 }
 
@@ -1881,262 +1981,6 @@ print(json.dumps(payload))
     else
         echo "⚠️  Ollama service is not running"
     fi
-    echo ""
-}
-
-function list_council() {
-    echo "📋 Current LLM Council Configuration"
-    echo "===================================="
-    echo ""
-    
-    # Use SCRIPT_DIR to ensure we're looking in the correct location
-    local env_file="${SCRIPT_DIR}/.env"
-    
-    # Check if .env file exists
-    if [[ ! -f "$env_file" ]]; then
-        echo "❌ Error: .env file not found."
-        echo "   Please run './aixcl stack start' first to create it, then configure the council with './aixcl council configure'"
-        return 1
-    fi
-    
-    # Read directly from .env file to ensure we get the values
-    # (Environment variables might not be available in function scope)
-    local council_models=""
-    local chairman_model=""
-    
-    # Read .env file line by line
-    while IFS= read -r line || [ -n "$line" ]; do
-        # Skip empty lines and comments
-        [[ -z "$line" ]] && continue
-        [[ "${line#\#}" != "$line" ]] && continue
-        
-        # Match COUNCIL_MODELS=value
-        if [[ "$line" =~ ^COUNCIL_MODELS[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-            council_models="${BASH_REMATCH[1]}"
-            # Trim whitespace
-            council_models=$(echo "$council_models" | xargs)
-            # Remove surrounding quotes if present
-            if [[ "$council_models" =~ ^\"(.*)\"$ ]]; then
-                council_models="${BASH_REMATCH[1]}"
-            elif [[ "$council_models" =~ ^\'(.*)\'$ ]]; then
-                council_models="${BASH_REMATCH[1]}"
-            fi
-        # Match CHAIRMAN_MODEL=value
-        elif [[ "$line" =~ ^CHAIRMAN_MODEL[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-            chairman_model="${BASH_REMATCH[1]}"
-            # Trim whitespace
-            chairman_model=$(echo "$chairman_model" | xargs)
-            # Remove surrounding quotes if present
-            if [[ "$chairman_model" =~ ^\"(.*)\"$ ]]; then
-                chairman_model="${BASH_REMATCH[1]}"
-            elif [[ "$chairman_model" =~ ^\'(.*)\'$ ]]; then
-                chairman_model="${BASH_REMATCH[1]}"
-            fi
-        fi
-    done < "$env_file"
-    
-    # Check if council is configured
-    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
-        echo "⚠️  Council is not configured yet."
-        echo ""
-        echo "To configure the council, run:"
-        echo "  ./aixcl council configure"
-        return 0
-    fi
-    
-    # Get available models from Ollama (if running)
-    local available_models=""
-    local can_check_models=false
-    if docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        available_models=$(get_available_models)
-        if [[ -n "$available_models" ]]; then
-            can_check_models=true
-        fi
-    fi
-    
-    # Helper function to check if a model exists
-    model_exists() {
-        local model_to_check="$1"
-        if [[ "$can_check_models" == "true" ]]; then
-            echo "$available_models" | grep -q "^${model_to_check}$"
-        else
-            return 1
-        fi
-    }
-    
-    # Display chairman with existence check
-    echo "👑 Chairman Model:"
-    if [[ -n "$chairman_model" ]]; then
-        if model_exists "$chairman_model"; then
-            echo "   ✅ $chairman_model"
-            echo "       Role: Chairman (primary decision maker)"
-            echo "       Status: Available in Ollama"
-        else
-            if [[ "$can_check_models" == "true" ]]; then
-                echo "   ❌ $chairman_model"
-                echo "       Role: Chairman (primary decision maker)"
-                echo "       Status: Not found in Ollama"
-            else
-                echo "   ⚠️  $chairman_model"
-                echo "       Role: Chairman (primary decision maker)"
-                echo "       Status: Cannot verify (Ollama not running)"
-            fi
-        fi
-    else
-        echo "   ⚠️  Not set"
-    fi
-    
-    echo ""
-    
-    # Display council members with existence check
-    echo "👥 Council Members:"
-    
-    if [[ -n "$council_models" ]]; then
-        # Split comma-separated models
-        IFS=',' read -ra MEMBERS <<< "$council_models"
-        local member_count=0
-        local existing_count=0
-        
-        # Display each member
-        for member in "${MEMBERS[@]}"; do
-            # Trim whitespace using bash native method
-            member="${member#"${member%%[![:space:]]*}"}"  # Remove leading whitespace
-            member="${member%"${member##*[![:space:]]}"}"  # Remove trailing whitespace
-            if [[ -n "$member" ]]; then
-                # Increment counter (use assignment to avoid set -e issues)
-                member_count=$((member_count + 1))
-                
-                # Determine role - check if this member is also the chairman
-                local role="Member"
-                if [[ "$member" == "$chairman_model" ]]; then
-                    role="Chairman (also listed as member)"
-                fi
-                
-                # Query Ollama directly to verify the model exists
-                local model_verified=false
-                local ollama_running=false
-                
-                # Temporarily disable exit on error for docker commands
-                set +e
-                local ollama_container
-                ollama_container=$(get_ollama_container)
-                if [ -n "$ollama_container" ]; then
-                    ollama_running=true
-                    # Check if model exists in Ollama by querying directly
-                    local ollama_models=""
-                    ollama_models=$(docker exec "$ollama_container" ollama list 2>/dev/null | awk 'NR>1 {print $1}' 2>/dev/null)
-                    if echo "$ollama_models" 2>/dev/null | grep -q "^${member}$" 2>/dev/null; then
-                        model_verified=true
-                    fi
-                fi
-                set -e
-                
-                # Display the member
-                if [[ "$model_verified" == "true" ]]; then
-                    echo "   [$member_count] ✅ $member"
-                    echo "       Role: $role"
-                    echo "       Status: Verified in Ollama"
-                    existing_count=$((existing_count + 1))
-                elif [[ "$ollama_running" == "true" ]]; then
-                    echo "   [$member_count] ❌ $member"
-                    echo "       Role: $role"
-                    echo "       Status: Not found in Ollama"
-                else
-                    echo "   [$member_count] ⚠️  $member"
-                    echo "       Role: $role"
-                    echo "       Status: Cannot verify (Ollama not running)"
-                fi
-                echo ""
-            fi
-        done
-        
-        if [[ $member_count -eq 0 ]]; then
-            echo "   ⚠️  No members configured"
-        else
-            echo "   Total members: $member_count"
-            if docker ps --format "{{.Names}}" | grep -q "ollama"; then
-                if [[ $existing_count -eq $member_count ]]; then
-                    echo "   ✅ All $existing_count members are verified in Ollama"
-                elif [[ $existing_count -lt $member_count ]]; then
-                    echo "   ⚠️  Only $existing_count of $member_count members are available in Ollama"
-                fi
-            fi
-        fi
-    else
-        echo "   ⚠️  Not set in .env file"
-        echo "   (Expected format: COUNCIL_MODELS=model1,model2,model3)"
-    fi
-    
-    echo ""
-    
-    # Calculate total models and existing models
-    local total_models=0
-    local existing_models=0
-    if [[ -n "$chairman_model" ]]; then
-        ((total_models++))
-        if model_exists "$chairman_model"; then
-            ((existing_models++))
-        fi
-    fi
-    if [[ -n "$council_models" ]]; then
-        IFS=',' read -ra MEMBERS <<< "$council_models"
-        for member in "${MEMBERS[@]}"; do
-            member=$(echo "$member" | xargs)
-            if [[ -n "$member" ]]; then
-                ((total_models++))
-                if model_exists "$member"; then
-                    ((existing_models++))
-                fi
-            fi
-        done
-    fi
-    
-    echo "📊 Council Composition Summary:"
-    echo "   Total models in council: $total_models"
-    if [[ $total_models -gt 0 ]]; then
-        echo "   - Chairman: 1 ($chairman_model)"
-        if [[ -n "$council_models" ]]; then
-            IFS=',' read -ra MEMBERS <<< "$council_models"
-            local actual_member_count=0
-            for member in "${MEMBERS[@]}"; do
-                member=$(echo "$member" | xargs)
-                [[ -n "$member" ]] && ((actual_member_count++))
-            done
-            echo "   - Members: $actual_member_count"
-        else
-            echo "   - Members: 0"
-        fi
-    fi
-    if [[ "$can_check_models" == "true" ]]; then
-        if [[ $existing_models -eq $total_models ]] && [[ $total_models -gt 0 ]]; then
-            echo "   ✅ All $existing_models models are available in Ollama"
-        elif [[ $existing_models -lt $total_models ]]; then
-            echo "   ⚠️  Only $existing_models of $total_models models are available in Ollama"
-        fi
-    else
-        echo "   ⚠️  Cannot verify model availability (Ollama not running)"
-    fi
-    echo ""
-    
-    # Check if LLM-Council service is running
-    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-        echo "✅ LLM-Council service is running"
-        echo ""
-        if [[ "$can_check_models" == "true" ]] && [[ $existing_models -lt $total_models ]]; then
-            echo "⚠️  Warning: Some configured models are not available in Ollama."
-            echo "   The council may not function correctly until all models are installed."
-            echo ""
-        else
-            echo "💡 This configuration is active and will be used for the next request."
-        fi
-    else
-        echo "⚠️  LLM-Council service is not running"
-        echo ""
-        echo "💡 To apply this configuration:"
-        echo "   1. Start services: ./aixcl start"
-        echo "   2. Or restart LLM-Council: ./aixcl restart"
-    fi
-    
     echo ""
 }
 
@@ -2688,14 +2532,21 @@ function stack_cmd() {
         echo "Error: Stack action is required"
         echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
         echo "Examples:"
-        echo "  $0 stack start         - Start all services"
-        echo "  $0 stack stop          - Stop all services"
-        echo "  $0 stack restart       - Restart the entire stack"
-        echo "  $0 stack status        - Show service status"
-        echo "  $0 stack logs          - Show logs for all services"
-        echo "  $0 stack logs ollama   - Show logs for a specific service"
-        echo "  $0 stack logs ollama 100 - Show last 100 lines for a service"
-        echo "  $0 stack clean         - Remove unused Docker resources"
+        echo "  $0 stack start                - Start all services with full profile (default)"
+        echo "  $0 stack start --profile core - Start only runtime core services"
+        echo "  $0 stack start --profile dev  - Start dev profile (core + UI + DB)"
+        echo "  $0 stack start --profile ops  - Start ops profile (core + observability)"
+        echo "  $0 stack start --profile full - Start all services"
+        echo "  $0 stack stop                 - Stop all services"
+        echo "  $0 stack restart              - Restart the entire stack"
+        echo "  $0 stack status               - Show service status (runtime core vs operational)"
+        echo "  $0 stack logs                 - Show logs for all services"
+        echo "  $0 stack logs ollama          - Show logs for a specific service"
+        echo "  $0 stack logs ollama 100      - Show last 100 lines for a service"
+        echo "  $0 stack clean                - Remove unused Docker resources"
+        echo ""
+        echo "Valid profiles: core, dev, ops, full (default: full)"
+        echo "For detailed profile definitions, see: aixcl_governance/02_profiles.md"
         return 1
     fi
 
@@ -2704,7 +2555,7 @@ function stack_cmd() {
 
     case "$action" in
         start)
-            start
+            start "$@"
             ;;
         stop)
             stop
@@ -2724,6 +2575,8 @@ function stack_cmd() {
         *)
             echo "Error: Unknown stack action '$action'"
             echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+            echo ""
+            echo "For profiles and service contracts, see: aixcl_governance/"
             return 1
             ;;
     esac
@@ -2733,11 +2586,10 @@ function council_cmd() {
     # Require an action - show usage if none provided
     if [[ $# -lt 1 ]]; then
         echo "Error: Council action is required"
-        echo "Usage: $0 council [configure|status|list]"
+        echo "Usage: $0 council [configure|status]"
         echo "Examples:"
         echo "  $0 council status      - Show council configuration and operational status"
         echo "  $0 council configure  - Configure council models and chairman"
-        echo "  $0 council list        - List council configuration and available models"
         return 1
     fi
 
@@ -2751,16 +2603,12 @@ function council_cmd() {
         status)
             status_council
             ;;
-        list)
-            list_council
-            ;;
         *)
             echo "Error: Unknown council action '$action'"
-            echo "Usage: $0 council [configure|status|list]"
+            echo "Usage: $0 council [configure|status]"
             echo "Examples:"
             echo "  $0 council status      - Show council configuration and operational status"
             echo "  $0 council configure  - Configure council models and chairman"
-            echo "  $0 council list        - List council configuration and available models"
             return 1
             ;;
     esac

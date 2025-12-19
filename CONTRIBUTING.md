@@ -27,6 +27,23 @@ Thanks for your interest in making AIXCL better! We love contributions from ever
 - **Update docs**: If you change functionality, update the documentation
 - **Be clear**: Write clear commit messages and PR descriptions
 - **Follow the style**: Match the existing code style
+- **Respect the architecture**: Review [`aixcl_governance/`](./aixcl_governance/) before making architectural changes
+
+## Architectural Guidelines
+
+AIXCL maintains strict architectural invariants to preserve platform integrity:
+
+- **Runtime Core** (ollama, llm-council, continue) is non-negotiable and must not be removed or conditionally disabled
+- **Operational Services** can be added, modified, or removed based on profiles
+- **Service Boundaries**: Runtime core must never depend on operational services
+- **Service Contracts**: See [`aixcl_governance/service_contracts/`](./aixcl_governance/service_contracts/) for dependency rules
+
+Before making changes that affect service architecture, dependencies, or the runtime core, please:
+1. Review [`aixcl_governance/00_invariants.md`](./aixcl_governance/00_invariants.md)
+2. Review [`aixcl_governance/01_ai_guidance.md`](./aixcl_governance/01_ai_guidance.md)
+3. Check relevant service contracts in [`aixcl_governance/service_contracts/`](./aixcl_governance/service_contracts/)
+
+Breaking architectural invariants requires explicit maintainer approval.
 
 ## Need Help?
 

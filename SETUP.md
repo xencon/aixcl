@@ -2,6 +2,8 @@
 
 This document verifies that AIXCL works out of the box for fresh deployments.
 
+> **Note**: AIXCL follows a governance model separating Runtime Core (always enabled) from Operational Services (profile-dependent). See [`aixcl_governance/`](../aixcl_governance/) for architectural documentation.
+
 ## Fresh Installation Checklist
 
 ### 1. Prerequisites
