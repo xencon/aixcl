@@ -7,7 +7,7 @@
 AIXCL delivers a complete local LLM development environment that puts you in control:
 
 - **Run LLMs locally** on your machine with automatic GPU detection
-- **Interact with models** through a modern web UI and configure your server
+- **Interact with models** through a web UI and configure your server
 - **Manage everything** via a powerful CLI for services, models, and the LLM council
 - **Enhance your IDE** with AI-powered code assistance using the Continue plugin
 - **Preserve context** with database integration for saving dialogues and future training
