@@ -3,6 +3,7 @@
 import asyncpg
 import logging
 from typing import Optional
+from urllib.parse import quote_plus
 from .config import (
     POSTGRES_HOST,
     POSTGRES_PORT,
@@ -36,7 +37,11 @@ async def get_pool() -> Optional[asyncpg.Pool]:
     
     try:
         # Build connection string using continue database (separate from webui/Open WebUI database)
-        dsn = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_CONTINUE_DATABASE}"
+        # Properly escape special characters in user, password, and database name to prevent injection
+        safe_user = quote_plus(POSTGRES_USER)
+        safe_password = quote_plus(POSTGRES_PASSWORD)
+        safe_database = quote_plus(POSTGRES_CONTINUE_DATABASE)
+        dsn = f"postgresql://{safe_user}:{safe_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{safe_database}"
         
         # Create connection pool
         _pool = await asyncpg.create_pool(
