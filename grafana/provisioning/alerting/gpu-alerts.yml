@@ -1,0 +1,23 @@
+# GPU Metrics Alerts
+# These alerts monitor GPU temperature, memory usage, and availability
+# Note: Grafana alerting rules are typically created via UI/API
+# This file serves as documentation/reference for the alert definitions
+
+# High GPU Temperature Alert
+# Query: DCGM_FI_DEV_GPU_TEMP > 85
+# Threshold: > 85°C for 5 minutes
+# Severity: Warning
+
+# High GPU Memory Usage Alert
+# Query: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
+# Threshold: > 90% memory usage for 5 minutes
+# Severity: Warning
+
+# GPU Unavailable Alert
+# Query: up{job="nvidia-gpu"} == 0
+# Threshold: Unavailable for 2 minutes
+# Severity: Warning
+# Note: This may fire on systems without GPUs - can be ignored in that case
+
+# These alerts are implemented in prometheus/alerts.yml under the aixcl_gpu group
+
