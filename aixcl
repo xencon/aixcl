@@ -1125,11 +1125,14 @@ function status() {
     echo ""
     
     # Helper function to check both container status and health
+    # Security fix: Removed eval usage to prevent command injection
+    # health_check_type can be: "curl" (with URL), "pg_isready" (with username), "status_var" (with variable name), or empty (no health check)
     check_service_status() {
         local service_name="$1"
         local container_name="$2"
-        local health_check_cmd="$3"
-        local is_critical="${4:-false}"
+        local health_check_type="$3"
+        local health_check_arg="$4"
+        local is_critical="${5:-false}"
         
         # Check container status
         local container_running=false
@@ -1142,9 +1145,47 @@ function status() {
         
         # Check health (only if container is running)
         local health_status=""
-        if [ "$container_running" = "true" ] && [ -n "$health_check_cmd" ]; then
-            local health_result
-            health_result=$(eval "$health_check_cmd" 2>/dev/null)
+        if [ "$container_running" = "true" ] && [ -n "$health_check_type" ]; then
+            local health_result=""
+            
+            case "$health_check_type" in
+                curl)
+                    # Safe curl-based health check - URL is passed as argument and quoted
+                    if [ -n "$health_check_arg" ]; then
+                        health_result=$(curl -s -o /dev/null -w "%{http_code}" "$health_check_arg" 2>/dev/null || echo "000")
+                    fi
+                    ;;
+                pg_isready)
+                    # Safe PostgreSQL health check - username is validated and quoted
+                    # health_check_arg should be the PostgreSQL username
+                    if [ -n "$health_check_arg" ] && [ -n "$container_name" ]; then
+                        # Validate username contains only safe characters (already done at call site, but double-check)
+                        local pg_user="$health_check_arg"
+                        if [[ "$pg_user" =~ ^[A-Za-z0-9_-]+$ ]]; then
+                            # Execute docker exec with properly quoted arguments
+                            if timeout 2 docker exec "$container_name" pg_isready -U "$pg_user" >/dev/null 2>&1; then
+                                health_result="healthy"
+                            else
+                                health_result="unhealthy"
+                            fi
+                        else
+                            health_result="unhealthy"
+                        fi
+                    fi
+                    ;;
+                status_var)
+                    # Safe variable-based health check (already computed)
+                    if [ -n "$health_check_arg" ]; then
+                        # Use indirect variable reference safely
+                        local var_name="$health_check_arg"
+                        health_result="${!var_name:-000}"
+                    fi
+                    ;;
+                *)
+                    # Unknown type, skip health check
+                    ;;
+            esac
+            
             if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "healthy" ]; then
                 health_status=" (Healthy)"
             else
@@ -1161,9 +1202,9 @@ function status() {
     
     # Runtime Core (Strict - Always Enabled) per governance model
     echo "Runtime Core (Strict - Always Enabled)"
-    check_service_status "Ollama" "ollama" 'curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null' "true"
+    check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true"
     
-    check_service_status "LLM-Council" "llm-council" 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null' "true"
+    check_service_status "LLM-Council" "llm-council" "curl" "http://localhost:8000/health" "true"
     
     # Note: Continue is a VS Code plugin, not a containerized service
     
@@ -1172,33 +1213,41 @@ function status() {
     echo "Operational Services (Guided - Profile-Dependent)"
     
     # UI Services
-    check_service_status "Open WebUI" "$CONTAINER_NAME" 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000"' "false"
+    check_service_status "Open WebUI" "$CONTAINER_NAME" "curl" "http://localhost:8080/health" "false"
     
     # Persistence Services
-    check_service_status "PostgreSQL" "postgres" 'if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then echo "healthy"; else echo "unhealthy"; fi' "false"
+    # Security fix: Properly validate and quote POSTGRES_USER to prevent injection
+    # Validate POSTGRES_USER contains only safe characters before use
+    local postgres_user="${POSTGRES_USER:-webui}"
+    # Sanitize: only allow alphanumeric, underscore, and hyphen
+    if [[ ! "$postgres_user" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        postgres_user="webui"
+        echo "⚠️  Warning: Invalid POSTGRES_USER value, using default 'webui'" >&2
+    fi
+    check_service_status "PostgreSQL" "postgres" "pg_isready" "$postgres_user" "false"
     
     PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
-    check_service_status "pgAdmin" "pgadmin" "echo $PGADMIN_STATUS" "false"
+    check_service_status "pgAdmin" "pgadmin" "status_var" "PGADMIN_STATUS" "false"
 
     # Observability Services
     PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
-    check_service_status "Prometheus" "prometheus" "echo $PROMETHEUS_STATUS" "false"
+    check_service_status "Prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS" "false"
 
     GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
-    check_service_status "Grafana" "grafana" "echo $GRAFANA_STATUS" "false"
+    check_service_status "Grafana" "grafana" "status_var" "GRAFANA_STATUS" "false"
 
     CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
-    check_service_status "cAdvisor" "cadvisor" "echo $CADVISOR_STATUS" "false"
+    check_service_status "cAdvisor" "cadvisor" "status_var" "CADVISOR_STATUS" "false"
 
     NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
-    check_service_status "Node Exporter" "node-exporter" "echo $NODE_EXPORTER_STATUS" "false"
+    check_service_status "Node Exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS" "false"
 
     POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
-    check_service_status "Postgres Exporter" "postgres-exporter" "echo $POSTGRES_EXPORTER_STATUS" "false"
+    check_service_status "Postgres Exporter" "postgres-exporter" "status_var" "POSTGRES_EXPORTER_STATUS" "false"
 
     if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
         NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
-        check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "echo $NVIDIA_GPU_EXPORTER_STATUS" "false"
+        check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false"
     else
         echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
     fi
