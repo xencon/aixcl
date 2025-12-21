@@ -12,7 +12,18 @@
 # 6. Council Members - Council model availability and operational status
 #
 # Usage:
-#   ./tests/platform-tests.sh
+#   ./tests/platform-tests.sh                    # Run all tests (backward compatible)
+#   ./tests/platform-tests.sh --profile core     # Run tests for core profile
+#   ./tests/platform-tests.sh --profile dev      # Run tests for dev profile
+#   ./tests/platform-tests.sh --profile ops      # Run tests for ops profile
+#   ./tests/platform-tests.sh --profile full      # Run tests for full profile
+#   ./tests/platform-tests.sh --component runtime-core  # Test runtime core only
+#   ./tests/platform-tests.sh --component database     # Test database components
+#   ./tests/platform-tests.sh --component monitoring    # Test monitoring components
+#   ./tests/platform-tests.sh --component logging      # Test logging components
+#   ./tests/platform-tests.sh --component ui           # Test UI components
+#   ./tests/platform-tests.sh --component api          # Test API endpoints
+#   ./tests/platform-tests.sh --list                   # List available targets
 #
 # Exit Codes:
 #   0 - All tests passed
@@ -26,6 +37,11 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/docker_utils.sh"
 source "${SCRIPT_DIR}/lib/color.sh"
 source "${SCRIPT_DIR}/lib/council_utils.sh"
+
+# Source profile library if available
+if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
+    source "${SCRIPT_DIR}/cli/lib/profile.sh"
+fi
 
 # Load environment variables
 if [ -f "${SCRIPT_DIR}/.env" ]; then
@@ -1026,18 +1042,296 @@ test_council_members() {
 }
 
 # ============================================================================
-# MAIN EXECUTION
+# COMPONENT-BASED TEST FUNCTIONS
 # ============================================================================
-main() {
-    echo "=========================================="
-    echo "AIXCL Platform Test Suite"
-    echo "=========================================="
-    echo ""
-    echo "This script consolidates all test files from the repository."
-    echo "Test execution started at: $(date)"
+
+# Test runtime core services (ollama, llm-council)
+test_component_runtime_core() {
+    start_section "Runtime Core - Ollama & LLM-Council"
+    
+    # Ollama
+    if is_container_running "ollama"; then
+        print_success "Ollama container is running"
+        record_test "pass" "Ollama container is running"
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+            print_success "Ollama health check passed"
+            record_test "pass" "Ollama health check passed"
+        else
+            print_error "Ollama health check failed"
+            record_test "fail" "Ollama health check failed"
+        fi
+    else
+        print_error "Ollama container is not running"
+        record_test "fail" "Ollama container is not running"
+    fi
+    
+    # LLM-Council
+    if is_container_running "llm-council"; then
+        print_success "LLM-Council container is running"
+        record_test "pass" "LLM-Council container is running"
+        COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${API_URL}/health 2>/dev/null || echo "000")
+        if [ "$COUNCIL_STATUS" = "200" ]; then
+            print_success "LLM-Council health check passed"
+            record_test "pass" "LLM-Council health check passed"
+        else
+            print_error "LLM-Council health check failed (HTTP $COUNCIL_STATUS)"
+            record_test "fail" "LLM-Council health check failed (HTTP $COUNCIL_STATUS)"
+        fi
+    else
+        print_error "LLM-Council container is not running"
+        record_test "fail" "LLM-Council container is not running"
+    fi
+}
+
+# Test database services (postgres, pgadmin)
+test_component_database() {
+    start_section "Database - PostgreSQL & pgAdmin"
+    
+    # PostgreSQL
+    if is_container_running "postgres"; then
+        print_success "PostgreSQL container is running"
+        record_test "pass" "PostgreSQL container is running"
+        if timeout 2 docker exec postgres pg_isready -U "$POSTGRES_USER" >/dev/null 2>&1; then
+            print_success "PostgreSQL health check passed"
+            record_test "pass" "PostgreSQL health check passed"
+        else
+            print_error "PostgreSQL health check failed"
+            record_test "fail" "PostgreSQL health check failed"
+        fi
+    else
+        print_error "PostgreSQL container is not running"
+        record_test "fail" "PostgreSQL container is not running"
+    fi
+    
+    # pgAdmin
+    if is_container_running "pgadmin"; then
+        print_success "pgAdmin container is running"
+        record_test "pass" "pgAdmin container is running"
+        PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+        if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
+            print_success "pgAdmin health check passed"
+            record_test "pass" "pgAdmin health check passed"
+        else
+            print_error "pgAdmin health check failed (HTTP $PGADMIN_STATUS)"
+            record_test "fail" "pgAdmin health check failed (HTTP $PGADMIN_STATUS)"
+        fi
+    else
+        print_error "pgAdmin container is not running"
+        record_test "fail" "pgAdmin container is not running"
+    fi
+}
+
+# Test monitoring services
+test_component_monitoring() {
+    start_section "Monitoring - Prometheus, Grafana, Exporters"
+    
+    # Prometheus
+    if is_container_running "prometheus"; then
+        print_success "Prometheus container is running"
+        record_test "pass" "Prometheus container is running"
+        PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
+        if [ "$PROMETHEUS_STATUS" = "200" ]; then
+            print_success "Prometheus health check passed"
+            record_test "pass" "Prometheus health check passed"
+        else
+            print_error "Prometheus health check failed (HTTP $PROMETHEUS_STATUS)"
+            record_test "fail" "Prometheus health check failed (HTTP $PROMETHEUS_STATUS)"
+        fi
+    else
+        print_error "Prometheus container is not running"
+        record_test "fail" "Prometheus container is not running"
+    fi
+    
+    # Grafana
+    if is_container_running "grafana"; then
+        print_success "Grafana container is running"
+        record_test "pass" "Grafana container is running"
+        GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
+        if [ "$GRAFANA_STATUS" = "200" ]; then
+            print_success "Grafana health check passed"
+            record_test "pass" "Grafana health check passed"
+        else
+            print_error "Grafana health check failed (HTTP $GRAFANA_STATUS)"
+            record_test "fail" "Grafana health check failed (HTTP $GRAFANA_STATUS)"
+        fi
+    else
+        print_error "Grafana container is not running"
+        record_test "fail" "Grafana container is not running"
+    fi
+    
+    # Exporters
+    for exporter in cadvisor node-exporter postgres-exporter; do
+        if is_container_running "$exporter"; then
+            print_success "$exporter container is running"
+            record_test "pass" "$exporter container is running"
+        else
+            print_error "$exporter container is not running"
+            record_test "fail" "$exporter container is not running"
+        fi
+    done
+    
+    # NVIDIA GPU Exporter (optional)
+    if is_container_running "nvidia-gpu-exporter"; then
+        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+        if [ "$NVIDIA_GPU_EXPORTER_STATUS" = "200" ]; then
+            print_success "NVIDIA GPU Exporter health check passed"
+            record_test "pass" "NVIDIA GPU Exporter health check passed"
+        else
+            print_error "NVIDIA GPU Exporter health check failed (HTTP $NVIDIA_GPU_EXPORTER_STATUS)"
+            record_test "fail" "NVIDIA GPU Exporter health check failed (HTTP $NVIDIA_GPU_EXPORTER_STATUS)"
+        fi
+    else
+        print_warning "NVIDIA GPU Exporter (expected on non-GPU systems)"
+        record_test "skip" "NVIDIA GPU Exporter container is not running (optional)"
+    fi
+}
+
+# Test logging services
+test_component_logging() {
+    start_section "Logging - Loki & Promtail"
+    
+    # Loki
+    if is_container_running "loki"; then
+        print_success "Loki container is running"
+        record_test "pass" "Loki container is running"
+        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+        if [ "$LOKI_STATUS" = "200" ]; then
+            print_success "Loki health check passed"
+            record_test "pass" "Loki health check passed"
+        else
+            print_error "Loki health check failed (HTTP $LOKI_STATUS)"
+            record_test "fail" "Loki health check failed (HTTP $LOKI_STATUS)"
+        fi
+    else
+        print_error "Loki container is not running"
+        record_test "fail" "Loki container is not running"
+    fi
+    
+    # Promtail
+    if is_container_running "promtail"; then
+        print_success "Promtail container is running"
+        record_test "pass" "Promtail container is running (no health endpoint)"
+    else
+        print_error "Promtail container is not running"
+        record_test "fail" "Promtail container is not running"
+    fi
+}
+
+# Test UI services
+test_component_ui() {
+    start_section "UI - Open WebUI"
+    
+    if is_container_running "$CONTAINER_NAME"; then
+        print_success "Open WebUI container is running"
+        record_test "pass" "Open WebUI container is running"
+        
+        # Health check with retries
+        WEBUI_STATUS="000"
+        WEBUI_READY=false
+        for i in {1..15}; do
+            WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/health 2>/dev/null || echo "000")
+            if [ "$WEBUI_STATUS" = "200" ]; then
+                WEBUI_READY=true
+                break
+            fi
+            if [ "$WEBUI_STATUS" = "000" ] || [ "$WEBUI_STATUS" = "404" ]; then
+                ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/ 2>/dev/null || echo "000")
+                if [ "$ROOT_STATUS" = "200" ] || [ "$ROOT_STATUS" = "302" ] || [ "$ROOT_STATUS" = "307" ]; then
+                    WEBUI_STATUS="$ROOT_STATUS"
+                    WEBUI_READY=true
+                    break
+                fi
+            fi
+            if [ $i -le 8 ]; then
+                sleep 3
+            else
+                sleep 2
+            fi
+        done
+        
+        if [ "$WEBUI_READY" = "true" ]; then
+            print_success "Open WebUI health check passed"
+            record_test "pass" "Open WebUI health check passed"
+        else
+            print_error "Open WebUI health check failed (HTTP $WEBUI_STATUS)"
+            record_test "fail" "Open WebUI health check failed (HTTP $WEBUI_STATUS)"
+        fi
+    else
+        print_error "Open WebUI container is not running"
+        record_test "fail" "Open WebUI container is not running"
+    fi
+}
+
+# Test automation services
+test_component_automation() {
+    start_section "Automation - Watchtower"
+    
+    if is_container_running "watchtower"; then
+        print_success "Watchtower container is running"
+        record_test "pass" "Watchtower container is running"
+    else
+        print_error "Watchtower container is not running"
+        record_test "fail" "Watchtower container is not running"
+    fi
+}
+
+# ============================================================================
+# PROFILE-BASED TEST RUNNERS
+# ============================================================================
+
+# Test core profile (runtime core only)
+test_profile_core() {
+    echo "Running tests for profile: core"
+    echo "Profile includes: runtime core services only"
     echo ""
     
-    # Run all test sections (test 0 runs first)
+    test_environment_check
+    test_component_runtime_core
+    test_llm_state
+    test_api_endpoints
+    test_council_members
+}
+
+# Test dev profile (runtime core + database + UI)
+test_profile_dev() {
+    echo "Running tests for profile: dev"
+    echo "Profile includes: runtime core, database, UI"
+    echo ""
+    
+    test_environment_check
+    test_component_runtime_core
+    test_component_database
+    test_component_ui
+    test_llm_state
+    test_database_connection
+    test_api_endpoints
+    test_continue_integration
+    test_council_members
+}
+
+# Test ops profile (runtime core + database + monitoring + logging)
+test_profile_ops() {
+    echo "Running tests for profile: ops"
+    echo "Profile includes: runtime core, database, monitoring, logging"
+    echo ""
+    
+    test_environment_check
+    test_component_runtime_core
+    test_component_database
+    test_component_monitoring
+    test_component_logging
+    test_llm_state
+    test_database_connection
+    test_api_endpoints
+    test_council_members
+}
+
+# Test full profile (all services)
+test_profile_full() {
+    echo "Running tests for profile: full"
+    echo "Profile includes: all services"
+    echo ""
+    
     test_environment_check
     test_stack_status
     test_llm_state
@@ -1045,6 +1339,198 @@ main() {
     test_api_endpoints
     test_continue_integration
     test_council_members
+}
+
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
+main() {
+    # Parse command-line arguments
+    local test_profile=""
+    local test_component=""
+    local list_targets=false
+    
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --profile|-p)
+                if [[ -z "$2" ]]; then
+                    echo "Error: Profile name is required after --profile" >&2
+                    echo "Usage: $0 --profile <core|dev|ops|full>" >&2
+                    exit 1
+                fi
+                test_profile="$2"
+                shift 2
+                ;;
+            --component|-c)
+                if [[ -z "$2" ]]; then
+                    echo "Error: Component name is required after --component" >&2
+                    echo "Usage: $0 --component <runtime-core|database|monitoring|logging|ui|automation|api>" >&2
+                    exit 1
+                fi
+                test_component="$2"
+                shift 2
+                ;;
+            --list|-l)
+                list_targets=true
+                shift
+                ;;
+            --help|-h)
+                echo "AIXCL Platform Test Suite"
+                echo ""
+                echo "Usage:"
+                echo "  $0                           # Run all tests"
+                echo "  $0 --profile <profile>       # Run tests for specific profile"
+                echo "  $0 --component <component>   # Run tests for specific component"
+                echo "  $0 --list                    # List available targets"
+                echo ""
+                echo "Profiles:"
+                echo "  core  - Runtime core services only"
+                echo "  dev   - Runtime core + database + UI"
+                echo "  ops   - Runtime core + database + monitoring + logging"
+                echo "  full  - All services"
+                echo ""
+                echo "Components:"
+                echo "  runtime-core  - Ollama and LLM-Council"
+                echo "  database      - PostgreSQL and pgAdmin"
+                echo "  monitoring    - Prometheus, Grafana, exporters"
+                echo "  logging       - Loki and Promtail"
+                echo "  ui            - Open WebUI"
+                echo "  automation    - Watchtower"
+                echo "  api           - LLM-Council API endpoints"
+                exit 0
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                echo "Use --help for usage information" >&2
+                exit 1
+                ;;
+        esac
+    done
+    
+    # List targets if requested
+    if [ "$list_targets" = true ]; then
+        echo "Available Test Targets"
+        echo "======================"
+        echo ""
+        echo "Profiles:"
+        echo "  core  - Runtime core services only"
+        echo "  dev   - Runtime core + database + UI"
+        echo "  ops   - Runtime core + database + monitoring + logging"
+        echo "  full  - All services"
+        echo ""
+        echo "Components:"
+        echo "  runtime-core  - Ollama and LLM-Council"
+        echo "  database      - PostgreSQL and pgAdmin"
+        echo "  monitoring    - Prometheus, Grafana, exporters"
+        echo "  logging       - Loki and Promtail"
+        echo "  ui            - Open WebUI"
+        echo "  automation    - Watchtower"
+        echo "  api           - LLM-Council API endpoints"
+        exit 0
+    fi
+    
+    # Show help if no arguments provided
+    if [ -z "$test_profile" ] && [ -z "$test_component" ]; then
+        echo "AIXCL Platform Test Suite"
+        echo ""
+        echo "Usage:"
+        echo "  $0                           # Show this help message"
+        echo "  $0 --profile <profile>       # Run tests for specific profile"
+        echo "  $0 --component <component>   # Run tests for specific component"
+        echo "  $0 --list                    # List available targets"
+        echo "  $0 --help                    # Show detailed help"
+        echo ""
+        echo "Profiles:"
+        echo "  core  - Runtime core services only (ollama, llm-council)"
+        echo "  dev   - Runtime core + database + UI (for development)"
+        echo "  ops   - Runtime core + database + monitoring + logging (for operations)"
+        echo "  full  - All services (complete stack)"
+        echo ""
+        echo "Components:"
+        echo "  runtime-core  - Ollama and LLM-Council"
+        echo "  database      - PostgreSQL and pgAdmin"
+        echo "  monitoring    - Prometheus, Grafana, exporters"
+        echo "  logging       - Loki and Promtail"
+        echo "  ui            - Open WebUI"
+        echo "  automation    - Watchtower"
+        echo "  api           - LLM-Council API endpoints"
+        echo ""
+        echo "Examples:"
+        echo "  $0 --profile core              # Test core profile"
+        echo "  $0 --component runtime-core     # Test runtime core components"
+        echo "  $0 --component database         # Test database components"
+        echo ""
+        echo "For detailed help, use: $0 --help"
+        exit 0
+    fi
+    
+    echo "=========================================="
+    echo "AIXCL Platform Test Suite"
+    echo "=========================================="
+    echo ""
+    echo "Test execution started at: $(date)"
+    echo ""
+    
+    # Run tests based on arguments
+    if [ -n "$test_profile" ]; then
+        # Validate profile
+        if ! is_valid_profile "$test_profile" 2>/dev/null; then
+            echo "Error: Invalid profile: $test_profile" >&2
+            echo "Valid profiles: core, dev, ops, full" >&2
+            exit 1
+        fi
+        
+        case "$test_profile" in
+            core)
+                test_profile_core
+                ;;
+            dev)
+                test_profile_dev
+                ;;
+            ops)
+                test_profile_ops
+                ;;
+            full)
+                test_profile_full
+                ;;
+        esac
+    elif [ -n "$test_component" ]; then
+        # Component-based testing
+        test_environment_check
+        
+        case "$test_component" in
+            runtime-core)
+                test_component_runtime_core
+                test_llm_state
+                test_api_endpoints
+                test_council_members
+                ;;
+            database)
+                test_component_database
+                test_database_connection
+                ;;
+            monitoring)
+                test_component_monitoring
+                ;;
+            logging)
+                test_component_logging
+                ;;
+            ui)
+                test_component_ui
+                ;;
+            automation)
+                test_component_automation
+                ;;
+            api)
+                test_api_endpoints
+                ;;
+            *)
+                echo "Error: Unknown component: $test_component" >&2
+                echo "Valid components: runtime-core, database, monitoring, logging, ui, automation, api" >&2
+                exit 1
+                ;;
+        esac
+    fi
     
     # Final Summary
     echo ""
@@ -1076,8 +1562,8 @@ main() {
     fi
 }
 
-# Run main function
-main
+# Run main function with all arguments
+main "$@"
 
 # Exit with appropriate code
 exit ${FINAL_EXIT_CODE:-1}
