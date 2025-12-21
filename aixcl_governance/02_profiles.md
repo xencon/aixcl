@@ -17,17 +17,17 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 | Profile | Purpose | Audience |
 |---------|---------|----------|
-| core    | Minimal runtime | CI, constrained systems |
+| usr     | User-oriented runtime | End users, minimal deployments |
 | dev     | Developer workstation | Local development |
-| ops     | Observability-focused | Servers/operators |
-| full    | Everything enabled | Default/demos |
+| ops     | Operations-focused | Servers/operators |
+| sys     | System-oriented | Complete deployments, automation |
 
 ---
 
 ## 3. Profile Definitions
 
-### core
-**Purpose**: Minimal runtime for CI, constrained systems, or headless operation.
+### usr
+**Purpose**: User-oriented runtime with minimal footprint, optimized for end-user deployments.
 
 **Includes**:
 - Runtime core: Ollama, LLM-Council, Continue (plugin)
@@ -41,7 +41,7 @@ Profiles define **which operational services are enabled** alongside the **alway
 - cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
 - Watchtower (automation)
 
-**Use Cases**: CI/CD pipelines, automated testing, resource-constrained environments
+**Use Cases**: End-user deployments, resource-constrained environments, minimal installations
 
 ---
 
@@ -87,8 +87,8 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 ---
 
-### full
-**Purpose**: Complete stack with all features enabled.
+### sys
+**Purpose**: System-oriented deployment with complete feature set and automation.
 
 **Includes**:
 - Runtime core: Ollama, LLM-Council, Continue (plugin)
@@ -96,16 +96,16 @@ Profiles define **which operational services are enabled** alongside the **alway
 - All ops services: Prometheus, Grafana, Loki, Promtail, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
 - Watchtower (automatic container updates)
 
-**Use Cases**: Default installation, demonstrations, full-featured development environment
+**Use Cases**: System deployments, demonstrations, full-featured environments with automation
 
 ---
 
 ## 4. Profile Selection Guidelines
 
-- **core**: Use when you need minimal footprint and runtime core only
+- **usr**: Use for user-oriented deployments with minimal footprint and runtime core only
 - **dev**: Use for local development and interactive work
 - **ops**: Use for production deployments requiring observability
-- **full**: Use for complete feature set and automatic updates
+- **sys**: Use for system-oriented deployments with complete feature set and automatic updates
 
 ## 5. Profile Invariants
 

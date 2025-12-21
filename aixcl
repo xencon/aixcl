@@ -440,12 +440,12 @@ function start() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
-                if [[ -z "$2" ]]; then
+                # Check if argument exists before accessing it
+                if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "❌ Error: Profile name is required after --profile" >&2
-                    echo "Usage: aixcl stack start [--profile <profile>]"
-                    echo ""
-                    echo "Available profiles:"
-                    list_profiles
+                    echo "Usage: aixcl stack start [--profile <profile>]" >&2
+                    echo "" >&2
+                    list_profiles >&2
                     exit 1
                 fi
                 profile="$2"
@@ -481,10 +481,10 @@ function start() {
         echo "       ./aixcl stack start -p <profile>"
         echo ""
         echo "Examples:"
-        echo "  ./aixcl stack start --profile core   # Minimal runtime (CI, constrained systems)"
+        echo "  ./aixcl stack start --profile usr   # User-oriented runtime (minimal, file-based persistence)"
         echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
         echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
-        echo "  ./aixcl stack start --profile full   # Complete stack (default)"
+        echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
         echo ""
         echo "For detailed profile information, see: aixcl_governance/02_profiles.md"
         exit 0
@@ -493,7 +493,7 @@ function start() {
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "❌ Error: Invalid profile: $profile" >&2
-        echo "Valid profiles: core, dev, ops, full"
+        echo "Valid profiles: usr, dev, ops, sys"
         echo ""
         list_profiles
         exit 1
@@ -557,7 +557,7 @@ function start() {
     fi
     
     # Set profile-specific environment variables (per contract) BEFORE any docker-compose commands
-    # Core profile: ENABLE_DB_STORAGE=false (file-based persistence, no PostgreSQL dependency)
+    # Usr profile: ENABLE_DB_STORAGE=false (file-based persistence, no PostgreSQL dependency)
     # Other profiles: ENABLE_DB_STORAGE=true (database storage available)
     # Export early to ensure it's available to all docker-compose commands (pull, build, up)
     export ENABLE_DB_STORAGE=$(get_profile_db_storage_enabled "$profile")
@@ -569,8 +569,8 @@ function start() {
     echo "Building LLM-Council service..."
     run_compose build llm-council
     
-    if [ "$profile" = "core" ]; then
-        echo "Note: Core profile uses file-based persistence (runtime core independence per contract)"
+    if [ "$profile" = "usr" ]; then
+        echo "Note: Usr profile uses file-based persistence (runtime core independence per contract)"
     fi
     
     echo "Starting services for profile: $profile..."
@@ -1550,10 +1550,10 @@ function help_menu() {
     echo "  stack clean                         - Clean Docker resources"
     echo ""
     echo "  Profiles (required for stack start):"
-    echo "    core  - Minimal runtime (Ollama, LLM-Council only, file-based persistence)"
-    echo "    dev   - Developer workstation (core + UI + DB)"
-    echo "    ops   - Observability-focused (core + monitoring/logging)"
-    echo "    full  - Complete stack with all features"
+    echo "    usr   - User-oriented runtime (Ollama, LLM-Council only, file-based persistence)"
+    echo "    dev   - Developer workstation (runtime core + UI + DB)"
+    echo "    ops   - Observability-focused (runtime core + monitoring/logging)"
+    echo "    sys   - System-oriented (complete stack with automation)"
     echo ""
     echo "Service: service <action> <name>"
     echo "  Runtime Core (always enabled): ollama, llm-council"
@@ -2581,11 +2581,11 @@ function stack_cmd() {
         echo "Error: Stack action is required"
         echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
         echo "Examples:"
-        echo "  $0 stack start                - Start all services with full profile (default)"
-        echo "  $0 stack start --profile core - Start only runtime core services"
-        echo "  $0 stack start --profile dev  - Start dev profile (core + UI + DB)"
-        echo "  $0 stack start --profile ops  - Start ops profile (core + observability)"
-        echo "  $0 stack start --profile full - Start all services"
+        echo "  $0 stack start                - Start all services with sys profile (default)"
+        echo "  $0 stack start --profile usr  - Start only runtime core services"
+        echo "  $0 stack start --profile dev  - Start dev profile (runtime core + UI + DB)"
+        echo "  $0 stack start --profile ops  - Start ops profile (runtime core + observability)"
+        echo "  $0 stack start --profile sys  - Start all services"
         echo "  $0 stack stop                 - Stop all services"
         echo "  $0 stack restart              - Restart the entire stack"
         echo "  $0 stack status               - Show service status (runtime core vs operational)"
@@ -2594,7 +2594,7 @@ function stack_cmd() {
         echo "  $0 stack logs ollama 100      - Show last 100 lines for a service"
         echo "  $0 stack clean                - Remove unused Docker resources"
         echo ""
-        echo "Valid profiles: core, dev, ops, full (default: full)"
+        echo "Valid profiles: usr, dev, ops, sys (default: sys)"
         echo "For detailed profile definitions, see: aixcl_governance/02_profiles.md"
         return 1
     fi
