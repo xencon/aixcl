@@ -1,341 +1,212 @@
 # AIXCL
 
-**Transform your development workflow with local LLM integration.** AIXCL is a container-based platform that seamlessly integrates Large Language Models (LLMs) into your software development process. Get started in minutes with automatic GPU detection, intuitive web interfaces, and powerful CLI tools.
+**A local AI platform for software development.**
 
-## What is AIXCL?
+## About AIXCL
 
-AIXCL delivers a complete local LLM development environment that puts you in control:
+AIXCL is an opinionated AI development platform and curated composition of upstream open-source projects. It's focused on providing a cohesive local and single-node AI development experience. It enables developers to run LLMs locally, orchestrate multiple models, and integrate AI assistance directly into their development workflow.
 
-- **Run LLMs locally** on your machine with automatic GPU detection
-- **Interact with models** through a web UI and configure your server
-- **Manage everything** via a powerful CLI for services, models, and the LLM council
-- **Enhance your IDE** with AI-powered code assistance using the Continue plugin
-- **Preserve context** with database integration for saving dialogues and future training
+AIXCL is **not** a general-purpose LLM framework or a pluggable inference abstraction layer. It is an opinionated platform that delivers a complete, production-ready local AI development environment.
 
-## Understanding AIXCL Architecture
+## Technology Stack
 
-AIXCL follows a strict governance model that cleanly separates **Runtime Core** from **Operational Services**:
+AIXCL is built on a containerized architecture using Docker and Docker Compose, with a strict separation between core runtime and operational services:
 
 ### Runtime Core (Always Enabled)
 
-The core runtime defines what AIXCL is and is always present in every deployment:
+These components define what AIXCL is and are always present in every deployment:
 
-- **Ollama**: LLM inference engine that powers model execution
+- **Ollama**: LLM inference engine
 - **LLM-Council**: Multi-model orchestration and coordination system
 - **Continue**: VS Code plugin for AI-powered code assistance
 
-These components are non-negotiable and must be present in every deployment.
-
 ### Operational Services (Profile-Dependent)
 
-Operational services support, observe, or operate the runtime and can be enabled based on your needs:
+Optional services that support, observe, or operate the runtime:
 
-- **Persistence**: PostgreSQL database and pgAdmin management interface
-- **Observability**: Prometheus, Grafana, Loki, Promtail, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
-- **UI**: Open WebUI for model interaction
-- **Automation**: Watchtower for automatic container updates
+- **Persistence**: PostgreSQL (database) and pgAdmin (database administration)
+- **Observability**: Prometheus (metrics), Grafana (dashboards), Loki (logs), Promtail (log shipping), cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+- **UI**: Open WebUI (web interface for model interaction)
+- **Automation**: Watchtower (automatic container updates)
 
-Operational services are optional and can be enabled based on deployment profiles (usr, dev, ops, sys).
+### Infrastructure
 
-For detailed architectural documentation, see [`aixcl_governance/`](./aixcl_governance/).
+- **Docker & Docker Compose**: Container orchestration and service management
+- **Bash CLI**: Unified command-line interface for platform control
+- **Profile System**: Declarative service composition (usr, dev, ops, sys)
+
+## Target Audience
+
+AIXCL serves different user types through profile-based deployments:
+
+- **End Users** (`usr` profile): Minimal footprint deployments for personal use
+- **Developers** (`dev` profile): Local development workstations with UI and database tools
+- **Operators** (`ops` profile): Production servers requiring observability and monitoring
+- **System** (`sys` profile): Complete deployments with full feature set and automation
+
+## Features
+
+- **Local LLM Execution**: Run models locally with automatic GPU detection and optimization
+- **Multi-Model Orchestration**: Coordinate multiple models using LLM Council for consensus-based responses
+- **IDE Integration**: VS Code integration via Continue plugin for AI-powered code assistance
+- **Web Interface**: Interactive model interaction through Open WebUI (profile-dependent)
+- **Conversation Persistence**: Store dialogues and interactions in PostgreSQL for context preservation
+- **Observability**: Monitor system metrics, GPU usage, and container performance with Prometheus and Grafana
+- **Profile-Based Deployment**: Choose service composition for your use case (usr, dev, ops, sys)
+- **CLI Management**: Unified command-line interface for services, models, and configurations
+- **Automatic Updates**: Keep containers up-to-date with Watchtower (profile-dependent)
 
 ## System Requirements
 
-Before you begin, ensure your system meets these requirements:
-
 - **Minimum 16 GB RAM** - Required for running LLM models efficiently
 - **Minimum 128 GB free disk space** - Needed for models and container images
+- **Docker & Docker Compose** - Required for container orchestration
 
-## Quick Start Guide: Your First Steps
+## Quick Start
 
-Follow these steps to get AIXCL up and running on your system:
+Get AIXCL up and running in minutes:
 
-**Step 1: Clone the repository**
-
-Start by cloning the AIXCL repository to your local machine:
+**1. Clone the repository**
 
 ```bash
 git clone https://github.com/xencon/aixcl.git
 cd aixcl
 ```
 
-**Step 2: Verify your environment**
-
-Check that your system meets all requirements and has the necessary dependencies installed:
+**2. Verify your environment**
 
 ```bash
 ./aixcl utils check-env
 ```
 
-This command verifies Docker installation, available resources, and system compatibility. Address any issues it reports before proceeding.
+This verifies Docker installation, available resources, and system compatibility.
 
-**Step 3: Install CLI completion (optional but recommended)**
-
-Enable bash shell completion for a smoother CLI experience:
+**3. Install CLI completion (optional)**
 
 ```bash
 ./aixcl utils bash-completion
 ```
 
-After running this, restart your terminal or source your bash profile to activate tab completion.
+Restart your terminal or source your bash profile to activate tab completion.
 
-**Step 4: Start the services**
-
-Launch all AIXCL services. The system automatically creates a `.env` file from `.env.example` if one doesn't exist:
+**4. Start the services**
 
 ```bash
 ./aixcl stack start
 ```
 
-This command starts all core services. Wait for all containers to be healthy before proceeding. You can monitor progress with `./aixcl stack status`.
+The system automatically creates a `.env` file from `.env.example` if needed. Wait for all containers to be healthy (monitor with `./aixcl stack status`).
 
-**Step 5: Add your first model**
-
-Download and configure the LLM models you want to use. Replace `<model:latest>` with your preferred model:
+**5. Add your first model**
 
 ```bash
-./aixcl models add <model:latest>
+./aixcl models add llama3:latest
 ```
 
-For example: `./aixcl models add llama3:latest` or `./aixcl models add mistral:latest`. The model download may take several minutes depending on your internet connection.
+Examples: `llama3:latest`, `mistral:7b`. Model downloads may take several minutes depending on your connection.
 
-**Step 6: Configure LLM Council**
-
-Set up the multi-model orchestration system through an interactive configuration wizard:
+**6. Configure LLM Council (optional)**
 
 ```bash
 ./aixcl council configure
 ```
 
-Follow the prompts to select models and configure the council chairman. This enables advanced multi-model coordination features.
+Interactive wizard guides you through selecting council members and a chairman model.
 
-**Step 7: Access the web interface**
+**7. Access the web interface (if not using usr profile)**
 
-Open your browser and navigate to:
+Navigate to `http://localhost:8080` to use Open WebUI for model interaction.
 
-```
-http://localhost:8080
-```
+## Platform Management
 
-You should see the Open WebUI interface where you can interact with your models, view conversation history, and manage your LLM setup.
+### Service Stack Control
 
-## Managing Your AIXCL Platform
-
-Once AIXCL is running, use these commands to manage your platform effectively.
-
-### Managing the Service Stack
-
-Control all services as a unified stack:
-
-**Start all services**
+Manage all services as a unified stack:
 
 ```bash
-./aixcl stack start
+./aixcl stack start      # Start all services
+./aixcl stack stop       # Stop all services gracefully
+./aixcl stack restart    # Restart all services
+./aixcl stack status     # Check service status
+./aixcl stack logs       # View logs for all services
+./aixcl stack logs ollama  # View logs for specific service
+./aixcl stack clean      # Remove unused Docker resources
 ```
 
-Brings up all configured services. Use this after system reboots or when restarting your development environment.
+### Individual Service Control
 
-**Stop all services**
+Manage specific services independently:
 
 ```bash
-./aixcl stack stop
+./aixcl service start postgres    # Start a specific service
+./aixcl service restart ollama    # Restart a service
+./aixcl service stop grafana      # Stop a service
 ```
 
-Gracefully shuts down all services while preserving data and state.
-
-**Restart all services**
+### Model Management
 
 ```bash
-./aixcl stack restart
+./aixcl models add llama3:latest     # Add a model
+./aixcl models remove llama3:latest  # Remove a model
+./aixcl models list                  # List installed models
 ```
 
-Useful after configuration changes or when troubleshooting service issues.
+Models are downloaded from Ollama's registry.
 
-**Check service status**
+### LLM Council Configuration
+
+Configure multi-model orchestration for consensus-based responses:
 
 ```bash
-./aixcl stack status
+./aixcl council configure  # Interactive setup wizard
+./aixcl council status     # View current configuration
 ```
 
-Displays the current state of all services, showing which are running, stopped, or unhealthy.
+### Web Dashboards
 
-**View service logs**
-
-Monitor what's happening across your platform:
+Access web interfaces for different aspects of the platform:
 
 ```bash
-# View logs for all services
-./aixcl stack logs
-
-# View logs for a specific service
-./aixcl stack logs ollama
+./aixcl dashboard openwebui  # http://localhost:8080 - Model interaction UI
+./aixcl dashboard grafana    # http://localhost:3000 - Monitoring dashboard
+./aixcl dashboard pgadmin    # http://localhost:5050 - Database administration
 ```
 
-Logs help diagnose issues and monitor system behavior. Press `Ctrl+C` to exit log viewing.
+### Verification
 
-**Clean up unused resources**
-
-```bash
-./aixcl stack clean
-```
-
-Removes unused Docker images, containers, and networks to free up disk space. Run this periodically to maintain a clean environment.
-
-### Controlling Individual Services
-
-Manage specific services without affecting the entire stack:
+Run the platform test suite to verify your installation:
 
 ```bash
-# Start a specific service
-./aixcl service start postgres
+# List available test targets
+./tests/platform-tests.sh --list
 
-# Restart a service (useful after configuration changes)
-./aixcl service restart ollama
+# Test by profile (recommended)
+./tests/platform-tests.sh --profile usr     # Runtime core only
+./tests/platform-tests.sh --profile dev     # Core + database + UI
+./tests/platform-tests.sh --profile ops     # Core + monitoring + logging
+./tests/platform-tests.sh --profile full    # All services
 
-# Stop a service
-./aixcl service stop grafana
-```
-
-This granular control lets you update or troubleshoot individual components without disrupting your entire workflow.
-
-### Working with LLM Models
-
-Manage the LLM models available in your AIXCL installation:
-
-**Add models**
-
-Download and install new models:
-
-```bash
-./aixcl models add <model:latest>
-```
-
-Examples: `./aixcl models add llama3:latest`, `./aixcl models add mistral:7b`. The system downloads models from Ollama's registry.
-
-**Remove models**
-
-Free up disk space by removing unused models:
-
-```bash
-./aixcl models remove <model:latest>
-```
-
-**List installed models**
-
-See all models currently available in your installation:
-
-```bash
-./aixcl models list
-```
-
-This shows model names, sizes, and download dates to help you manage your model collection.
-
-### Configuring LLM Council
-
-The LLM Council enables multi-model orchestration and coordination:
-
-**Configure council settings**
-
-Run the interactive setup wizard to configure models and select a chairman:
-
-```bash
-./aixcl council configure
-```
-
-The wizard guides you through selecting models for council members and choosing a chairman model. This enables advanced features like model voting and consensus-based responses.
-
-**View council status**
-
-Check your current council configuration and see which models are active:
-
-```bash
-./aixcl council status
-```
-
-Displays council members, chairman selection, and current operational status.
-
-### Accessing Web Dashboards
-
-AIXCL provides several web interfaces for different aspects of the platform:
-
-```bash
-# Open WebUI - Main interface for model interaction
-./aixcl dashboard openwebui    # http://localhost:8080
-
-# Grafana - Monitoring and observability dashboard
-./aixcl dashboard grafana      # http://localhost:3000
-
-# pgAdmin - Database administration interface
-./aixcl dashboard pgadmin      # http://localhost:5050
-```
-
-These commands open the respective dashboards in your default browser. Each dashboard provides different capabilities:
-- **Open WebUI**: Chat with models, manage conversations, configure model settings
-- **Grafana**: Monitor system metrics, GPU usage, container performance
-- **pgAdmin**: Manage databases, run queries, view conversation storage
-
-### Verifying Your Installation
-
-Ensure everything is working correctly with the platform test suite:
-
-**Run platform tests**
-
-The test suite supports profile-based and component-based testing. Run without arguments to see available options:
-
-```bash
-./tests/platform-tests.sh
-```
-
-**Test by profile** (recommended for most users):
-
-```bash
-# Test core profile (runtime core only)
-./tests/platform-tests.sh --profile core
-
-# Test dev profile (runtime core + database + UI)
-./tests/platform-tests.sh --profile dev
-
-# Test ops profile (runtime core + database + monitoring + logging)
-./tests/platform-tests.sh --profile ops
-
-# Test full profile (all services)
-./tests/platform-tests.sh --profile full
-```
-
-**Test by component** (for targeted testing):
-
-```bash
-# Test runtime core components
+# Test by component (targeted testing)
 ./tests/platform-tests.sh --component runtime-core
-
-# Test database components
 ./tests/platform-tests.sh --component database
-
-# Test UI components
 ./tests/platform-tests.sh --component ui
-
-# Test API endpoints
 ./tests/platform-tests.sh --component api
 ```
 
-**List all available targets:**
+The test suite checks service health, API endpoints, database connectivity, and integration points.
 
-```bash
-./tests/platform-tests.sh --list
-```
+## Architecture
 
-The test suite checks service health, API endpoints, database connectivity, and integration points. Address any failures before using AIXCL in production.
+AIXCL maintains strict architectural invariants to preserve platform integrity:
 
-## Governance and Architecture
-
-AIXCL maintains strict architectural invariants to preserve platform integrity. The governance model defines:
-
-- **Runtime Core**: Fixed, non-negotiable components that define the product
-- **Operational Services**: Optional services that support the runtime
+- **Runtime Core**: Fixed, non-negotiable components (Ollama, LLM-Council, Continue) that define the product
+- **Operational Services**: Optional services that support, observe, or operate the runtime
 - **Service Contracts**: Dependency rules and boundaries for each service
-- **Profiles**: Declarative compositions of operational services
+- **Profiles**: Declarative service compositions (see Target Audience section)
 
-See [`aixcl_governance/`](./aixcl_governance/) for complete architectural documentation, service contracts, and AI assistant guidance.
+The runtime core must be runnable without any operational services, and operational services may depend on the runtime core but never vice versa.
+
+For detailed architectural documentation, see [`aixcl_governance/`](./aixcl_governance/).
 
 ## License
 
