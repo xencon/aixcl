@@ -1,0 +1,39 @@
+# Cursor Rules for AIXCL Development
+
+## Development Workflow
+
+Follow the Issue-First Development workflow documented in `DEVELOPMENT_WORKFLOW.md`:
+
+1. **Always create an issue first** using `gh issue create` before starting any work
+2. **Create a branch** with format `issue-<number>/<description>` or `feature/<name>` or `fix/<name>`
+3. **Make changes** and commit using conventional commit format: `type: Description\n\nFixes #<number>`
+4. **Push branch** and create PR that references the issue: `gh pr create --title "Fix: Title (#<number>)" --body "Fixes #<number>"`
+5. **Use plain text formatting**: Use markdown checkboxes `- [x]` instead of Unicode characters (✓, ✔, ✅) to avoid encoding issues
+
+## Formatting Guidelines
+
+- Use markdown checkboxes: `- [x]` for completed items
+- Use standard markdown: `**bold**`, `*italic*`, `` `code` ``
+- Avoid Unicode checkmarks, emoji, or special characters in technical documentation
+- Use plain ASCII characters for consistency across systems
+
+## Commit Messages
+
+- Use conventional commit types: `fix:`, `feat:`, `refactor:`, `docs:`, `test:`, etc.
+- Reference issue number: `Fixes #<number>` or `Addresses #<number>`
+- Keep first line under 72 characters
+- Use bullet points for multiple changes
+
+## PR Descriptions
+
+- Always link to the issue: `Fixes #<number>` or `Addresses #<number>`
+- Use markdown checkboxes for change lists: `- [x] Change description`
+- Describe what changed and why
+- Include testing notes if applicable
+
+## Reference Documentation
+
+- `DEVELOPMENT_WORKFLOW.md` - Complete workflow guide
+- `CONTRIBUTING.md` - General contribution guidelines
+- `aixcl_governance/` - Architectural guidelines and invariants
+
