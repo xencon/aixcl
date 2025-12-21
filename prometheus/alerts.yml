@@ -145,7 +145,15 @@ groups:
           description: "Container {{ $labels.name }} CPU usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
 
       - alert: ContainerHighMemory
-        expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
+        expr: |
+          (
+            container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"}
+            /
+            container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}
+            * 100 > 80
+          )
+          and
+          (container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} > 0)
         for: 5m
         labels:
           severity: warning
