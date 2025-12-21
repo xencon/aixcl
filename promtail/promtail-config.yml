@@ -19,7 +19,7 @@ scrape_configs:
         refresh_interval: 5s
         filters:
           - name: label
-            values: ["com.docker.compose.project=aixcl"]
+            values: ["com.docker.compose.project=services"]
     
     relabel_configs:
       # Container name
