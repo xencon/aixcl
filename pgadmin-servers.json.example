@@ -1,0 +1,16 @@
+{
+  "Servers": {
+    "1": {
+      "Group": "Servers",
+      "Name": "AIXCL",
+      "Host": "localhost",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "${POSTGRES_USER}",
+      "Password": "${POSTGRES_PASSWORD}",
+      "SSLMode": "prefer",
+      "Favorite": true
+    }
+  }
+}
+
