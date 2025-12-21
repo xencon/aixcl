@@ -58,6 +58,9 @@ _aixcl_complete() {
     # Must match ALL_SERVICES in lib/common.sh
     local services="$runtime_core_services $operational_services"
     
+    # Valid profiles (must match VALID_PROFILES in cli/lib/profile.sh)
+    local profiles="usr dev ops sys"
+    
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then
         COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
@@ -81,7 +84,7 @@ _aixcl_complete() {
             COMPREPLY=( $(compgen -W "$service_actions" -- "$cur") )
             return 0
             ;;
-        'start'|'stop'|'restart')
+        'start')
             # If previous word was 'service', complete with service names
             # Note: Runtime core services (ollama, llm-council) should always be running
             # Operational services are profile-dependent
@@ -89,6 +92,23 @@ _aixcl_complete() {
                 COMPREPLY=( $(compgen -W "$services" -- "$cur") )
                 return 0
             fi
+            # If previous word was 'stack', complete with profile options
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
+                COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
+                return 0
+            fi
+            ;;
+        'stop'|'restart')
+            # If previous word was 'service', complete with service names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
+                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                return 0
+            fi
+            ;;
+        '--profile'|'-p')
+            # Complete with valid profiles when --profile or -p is used
+            COMPREPLY=( $(compgen -W "$profiles" -- "$cur") )
+            return 0
             ;;
         'dashboard')
             local dashboards="openwebui grafana pgadmin"
