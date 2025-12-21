@@ -51,7 +51,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{compose_project=\"aixcl\", compose_service=~\"$service\"} |~ \"(?i)$search\"",
+          "expr": "{compose_project=\"services\", compose_service=~\"$service\"} |~ \"(?i)$search\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -140,7 +140,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum by (compose_service) (count_over_time({compose_project=\"aixcl\"}[$__interval]))",
+          "expr": "sum by (compose_service) (count_over_time({compose_project=\"services\"}[$__interval]))",
           "queryType": "range",
           "refId": "A"
         }
@@ -208,7 +208,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({compose_project=\"aixcl\"}[$__range]))",
+          "expr": "sum(count_over_time({compose_project=\"services\"}[$__range]))",
           "queryType": "range",
           "refId": "A"
         }
@@ -268,7 +268,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "count(count by (compose_service) (count_over_time({compose_project=\"aixcl\"}[1m])))",
+          "expr": "count(count by (compose_service) (count_over_time({compose_project=\"services\"}[1m])))",
           "queryType": "range",
           "refId": "A"
         }
@@ -337,7 +337,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum by (compose_service) (count_over_time({compose_project=\"aixcl\"}[$__range]))",
+          "expr": "sum by (compose_service) (count_over_time({compose_project=\"services\"}[$__range]))",
           "queryType": "range",
           "refId": "A"
         }
