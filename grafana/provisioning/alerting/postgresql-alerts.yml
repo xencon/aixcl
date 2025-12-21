@@ -1,0 +1,32 @@
+# PostgreSQL Database Alerts
+# These alerts monitor database availability, connections, performance, and errors
+# Note: Grafana alerting rules are typically created via UI/API
+# This file serves as documentation/reference for the alert definitions
+
+# PostgreSQL Down Alert
+# Query: pg_up == 0
+# Threshold: Down for 1 minute
+# Severity: Critical
+
+# High Connection Count Alert
+# Query: (sum(pg_stat_database_numbackends) / pg_settings_max_connections) * 100 > 80
+# Threshold: > 80% of max_connections for 5 minutes
+# Severity: Warning
+
+# Low Cache Hit Ratio Alert
+# Query: rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) < 0.90
+# Threshold: < 90% for 10 minutes
+# Severity: Warning
+
+# Deadlocks Detected Alert
+# Query: rate(pg_stat_database_deadlocks[5m]) > 0
+# Threshold: Any deadlocks for 5 minutes
+# Severity: Warning
+
+# High Rollback Rate Alert
+# Query: (rate(pg_stat_database_xact_rollback[5m]) / (rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m]))) * 100 > 10
+# Threshold: > 10% rollback rate for 5 minutes
+# Severity: Warning
+
+# These alerts are implemented in prometheus/alerts.yml under the aixcl_postgresql group
+

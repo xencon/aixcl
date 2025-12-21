@@ -1,0 +1,190 @@
+# Prometheus Alert Rules for AIXCL Platform
+# These alerts are evaluated by Prometheus and can be displayed in Grafana
+
+groups:
+  # System Resource Alerts
+  - name: aixcl_system
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage detected on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes. Current value: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage detected on {{ $labels.instance }}"
+          description: "Memory usage is above 80% for more than 5 minutes. Current value: {{ $value }}%"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage detected on {{ $labels.instance }}"
+          description: "Disk usage is above 85% for more than 5 minutes. Current value: {{ $value }}%"
+
+      - alert: HighSystemLoad
+        expr: node_load1 > (count(node_cpu_seconds_total{mode="idle"}) * 2)
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High system load detected on {{ $labels.instance }}"
+          description: "System load average (1m) is more than 2x CPU cores for more than 5 minutes. Current load: {{ $value }}"
+
+      - alert: NetworkErrorsDetected
+        expr: rate(node_network_receive_errs_total{device!="lo"}[5m]) + rate(node_network_transmit_errs_total{device!="lo"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "Network errors detected on {{ $labels.instance }}"
+          description: "Network errors detected on device {{ $labels.device }} for more than 5 minutes. Error rate: {{ $value }} errors/sec"
+
+  # PostgreSQL Alerts
+  - name: aixcl_postgresql
+    interval: 30s
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL database has been down for more than 1 minute"
+
+      - alert: PostgreSQLHighConnections
+        expr: (sum(pg_stat_database_numbackends) / pg_settings_max_connections) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High PostgreSQL connection count"
+          description: "PostgreSQL connections are above 80% of max_connections for more than 5 minutes. Current: {{ $value }}%"
+
+      - alert: PostgreSQLLowCacheHitRatio
+        expr: rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) < 0.90
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Low PostgreSQL cache hit ratio on {{ $labels.datname }}"
+          description: "PostgreSQL cache hit ratio is below 90% for more than 10 minutes. Current ratio: {{ $value | humanizePercentage }}"
+
+      - alert: PostgreSQLDeadlocks
+        expr: rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Deadlocks detected in database {{ $labels.datname }}"
+          description: "PostgreSQL deadlocks detected for more than 5 minutes. Deadlock rate: {{ $value }} deadlocks/sec"
+
+      - alert: PostgreSQLHighRollbackRate
+        expr: (rate(pg_stat_database_xact_rollback[5m]) / (rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m]))) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High rollback rate in database {{ $labels.datname }}"
+          description: "PostgreSQL rollback rate is above 10% of transaction rate for more than 5 minutes. Rollback rate: {{ $value }}%"
+
+  # Docker Container Alerts
+  - name: aixcl_docker
+    interval: 30s
+    rules:
+      - alert: ContainerDown
+        expr: container_last_seen{name=~"ollama|open-webui|postgres|pgadmin"} < (time() - 120)
+        for: 2m
+        labels:
+          severity: critical
+          component: container
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container {{ $labels.name }} has not been seen in the last 2 minutes"
+
+      - alert: ContainerRestartingFrequently
+        expr: increase(container_start_time_seconds{name=~"ollama|open-webui|postgres|pgadmin"}[10m]) > 3
+        for: 10m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting frequently"
+          description: "Container {{ $labels.name }} has restarted more than 3 times in the last 10 minutes"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name=~"ollama|open-webui|postgres|pgadmin"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "High CPU usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} CPU usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
+
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} memory usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
+
+  # GPU Alerts
+  - name: aixcl_gpu
+    interval: 30s
+    rules:
+      - alert: GPUHighTemperature
+        expr: DCGM_FI_DEV_GPU_TEMP > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "High GPU temperature on GPU {{ $labels.gpu }}"
+          description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) temperature is above 85°C for more than 5 minutes. Current temperature: {{ $value }}°C"
+
+      - alert: GPUHighMemoryUsage
+        expr: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "High GPU memory usage on GPU {{ $labels.gpu }}"
+          description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) memory usage is above 90% for more than 5 minutes. Current usage: {{ $value }}%"
+
+      - alert: GPUUnavailable
+        expr: up{job="nvidia-gpu"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU monitoring unavailable"
+          description: "GPU metrics are not available for more than 2 minutes. This may indicate GPU exporter is down or no GPUs are present."
+

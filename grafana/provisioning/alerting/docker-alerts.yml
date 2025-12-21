@@ -1,0 +1,28 @@
+# Docker Container Alerts
+# These alerts monitor container health, resource usage, and restarts
+# Note: Grafana alerting rules are typically created via UI/API
+# This file serves as documentation/reference for the alert definitions
+
+# Container Down Alert
+# Query: container_last_seen{name=~"ollama|open-webui|postgres|pgadmin"} < (time() - 120)
+# Threshold: Not seen for 2 minutes
+# Severity: Critical
+# Monitored Containers: ollama, open-webui, postgres, pgadmin
+
+# Container Restarting Frequently Alert
+# Query: increase(container_start_time_seconds{name=~"ollama|open-webui|postgres|pgadmin"}[10m]) > 3
+# Threshold: > 3 restarts in 10 minutes
+# Severity: Warning
+
+# High Container CPU Usage Alert
+# Query: rate(container_cpu_usage_seconds_total{name=~"ollama|open-webui|postgres|pgadmin"}[5m]) * 100 > 80
+# Threshold: > 80% CPU for 5 minutes
+# Severity: Warning
+
+# High Container Memory Usage Alert
+# Query: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
+# Threshold: > 80% memory for 5 minutes
+# Severity: Warning
+
+# These alerts are implemented in prometheus/alerts.yml under the aixcl_docker group
+

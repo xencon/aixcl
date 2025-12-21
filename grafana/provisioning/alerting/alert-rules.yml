@@ -1,0 +1,416 @@
+# Grafana Alert Rule Provisioning Configuration
+# This file tells Grafana where to find alert rule files
+
+apiVersion: 1
+
+groups:
+  # System alerts
+  - name: aixcl-system
+    interval: 30s
+    orgId: 1
+    folder: AIXCL
+    rules:
+      - uid: system-high-cpu
+        title: High CPU Usage
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: CPU usage is above 80% for more than 5 minutes
+          summary: High CPU usage detected on {{ $labels.instance }}
+
+      - uid: system-high-memory
+        title: High Memory Usage
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: Memory usage is above 80% for more than 5 minutes
+          summary: High memory usage detected on {{ $labels.instance }}
+
+      - uid: system-high-disk
+        title: High Disk Usage
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: Disk usage is above 85% for more than 5 minutes
+          summary: High disk usage detected on {{ $labels.instance }}
+
+      - uid: system-high-load
+        title: High System Load
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: node_load1 > (count(node_cpu_seconds_total{mode="idle"}) * 2)
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: System load average is more than 2x CPU cores for more than 5 minutes
+          summary: High system load detected on {{ $labels.instance }}
+
+      - uid: system-network-errors
+        title: Network Errors Detected
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: rate(node_network_receive_errs_total{device!="lo"}[5m]) + rate(node_network_transmit_errs_total{device!="lo"}[5m]) > 10
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: Network errors detected on {{ $labels.device }} for more than 5 minutes
+          summary: Network errors detected on {{ $labels.instance }}
+
+  # PostgreSQL alerts
+  - name: aixcl-postgresql
+    interval: 30s
+    orgId: 1
+    folder: AIXCL
+    rules:
+      - uid: postgresql-down
+        title: PostgreSQL Down
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: pg_up == 0
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: PostgreSQL database is down
+          summary: PostgreSQL database unavailable
+
+      - uid: postgresql-high-connections
+        title: High PostgreSQL Connection Count
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: (sum(pg_stat_database_numbackends) / pg_settings_max_connections) * 100 > 80
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: PostgreSQL connections are above 80% of max_connections for more than 5 minutes
+          summary: High PostgreSQL connection count
+
+      - uid: postgresql-low-cache-hit
+        title: Low PostgreSQL Cache Hit Ratio
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) < 0.90
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 10m
+        annotations:
+          description: PostgreSQL cache hit ratio is below 90% for more than 10 minutes
+          summary: Low PostgreSQL cache hit ratio on {{ $labels.datname }}
+
+      - uid: postgresql-deadlocks
+        title: PostgreSQL Deadlocks Detected
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: rate(pg_stat_database_deadlocks[5m]) > 0
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: PostgreSQL deadlocks detected for more than 5 minutes
+          summary: Deadlocks detected in database {{ $labels.datname }}
+
+      - uid: postgresql-high-rollback-rate
+        title: High PostgreSQL Rollback Rate
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: (rate(pg_stat_database_xact_rollback[5m]) / (rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m]))) * 100 > 10
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: PostgreSQL rollback rate is above 10% of transaction rate for more than 5 minutes
+          summary: High rollback rate in database {{ $labels.datname }}
+
+  # Docker container alerts
+  - name: aixcl-docker
+    interval: 30s
+    orgId: 1
+    folder: AIXCL
+    rules:
+      - uid: container-down
+        title: Container Down
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: container_last_seen{name=~"ollama|open-webui|postgres|pgadmin"} < (time() - 120)
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: Container {{ $labels.name }} has not been seen in the last 2 minutes
+          summary: Container {{ $labels.name }} is down
+
+      - uid: container-restarting
+        title: Container Restarting Frequently
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: increase(container_start_time_seconds{name=~"ollama|open-webui|postgres|pgadmin"}[10m]) > 3
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 10m
+        annotations:
+          description: Container {{ $labels.name }} has restarted more than 3 times in the last 10 minutes
+          summary: Container {{ $labels.name }} is restarting frequently
+
+      - uid: container-high-cpu
+        title: High Container CPU Usage
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: rate(container_cpu_usage_seconds_total{name=~"ollama|open-webui|postgres|pgadmin"}[5m]) * 100 > 80
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: Container {{ $labels.name }} CPU usage is above 80% for more than 5 minutes
+          summary: High CPU usage in container {{ $labels.name }}
+
+      - uid: container-high-memory
+        title: High Container Memory Usage
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: Container {{ $labels.name }} memory usage is above 80% for more than 5 minutes
+          summary: High memory usage in container {{ $labels.name }}
+
+  # GPU alerts
+  - name: aixcl-gpu
+    interval: 30s
+    orgId: 1
+    folder: AIXCL
+    rules:
+      - uid: gpu-high-temperature
+        title: High GPU Temperature
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: DCGM_FI_DEV_GPU_TEMP > 85
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: GPU {{ $labels.gpu }} temperature is above 85°C for more than 5 minutes
+          summary: High GPU temperature on GPU {{ $labels.gpu }}
+
+      - uid: gpu-high-memory
+        title: High GPU Memory Usage
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: GPU {{ $labels.gpu }} memory usage is above 90% for more than 5 minutes
+          summary: High GPU memory usage on GPU {{ $labels.gpu }}
+
+      - uid: gpu-unavailable
+        title: GPU Unavailable
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: up{job="nvidia-gpu"} == 0
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: GPU metrics are not available for more than 2 minutes
+          summary: GPU monitoring unavailable
+
+  # Log-based alerts
+  - name: aixcl-logs
+    interval: 30s
+    orgId: 1
+    folder: AIXCL
+    rules:
+      - uid: log-high-error-rate
+        title: High Error Log Rate
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: sum(rate({compose_project="services"} |~ "(?i)(error|exception|fatal|panic)" [5m])) > 10
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: Error log rate is above 10 errors per second for more than 5 minutes
+          summary: High error rate detected in logs
+
+      - uid: log-critical-errors
+        title: Critical Errors in Logs
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: sum(count_over_time({compose_project="services"} |~ "(?i)(out of memory|oom|database connection failed|connection refused)" [5m])) > 0
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: Critical errors (OOM, database connection failures) detected in logs
+          summary: Critical errors detected in container logs
+

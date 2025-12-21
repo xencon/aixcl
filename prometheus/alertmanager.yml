@@ -1,0 +1,77 @@
+# Alertmanager Configuration for AIXCL Platform
+# This file configures how alerts are routed and notified
+# Notification channels can be added to receivers section
+
+global:
+  # Default notification timeout
+  resolve_timeout: 5m
+
+# Route tree for alert routing
+route:
+  # Default receiver (can be changed when notification channels are configured)
+  receiver: 'default'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # Group wait time before sending first notification
+  group_wait: 10s
+  
+  # Group interval between notifications
+  group_interval: 10s
+  
+  # Repeat interval for alerts that haven't been resolved
+  repeat_interval: 12h
+  
+  # Child routes for specific alert routing (can be added later)
+  routes:
+    # Route critical alerts (can add specific receivers later)
+    - match:
+        severity: critical
+      receiver: 'default'
+      continue: false
+    
+    # Route warning alerts
+    - match:
+        severity: warning
+      receiver: 'default'
+      continue: false
+
+# Receivers define where alerts are sent
+receivers:
+  # Default receiver (placeholder - no actual notification configured yet)
+  - name: 'default'
+    # Email configuration (commented out - ready for future use)
+    # email_configs:
+    #   - to: 'alerts@example.com'
+    #     from: 'alertmanager@aixcl.local'
+    #     smarthost: 'smtp.example.com:587'
+    #     auth_username: 'user'
+    #     auth_password: 'password'
+    #     headers:
+    #       Subject: 'AIXCL Alert: {{ .GroupLabels.alertname }}'
+    
+    # Slack configuration (commented out - ready for future use)
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+    #     channel: '#alerts'
+    #     title: 'AIXCL Alert'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    
+    # Webhook configuration (commented out - ready for future use)
+    # webhook_configs:
+    #   - url: 'http://localhost:5001/webhook'
+    #     send_resolved: true
+    
+    # For now, alerts will be stored in Alertmanager UI
+    # To view alerts: http://localhost:9093
+
+# Inhibition rules suppress certain alerts when other alerts are firing
+inhibit_rules:
+  # Suppress warning alerts when critical alerts are firing for the same component
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['component', 'instance']
+

@@ -1,0 +1,32 @@
+# System Resource Alerts
+# These alerts monitor CPU, memory, disk, network, and system load
+# Note: Grafana alerting rules are typically created via UI/API
+# This file serves as documentation/reference for the alert definitions
+
+# High CPU Usage Alert
+# Query: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+# Threshold: 80% for 5 minutes
+# Severity: Warning
+
+# High Memory Usage Alert  
+# Query: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+# Threshold: 80% for 5 minutes
+# Severity: Warning
+
+# High Disk Usage Alert
+# Query: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
+# Threshold: 85% for 5 minutes
+# Severity: Warning
+
+# High System Load Alert
+# Query: node_load1 > (count(node_cpu_seconds_total{mode="idle"}) * 2)
+# Threshold: Load > 2x CPU cores for 5 minutes
+# Severity: Warning
+
+# Network Errors Alert
+# Query: rate(node_network_receive_errs_total{device!="lo"}[5m]) + rate(node_network_transmit_errs_total{device!="lo"}[5m]) > 10
+# Threshold: > 10 errors/sec for 5 minutes
+# Severity: Warning
+
+# These alerts are implemented in prometheus/alerts.yml under the aixcl_system group
+

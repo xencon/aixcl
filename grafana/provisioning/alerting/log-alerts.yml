@@ -1,0 +1,25 @@
+# Log-Based Alerts (Loki)
+# These alerts monitor log patterns and error rates
+# Note: Grafana alerting rules are typically created via UI/API
+# This file serves as documentation/reference for the alert definitions
+
+# High Error Log Rate Alert
+# Query: sum(rate({compose_project="services"} |~ "(?i)(error|exception|fatal|panic)" [5m])) > 10
+# Threshold: > 10 errors/sec for 5 minutes
+# Severity: Warning
+# Data Source: Loki
+
+# Critical Errors in Logs Alert
+# Query: sum(count_over_time({compose_project="services"} |~ "(?i)(out of memory|oom|database connection failed|connection refused)" [5m])) > 0
+# Threshold: Any critical errors for 1 minute
+# Severity: Critical
+# Data Source: Loki
+# Patterns Monitored:
+#   - Out of memory / OOM
+#   - Database connection failures
+#   - Connection refused errors
+
+# Note: Log-based alerts require Loki as a data source
+# These alerts can be created in Grafana UI using Loki queries
+# Prometheus-based log alerts can be created if using Promtail metrics
+
