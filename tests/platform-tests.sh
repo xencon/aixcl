@@ -1353,7 +1353,8 @@ main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
-                if [[ -z "$2" ]]; then
+                # Check if argument exists before accessing it
+                if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "Error: Profile name is required after --profile" >&2
                     echo "Usage: $0 --profile <core|dev|ops|full>" >&2
                     exit 1
@@ -1362,7 +1363,8 @@ main() {
                 shift 2
                 ;;
             --component|-c)
-                if [[ -z "$2" ]]; then
+                # Check if argument exists before accessing it
+                if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "Error: Component name is required after --component" >&2
                     echo "Usage: $0 --component <runtime-core|database|monitoring|logging|ui|automation|api>" >&2
                     exit 1

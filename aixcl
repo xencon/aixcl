@@ -440,12 +440,12 @@ function start() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
-                if [[ -z "$2" ]]; then
+                # Check if argument exists before accessing it
+                if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "❌ Error: Profile name is required after --profile" >&2
-                    echo "Usage: aixcl stack start [--profile <profile>]"
-                    echo ""
-                    echo "Available profiles:"
-                    list_profiles
+                    echo "Usage: aixcl stack start [--profile <profile>]" >&2
+                    echo "" >&2
+                    list_profiles >&2
                     exit 1
                 fi
                 profile="$2"
