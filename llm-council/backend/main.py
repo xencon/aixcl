@@ -741,7 +741,9 @@ Please provide a helpful response based on the context provided above."""
                     yield f"data: {json.dumps(final_chunk)}\n\n"
                     yield "data: [DONE]\n\n"
                 except Exception as stream_error:
-                    # Send error in OpenAI streaming format
+                    # Log full error details server-side, including stack trace
+                    logging.error("Error in streaming response", exc_info=True)
+                    # Send sanitized error in OpenAI streaming format (no internal details)
                     error_chunk = {
                         "id": response_id,
                         "object": "chat.completion.chunk",
@@ -753,14 +755,14 @@ Please provide a helpful response based on the context provided above."""
                             "finish_reason": None
                         }],
                         "error": {
-                            "message": str(stream_error),
+                            "message": "An internal streaming error occurred.",
                             "type": "internal_error",
                             "code": "stream_error"
                         }
                     }
                     yield f"data: {json.dumps(error_chunk)}\n\n"
                     yield "data: [DONE]\n\n"
-                    print(f"DEBUG: Error in stream: {stream_error}", flush=True)
+                    print("DEBUG: Error in stream (details logged server-side)", flush=True)
             
             return StreamingResponse(
                 generate_stream(),
