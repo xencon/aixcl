@@ -2,6 +2,22 @@
 
 Thanks for your interest in making AIXCL better! We love contributions from everyone, regardless of your experience level.
 
+## Development Workflow
+
+**IMPORTANT: We follow an Issue-First Development workflow.**
+
+Before making any changes:
+1. **Create an issue** describing the problem or feature
+2. **Create a branch** to address the issue
+3. **Make changes** and commit with clear messages
+4. **Create a Pull Request** that references the issue
+
+See [`DEVELOPMENT_WORKFLOW.md`](./DEVELOPMENT_WORKFLOW.md) for complete workflow documentation, including:
+- Step-by-step instructions
+- Formatting guidelines (use plain text, avoid Unicode)
+- AI assistant instructions
+- Quick reference commands
+
 ## Quick Start
 
 1. **Fork & Clone**
@@ -10,15 +26,20 @@ Thanks for your interest in making AIXCL better! We love contributions from ever
    cd aixcl
    ```
 
-2. **Make Your Changes**
-   - Create a branch: `git checkout -b your-feature-name`
+2. **Create an Issue**
+   - Describe the problem or feature you want to work on
+   - Use `gh issue create` or GitHub web interface
+
+3. **Make Your Changes**
+   - Create a branch: `git checkout -b issue-<number>/<description>`
    - Make your awesome changes
    - Test thoroughly
+   - Commit with messages that reference the issue
 
-3. **Submit Your Contribution**
-   - Push to your fork: `git push origin your-feature-name`
-   - Open a pull request
-   - Describe what you changed and why
+4. **Submit Your Contribution**
+   - Push to your fork: `git push origin issue-<number>/<description>`
+   - Create a pull request that references the issue: `gh pr create`
+   - Use plain text formatting (markdown checkboxes `- [x]`, not Unicode)
 
 ## Tips for a Great Contribution
 
