@@ -276,27 +276,55 @@ These commands open the respective dashboards in your default browser. Each dash
 
 ### Verifying Your Installation
 
-Ensure everything is working correctly with these test commands:
+Ensure everything is working correctly with the platform test suite:
 
-**Run comprehensive platform tests**
+**Run platform tests**
 
-Verify all components are functioning properly:
-
-```bash
-bash tests/platform-tests.sh
-```
-
-This test suite checks service health, API endpoints, database connectivity, and integration points. Address any failures before using AIXCL in production.
-
-**Test Open WebUI service**
-
-Specifically verify the web interface is working:
+The test suite supports profile-based and component-based testing. Run without arguments to see available options:
 
 ```bash
-bash tests/test_webui.sh
+./tests/platform-tests.sh
 ```
 
-This confirms the web UI is accessible and responding correctly.
+**Test by profile** (recommended for most users):
+
+```bash
+# Test core profile (runtime core only)
+./tests/platform-tests.sh --profile core
+
+# Test dev profile (runtime core + database + UI)
+./tests/platform-tests.sh --profile dev
+
+# Test ops profile (runtime core + database + monitoring + logging)
+./tests/platform-tests.sh --profile ops
+
+# Test full profile (all services)
+./tests/platform-tests.sh --profile full
+```
+
+**Test by component** (for targeted testing):
+
+```bash
+# Test runtime core components
+./tests/platform-tests.sh --component runtime-core
+
+# Test database components
+./tests/platform-tests.sh --component database
+
+# Test UI components
+./tests/platform-tests.sh --component ui
+
+# Test API endpoints
+./tests/platform-tests.sh --component api
+```
+
+**List all available targets:**
+
+```bash
+./tests/platform-tests.sh --list
+```
+
+The test suite checks service health, API endpoints, database connectivity, and integration points. Address any failures before using AIXCL in production.
 
 ## Governance and Architecture
 
