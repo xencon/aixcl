@@ -35,7 +35,7 @@ Operational services support, observe, or operate the runtime and can be enabled
 - **UI**: Open WebUI for model interaction
 - **Automation**: Watchtower for automatic container updates
 
-Operational services are optional and can be enabled based on deployment profiles (core, dev, ops, full).
+Operational services are optional and can be enabled based on deployment profiles (usr, dev, ops, sys).
 
 For detailed architectural documentation, see [`aixcl_governance/`](./aixcl_governance/).
 

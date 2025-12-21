@@ -19,7 +19,7 @@ These services support, observe, or operate the runtime:
 - **UI**: Open WebUI (web interface)
 - **Automation**: Watchtower (automatic container updates)
 
-Operational services are optional and can be enabled based on deployment profiles (core, dev, ops, full).
+Operational services are optional and can be enabled based on deployment profiles (usr, dev, ops, sys).
 
 For detailed architectural documentation, service contracts, and profiles, see [`aixcl_governance/`](../aixcl_governance/).
 

@@ -13,10 +13,10 @@
 #
 # Usage:
 #   ./tests/platform-tests.sh                    # Run all tests (backward compatible)
-#   ./tests/platform-tests.sh --profile core     # Run tests for core profile
+#   ./tests/platform-tests.sh --profile usr      # Run tests for usr profile
 #   ./tests/platform-tests.sh --profile dev      # Run tests for dev profile
 #   ./tests/platform-tests.sh --profile ops      # Run tests for ops profile
-#   ./tests/platform-tests.sh --profile full      # Run tests for full profile
+#   ./tests/platform-tests.sh --profile sys      # Run tests for sys profile
 #   ./tests/platform-tests.sh --component runtime-core  # Test runtime core only
 #   ./tests/platform-tests.sh --component database     # Test database components
 #   ./tests/platform-tests.sh --component monitoring    # Test monitoring components
@@ -1279,9 +1279,9 @@ test_component_automation() {
 # PROFILE-BASED TEST RUNNERS
 # ============================================================================
 
-# Test core profile (runtime core only)
-test_profile_core() {
-    echo "Running tests for profile: core"
+# Test usr profile (runtime core only)
+test_profile_usr() {
+    echo "Running tests for profile: usr"
     echo "Profile includes: runtime core services only"
     echo ""
     
@@ -1326,9 +1326,9 @@ test_profile_ops() {
     test_council_members
 }
 
-# Test full profile (all services)
-test_profile_full() {
-    echo "Running tests for profile: full"
+# Test sys profile (all services)
+test_profile_sys() {
+    echo "Running tests for profile: sys"
     echo "Profile includes: all services"
     echo ""
     
@@ -1356,7 +1356,7 @@ main() {
                 # Check if argument exists before accessing it
                 if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "Error: Profile name is required after --profile" >&2
-                    echo "Usage: $0 --profile <core|dev|ops|full>" >&2
+                    echo "Usage: $0 --profile <usr|dev|ops|sys>" >&2
                     exit 1
                 fi
                 test_profile="$2"
@@ -1458,7 +1458,7 @@ main() {
         echo "  api           - LLM-Council API endpoints"
         echo ""
         echo "Examples:"
-        echo "  $0 --profile core              # Test core profile"
+        echo "  $0 --profile usr                # Test usr profile"
         echo "  $0 --component runtime-core     # Test runtime core components"
         echo "  $0 --component database         # Test database components"
         echo ""
@@ -1478,13 +1478,13 @@ main() {
         # Validate profile
         if ! is_valid_profile "$test_profile" 2>/dev/null; then
             echo "Error: Invalid profile: $test_profile" >&2
-            echo "Valid profiles: core, dev, ops, full" >&2
+            echo "Valid profiles: usr, dev, ops, sys" >&2
             exit 1
         fi
         
         case "$test_profile" in
-            core)
-                test_profile_core
+            usr)
+                test_profile_usr
                 ;;
             dev)
                 test_profile_dev
@@ -1492,8 +1492,8 @@ main() {
             ops)
                 test_profile_ops
                 ;;
-            full)
-                test_profile_full
+            sys)
+                test_profile_sys
                 ;;
         esac
     elif [ -n "$test_component" ]; then
