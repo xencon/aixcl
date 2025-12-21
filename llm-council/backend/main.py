@@ -175,6 +175,8 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch all unhandled exceptions and return proper JSON response."""
+    # Log full exception details server-side for debugging
+    logging.error(f"Global exception handler caught: {type(exc).__name__}", exc_info=True)
     print(f"DEBUG: Global exception handler caught: {type(exc).__name__}: {exc}", flush=True)
     try:
         print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
@@ -199,28 +201,26 @@ async def global_exception_handler(request: Request, exc: Exception):
     
     # For validation errors, return proper format
     if isinstance(exc, RequestValidationError):
+        # Log validation error details server-side
+        logging.warning("Request validation failed", exc_info=True)
         return JSONResponse(
             status_code=422,
             content={
                 "error": {
                     "message": "Request validation failed",
                     "type": "validation_error",
-                    "code": "invalid_request",
-                    "details": str(exc)
+                    "code": "invalid_request"
                 }
             }
         )
     
-    # For all other exceptions, return 500 with error details
-    error_message = str(exc)
-    if len(error_message) > 500:
-        error_message = error_message[:500] + "..."
-    
+    # For all other exceptions, return 500 with generic error message
+    # Full error details are logged server-side above
     return JSONResponse(
         status_code=500,
         content={
             "error": {
-                "message": f"An internal error occurred: {error_message}",
+                "message": "An internal error occurred",
                 "type": "internal_error",
                 "code": "server_error"
             }
@@ -361,7 +361,10 @@ async def update_council_config(request: UpdateConfigRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update configuration: {str(e)}")
+        # Log full exception details server-side for debugging
+        logging.error("Failed to update configuration", exc_info=True)
+        # Return generic error message to client
+        raise HTTPException(status_code=500, detail="Failed to update configuration")
 
 
 @app.post("/api/config/reload")
@@ -382,7 +385,10 @@ async def reload_council_config():
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to reload configuration: {str(e)}")
+        # Log full exception details server-side for debugging
+        logging.error("Failed to reload configuration", exc_info=True)
+        # Return generic error message to client
+        raise HTTPException(status_code=500, detail="Failed to reload configuration")
 
 
 @app.get("/api/config/validate")
@@ -837,6 +843,8 @@ Please provide a helpful response based on the context provided above."""
         # Re-raise HTTPExceptions as-is (they're already properly formatted)
         raise
     except Exception as e:
+        # Log full exception details server-side for debugging
+        logging.error("Exception in chat_completions", exc_info=True)
         print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}", flush=True)
         try:
             print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
@@ -845,16 +853,13 @@ Please provide a helpful response based on the context provided above."""
             import traceback as tb
             print(f"DEBUG: Traceback (fallback):\n{''.join(tb.format_exception(*sys.exc_info()))}", flush=True)
         sys.stdout.flush()
-        # Return OpenAI-compatible error response instead of HTTPException
-        error_message = str(e)
-        # Truncate very long error messages to avoid issues
-        if len(error_message) > 500:
-            error_message = error_message[:500] + "..."
+        # Return OpenAI-compatible error response with sanitized message
+        # Full error details are logged server-side above
         return JSONResponse(
             status_code=500,
             content={
                 "error": {
-                    "message": f"An error occurred while processing your request: {error_message}",
+                    "message": "An error occurred while processing your request",
                     "type": "internal_error",
                     "code": "server_error"
                 }
