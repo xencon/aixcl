@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.backup.*
+.env.*.local
 .pythonenv
 venv/
 .env/
@@ -16,6 +17,11 @@ __pycache__/
 *.pyo
 *.pyd
 *.pdb
+.pytest_cache/
+.python-version
+coverage/
+*.cover
+.hypothesis/
 
 # Docker
 *.log
@@ -25,6 +31,8 @@ __pycache__/
 docker-compose.override.yml
 docker-compose.*.local.yml
 docker-compose.local.yml
+*.local.yml
+*.local.yaml
 
 # Docker volumes
 volumes/
@@ -58,12 +66,18 @@ backups/*
 *.swp
 *.swo
 *.bak
+*.bak*
 *.orig
 
 # Compiled files
 *.out
 *.o
 *.so
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
 
 # IDEs and editors
 .vscode/
@@ -85,4 +99,12 @@ Desktop.ini
 
 # Build docs
 build-docs/
-context
+
+# Internal development documentation
+context/
+.dev/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
