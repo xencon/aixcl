@@ -92,7 +92,11 @@ Restart your terminal or source your bash profile to activate tab completion.
 **4. Start the services**
 
 ```bash
+# First time: specify profile (saves to .env for future use)
 ./aixcl stack start --profile usr
+
+# Subsequent times: uses PROFILE from .env automatically
+./aixcl stack start
 ```
 
 Available profiles:
@@ -130,13 +134,16 @@ Navigate to `http://localhost:8080` to use Open WebUI for model interaction.
 Manage all services as a unified stack:
 
 ```bash
-./aixcl stack start      # Start all services
-./aixcl stack stop       # Stop all services gracefully
-./aixcl stack restart    # Restart all services
-./aixcl stack status     # Check service status
-./aixcl stack logs       # View logs for all services
-./aixcl stack logs ollama  # View logs for specific service
-./aixcl stack clean      # Remove unused Docker resources
+./aixcl stack start [--profile sys]      # Start all services (uses PROFILE from .env if set)
+./aixcl stack stop                       # Stop all services gracefully
+./aixcl stack restart [--profile sys]    # Restart all services (uses PROFILE from .env if set)
+./aixcl stack status                     # Check service status
+./aixcl stack logs                       # View logs for all services
+./aixcl stack logs ollama                # View logs for specific service
+./aixcl stack clean                      # Remove unused Docker resources
+```
+
+**Note:** Set `PROFILE=<profile>` in `.env` file to use a default profile. Then `stack start` and `stack restart` will use that profile automatically without needing the `--profile` flag.
 ```
 
 ### Individual Service Control

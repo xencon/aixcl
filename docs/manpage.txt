@@ -17,14 +17,16 @@ DESCRIPTION
        aixcl_governance/ for architectural documentation.
 
 COMMANDS
-       stack start
-              Start all services
+       stack start [--profile <profile>]
+              Start all services. Uses PROFILE from .env file if set, otherwise
+              --profile is required.
 
        stack stop
               Stop all services
 
-       stack restart
-              Restart the entire stack
+       stack restart [--profile <profile>]
+              Restart the entire stack. Uses PROFILE from .env file if set,
+              otherwise --profile is required.
 
        stack status
               Show service status
@@ -79,6 +81,8 @@ COMMANDS
 
 EXAMPLES
        Start the entire stack:
+              aixcl stack start --profile sys
+              # Or set PROFILE=sys in .env file, then:
               aixcl stack start
 
        Restart a single service:
@@ -96,6 +100,10 @@ EXAMPLES
 ENVIRONMENT
        AIXCL uses environment variables from .env file (auto-created from
        .env.example on first run). Key variables include:
+
+       PROFILE
+              Default profile for stack commands (usr, dev, ops, sys).
+              Set this to avoid specifying --profile on every command.
 
        POSTGRES_USER
               PostgreSQL username
