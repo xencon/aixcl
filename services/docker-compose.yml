@@ -21,7 +21,7 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.6.41
+    image: ghcr.io/open-webui/open-webui:v0.6.43
     container_name: open-webui
     pull_policy: always
     volumes:
