@@ -31,17 +31,16 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 **Includes**:
 - Runtime core: Ollama, LLM-Council, Continue (plugin)
-- Runtime persistence (file-based or minimal database)
+- PostgreSQL (database for runtime persistence)
 
 **Excludes**:
 - Open WebUI (web interface)
-- PostgreSQL (unless required for runtime persistence)
 - pgAdmin (database admin)
 - Prometheus, Grafana, Loki, Promtail (monitoring/logging)
 - cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
 - Watchtower (automation)
 
-**Use Cases**: End-user deployments, resource-constrained environments, minimal installations
+**Use Cases**: End-user deployments, resource-constrained environments, minimal installations with database persistence
 
 ---
 
@@ -102,7 +101,7 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 ## 4. Profile Selection Guidelines
 
-- **usr**: Use for user-oriented deployments with minimal footprint and runtime core only
+- **usr**: Use for user-oriented deployments with minimal footprint (runtime core + PostgreSQL)
 - **dev**: Use for local development and interactive work
 - **ops**: Use for production deployments requiring observability
 - **sys**: Use for system-oriented deployments with complete feature set and automatic updates

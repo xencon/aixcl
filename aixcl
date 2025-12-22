@@ -383,6 +383,65 @@ function check_env() {
     fi
 }
 
+function ensure_databases() {
+    # Ensure required databases exist (webui and continue)
+    # This function is idempotent - it won't fail if databases already exist
+    
+    # Load environment variables if not already loaded
+    if [ -z "${POSTGRES_USER:-}" ]; then
+        if [ -f "${SCRIPT_DIR}/.env" ]; then
+            load_env_file "${SCRIPT_DIR}/.env"
+        fi
+    fi
+    
+    # Set defaults
+    local pg_user="${POSTGRES_USER:-admin}"
+    local webui_db="${POSTGRES_DATABASE:-webui}"
+    local continue_db="${POSTGRES_CONTINUE_DATABASE:-continue}"
+    
+    # Check if postgres container is running
+    if ! docker ps --format "{{.Names}}" | grep -q "^postgres$"; then
+        echo "⚠️  PostgreSQL container is not running, skipping database creation"
+        return 0
+    fi
+    
+    # Wait for PostgreSQL to be ready
+    local pg_ready=false
+    for i in {1..10}; do
+        if timeout 2 docker exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
+            pg_ready=true
+            break
+        fi
+        sleep 1
+    done
+    
+    if [ "$pg_ready" = false ]; then
+        echo "⚠️  PostgreSQL is not ready, skipping database creation"
+        return 0
+    fi
+    
+    # Create webui database if it doesn't exist
+    local webui_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "$webui_db" | wc -l)
+    webui_exists=${webui_exists:-0}
+    if [ "$webui_exists" -eq 0 ]; then
+        echo "Creating webui database: $webui_db"
+        docker exec postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$webui_db\";" >/dev/null 2>&1 || true
+    else
+        echo "WebUI database already exists: $webui_db"
+    fi
+    
+    # Create continue database if it doesn't exist
+    local continue_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "$continue_db" | wc -l)
+    continue_exists=${continue_exists:-0}
+    if [ "$continue_exists" -eq 0 ]; then
+        echo "Creating continue database: $continue_db"
+        docker exec postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$continue_db\";" >/dev/null 2>&1 || true
+        echo "   Note: LLM-Council will automatically create the schema when it starts."
+    else
+        echo "Continue database already exists: $continue_db"
+    fi
+}
+
 function generate_pgadmin_config() {
     echo "Generating pgAdmin server configuration..."
     
@@ -481,7 +540,7 @@ function start() {
         echo "       ./aixcl stack start -p <profile>"
         echo ""
         echo "Examples:"
-        echo "  ./aixcl stack start --profile usr   # User-oriented runtime (minimal, file-based persistence)"
+        echo "  ./aixcl stack start --profile usr   # User-oriented runtime (minimal footprint with database persistence)"
         echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
         echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
         echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
@@ -557,8 +616,7 @@ function start() {
     fi
     
     # Set profile-specific environment variables (per contract) BEFORE any docker-compose commands
-    # Usr profile: ENABLE_DB_STORAGE=false (file-based persistence, no PostgreSQL dependency)
-    # Other profiles: ENABLE_DB_STORAGE=true (database storage available)
+    # All profiles use database storage (ENABLE_DB_STORAGE=true) for persistence
     # Export early to ensure it's available to all docker-compose commands (pull, build, up)
     export ENABLE_DB_STORAGE=$(get_profile_db_storage_enabled "$profile")
     echo "Setting ENABLE_DB_STORAGE=${ENABLE_DB_STORAGE} for profile: $profile"
@@ -570,7 +628,7 @@ function start() {
     run_compose build llm-council
     
     if [ "$profile" = "usr" ]; then
-        echo "Note: Usr profile uses file-based persistence (runtime core independence per contract)"
+        echo "Note: Usr profile includes PostgreSQL for database persistence (minimal footprint)"
     fi
     
     echo "Starting services for profile: $profile..."
@@ -620,15 +678,23 @@ function start() {
         if [ "$has_postgres" = true ]; then
             echo "Waiting for PostgreSQL to be ready..."
             local pg_attempt=1
+            local pg_ready=false
             while [ $pg_attempt -le 15 ]; do
-                if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-webui}" >/dev/null 2>&1; then
+                if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
                     echo "PostgreSQL is ready!"
+                    pg_ready=true
                     break
                 fi
                 echo "Waiting for PostgreSQL... ($pg_attempt/15)"
                 sleep 2
                 pg_attempt=$((pg_attempt + 1))
             done
+            
+            # Ensure required databases exist
+            if [ "$pg_ready" = true ]; then
+                echo "Ensuring required databases exist..."
+                ensure_databases
+            fi
         fi
         
         status
@@ -1550,7 +1616,7 @@ function help_menu() {
     echo "  stack clean                         - Clean Docker resources"
     echo ""
     echo "  Profiles (required for stack start):"
-    echo "    usr   - User-oriented runtime (Ollama, LLM-Council only, file-based persistence)"
+    echo "    usr   - User-oriented runtime (Ollama, LLM-Council, PostgreSQL for persistence)"
     echo "    dev   - Developer workstation (runtime core + UI + DB)"
     echo "    ops   - Observability-focused (runtime core + monitoring/logging)"
     echo "    sys   - System-oriented (complete stack with automation)"
@@ -2582,7 +2648,7 @@ function stack_cmd() {
         echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
         echo "Examples:"
         echo "  $0 stack start                - Start all services with sys profile (default)"
-        echo "  $0 stack start --profile usr  - Start only runtime core services"
+        echo "  $0 stack start --profile usr  - Start runtime core + PostgreSQL (minimal footprint)"
         echo "  $0 stack start --profile dev  - Start dev profile (runtime core + UI + DB)"
         echo "  $0 stack start --profile ops  - Start ops profile (runtime core + observability)"
         echo "  $0 stack start --profile sys  - Start all services"

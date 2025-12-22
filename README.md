@@ -39,7 +39,7 @@ Optional services that support, observe, or operate the runtime:
 
 AIXCL serves different user types through profile-based deployments:
 
-- **End Users** (`usr` profile): Minimal footprint deployments for personal use
+- **End Users** (`usr` profile): Minimal footprint deployments with database persistence for personal use
 - **Developers** (`dev` profile): Local development workstations with UI and database tools
 - **Operators** (`ops` profile): Production servers requiring observability and monitoring
 - **System** (`sys` profile): Complete deployments with full feature set and automation
@@ -92,8 +92,14 @@ Restart your terminal or source your bash profile to activate tab completion.
 **4. Start the services**
 
 ```bash
-./aixcl stack start
+./aixcl stack start --profile usr
 ```
+
+Available profiles:
+- `usr` - User-oriented runtime (minimal footprint with database persistence)
+- `dev` - Developer workstation (runtime core + UI + DB)
+- `ops` - Observability-focused (runtime core + monitoring/logging)
+- `sys` - System-oriented (complete stack with automation)
 
 The system automatically creates a `.env` file from `.env.example` if needed. Wait for all containers to be healthy (monitor with `./aixcl stack status`).
 
@@ -181,7 +187,7 @@ Run the platform test suite to verify your installation:
 ./tests/platform-tests.sh --list
 
 # Test by profile (recommended)
-./tests/platform-tests.sh --profile usr     # Runtime core only
+./tests/platform-tests.sh --profile usr     # Runtime core + PostgreSQL
 ./tests/platform-tests.sh --profile dev     # Core + database + UI
 ./tests/platform-tests.sh --profile ops     # Core + monitoring + logging
 ./tests/platform-tests.sh --profile full    # All services

@@ -1279,15 +1279,17 @@ test_component_automation() {
 # PROFILE-BASED TEST RUNNERS
 # ============================================================================
 
-# Test usr profile (runtime core only)
+# Test usr profile (runtime core + database)
 test_profile_usr() {
     echo "Running tests for profile: usr"
-    echo "Profile includes: runtime core services only"
+    echo "Profile includes: runtime core services + PostgreSQL"
     echo ""
     
     test_environment_check
     test_component_runtime_core
+    test_component_database
     test_llm_state
+    test_database_connection
     test_api_endpoints
     test_council_members
 }
