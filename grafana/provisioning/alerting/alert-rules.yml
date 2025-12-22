@@ -129,7 +129,7 @@ groups:
               expr: pg_up == 0
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: Alerting
+        noDataState: NoData
         execErrState: Alerting
         for: 1m
         annotations:
@@ -235,7 +235,7 @@ groups:
               expr: container_last_seen{name=~"ollama|open-webui|postgres|pgadmin"} < (time() - 120)
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: Alerting
+        noDataState: NoData
         execErrState: Alerting
         for: 2m
         annotations:
@@ -292,7 +292,7 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
+              expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} * 100 > 80) and (container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} > 0)
               intervalMs: 1000
               maxDataPoints: 43200
         noDataState: NoData
@@ -361,11 +361,11 @@ groups:
               expr: up{job="nvidia-gpu"} == 0
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: Alerting
+        noDataState: NoData
         execErrState: Alerting
         for: 2m
         annotations:
-          description: GPU metrics are not available for more than 2 minutes
+          description: GPU metrics are not available for more than 2 minutes. This may be expected on systems without GPUs.
           summary: GPU monitoring unavailable
 
   # Log-based alerts
