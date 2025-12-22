@@ -747,7 +747,7 @@ function restart() {
     echo "Restarting services..."
     stop
     sleep 5
-    start
+    start "$@"
 }
 
 function start_service() {
@@ -2676,7 +2676,7 @@ function stack_cmd() {
             stop
             ;;
         restart)
-            restart
+            restart "$@"
             ;;
         status)
             status
