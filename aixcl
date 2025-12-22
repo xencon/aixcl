@@ -440,6 +440,18 @@ function ensure_databases() {
     else
         echo "Continue database already exists: $continue_db"
     fi
+    
+    # Remove unwanted "admin" database if it exists and is not the intended database
+    # PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
+    if [ "$webui_db" != "admin" ] && [ "$continue_db" != "admin" ]; then
+        local admin_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "admin" | wc -l)
+        admin_exists=${admin_exists:-0}
+        if [ "$admin_exists" -eq 1 ]; then
+            echo "Removing unwanted admin database..."
+            docker exec postgres psql -U "$pg_user" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
+            echo "   Admin database removed (only webui and continue databases should exist)"
+        fi
+    fi
 }
 
 function generate_pgadmin_config() {
