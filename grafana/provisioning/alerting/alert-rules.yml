@@ -23,7 +23,7 @@ groups:
               expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -43,7 +43,7 @@ groups:
               expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -63,7 +63,7 @@ groups:
               expr: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -83,7 +83,7 @@ groups:
               expr: node_load1 > (count(node_cpu_seconds_total{mode="idle"}) * 2)
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -103,7 +103,7 @@ groups:
               expr: rate(node_network_receive_errs_total{device!="lo"}[5m]) + rate(node_network_transmit_errs_total{device!="lo"}[5m]) > 10
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -129,7 +129,7 @@ groups:
               expr: pg_up == 0
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 1m
         annotations:
@@ -149,7 +149,7 @@ groups:
               expr: (sum(pg_stat_database_numbackends) / pg_settings_max_connections) * 100 > 80
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -169,7 +169,7 @@ groups:
               expr: rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) < 0.90
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 10m
         annotations:
@@ -189,7 +189,7 @@ groups:
               expr: rate(pg_stat_database_deadlocks[5m]) > 0
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -209,7 +209,7 @@ groups:
               expr: (rate(pg_stat_database_xact_rollback[5m]) / (rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m]))) * 100 > 10
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -235,7 +235,7 @@ groups:
               expr: container_last_seen{name=~"ollama|open-webui|postgres|pgadmin"} < (time() - 120)
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 2m
         annotations:
@@ -255,7 +255,7 @@ groups:
               expr: increase(container_start_time_seconds{name=~"ollama|open-webui|postgres|pgadmin"}[10m]) > 3
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 10m
         annotations:
@@ -275,7 +275,7 @@ groups:
               expr: rate(container_cpu_usage_seconds_total{name=~"ollama|open-webui|postgres|pgadmin"}[5m]) * 100 > 80
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -295,7 +295,7 @@ groups:
               expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} * 100 > 80) and (container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} > 0)
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -321,7 +321,7 @@ groups:
               expr: DCGM_FI_DEV_GPU_TEMP > 85
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -341,7 +341,7 @@ groups:
               expr: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -361,7 +361,7 @@ groups:
               expr: up{job="nvidia-gpu"} == 0
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 2m
         annotations:
@@ -387,7 +387,7 @@ groups:
               expr: sum(rate({compose_project="services"} |~ "(?i)(error|exception|fatal|panic)" [5m])) > 10
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 5m
         annotations:
@@ -407,7 +407,7 @@ groups:
               expr: sum(count_over_time({compose_project="services"} |~ "(?i)(out of memory|oom|database connection failed|connection refused)" [5m])) > 0
               intervalMs: 1000
               maxDataPoints: 43200
-        noDataState: NoData
+        noDataState: OK
         execErrState: Alerting
         for: 1m
         annotations:
