@@ -620,13 +620,31 @@ function start() {
         if docker volume ls --format "{{.Name}}" | grep -q "^${env_backup_volume}$"; then
             echo "⚠️  .env file not found. Attempting to restore from backup..."
             # Restore .env from backup volume using a temporary container
+            # Use current user's UID/GID to ensure proper ownership
+            local current_uid=$(id -u)
+            local current_gid=$(id -g)
             if docker run --rm \
+                --user "${current_uid}:${current_gid}" \
                 -v "${env_backup_volume}:/backup:ro" \
                 -v "${SCRIPT_DIR}:/target" \
                 alpine sh -c "test -f /backup/.env && cp /backup/.env /target/.env && chmod 600 /target/.env" >/dev/null 2>&1; then
                 if [ -f "$env_file" ]; then
-                    echo "✅ Restored .env file from backup volume: $env_backup_volume"
-                    load_env_file "$env_file"
+                    # Fix ownership and permissions if file was created by root
+                    if [ -O "$env_file" ] || [ -w "$env_file" ]; then
+                        chmod 600 "$env_file" 2>/dev/null || true
+                        echo "✅ Restored .env file from backup volume: $env_backup_volume"
+                        load_env_file "$env_file"
+                    else
+                        # File exists but we don't have permission - try to fix ownership
+                        echo "⚠️  Restored .env file but fixing ownership..."
+                        sudo chown "${current_uid}:${current_gid}" "$env_file" 2>/dev/null || {
+                            echo "❌ Error: Cannot fix .env file ownership. Please run: sudo chown $(whoami):$(whoami) $env_file"
+                            exit 1
+                        }
+                        chmod 600 "$env_file" 2>/dev/null || true
+                        echo "✅ Restored .env file from backup volume: $env_backup_volume"
+                        load_env_file "$env_file"
+                    fi
                 else
                     echo "⚠️  Backup exists but restoration failed, creating from .env.example..."
                 fi
