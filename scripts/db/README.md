@@ -2,47 +2,15 @@
 
 This directory contains utility SQL scripts for managing and querying the AIXCL database.
 
+## Database Setup
+
+AIXCL uses two PostgreSQL databases:
+- **webui**: For Open WebUI conversations and data
+- **continue**: For Continue plugin conversations (managed by LLM-Council)
+
+Both databases are automatically created on startup by the `ensure_databases()` function in the main `aixcl` script.
+
 ## Migration Scripts
-
-### `migrate_admin_to_webui.sh`
-Migration script to rename the admin database to webui. This script creates the webui database and optionally migrates data from the admin database.
-
-**Usage:**
-```bash
-./scripts/db/migrate_admin_to_webui.sh
-```
-
-**What it does:**
-- Checks if admin database exists
-- Creates webui database if it doesn't exist
-- Optionally migrates data from admin to webui
-- Provides verification steps
-
-**When to use:**
-- When upgrading from admin database to webui database
-- As part of the database renaming process
-
-### `drop_admin_database.sh`
-Script to safely drop the admin database after migration to webui is complete and verified.
-
-**Usage:**
-```bash
-./scripts/db/drop_admin_database.sh
-```
-
-**WARNING:** This will permanently delete the admin database and all its data!
-
-**What it does:**
-- Verifies webui database exists
-- Shows database information
-- Requires explicit confirmation
-- Terminates active connections
-- Drops the admin database
-
-**When to use:**
-- After successfully migrating to webui database
-- After verifying all services work with webui database
-- Only when you're certain the migration was successful
 
 ### `002_add_source_column.sql`
 Migration script to add the `source` column to existing `chat` tables. This is only needed for databases that were created before the source column was added to the main migration. New installations automatically include this column via `001_create_chat_table.sql`.
@@ -72,20 +40,22 @@ docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < scrip
 ## Query Scripts
 
 ### `query_continue_chats.sql`
-Query to list Continue plugin conversations from the database.
+Query to list Continue plugin conversations from the continue database.
 
 **Usage:**
 ```bash
-docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -f scripts/db/query_continue_chats.sql
+docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_CONTINUE_DATABASE:-continue} -f scripts/db/query_continue_chats.sql
 ```
 
 ### `query_all_chats.sql`
-Query to list all conversations (both Open WebUI and Continue) from the database.
+Query to list all conversations from the webui database (Open WebUI conversations).
 
 **Usage:**
 ```bash
-docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -f scripts/db/query_all_chats.sql
+docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE:-webui} -f scripts/db/query_all_chats.sql
 ```
+
+**Note:** Continue plugin conversations are stored in the `continue` database (separate from `webui`). To query Continue conversations, use `check_db.sh` or query the `continue` database directly.
 
 ## Notes
 

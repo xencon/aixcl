@@ -10,8 +10,8 @@ RUNTIME_CORE_SERVICES=(ollama llm-council)
 
 # Profile descriptions
 declare -A PROFILE_DESCRIPTIONS=(
-    [usr]="User-oriented runtime (minimal, file-based persistence)"
-    [dev]="Developer workstation (UI + DB)"
+    [usr]="User-oriented runtime (minimal footprint with database persistence)"
+    [dev]="Developer workstation (UI + DB + admin tools)"
     [ops]="Observability-focused (monitoring/logging)"
     [sys]="System-oriented (complete stack with automation)"
 )
@@ -19,17 +19,16 @@ declare -A PROFILE_DESCRIPTIONS=(
 # Profile service mappings
 # Each profile includes runtime core services plus profile-specific services
 declare -A PROFILE_SERVICES=(
-    [usr]="ollama llm-council"
+    [usr]="ollama llm-council postgres"
     [dev]="ollama llm-council open-webui postgres pgadmin"
     [ops]="ollama llm-council postgres prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
     [sys]="ollama llm-council open-webui postgres pgadmin prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter watchtower"
 )
 
 # Profile database storage settings
-# Usr profile uses file-based persistence (no PostgreSQL dependency)
-# Other profiles use database storage
+# All profiles use database storage for persistence
 declare -A PROFILE_DB_STORAGE=(
-    [usr]="false"
+    [usr]="true"
     [dev]="true"
     [ops]="true"
     [sys]="true"
