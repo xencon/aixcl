@@ -138,14 +138,13 @@ After successful setup:
    - Grafana: http://localhost:3000
 4. **Configure Continue Plugin**: See README.md for Continue integration
 
-## Migration from Previous Versions
+## Database Configuration
 
-If upgrading from a version without database persistence:
+AIXCL uses two PostgreSQL databases:
+- **webui**: For Open WebUI conversations and data
+- **continue**: For Continue plugin conversations (managed by LLM-Council)
 
-1. Start services normally - schema will be created automatically
-2. Existing conversations in JSON files will continue to work
-3. New conversations will be stored in PostgreSQL
-4. To migrate existing data, use the utility scripts in `scripts/db/`
+Both databases are automatically created on startup. The webui database schema is initialized by Open WebUI when it starts.
 
 ## Notes
 
