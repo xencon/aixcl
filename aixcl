@@ -518,35 +518,54 @@ function start() {
         esac
     done
     
-    # If no profile specified, show available profiles and prompt
+    # If no profile specified via command line, try to get from .env file
     if [ "$profile_specified" = false ]; then
-        # Ensure VALID_PROFILES is defined
-        if [ -z "${VALID_PROFILES+x}" ] || [ ${#VALID_PROFILES[@]} -eq 0 ]; then
-            echo "❌ Error: Profile definitions not loaded. VALID_PROFILES is not set." >&2
-            echo "   Expected profile library at: ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
-            exit 1
+        local env_file="${SCRIPT_DIR}/.env"
+        
+        # Load .env file to check for PROFILE variable
+        if [ -f "$env_file" ]; then
+            # Read PROFILE from .env file
+            local env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            
+            if [ -n "$env_profile" ]; then
+                profile="$env_profile"
+                echo "ℹ️  Using profile from .env file: $profile"
+            fi
         fi
         
-        echo "Available profiles:"
-        echo "==================="
-        echo ""
-        local profile_index=1
-        for valid_profile in "${VALID_PROFILES[@]}"; do
-            echo "  [$profile_index] $valid_profile: $(get_profile_description "$valid_profile")"
-            ((profile_index++))
-        done
-        echo ""
-        echo "Usage: ./aixcl stack start --profile <profile>"
-        echo "       ./aixcl stack start -p <profile>"
-        echo ""
-        echo "Examples:"
-        echo "  ./aixcl stack start --profile usr   # User-oriented runtime (minimal footprint with database persistence)"
-        echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
-        echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
-        echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
-        echo ""
-        echo "For detailed profile information, see: aixcl_governance/02_profiles.md"
-        exit 0
+        # If still no profile, show available profiles and prompt
+        if [ -z "$profile" ]; then
+            # Ensure VALID_PROFILES is defined
+            if [ -z "${VALID_PROFILES+x}" ] || [ ${#VALID_PROFILES[@]} -eq 0 ]; then
+                echo "❌ Error: Profile definitions not loaded. VALID_PROFILES is not set." >&2
+                echo "   Expected profile library at: ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
+                exit 1
+            fi
+            
+            echo "Available profiles:"
+            echo "==================="
+            echo ""
+            local profile_index=1
+            for valid_profile in "${VALID_PROFILES[@]}"; do
+                echo "  [$profile_index] $valid_profile: $(get_profile_description "$valid_profile")"
+                ((profile_index++))
+            done
+            echo ""
+            echo "Usage: ./aixcl stack start [--profile <profile>]"
+            echo "       ./aixcl stack start -p <profile>"
+            echo "       ./aixcl stack start                 # Uses PROFILE from .env file if set"
+            echo ""
+            echo "Note: Set PROFILE=<profile> in .env file to use a default profile"
+            echo ""
+            echo "Examples:"
+            echo "  ./aixcl stack start --profile usr   # User-oriented runtime (minimal footprint with database persistence)"
+            echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
+            echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
+            echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
+            echo ""
+            echo "For detailed profile information, see: aixcl_governance/02_profiles.md"
+            exit 0
+        fi
     fi
     
     # Validate profile
@@ -558,26 +577,78 @@ function start() {
         exit 1
     fi
     
+    # Save profile to .env file if it was specified via command line (and differs from .env)
+    if [ "$profile_specified" = true ]; then
+        local env_file="${SCRIPT_DIR}/.env"
+        if [ -f "$env_file" ]; then
+            local current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            if [ "$current_env_profile" != "$profile" ]; then
+                # Update or add PROFILE in .env file
+                if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
+                    # Update existing PROFILE line
+                    if [[ "$(uname)" == "Darwin" ]]; then
+                        sed -i '' "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
+                    else
+                        sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
+                    fi
+                else
+                    # Add PROFILE line at the end
+                    echo "" >> "$env_file"
+                    echo "# Default profile for stack commands" >> "$env_file"
+                    echo "PROFILE=$profile" >> "$env_file"
+                fi
+                echo "ℹ️  Saved profile to .env file: $profile"
+            fi
+        fi
+    fi
+    
     echo "Starting Docker Compose deployment with profile: $profile"
     print_profile_info "$profile"
     
-    # Check for .env file and create from .env.example if missing
+    # Check for .env file and restore from backup or create from .env.example if missing
     # Use SCRIPT_DIR to ensure we're looking in the correct location
     local env_file="${SCRIPT_DIR}/.env"
     local env_example="${SCRIPT_DIR}/.env.example"
+    local env_backup_volume="aixcl-env-backup"
     
-    if [ ! -f "$env_file" ]; then
-        if [ -f "$env_example" ]; then
-            echo "⚠️  .env file not found. Copying from .env.example..."
-            cp "$env_example" "$env_file"
-            echo "✅ Created .env file from .env.example"
-            # Reload environment variables after creating .env file
-            load_env_file "$env_file"
-        else
-            echo "❌ Error: Neither .env nor .env.example file found"
-            echo "   Expected .env.example at: $env_example"
-            echo "   Please create a .env file with the required configuration"
-            exit 1
+    # NEVER overwrite existing .env file (preserves user configuration)
+    if [ -f "$env_file" ]; then
+        echo "✓ Using existing .env file (preserving user configuration)"
+        load_env_file "$env_file"
+    else
+        # Try to restore from backup volume first
+        if docker volume ls --format "{{.Name}}" | grep -q "^${env_backup_volume}$"; then
+            echo "⚠️  .env file not found. Attempting to restore from backup..."
+            # Restore .env from backup volume using a temporary container
+            if docker run --rm \
+                -v "${env_backup_volume}:/backup:ro" \
+                -v "${SCRIPT_DIR}:/target" \
+                alpine sh -c "test -f /backup/.env && cp /backup/.env /target/.env && chmod 600 /target/.env" >/dev/null 2>&1; then
+                if [ -f "$env_file" ]; then
+                    echo "✅ Restored .env file from backup volume: $env_backup_volume"
+                    load_env_file "$env_file"
+                else
+                    echo "⚠️  Backup exists but restoration failed, creating from .env.example..."
+                fi
+            else
+                echo "⚠️  Backup volume exists but .env not found in backup, creating from .env.example..."
+            fi
+        fi
+        
+        # If still no .env file, create from .env.example
+        if [ ! -f "$env_file" ]; then
+            if [ -f "$env_example" ]; then
+                echo "⚠️  .env file not found. Copying from .env.example..."
+                cp "$env_example" "$env_file"
+                echo "✅ Created .env file from .env.example"
+                # Reload environment variables after creating .env file
+                load_env_file "$env_file"
+            else
+                echo "❌ Error: Neither .env nor .env.example file found"
+                echo "   Expected .env.example at: $env_example"
+                echo "   Please create a .env file with the required configuration"
+                exit 1
+            fi
         fi
     fi
     
@@ -744,10 +815,116 @@ function stop() {
 }
 
 function restart() {
-    echo "Restarting services..."
+    local profile=""
+    local profile_specified=false
+    
+    # Source profile library early (needed for validation)
+    if ! type is_valid_profile >/dev/null 2>&1; then
+        if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
+            source "${SCRIPT_DIR}/cli/lib/profile.sh"
+        else
+            echo "❌ Error: Profile library not found at ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
+            exit 1
+        fi
+    fi
+    
+    # Parse arguments for profile
+    local remaining_args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --profile|-p)
+                if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
+                    echo "❌ Error: Profile name is required after --profile" >&2
+                    echo "Usage: aixcl stack restart [--profile <profile>]" >&2
+                    echo "" >&2
+                    list_profiles >&2
+                    exit 1
+                fi
+                profile="$2"
+                profile_specified=true
+                shift 2
+                ;;
+            *)
+                remaining_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+    
+    # If no profile specified via command line, try to get from .env file
+    if [ "$profile_specified" = false ]; then
+        local env_file="${SCRIPT_DIR}/.env"
+        
+        # Load .env file to check for PROFILE variable
+        if [ -f "$env_file" ]; then
+            # Read PROFILE from .env file
+            local env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            
+            if [ -n "$env_profile" ]; then
+                profile="$env_profile"
+                echo "ℹ️  Using profile from .env file: $profile"
+            fi
+        fi
+        
+        # If still no profile, show error
+        if [ -z "$profile" ]; then
+            echo "❌ Error: Profile is required for restart command" >&2
+            echo "" >&2
+            echo "Available profiles:" >&2
+            echo "===================" >&2
+            echo "" >&2
+            list_profiles >&2
+            echo "" >&2
+            echo "Usage: ./aixcl stack restart [--profile <profile>]" >&2
+            echo "       ./aixcl stack restart -p <profile>" >&2
+            echo "" >&2
+            echo "Note: You can set PROFILE=<profile> in .env file to use a default profile" >&2
+            echo "" >&2
+            echo "Examples:" >&2
+            echo "  ./aixcl stack restart --profile sys" >&2
+            echo "  ./aixcl stack restart -p dev" >&2
+            exit 1
+        fi
+    fi
+    
+    # Validate profile
+    if ! is_valid_profile "$profile"; then
+        echo "❌ Error: Invalid profile: $profile" >&2
+        echo "Valid profiles: usr, dev, ops, sys" >&2
+        echo ""
+        list_profiles
+        exit 1
+    fi
+    
+    # Save profile to .env file if it was specified via command line (and differs from .env)
+    if [ "$profile_specified" = true ]; then
+        local env_file="${SCRIPT_DIR}/.env"
+        if [ -f "$env_file" ]; then
+            local current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            if [ "$current_env_profile" != "$profile" ]; then
+                # Update or add PROFILE in .env file
+                if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
+                    # Update existing PROFILE line
+                    if [[ "$(uname)" == "Darwin" ]]; then
+                        sed -i '' "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
+                    else
+                        sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
+                    fi
+                else
+                    # Add PROFILE line at the end
+                    echo "" >> "$env_file"
+                    echo "# Default profile for stack commands" >> "$env_file"
+                    echo "PROFILE=$profile" >> "$env_file"
+                fi
+                echo "ℹ️  Saved profile to .env file: $profile"
+            fi
+        fi
+    fi
+    
+    echo "Restarting services with profile: $profile..."
     stop
     sleep 5
-    start "$@"
+    start --profile "$profile"
 }
 
 function start_service() {
@@ -1608,9 +1785,9 @@ function help_menu() {
     echo "Stack: stack <action> [options]"
     echo "  stack start --profile <profile>     - Start services with specified profile (required)"
     echo "  stack start -p <profile>            - Short form: Start with profile"
-    echo "  stack start                         - Show available profiles"
+    echo "  stack start                         - Start with profile from .env (or show profiles)"
     echo "  stack stop                          - Stop all services"
-    echo "  stack restart                       - Restart services"
+    echo "  stack restart [--profile <profile>] - Restart services (uses .env PROFILE if not specified)"
     echo "  stack status                        - Show service status"
     echo "  stack logs [service] [lines]        - Show logs"
     echo "  stack clean                         - Clean Docker resources"
@@ -2653,7 +2830,7 @@ function stack_cmd() {
         echo "  $0 stack start --profile ops  - Start ops profile (runtime core + observability)"
         echo "  $0 stack start --profile sys  - Start all services"
         echo "  $0 stack stop                 - Stop all services"
-        echo "  $0 stack restart              - Restart the entire stack"
+        echo "  $0 stack restart --profile <profile> - Restart the entire stack (profile required)"
         echo "  $0 stack status               - Show service status (runtime core vs operational)"
         echo "  $0 stack logs                 - Show logs for all services"
         echo "  $0 stack logs ollama          - Show logs for a specific service"

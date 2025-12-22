@@ -92,13 +92,27 @@ _aixcl_complete() {
                 COMPREPLY=( $(compgen -W "$services" -- "$cur") )
                 return 0
             fi
-            # If previous word was 'stack', complete with profile options
+            # If previous word was 'stack', complete with profile options (optional)
+            # Profile can come from .env file, but --profile/-p is still available
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
                 COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
                 return 0
             fi
             ;;
-        'stop'|'restart')
+        'restart')
+            # If previous word was 'service', complete with service names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
+                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                return 0
+            fi
+            # If previous word was 'stack', complete with profile options (optional)
+            # Profile can come from .env file, but --profile/-p is still available
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
+                COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
+                return 0
+            fi
+            ;;
+        'stop')
             # If previous word was 'service', complete with service names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
                 COMPREPLY=( $(compgen -W "$services" -- "$cur") )

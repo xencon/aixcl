@@ -27,6 +27,9 @@ stack_start() {
             echo "   Please create a .env file with the required configuration"
             exit 1
         fi
+    else
+        # Load .env file to get PROFILE if set
+        load_env_file "${SCRIPT_DIR}/.env"
     fi
     
     # Generate pgAdmin configuration with populated values
@@ -108,10 +111,36 @@ stack_stop() {
 
 # Stack restart command
 stack_restart() {
-    echo "Restarting services..."
-    stack_stop
-    sleep 5
-    stack_start
+    # Load .env file to check for PROFILE variable
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
+        load_env_file "${SCRIPT_DIR}/.env"
+        
+        # Check if PROFILE is set in .env
+        if [ -n "${PROFILE:-}" ]; then
+            echo "ℹ️  Using profile from .env file: $PROFILE"
+            echo "Restarting services..."
+            stack_stop
+            sleep 5
+            stack_start
+            return 0
+        fi
+    fi
+    
+    echo "❌ Error: Profile is required for restart command"
+    echo ""
+    echo "Usage: aixcl stack restart [--profile <profile>]"
+    echo "       aixcl stack restart -p <profile>"
+    echo ""
+    echo "Note: You can set PROFILE=<profile> in .env file to use a default profile"
+    echo ""
+    echo "Available profiles: usr, dev, ops, sys"
+    echo ""
+    echo "Examples:"
+    echo "  aixcl stack restart --profile sys"
+    echo "  aixcl stack restart -p dev"
+    echo ""
+    echo "Note: Use 'aixcl stack start --profile <profile>' for initial startup"
+    exit 1
 }
 
 # Stack logs command

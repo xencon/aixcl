@@ -40,15 +40,22 @@ This validates:
 ### 2. Start Services
 
 ```bash
+# First time: specify profile
+./aixcl.sh stack start --profile sys
+
+# Subsequent times: uses PROFILE from .env file
 ./aixcl.sh stack start
 ```
 
 This will:
 - Create `.env` file from `.env.example` if needed
+- Save profile to `.env` file (PROFILE=sys) for future use
 - Generate pgAdmin configuration
 - Pull latest Docker images
 - Start all services
 - Wait for services to be ready
+
+**Note:** After the first run, you can set `PROFILE=<profile>` in `.env` file to use a default profile. Then `./aixcl.sh stack start` will use that profile automatically.
 
 ### 3. Add Models
 
@@ -82,8 +89,8 @@ Shows:
 ### Starting Development Session
 
 ```bash
-# Start everything
-./aixcl.sh stack start
+# Start everything (uses PROFILE from .env if set, or specify --profile)
+./aixcl.sh stack start [--profile sys]
 
 # Check everything is running
 ./aixcl.sh stack status
@@ -116,18 +123,21 @@ Shows:
 # Restart a specific service
 ./aixcl.sh service restart postgres
 
-# Restart entire stack
-./aixcl.sh stack restart
+# Restart entire stack (uses PROFILE from .env if set)
+./aixcl.sh stack restart [--profile sys]
 
 # Clean up and start fresh
 ./aixcl.sh stack clean
-./aixcl.sh stack start
+./aixcl.sh stack start [--profile sys]
 ```
 
 ### Continue Plugin Setup
 
 1. **Start services:**
    ```bash
+   # First time: specify profile
+   ./aixcl.sh stack start --profile sys
+   # Subsequent times: uses PROFILE from .env
    ./aixcl.sh stack start
    ```
 
@@ -264,8 +274,8 @@ Services are automatically updated by Watchtower, or manually:
 cd services
 docker-compose pull
 
-# Restart services
-./aixcl.sh stack restart
+# Restart services (uses PROFILE from .env if set)
+./aixcl.sh stack restart [--profile sys]
 ```
 
 ## Tips
