@@ -54,6 +54,21 @@ else
     echo "   Note: The LLM Council service will automatically create the schema when it starts."
 fi
 
+# Remove unwanted "admin" database if it exists and is not the intended database
+# PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
+if [ "$WEBUI_DATABASE" != "admin" ] && [ "$CONTINUE_DATABASE" != "admin" ]; then
+    echo ""
+    echo "=== Cleaning Up Unwanted Databases ==="
+    ADMIN_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "admin" | wc -l || echo "0")
+    if [ "$ADMIN_EXISTS" -eq "1" ]; then
+        echo "Removing unwanted admin database..."
+        docker exec postgres psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" 2>/dev/null || true
+        echo "✅ Admin database removed (only webui and continue databases should exist)"
+    else
+        echo "✅ No unwanted admin database found"
+    fi
+fi
+
 # Verify databases
 echo ""
 echo "=== Verification ==="
