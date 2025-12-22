@@ -23,7 +23,7 @@ We follow an **Issue-First Development** workflow:
 
 **Using GitHub CLI:**
 ```bash
-gh issue create --title "Brief description" --body "Detailed description of the problem or feature"
+gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "type:bug,component:cli"
 ```
 
 **Best Practices:**
@@ -31,6 +31,7 @@ gh issue create --title "Brief description" --body "Detailed description of the 
 - Provide context and background
 - Include steps to reproduce (for bugs)
 - Use plain text formatting (avoid special Unicode characters)
+- **Always add appropriate labels** (see Label Guidelines below)
 
 ### 2. Create a Branch
 
@@ -105,6 +106,85 @@ Fixes #217
 - Address feedback
 - Once approved, merge via GitHub UI or CLI
 
+## Label Guidelines
+
+**Labels are required for all issues.** Labels help organize issues, track work, and make it easier to find related issues.
+
+### Label Categories
+
+Labels are organized into categories using prefixes:
+
+#### Type Labels (Required - Select One)
+- `type:bug` - Something is broken or not working correctly
+- `type:enhancement` - Improvement to existing functionality
+- `type:feature` - New feature or capability
+- `type:refactor` - Code refactoring without changing functionality
+- `type:maintenance` - Maintenance tasks and housekeeping
+- `documentation` - Improvements or additions to documentation
+
+#### Component Labels (Select All That Apply)
+- `component:runtime-core` - Runtime core services (Ollama, LLM-Council, Continue)
+- `component:ollama` - Ollama LLM inference engine
+- `component:llm-council` - LLM Council multi-model orchestration
+- `component:persistence` - Database and persistence services (PostgreSQL, pgAdmin)
+- `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki, Promtail)
+- `component:ui` - User interface components (Open WebUI)
+- `component:cli` - Command-line interface and tooling
+- `component:infrastructure` - Infrastructure and deployment (Docker, profiles, configuration)
+- `component:testing` - Tests and test infrastructure
+
+#### Priority Labels (Optional - Select One)
+- `priority:high` - High priority issue requiring immediate attention
+- `priority:medium` - Medium priority issue
+- `priority:low` - Low priority issue
+
+#### Profile Labels (Select All That Apply)
+- `profile:usr` - Affects usr profile (minimal footprint)
+- `profile:dev` - Affects dev profile (developer workstation)
+- `profile:ops` - Affects ops profile (observability-focused)
+- `profile:sys` - Affects sys profile (full deployment)
+
+#### Other Labels
+- `dependencies` - Dependency updates and management
+- `good first issue` - Good for newcomers
+- `help wanted` - Extra attention is needed
+- `question` - Further information is requested
+
+### How to Add Labels
+
+**When creating an issue:**
+```bash
+# Add labels during creation
+gh issue create --title "Title" --body "Description" --label "type:bug,component:cli,priority:high"
+
+# Or add labels after creation
+gh issue edit <number> --add-label "type:bug,component:cli"
+```
+
+**Label Selection Guidelines:**
+1. **Always select one type label** - This categorizes the issue
+2. **Select relevant component labels** - Helps identify which part of the system is affected
+3. **Select priority if applicable** - Helps prioritize work
+4. **Select profile labels if issue is profile-specific** - Helps identify deployment impact
+5. **Use other labels as appropriate** - `good first issue`, `help wanted`, etc.
+
+**Examples:**
+- Bug in CLI: `type:bug,component:cli`
+- New feature for observability: `type:feature,component:observability`
+- Enhancement affecting all profiles: `type:enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
+- High priority bug: `type:bug,component:runtime-core,priority:high`
+- Dependency update: `dependencies,type:maintenance`
+
+### Checking Available Labels
+
+```bash
+# List all labels
+gh label list
+
+# List labels for a specific issue
+gh issue view <number> --json labels
+```
+
 ## Formatting Guidelines
 
 **IMPORTANT: Use plain text formatting to avoid encoding issues.**
@@ -126,19 +206,23 @@ When working with AI assistants (like Cursor, GitHub Copilot, etc.), include thi
 
 ```
 Follow the development workflow documented in DEVELOPMENT_WORKFLOW.md:
-1. Always create an issue first using 'gh issue create'
+1. Always create an issue first using 'gh issue create' with appropriate labels
 2. Create a branch with format 'issue-<number>/<description>'
 3. Make changes and commit with conventional commit format
 4. Push branch and create PR that references the issue
 5. Use plain text formatting (markdown checkboxes - [x], not Unicode)
 6. Reference the issue number in commits and PRs
+7. Add labels to issues (type, component, priority, profile as applicable)
 ```
 
 ## Quick Reference Commands
 
 ```bash
-# Create issue
-gh issue create --title "Title" --body "Description"
+# Create issue with labels
+gh issue create --title "Title" --body "Description" --label "type:bug,component:cli,priority:high"
+
+# Or add labels after creation
+gh issue edit <number> --add-label "type:bug,component:cli"
 
 # Create branch
 git checkout -b issue-<number>/<description>
