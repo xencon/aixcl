@@ -23,7 +23,9 @@ We follow an **Issue-First Development** workflow:
 
 **Using GitHub CLI:**
 ```bash
-gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "type:bug,component:cli"
+# Note: GitHub CLI doesn't support setting issue type directly
+# Set the type in GitHub UI, then add labels:
+gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "component:cli"
 ```
 
 **Best Practices:**
@@ -108,23 +110,23 @@ Fixes #217
 
 ## Label Guidelines
 
-**Labels are required for all issues.** Labels help organize issues, track work, and make it easier to find related issues.
+**GitHub Issue Types and Labels are required for all issues.** GitHub has native issue types that are separate from labels. Both help organize issues, track work, and make it easier to find related issues.
+
+### GitHub Issue Types (Required - Select One)
+
+GitHub provides native issue types that must be set for each issue. These are separate from labels:
+
+- **Bug** - An unexpected problem or behavior
+- **Feature** - A request, idea, or new functionality
+- **Task** - A specific piece of work
+
+**Note:** You cannot create custom issue types in GitHub. Use labels for additional categorization (see below).
 
 ### Label Categories
 
 Labels are organized into categories using prefixes:
 
-#### Type Labels (Required - Select One)
-
-These labels should be created in GitHub's label sections if they don't exist. Use GitHub's standard label names:
-
-- `bug` - Something is broken or not working correctly (GitHub default)
-- `enhancement` - Improvement to existing functionality (GitHub default)
-- `Feature` - New feature or capability (create if needed)
-- `Refactor` - Code refactoring without changing functionality (create if needed)
-- `Maintenance` - Maintenance tasks and housekeeping (create if needed)
-- `Task` - Task or work item (create if needed)
-- `documentation` - Improvements or additions to documentation (GitHub default)
+#### Component Labels (Select All That Apply)
 
 #### Component Labels (Select All That Apply)
 - `component:runtime-core` - Runtime core services (Ollama, LLM-Council, Continue)
@@ -148,6 +150,13 @@ These labels should be created in GitHub's label sections if they don't exist. U
 - `profile:ops` - Affects ops profile (observability-focused)
 - `profile:sys` - Affects sys profile (full deployment)
 
+#### Category Labels (Select All That Apply)
+- `Fix` - A fix for a bug or issue (use with Bug or Task type)
+- `Enhancement` - Improvement to existing functionality (use with Feature or Task type)
+- `Refactor` - Code refactoring without changing functionality (use with Task type)
+- `Maintenance` - Maintenance tasks and housekeeping (use with Task type)
+- `documentation` - Improvements or additions to documentation (GitHub default)
+
 #### Other Labels
 - `dependencies` - Dependency updates and management
 - `good first issue` - Good for newcomers
@@ -158,27 +167,31 @@ These labels should be created in GitHub's label sections if they don't exist. U
 
 **When creating an issue:**
 ```bash
-# Add labels during creation
-gh issue create --title "Title" --body "Description" --label "bug,component:cli,priority:high"
+# Add labels during creation (set issue type in GitHub UI)
+gh issue create --title "Title" --body "Description" --label "component:cli,priority:high"
 
 # Or add labels after creation
-gh issue edit <number> --add-label "bug,component:cli"
+gh issue edit <number> --add-label "component:cli"
 ```
 
-**Label Selection Guidelines:**
-1. **Always select one type label** - This categorizes the issue
+**Note:** GitHub CLI doesn't support setting the issue type (Bug/Feature/Task) directly. Set the type in the GitHub web interface, then use CLI for labels.
+
+**Issue Type and Label Selection Guidelines:**
+1. **Always select one GitHub issue type** - Bug, Feature, or Task (set via GitHub's Type field)
 2. **Select relevant component labels** - Helps identify which part of the system is affected
-3. **Select priority if applicable** - Helps prioritize work
-4. **Select profile labels if issue is profile-specific** - Helps identify deployment impact
-5. **Use other labels as appropriate** - `good first issue`, `help wanted`, etc.
+3. **Select category labels if applicable** - Fix, Enhancement, Refactor, Maintenance for additional context
+4. **Select priority if applicable** - Helps prioritize work
+5. **Select profile labels if issue is profile-specific** - Helps identify deployment impact
+6. **Use other labels as appropriate** - `good first issue`, `help wanted`, etc.
 
 **Examples:**
-- Bug in CLI: `bug,component:cli`
-- New feature for observability: `Feature,component:observability`
-- Enhancement affecting all profiles: `enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
-- High priority bug: `bug,component:runtime-core,priority:high`
-- Dependency update: `dependencies,Maintenance`
-- Task: `Task,component:infrastructure`
+- Bug in CLI: Type: **Bug**, Labels: `component:cli`
+- New feature for observability: Type: **Feature**, Labels: `component:observability`
+- Fix for database issue: Type: **Bug**, Labels: `Fix,component:persistence`
+- Task for infrastructure: Type: **Task**, Labels: `component:infrastructure`
+- Enhancement affecting all profiles: Type: **Feature**, Labels: `Enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
+- High priority bug: Type: **Bug**, Labels: `component:runtime-core,priority:high`
+- Dependency update: Type: **Task**, Labels: `dependencies,Maintenance`
 
 ### Checking Available Labels
 
@@ -223,11 +236,11 @@ Follow the development workflow documented in DEVELOPMENT_WORKFLOW.md:
 ## Quick Reference Commands
 
 ```bash
-# Create issue with labels
-gh issue create --title "Title" --body "Description" --label "bug,component:cli,priority:high"
+# Create issue with labels (set issue type in GitHub UI)
+gh issue create --title "Title" --body "Description" --label "component:cli,priority:high"
 
 # Or add labels after creation
-gh issue edit <number> --add-label "bug,component:cli"
+gh issue edit <number> --add-label "component:cli"
 
 # Create branch
 git checkout -b issue-<number>/<description>
