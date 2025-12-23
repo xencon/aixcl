@@ -28,6 +28,12 @@ We follow an **Issue-First Development** workflow:
 gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "component:cli"
 ```
 
+**Issue Title Format:**
+- Use descriptive titles without prefixes (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
+- For fixes: Start with "Fix" followed by description (e.g., "Fix CLI error handling and stack status output format")
+- For features: Start with "Feature" or descriptive name (e.g., "Feature: Add new dashboard" or "Add new dashboard")
+- For tasks: Use descriptive name (e.g., "Update documentation" or "Refactor service management")
+
 **Best Practices:**
 - Use clear, descriptive titles
 - Provide context and background
@@ -77,11 +83,12 @@ Push your branch and create a PR:
 
 ```bash
 git push -u origin <branch-name>
-gh pr create --title "Title referencing issue" --body "Description linking to issue #<number>"
+gh pr create --title "Fix: Issue title (#<number>)" --body "Description linking to issue #<number>"
 ```
 
 **PR Best Practices:**
-- Title should reference the issue: `"Fix: Issue title (#<number>)"`
+- Title should reference the issue with colon: `"Fix: Issue title (#<number>)"` 
+- **Note:** PR titles use colon (e.g., "Fix: CLI error handling"), but issue titles do NOT use colon (e.g., "Fix CLI error handling")
 - Description should:
   - Link to the issue: `"Fixes #<number>"` or `"Addresses #<number>"`
   - Describe what changed
@@ -185,13 +192,13 @@ gh issue edit <number> --add-label "component:cli"
 6. **Use other labels as appropriate** - `good first issue`, `help wanted`, etc.
 
 **Examples:**
-- Bug in CLI: Type: **Bug**, Labels: `component:cli`
-- New feature for observability: Type: **Feature**, Labels: `component:observability`
-- Fix for database issue: Type: **Bug**, Labels: `Fix,component:persistence`
-- Task for infrastructure: Type: **Task**, Labels: `component:infrastructure`
-- Enhancement affecting all profiles: Type: **Feature**, Labels: `Enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
-- High priority bug: Type: **Bug**, Labels: `component:runtime-core,priority:high`
-- Dependency update: Type: **Task**, Labels: `dependencies,Maintenance`
+- Bug in CLI: Type: **Bug**, Title: "Fix CLI error handling", Labels: `component:cli`
+- New feature for observability: Type: **Feature**, Title: "Add new monitoring dashboard", Labels: `component:observability`
+- Fix for database issue: Type: **Bug**, Title: "Fix PostgreSQL connection timeout", Labels: `Fix,component:persistence`
+- Task for infrastructure: Type: **Task**, Title: "Update Docker Compose configuration", Labels: `component:infrastructure`
+- Enhancement affecting all profiles: Type: **Feature**, Title: "Enhance service health checks", Labels: `Enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
+- High priority bug: Type: **Bug**, Title: "Fix critical memory leak", Labels: `component:runtime-core,priority:high`
+- Dependency update: Type: **Task**, Title: "Update Python dependencies", Labels: `dependencies,Maintenance`
 
 ### Checking Available Labels
 
@@ -237,7 +244,8 @@ Follow the development workflow documented in DEVELOPMENT_WORKFLOW.md:
 
 ```bash
 # Create issue with labels (set issue type in GitHub UI)
-gh issue create --title "Title" --body "Description" --label "component:cli,priority:high"
+# Note: Issue titles should NOT include colon (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
+gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,priority:high"
 
 # Or add labels after creation
 gh issue edit <number> --add-label "component:cli"
