@@ -1204,6 +1204,14 @@ function service() {
     
     local action="$1"
     local service="$2"
+    shift 2
+    
+    # Check for extra arguments
+    if [ $# -gt 0 ]; then
+        echo "Error: Unknown argument '$1'"
+        echo "Usage: $0 service {start|stop|restart} <service-name>"
+        return 1
+    fi
     
     case "$action" in
         start)
@@ -1394,11 +1402,32 @@ function clean() {
 }
 
 function status() {
-    echo "Checking services status..."
-    echo ""
+    # Source profile library for profile information
+    if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
+        source "${SCRIPT_DIR}/cli/lib/profile.sh"
+    fi
+    
+    # Get current profile from .env file
+    local current_profile=""
+    local env_file="${SCRIPT_DIR}/.env"
+    if [ -f "$env_file" ]; then
+        current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+    fi
+    
+    # Determine overall status (Running/Stopped)
+    local overall_status="Stopped"
+    if docker ps --format "{{.Names}}" | grep -qE "ollama|llm-council|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
+        overall_status="Running"
+    fi
+    
+    # Health counters (not local so nested function can modify them)
+    runtime_core_total=0
+    runtime_core_healthy=0
+    operational_total=0
+    operational_healthy=0
     
     # Helper function to check both container status and health
-    # Security fix: Removed eval usage to prevent command injection
+    # Returns: 0=healthy, 1=unhealthy, 2=stopped
     # health_check_type can be: "curl" (with URL), "pg_isready" (with username), "status_var" (with variable name), or empty (no health check)
     check_service_status() {
         local service_name="$1"
@@ -1406,6 +1435,7 @@ function status() {
         local health_check_type="$3"
         local health_check_arg="$4"
         local is_critical="${5:-false}"
+        local is_runtime_core="${6:-false}"
         
         # Check container status
         local container_running=false
@@ -1418,6 +1448,7 @@ function status() {
         
         # Check health (only if container is running)
         local health_status=""
+        local is_healthy=false
         if [ "$container_running" = "true" ] && [ -n "$health_check_type" ]; then
             local health_result=""
             
@@ -1461,6 +1492,7 @@ function status() {
             
             if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "healthy" ]; then
                 health_status=" (Healthy)"
+                is_healthy=true
             else
                 health_status=" (Unhealthy)"
                 if [ "$is_critical" = "true" ]; then
@@ -1468,25 +1500,53 @@ function status() {
                     timeout 2 docker logs "${container_name}" --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
                 fi
             fi
+        elif [ "$container_running" = "false" ]; then
+            health_status=""
+        fi
+        
+        # Update counters (use || true to prevent set -e from exiting on arithmetic)
+        if [ "$is_runtime_core" = "true" ]; then
+            ((runtime_core_total++)) || true
+            if [ "$is_healthy" = "true" ]; then
+                ((runtime_core_healthy++)) || true
+            fi
+        else
+            ((operational_total++)) || true
+            if [ "$is_healthy" = "true" ]; then
+                ((operational_healthy++)) || true
+            fi
         fi
         
         echo "  ${container_status} ${service_name}${health_status}"
     }
     
+    # Header section
+    echo "AIXCL Stack Status"
+    echo "=================="
+    echo ""
+    
+    if [ -n "$current_profile" ] && is_valid_profile "$current_profile" 2>/dev/null; then
+        echo "Profile: $current_profile"
+    else
+        echo "Profile: (not set)"
+    fi
+    echo "Status: $overall_status"
+    echo ""
+    
     # Runtime Core (Strict - Always Enabled) per governance model
     echo "Runtime Core (Strict - Always Enabled)"
-    check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true"
-    
-    check_service_status "LLM-Council" "llm-council" "curl" "http://localhost:8000/health" "true"
-    
+    echo "---------------------------------------"
+    check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
+    check_service_status "LLM-Council" "llm-council" "curl" "http://localhost:8000/health" "true" "true"
     # Note: Continue is a VS Code plugin, not a containerized service
+    echo ""
     
     # Operational Services (Guided - Profile-Dependent) per governance model
-    echo ""
     echo "Operational Services (Guided - Profile-Dependent)"
+    echo "--------------------------------------------------"
     
     # UI Services
-    check_service_status "Open WebUI" "$CONTAINER_NAME" "curl" "http://localhost:8080/health" "false"
+    check_service_status "Open WebUI" "$CONTAINER_NAME" "curl" "http://localhost:8080/health" "false" "false"
     
     # Persistence Services
     # Security fix: Properly validate and quote POSTGRES_USER to prevent injection
@@ -1497,32 +1557,33 @@ function status() {
         postgres_user="webui"
         echo "⚠️  Warning: Invalid POSTGRES_USER value, using default 'webui'" >&2
     fi
-    check_service_status "PostgreSQL" "postgres" "pg_isready" "$postgres_user" "false"
+    check_service_status "PostgreSQL" "postgres" "pg_isready" "$postgres_user" "false" "false"
     
     PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
-    check_service_status "pgAdmin" "pgadmin" "status_var" "PGADMIN_STATUS" "false"
+    check_service_status "pgAdmin" "pgadmin" "status_var" "PGADMIN_STATUS" "false" "false"
 
     # Observability Services
     PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
-    check_service_status "Prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS" "false"
+    check_service_status "Prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS" "false" "false"
 
     GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
-    check_service_status "Grafana" "grafana" "status_var" "GRAFANA_STATUS" "false"
+    check_service_status "Grafana" "grafana" "status_var" "GRAFANA_STATUS" "false" "false"
 
     CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
-    check_service_status "cAdvisor" "cadvisor" "status_var" "CADVISOR_STATUS" "false"
+    check_service_status "cAdvisor" "cadvisor" "status_var" "CADVISOR_STATUS" "false" "false"
 
     NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
-    check_service_status "Node Exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS" "false"
+    check_service_status "Node Exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS" "false" "false"
 
     POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
-    check_service_status "Postgres Exporter" "postgres-exporter" "status_var" "POSTGRES_EXPORTER_STATUS" "false"
+    check_service_status "Postgres Exporter" "postgres-exporter" "status_var" "POSTGRES_EXPORTER_STATUS" "false" "false"
 
     if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
         NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
-        check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false"
+        check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
     else
         echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
+        # Don't count NVIDIA GPU Exporter in totals if it's not expected
     fi
 
     # (Loki and Promtail are part of Observability)
@@ -1530,32 +1591,72 @@ function status() {
         LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
         if [ "$LOKI_STATUS" = "200" ]; then
             echo "  ✅ Loki (Healthy)"
+            ((operational_total++)) || true
+            ((operational_healthy++)) || true
         elif [ "$LOKI_STATUS" = "503" ]; then
             echo "  ⚠️  Loki (starting up)"
+            ((operational_total++)) || true
         else
             echo "  ❌ Loki (Unhealthy)"
             echo "    Checking Loki logs (last 3 lines):"
             timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
+            ((operational_total++)) || true
         fi
     else
         echo "  ❌ Loki"
+        ((operational_total++)) || true
     fi
 
     if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
         if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
             echo "  ✅ Promtail (Healthy)"
+            ((operational_total++)) || true
+            ((operational_healthy++)) || true
         else
             echo "  ❌ Promtail (Unhealthy)"
+            ((operational_total++)) || true
         fi
     else
         echo "  ❌ Promtail"
+        ((operational_total++)) || true
     fi
 
     # Automation Services
     if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
         echo "  ✅ Watchtower"
+        ((operational_total++)) || true
+        ((operational_healthy++)) || true
     else
         echo "  ❌ Watchtower"
+        ((operational_total++)) || true
+    fi
+    
+    # Health Summary section
+    echo ""
+    echo "Health Summary"
+    echo "--------------"
+    
+    # Runtime Core summary
+    if [ $runtime_core_total -gt 0 ]; then
+        echo "Runtime Core: $runtime_core_healthy/$runtime_core_total healthy"
+    else
+        echo "Runtime Core: 0/0 healthy"
+    fi
+    
+    # Operational summary
+    if [ $operational_total -gt 0 ]; then
+        echo "Operational:  $operational_healthy/$operational_total healthy"
+    else
+        echo "Operational:  0/0 (no operational services enabled)"
+    fi
+    
+    # Overall status
+    if [ $runtime_core_healthy -eq $runtime_core_total ] && [ $runtime_core_total -gt 0 ]; then
+        echo "Overall:      ✅ All critical services healthy"
+    elif [ $runtime_core_total -eq 0 ]; then
+        echo "Overall:      ⚠️  No services running"
+    else
+        echo "Overall:      ❌ Critical services unhealthy"
     fi
     echo ""
 }
@@ -1675,13 +1776,15 @@ function models() {
             ;;
         list)
             if [[ $# -gt 0 ]]; then
-                echo "Warning: Ignoring extra arguments for 'models list'"
+                echo "Error: Unknown argument '$1'"
+                echo "Usage: $0 models {add|remove|list} [<model-name> ...]"
+                return 1
             fi
             list
             ;;
         *)
             echo "Error: Unknown models action '$action'"
-            echo "Available actions: add, remove, list"
+            echo "Usage: $0 models {add|remove|list} [<model-name> ...]"
             return 1
             ;;
     esac
@@ -1791,7 +1894,17 @@ function dashboard() {
         return 1
     fi
 
-    case "$1" in
+    local target="$1"
+    shift
+
+    # Check for extra arguments
+    if [ $# -gt 0 ]; then
+        echo "Error: Unknown argument '$1'"
+        echo "Usage: $0 dashboard {openwebui|grafana|pgadmin}"
+        return 1
+    fi
+
+    case "$target" in
         grafana)
             dashboard_grafana
             ;;
@@ -1802,8 +1915,8 @@ function dashboard() {
             dashboard_pgadmin
             ;;
         *)
-            echo "Error: Unknown dashboard target '$1'"
-            echo "Available targets: grafana, openwebui, pgadmin"
+            echo "Error: Unknown dashboard target '$target'"
+            echo "Usage: $0 dashboard {openwebui|grafana|pgadmin}"
             return 1
             ;;
     esac
@@ -2831,6 +2944,13 @@ function utils_cmd() {
     local action="$1"
     shift
 
+    # Check for extra arguments
+    if [ $# -gt 0 ]; then
+        echo "Error: Unknown argument '$1'"
+        echo "Usage: $0 utils {check-env|bash-completion}"
+        return 1
+    fi
+
     case "$action" in
         check-env)
             check_env
@@ -2880,18 +3000,33 @@ function stack_cmd() {
             start "$@"
             ;;
         stop)
+            if [ $# -gt 0 ]; then
+                echo "Error: Unknown argument '$1'"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+                return 1
+            fi
             stop
             ;;
         restart)
             restart "$@"
             ;;
         status)
+            if [ $# -gt 0 ]; then
+                echo "Error: Unknown argument '$1'"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+                return 1
+            fi
             status
             ;;
         logs)
             logs "$@"
             ;;
         clean)
+            if [ $# -gt 0 ]; then
+                echo "Error: Unknown argument '$1'"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+                return 1
+            fi
             clean
             ;;
         *)
@@ -2917,6 +3052,13 @@ function council_cmd() {
 
     local action="$1"
     shift
+
+    # Check for extra arguments
+    if [ $# -gt 0 ]; then
+        echo "Error: Unknown argument '$1'"
+        echo "Usage: $0 council [configure|status]"
+        return 1
+    fi
 
     case "$action" in
         configure)
