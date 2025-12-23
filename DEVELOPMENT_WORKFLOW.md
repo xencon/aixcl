@@ -81,7 +81,8 @@ gh pr create --title "Title referencing issue" --body "Description linking to is
 ```
 
 **PR Best Practices:**
-- Title should reference the issue: `"Fix: Issue title (#<number>)"`
+- Title should reference the issue without colon: `"Fix Issue title (#<number>)"`
+- **Note:** Both issue titles and PR titles should NOT use colons (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
 - Description should:
   - Link to the issue: `"Fixes #<number>"` or `"Addresses #<number>"`
   - Describe what changed
@@ -237,7 +238,8 @@ Follow the development workflow documented in DEVELOPMENT_WORKFLOW.md:
 
 ```bash
 # Create issue with labels (set issue type in GitHub UI)
-gh issue create --title "Title" --body "Description" --label "component:cli,priority:high"
+# Note: Both issue and PR titles should NOT include colon (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
+gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,priority:high"
 
 # Or add labels after creation
 gh issue edit <number> --add-label "component:cli"
@@ -253,7 +255,7 @@ Fixes #<number>"
 
 # Push and create PR
 git push -u origin issue-<number>/<description>
-gh pr create --title "Fix: Title (#<number>)" --body "Fixes #<number>
+gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>
 
 ## Changes
 - [x] Change 1
