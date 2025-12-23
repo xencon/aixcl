@@ -116,14 +116,15 @@ Labels are organized into categories using prefixes:
 
 #### Type Labels (Required - Select One)
 
-These labels should be created in GitHub's label sections if they don't exist. Use GitHub's standard label names:
+These labels should be created in GitHub's label sections if they don't exist. These correspond to GitHub's issue types:
 
-- `bug` - Something is broken or not working correctly (GitHub default)
-- `enhancement` - Improvement to existing functionality (GitHub default)
-- `Feature` - New feature or capability (create if needed)
-- `Refactor` - Code refactoring without changing functionality (create if needed)
-- `Maintenance` - Maintenance tasks and housekeeping (create if needed)
-- `Task` - Task or work item (create if needed)
+- `Bug` - An unexpected problem or behavior (GitHub issue type)
+- `Feature` - A request, idea, or new functionality (GitHub issue type)
+- `Task` - A specific piece of work (GitHub issue type)
+- `Fix` - A fix for a bug or issue (custom issue type)
+- `Enhancement` - Improvement to existing functionality
+- `Refactor` - Code refactoring without changing functionality
+- `Maintenance` - Maintenance tasks and housekeeping
 - `documentation` - Improvements or additions to documentation (GitHub default)
 
 #### Component Labels (Select All That Apply)
@@ -159,10 +160,10 @@ These labels should be created in GitHub's label sections if they don't exist. U
 **When creating an issue:**
 ```bash
 # Add labels during creation
-gh issue create --title "Title" --body "Description" --label "bug,component:cli,priority:high"
+gh issue create --title "Title" --body "Description" --label "Bug,component:cli,priority:high"
 
 # Or add labels after creation
-gh issue edit <number> --add-label "bug,component:cli"
+gh issue edit <number> --add-label "Bug,component:cli"
 ```
 
 **Label Selection Guidelines:**
@@ -173,12 +174,13 @@ gh issue edit <number> --add-label "bug,component:cli"
 5. **Use other labels as appropriate** - `good first issue`, `help wanted`, etc.
 
 **Examples:**
-- Bug in CLI: `bug,component:cli`
+- Bug in CLI: `Bug,component:cli`
 - New feature for observability: `Feature,component:observability`
-- Enhancement affecting all profiles: `enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
-- High priority bug: `bug,component:runtime-core,priority:high`
+- Fix for database issue: `Fix,component:persistence`
+- Task for infrastructure: `Task,component:infrastructure`
+- Enhancement affecting all profiles: `Enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
+- High priority bug: `Bug,component:runtime-core,priority:high`
 - Dependency update: `dependencies,Maintenance`
-- Task: `Task,component:infrastructure`
 
 ### Checking Available Labels
 
@@ -224,10 +226,10 @@ Follow the development workflow documented in DEVELOPMENT_WORKFLOW.md:
 
 ```bash
 # Create issue with labels
-gh issue create --title "Title" --body "Description" --label "bug,component:cli,priority:high"
+gh issue create --title "Title" --body "Description" --label "Bug,component:cli,priority:high"
 
 # Or add labels after creation
-gh issue edit <number> --add-label "bug,component:cli"
+gh issue edit <number> --add-label "Bug,component:cli"
 
 # Create branch
 git checkout -b issue-<number>/<description>
