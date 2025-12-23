@@ -25,12 +25,18 @@ WORKDIR /app
 # Copy project files
 COPY . /app
 
-# Install Python dependencies using uv
-RUN uv sync
-
 # Create a non-root user for runtime security
-RUN groupadd -r appuser && useradd -r -g appuser appuser && \
-    chown -R appuser:appuser /app
+# Create home directory and cache directory for uv
+# Do this before installing dependencies so venv is owned by appuser
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -m -d /home/appuser appuser && \
+    mkdir -p /home/appuser/.cache/uv && \
+    chown -R appuser:appuser /app /home/appuser
+
+# Install Python dependencies using uv as appuser
+# This ensures .venv is created with correct ownership
+USER appuser
+RUN uv sync
 
 # Expose API port
 EXPOSE 8000
