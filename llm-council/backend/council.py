@@ -32,7 +32,21 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
         print("ERROR: No council models configured!", flush=True)
         return []
     
-    messages = [{"role": "user", "content": user_query}]
+    # Wrap user query with instructions to provide solution, not ask questions
+    solution_prompt = f"""{user_query}
+
+CRITICAL INSTRUCTIONS:
+- Solve ONLY the stated problem. Do not add extra functions or features.
+- Match function signatures exactly as specified.
+- Handle all edge cases mentioned (None, empty strings, whitespace, etc.).
+- Provide complete, production-ready code.
+- Use standard library solutions when available (e.g., s[::-1] for reversal, email.utils for email).
+- Make reasonable assumptions if details are missing.
+- Do NOT ask questions or request clarification.
+- Do NOT read files or interpret challenge descriptions as input.
+- Provide code directly, no meta-commentary."""
+    
+    messages = [{"role": "user", "content": solution_prompt}]
     print(f"DEBUG: messages = {messages}")
 
     # Query all models in parallel
@@ -103,36 +117,68 @@ async def stage2_collect_rankings(
         for label, result in zip(labels, stage1_results)
     ])
 
-    ranking_prompt = f"""You are evaluating different responses to the following question:
+    ranking_prompt = f"""Evaluate code responses to this question: {user_query}
 
-Question: {user_query}
-
-Here are the responses from different models (anonymized):
-
+Responses (anonymized):
 {responses_text}
 
-Your task:
-1. First, evaluate each response individually. For each response, explain what it does well and what it does poorly.
-2. Then, at the very end of your response, provide a final ranking.
+EVALUATION CRITERIA (weighted):
+1. CORRECTNESS (40%): 
+   - Function signature matches requirements?
+   - Solves the exact problem stated?
+   - All edge cases handled?
+   - No logic errors or bugs?
+   - Production-ready?
 
-IMPORTANT: Your final ranking MUST be formatted EXACTLY as follows:
-- Start with the line "FINAL RANKING:" (all caps, with colon)
-- Then list the responses from best to worst as a numbered list
-- Each line should be: number, period, space, then ONLY the response label (e.g., "1. Response A")
-- Do not add any other text or explanations in the ranking section
+2. SECURITY (20%):
+   - Input validation present?
+   - Injection risks prevented?
+   - Safe error messages?
+   - Secure coding practices?
 
-Example of the correct format for your ENTIRE response:
+3. CODE QUALITY (15%):
+   - Documentation present?
+   - Readable and clear?
+   - Follows best practices?
+   - Appropriate style?
 
-Response A provides good detail on X but misses Y...
-Response B is accurate but lacks depth on Z...
-Response C offers the most comprehensive answer...
+4. PERFORMANCE (10%):
+   - Efficient algorithm?
+   - Good time/space complexity?
+   - Appropriate data structures?
+
+5. MAINTAINABILITY (10%):
+   - Modular structure?
+   - Easy to understand?
+   - Extensible design?
+
+6. STANDARD PRACTICES (5%):
+   - Uses standard library?
+   - Proven patterns?
+   - Conservative approach?
+
+RED FLAGS (rank lower):
+- Wrong function signature
+- Missing required functionality
+- Extra unrelated functions
+- Logic errors/bugs
+- Misunderstanding problem (e.g., reading challenge file as input)
+- Missing edge cases
+- Security vulnerabilities
+
+IMPORTANT: 
+- Prefer standard solutions over experimental ones
+- Flag exotic approaches
+- Rank solutions that solve the exact problem highest
+- Rank solutions with extra code or wrong signatures lowest
+- Provide ranking only. Do not ask questions.
+
+Evaluate each response briefly, then provide ranking:
 
 FINAL RANKING:
-1. Response C
-2. Response A
-3. Response B
-
-Now provide your evaluation and ranking:"""
+1. Response X
+2. Response Y
+3. Response Z"""
 
     messages = [{"role": "user", "content": ranking_prompt}]
 
@@ -192,22 +238,66 @@ async def stage3_synthesize_final(
         for result in stage2_results
     ])
 
-    chairman_prompt = f"""You are the Chairman of an LLM Council. Multiple AI models have provided responses to a user's question, and then ranked each other's responses.
+    # Create label mapping for aggregate rankings
+    labels = [chr(65 + i) for i in range(len(stage1_results))]  # A, B, C, ...
+    label_to_model = {
+        f"Response {label}": result['model']
+        for label, result in zip(labels, stage1_results)
+    }
+    
+    # Calculate which model was ranked highest
+    aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
+    top_model = aggregate_rankings[0]['model'] if aggregate_rankings else None
 
-Original Question: {user_query}
+    chairman_prompt = f"""Synthesize the best code solution from multiple responses.
 
-STAGE 1 - Individual Responses:
+Original question: {user_query}
+
+Individual responses:
 {stage1_text}
 
-STAGE 2 - Peer Rankings:
+Peer rankings:
 {stage2_text}
 
-Your task as Chairman is to synthesize all of this information into a single, comprehensive, accurate answer to the user's original question. Consider:
-- The individual responses and their insights
-- The peer rankings and what they reveal about response quality
-- Any patterns of agreement or disagreement
+SYNTHESIS RULES:
+1. REJECT solutions that don't match function signature or solve wrong problem
+2. PRIORITIZE correctness and security (mandatory)
+3. PREFER solutions ranked highly by multiple models (consensus)
+4. SYNTHESIZE best aspects: correctness from one, efficiency from another, clarity from a third
+5. USE standard library solutions over custom code
+6. FLAG exotic approaches unless explicitly requested
+7. PROVIDE code directly - no preamble, no process explanations, no tool references
 
-Provide a clear, well-reasoned final answer that represents the council's collective wisdom:"""
+CRITICAL: 
+- Output ONLY the code solution
+- No "Given the context..." or "Based on evaluations..." 
+- No meta-commentary about the council process
+- Just the code that solves the problem
+
+After the code, add two lines:
+# Primary source: ModelName (or "Synthesized from multiple models" if combining)
+# Confidence: XX% (your confidence this solution is correct, 0-100)
+
+CRITICAL CONFIDENCE RULES (MUST FOLLOW):
+1. Check function signature FIRST:
+   - If signature doesn't match requirements (e.g., returns bool instead of tuple) → confidence MUST be 50% or below
+   - If signature matches → can proceed to other checks
+
+2. Check required functionality:
+   - Missing error messages when required → subtract 20% from confidence
+   - Missing normalization when required → subtract 15% from confidence
+   - Missing edge case handling → subtract 10% from confidence
+
+3. Final confidence ranges:
+   - 90-100%: Perfect - signature correct, ALL requirements met, production-ready
+   - 70-89%: Good - signature correct, minor issues only (missing docstring)
+   - 50-69%: Partial - signature correct BUT missing key requirements
+   - 30-49%: Poor - wrong signature OR multiple missing requirements
+   - 0-29%: Wrong - solves different problem or critical errors
+
+EXAMPLE: If function should return tuple[bool, str] but returns bool → confidence MUST be ≤50%
+
+Provide the solution code directly:"""
 
     messages = [{"role": "user", "content": chairman_prompt}]
 
@@ -228,9 +318,106 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     print(f"DEBUG: chairman content length = {len(content)}")
     print(f"DEBUG: chairman content preview = {content[:200]}")
     
+    # Extract primary source model from content if present
+    primary_source = None
+    if "# Primary source:" in content:
+        try:
+            source_line = [line for line in content.split('\n') if '# Primary source:' in line][0]
+            primary_source = source_line.split('# Primary source:')[1].strip()
+        except:
+            pass
+    
+    # Extract confidence percentage from content if present
+    chairman_confidence = None
+    if "# Confidence:" in content:
+        try:
+            confidence_line = [line for line in content.split('\n') if '# Confidence:' in line][0]
+            confidence_str = confidence_line.split('# Confidence:')[1].strip()
+            # Extract number before % sign
+            import re
+            match = re.search(r'(\d+)%', confidence_str)
+            if match:
+                chairman_confidence = int(match.group(1))
+        except:
+            pass
+    
+    # If not found in content, use top-ranked model from Stage 2
+    if not primary_source and top_model:
+        primary_source = top_model
+    
+    # If still not found, use chairman model
+    if not primary_source:
+        primary_source = chairman_model
+    
+    # Calculate base confidence (from chairman or consensus)
+    if chairman_confidence is not None:
+        base_confidence = chairman_confidence
+    else:
+        base_confidence = 70
+        if aggregate_rankings and len(aggregate_rankings) > 0:
+            # Higher confidence if top model has clear lead
+            top_rank = aggregate_rankings[0]['average_rank']
+            if len(aggregate_rankings) > 1:
+                second_rank = aggregate_rankings[1]['average_rank']
+                gap = second_rank - top_rank
+                # Confidence based on ranking gap (larger gap = higher confidence)
+                base_confidence = min(90, max(60, 70 + int(gap * 10)))
+            else:
+                base_confidence = 75
+    
+    # ALWAYS apply correctness penalties, even if chairman provided confidence
+    # Check for correctness issues in the synthesized response (content) and top-ranked response
+    penalties = 0
+    
+    # Check synthesized response (content) for issues
+    content_lower = content.lower()
+    user_query_lower = user_query.lower()
+    
+    # Check if function signature might be wrong in synthesized response
+    if '-> bool' in content_lower and 'tuple' in user_query_lower:
+        penalties += 30  # Wrong return type
+    if '-> str' in content_lower and 'tuple' in user_query_lower and '-> tuple' not in content_lower:
+        penalties += 30  # Wrong return type
+    if 'def validate_email' in content_lower and '-> tuple' not in content_lower and 'tuple' in user_query_lower:
+        penalties += 30  # Missing tuple return type annotation
+    
+    # Check for missing error messages in return statements
+    if 'return false' in content_lower or 'return true' in content_lower:
+        if 'tuple' in user_query_lower and '(' not in content.split('return')[1][:20] if 'return' in content else '':
+            penalties += 20  # Missing tuple return (should return (False, "message"))
+    
+    # Check for missing normalization when required
+    if 'normalize' in user_query_lower or 'lowercase' in user_query_lower:
+        if 'lower()' not in content_lower and 'lowercase' in user_query_lower:
+            penalties += 15  # Missing lowercase normalization
+        if 'strip()' not in content_lower and 'trim' in user_query_lower:
+            penalties += 10  # Missing whitespace trimming
+    
+    # Also check top-ranked response for additional context
+    if top_model and stage1_results:
+        top_response = next((r for r in stage1_results if r['model'] == top_model), None)
+        if top_response:
+            response_text = top_response.get('response', '').lower()
+            
+            # Additional penalties if top response has issues
+            if '-> bool' in response_text and 'tuple' in user_query_lower:
+                penalties += 10  # Top response also has wrong signature
+            if 'return false' in response_text and 'tuple' in user_query_lower:
+                penalties += 5  # Top response missing tuple return
+    
+    # Apply penalties (always, even if chairman provided confidence)
+    confidence = max(30, base_confidence - penalties)
+    
+    # Log penalty application for debugging
+    if penalties > 0:
+        print(f"DEBUG: Applied {penalties}% penalty to confidence. Base: {base_confidence}%, Final: {confidence}%", flush=True)
+    
     return {
         "model": chairman_model,
-        "response": content
+        "response": content,
+        "primary_source": primary_source,
+        "top_ranked_model": top_model,
+        "confidence": confidence
     }
 
 

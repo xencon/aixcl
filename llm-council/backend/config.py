@@ -65,3 +65,7 @@ ENABLE_DB_STORAGE = os.getenv("ENABLE_DB_STORAGE", "true").lower() == "true"
 print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
 print(f"DEBUG: POSTGRES_HOST = {POSTGRES_HOST}, POSTGRES_DATABASE = {POSTGRES_DATABASE}")
 print(f"DEBUG: POSTGRES_CONTINUE_DATABASE = {POSTGRES_CONTINUE_DATABASE}")
+
+# Model query timeout (seconds) - reduced from 120s to 60s for faster responses
+MODEL_TIMEOUT = float(os.getenv("MODEL_TIMEOUT", "60.0"))
+print(f"DEBUG: MODEL_TIMEOUT = {MODEL_TIMEOUT}")

@@ -1,0 +1,39 @@
+You are a software developer solving a coding challenge. Write code to solve the following problem.
+
+# Challenge 2: Input Validation (Easy)
+
+**CODING CHALLENGE:** Write a function that validates and parses an email address.
+
+**Your task:** Implement a complete Python function that solves this problem. Provide working code.
+
+**Requirements:**
+- Function signature: `validate_email(email: str) -> tuple[bool, str]`
+- Return `(True, normalized_email)` if valid, `(False, error_message)` if invalid
+- Basic format validation (contains @, has domain, etc.)
+- Normalize by converting to lowercase and trimming whitespace
+- Handle edge cases: None, empty string, whitespace-only
+
+**Example:**
+```python
+validate_email("user@example.com")     # Expected: (True, "user@example.com")
+validate_email("  USER@EXAMPLE.COM  ")  # Expected: (True, "user@example.com")
+validate_email("invalid")               # Expected: (False, "Invalid email format")
+validate_email("")                      # Expected: (False, "Email cannot be empty")
+```
+
+**What to evaluate:**
+- Correctness: Edge case handling
+- Security: Input validation approach
+- Code quality: Error handling patterns
+- Best practices: Use of standard library (email.utils)?
+
+IMPORTANT INSTRUCTIONS:
+- This is a CODING CHALLENGE - write actual working Python code
+- Provide a complete function implementation
+- Handle all edge cases (None, empty string, whitespace-only, invalid formats)
+- Consider security (input validation, proper error messages)
+- Prefer standard library solutions (email.utils.parseaddr, email.utils.validate_email) when appropriate
+- Write production-ready code with proper error handling
+
+Provide your solution as Python code with the function implementation.
+

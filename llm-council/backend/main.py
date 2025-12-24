@@ -653,6 +653,21 @@ Please provide a helpful response based on the context provided above."""
                 print(f"DEBUG: final_content preview (after formatting) = {final_content[:200]}", flush=True)
             else:
                 print(f"DEBUG: Markdown formatting disabled, using original content", flush=True)
+            
+            # Append model information and confidence if available
+            primary_source = stage3_result.get('primary_source')
+            top_ranked = stage3_result.get('top_ranked_model')
+            confidence = stage3_result.get('confidence')
+            
+            info_parts = []
+            if primary_source or top_ranked:
+                info_parts.append(f"*Primary source: {primary_source or top_ranked}*")
+            if confidence is not None:
+                info_parts.append(f"*Confidence: {confidence}%*")
+            
+            if info_parts:
+                model_info = f"\n\n---\n" + " | ".join(info_parts)
+                final_content = final_content + model_info
         
         # Save assistant response to database BEFORE deciding on streaming
         # This ensures it's saved regardless of streaming mode
