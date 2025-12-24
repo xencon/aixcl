@@ -1503,10 +1503,10 @@ function status() {
             esac
             
             if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "307" ] || [ "$health_result" = "healthy" ]; then
-                health_status=" (Healthy)"
+                health_status=""
                 is_healthy=true
             else
-                health_status=" (Unhealthy)"
+                health_status=""
                 if [ "$is_critical" = "true" ]; then
                     echo "    Checking ${service_name} logs (last 3 lines):"
                     timeout 2 docker logs "${container_name}" --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
@@ -1602,14 +1602,14 @@ function status() {
     if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
         LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
         if [ "$LOKI_STATUS" = "200" ]; then
-            echo "  ✅ Loki (Healthy)"
+            echo "  ✅ Loki"
             ((operational_total++)) || true
             ((operational_healthy++)) || true
         elif [ "$LOKI_STATUS" = "503" ]; then
             echo "  ⚠️  Loki (starting up)"
             ((operational_total++)) || true
         else
-            echo "  ❌ Loki (Unhealthy)"
+            echo "  ❌ Loki"
             echo "    Checking Loki logs (last 3 lines):"
             timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
             ((operational_total++)) || true
@@ -1621,11 +1621,11 @@ function status() {
 
     if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
         if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
-            echo "  ✅ Promtail (Healthy)"
+            echo "  ✅ Promtail"
             ((operational_total++)) || true
             ((operational_healthy++)) || true
         else
-            echo "  ❌ Promtail (Unhealthy)"
+            echo "  ❌ Promtail"
             ((operational_total++)) || true
         fi
     else
