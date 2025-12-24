@@ -22,7 +22,7 @@ uv run python ../tests/runtime-core/test_council_members.py
 - Council must be configured: `./aixcl council configure`
 - `httpx` Python package installed
 
-### `test_performance_user.py`
+### `test_council_performance.py`
 User-focused performance test for Ollama optimizations. Simulates real user experience by testing the council API from outside the container.
 
 **Usage:**
@@ -31,15 +31,15 @@ User-focused performance test for Ollama optimizations. Simulates real user expe
 ./tests/runtime-core/run_test.sh
 
 # Option 2: Direct execution (requires httpx)
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 
 # Option 3: With virtual environment
 ./tests/runtime-core/setup_test_env.sh
 source tests/runtime-core/.venv/bin/activate
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 ```
 
-See `test_performance_user_README.md` for detailed usage instructions.
+See `test_council_performance_README.md` for detailed usage instructions.
 
 ### `check_models.py`
 Checks model availability and operational status in Ollama.
@@ -52,7 +52,7 @@ python3 tests/runtime-core/check_models.py
 ## Helper Scripts
 
 ### `run_test.sh`
-Wrapper script that automatically sets up a virtual environment if needed and runs `test_performance_user.py`.
+Wrapper script that automatically sets up a virtual environment if needed and runs `test_council_performance.py`.
 
 **Usage:**
 ```bash
@@ -66,7 +66,7 @@ Sets up a Python virtual environment for running tests.
 ```bash
 ./tests/runtime-core/setup_test_env.sh
 source tests/runtime-core/.venv/bin/activate
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 ```
 
 ## Running All Runtime Core Tests
@@ -77,7 +77,7 @@ python3 tests/runtime-core/test_performance_user.py
 
 # Or individually
 python3 tests/runtime-core/test_council_members.py
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 python3 tests/runtime-core/check_models.py
 ```
 

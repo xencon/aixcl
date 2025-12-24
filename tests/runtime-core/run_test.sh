@@ -3,7 +3,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
-TEST_SCRIPT="$SCRIPT_DIR/test_performance_user.py"
+TEST_SCRIPT="$SCRIPT_DIR/test_council_performance.py"
 
 # Check if httpx is available
 if python3 -c "import httpx" 2>/dev/null; then
