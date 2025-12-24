@@ -54,7 +54,7 @@ You can also run tests directly:
 ```bash
 # Runtime core tests
 python3 tests/runtime-core/test_council_members.py
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 
 # Database tests
 python3 tests/database/test_db_connection.py
@@ -86,7 +86,7 @@ Tests were previously located in `llm-council/scripts/test/` and `llm-council/sc
 - `llm-council/scripts/test/test_db_connection.py` → `tests/database/test_db_connection.py`
 - `llm-council/scripts/test/test_continue_integration.py` → `tests/api/test_continue_integration.py`
 - `llm-council/scripts/test_council_members.py` → `tests/runtime-core/test_council_members.py`
-- `llm-council/scripts/test_performance_user.py` → `tests/runtime-core/test_performance_user.py`
+- `llm-council/scripts/test_performance_user.py` → `tests/runtime-core/test_council_performance.py`
 
 All scripts and documentation have been updated to reflect the new structure.
 

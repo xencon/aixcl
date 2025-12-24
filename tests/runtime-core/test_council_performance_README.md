@@ -33,7 +33,7 @@ sudo apt install python3-pip
 pip3 install httpx
 
 # Run test
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 ```
 
 **Option 2: Use virtual environment (recommended)**
@@ -43,7 +43,7 @@ python3 tests/runtime-core/test_performance_user.py
 
 # Run test
 source tests/runtime-core/.venv/bin/activate
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 ```
 
 **Option 3: Use wrapper script (easiest - auto-setup)**
@@ -55,14 +55,14 @@ python3 tests/runtime-core/test_performance_user.py
 ```bash
 cd llm-council
 uv sync
-uv run python ../tests/runtime-core/test_performance_user.py
+uv run python ../tests/runtime-core/test_council_performance.py
 ```
 
 ### Run the Test
 
 ```bash
 # From project root (after installing httpx)
-python3 tests/runtime-core/test_performance_user.py
+python3 tests/runtime-core/test_council_performance.py
 
 # Or use the wrapper script (handles venv setup automatically)
 ./tests/runtime-core/run_test.sh

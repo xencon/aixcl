@@ -9,13 +9,13 @@ Usage:
     # Option 1: Install httpx globally (requires pip)
     sudo apt install python3-pip
     pip3 install httpx
-    python3 tests/runtime-core/test_performance_user.py
+    python3 tests/runtime-core/test_council_performance.py
     
     # Option 2: Use venv (no sudo needed)
     python3 -m venv .venv
     source .venv/bin/activate
     pip install httpx
-    python3 tests/runtime-core/test_performance_user.py
+    python3 tests/runtime-core/test_council_performance.py
     
     # Option 3: Use wrapper script (auto-setup venv)
     ./tests/runtime-core/run_test.sh
