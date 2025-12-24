@@ -25,11 +25,12 @@ Test the API endpoints directly:
 # 2. Wait for services to be ready (about 30 seconds)
 sleep 30
 
-# 3. Run API test script
-./llm-council/scripts/test/test_api.sh
+# 3. Run API test script (if available)
+# Note: API tests are now in tests/api/
+python3 tests/api/test_continue_integration.py
 ```
 
-### Method 2: Database Connection Test (Inside Container)
+### Method 2: Database Connection Test
 
 Test the database connection and operations:
 
@@ -40,8 +41,11 @@ Test the database connection and operations:
 # 2. Wait for services to be ready
 sleep 30
 
-# 3. Run database test inside container
-docker exec -it llm-council bash scripts/test/test_db_in_container.sh
+# 3. Run database test
+python3 tests/database/test_db_connection.py
+
+# Or via platform test suite
+./tests/platform-tests.sh --component database
 ```
 
 ### Method 3: Manual API Testing with curl

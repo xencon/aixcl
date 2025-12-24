@@ -21,7 +21,7 @@ These services support, observe, or operate the runtime:
 
 Operational services are optional and can be enabled based on deployment profiles (usr, dev, ops, sys).
 
-For detailed architectural documentation, service contracts, and profiles, see [`aixcl_governance/`](../aixcl_governance/).
+For detailed architectural documentation, service contracts, and profiles, see [`architecture/governance/`](../architecture/governance/).
 
 ## Quick Start
 
@@ -164,7 +164,7 @@ Shows:
 
 4. **Test integration:**
    ```bash
-   bash tests/test_continue_integration.sh
+   python3 tests/api/test_continue_integration.py
    ```
 
 ## Service Management
@@ -294,7 +294,7 @@ docker-compose pull
 
 3. **Test Continue integration:**
    ```bash
-   bash tests/test_continue_integration.sh
+   python3 tests/api/test_continue_integration.py
    ```
 
 4. **Keep models updated:**

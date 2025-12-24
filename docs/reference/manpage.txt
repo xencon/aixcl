@@ -14,7 +14,7 @@ DESCRIPTION
 
        AIXCL follows a governance model that separates Runtime Core (always
        enabled) from Operational Services (profile-dependent). See
-       aixcl_governance/ for architectural documentation.
+       docs/architecture/governance/ for architectural documentation.
 
 COMMANDS
        stack start [--profile <profile>]
@@ -147,7 +147,7 @@ ARCHITECTURE
               - UI: open-webui
               - Automation: watchtower
 
-       See aixcl_governance/ for complete architectural documentation.
+       See docs/architecture/governance/ for complete architectural documentation.
 
 SEE ALSO
        docker(1), docker-compose(1), ollama(1)

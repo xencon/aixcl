@@ -12,7 +12,7 @@ Before making any changes:
 3. **Make changes** and commit with clear messages
 4. **Create a Pull Request** that references the issue
 
-See [`DEVELOPMENT_WORKFLOW.md`](./DEVELOPMENT_WORKFLOW.md) for complete workflow documentation, including:
+See [`development-workflow.md`](./development-workflow.md) for complete workflow documentation, including:
 - Step-by-step instructions
 - Formatting guidelines (use plain text, avoid Unicode)
 - AI assistant instructions
@@ -48,7 +48,7 @@ See [`DEVELOPMENT_WORKFLOW.md`](./DEVELOPMENT_WORKFLOW.md) for complete workflow
 - **Update docs**: If you change functionality, update the documentation
 - **Be clear**: Write clear commit messages and PR descriptions
 - **Follow the style**: Match the existing code style
-- **Respect the architecture**: Review [`aixcl_governance/`](./aixcl_governance/) before making architectural changes
+- **Respect the architecture**: Review [`architecture/governance/`](../architecture/governance/) before making architectural changes
 
 ## Architectural Guidelines
 
@@ -57,12 +57,12 @@ AIXCL maintains strict architectural invariants to preserve platform integrity:
 - **Runtime Core** (ollama, llm-council, continue) is non-negotiable and must not be removed or conditionally disabled
 - **Operational Services** can be added, modified, or removed based on profiles
 - **Service Boundaries**: Runtime core must never depend on operational services
-- **Service Contracts**: See [`aixcl_governance/service_contracts/`](./aixcl_governance/service_contracts/) for dependency rules
+- **Service Contracts**: See [`architecture/governance/service_contracts/`](../architecture/governance/service_contracts/) for dependency rules
 
 Before making changes that affect service architecture, dependencies, or the runtime core, please:
-1. Review [`aixcl_governance/00_invariants.md`](./aixcl_governance/00_invariants.md)
-2. Review [`aixcl_governance/01_ai_guidance.md`](./aixcl_governance/01_ai_guidance.md)
-3. Check relevant service contracts in [`aixcl_governance/service_contracts/`](./aixcl_governance/service_contracts/)
+1. Review [`architecture/governance/00_invariants.md`](../architecture/governance/00_invariants.md)
+2. Review [`architecture/governance/01_ai_guidance.md`](../architecture/governance/01_ai_guidance.md)
+3. Check relevant service contracts in [`architecture/governance/service_contracts/`](../architecture/governance/service_contracts/)
 
 Breaking architectural invariants requires explicit maintainer approval.
 

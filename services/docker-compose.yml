@@ -4,6 +4,12 @@ services:
       - ollama:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
+      # Performance tuning for LLM Council parallel queries
+      - OLLAMA_NUM_PARALLEL=8          # Handle concurrent council queries (Stage 1, 2, 3)
+      - OLLAMA_MAX_LOADED_MODELS=3     # Keep council + chairman loaded in GPU memory
+      - OLLAMA_KEEP_ALIVE=1800         # 30 min keep-alive to prevent model unloading between council stages
+      - OLLAMA_NUM_GPU=1                # Explicit single GPU usage
+      - OLLAMA_NUM_THREAD=8             # Match CPU cores (adjust based on your CPU)
     ports:
       - "11434:11434"
     container_name: ollama

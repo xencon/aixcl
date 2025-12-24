@@ -86,13 +86,89 @@ async def query_models_parallel(
         Dict mapping model name to response dict (or None if failed)
     """
     import asyncio
+    import time
 
-    # Create tasks for all models
+    print(f"DEBUG: query_models_parallel called with {len(models)} models: {models}", flush=True)
+    start_time = time.time()
+
+    # Create tasks for all models (truly parallel execution)
     tasks = [query_model(model, messages) for model in models]
+    print(f"DEBUG: Created {len(tasks)} parallel tasks", flush=True)
 
-    # Wait for all to complete
+    # Wait for all to complete (parallel execution)
     responses = await asyncio.gather(*tasks)
+    
+    elapsed = time.time() - start_time
+    print(f"DEBUG: Parallel queries completed in {elapsed:.2f}s for {len(models)} models", flush=True)
 
     # Map models to their responses
     return {model: response for model, response in zip(models, responses)}
+
+
+async def preload_model(model: str, timeout: Optional[float] = 30.0) -> bool:
+    """
+    Preload a model by sending a minimal query to keep it warm in GPU memory.
+    
+    Args:
+        model: Ollama model name
+        timeout: Request timeout in seconds
+        
+    Returns:
+        True if preload successful, False otherwise
+    """
+    print(f"DEBUG: Preloading model: {model}", flush=True)
+    
+    try:
+        # Send a minimal query to load the model
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": "OK"}],
+            "stream": False
+        }
+        
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json=payload
+            )
+            response.raise_for_status()
+            print(f"DEBUG: Successfully preloaded model: {model}", flush=True)
+            return True
+    except Exception as e:
+        print(f"DEBUG: Failed to preload model {model}: {type(e).__name__}: {e}", flush=True)
+        return False
+
+
+async def preload_council_models(config: Dict[str, Any]) -> None:
+    """
+    Preload all council models and chairman to keep them warm in GPU memory.
+    
+    Args:
+        config: Configuration dict with council_models and chairman_model
+    """
+    from .config import BACKEND_MODE
+    
+    if BACKEND_MODE != "ollama":
+        return
+    
+    council_models = config.get('council_models', [])
+    chairman_model = config.get('chairman_model')
+    
+    all_models = council_models.copy()
+    if chairman_model:
+        all_models.append(chairman_model)
+    
+    if not all_models:
+        print("DEBUG: No models to preload", flush=True)
+        return
+    
+    print(f"DEBUG: Preloading {len(all_models)} models: {all_models}", flush=True)
+    
+    # Preload all models in parallel
+    import asyncio
+    tasks = [preload_model(model) for model in all_models]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    successful = sum(1 for r in results if r is True)
+    print(f"DEBUG: Preloaded {successful}/{len(all_models)} models successfully", flush=True)
 

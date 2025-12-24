@@ -8,7 +8,7 @@
 # Governance Model:
 # - Runtime Core (Strict): Always enabled, never optional (ollama, llm-council)
 # - Operational Services (Guided): Profile-dependent, support/observe runtime
-# - See aixcl_governance/ for full architectural documentation
+# - See docs/architecture/governance/ for full architectural documentation
 #
 # To use this script:
 # 1. Source it directly: source /path/to/completion/aixcl.bash
@@ -42,7 +42,7 @@ _aixcl_complete() {
     # List of all possible commands
     local commands="stack service models dashboard utils council help bash-completion check-env"
     
-    # Service categorization per AIXCL governance model (aixcl_governance/00_invariants.md)
+    # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
     # Note: Continue is a VS Code plugin, not a containerized service
     local runtime_core_services="ollama llm-council"

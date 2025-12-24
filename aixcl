@@ -575,7 +575,7 @@ function start() {
             echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
             echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
             echo ""
-            echo "For detailed profile information, see: aixcl_governance/02_profiles.md"
+            echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
             exit 0
         fi
     fi
@@ -858,14 +858,15 @@ function restart() {
         fi
     fi
     
-    # Parse arguments for profile
+    # Parse arguments for profile and service names
     local remaining_args=()
+    local service_names=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
                 if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "❌ Error: Profile name is required after --profile" >&2
-                    echo "Usage: aixcl stack restart [--profile <profile>]" >&2
+                    echo "Usage: aixcl stack restart [--profile <profile>] [service1] [service2] ..." >&2
                     echo "" >&2
                     list_profiles >&2
                     exit 1
@@ -880,6 +881,36 @@ function restart() {
                 ;;
         esac
     done
+    
+    # Check if remaining args are service names (not profile flags)
+    # If they are valid service names, treat them as services to restart
+    if [ ${#remaining_args[@]} -gt 0 ]; then
+        # Source common library for service validation
+        source "${SCRIPT_DIR}/lib/common.sh"
+        
+        # Check if any remaining args are valid service names
+        for arg in "${remaining_args[@]}"; do
+            if is_valid_service "$arg"; then
+                service_names+=("$arg")
+            else
+                echo "⚠️  Warning: '$arg' is not a valid service name, ignoring" >&2
+            fi
+        done
+        
+        # If we found valid service names, restart only those services
+        if [ ${#service_names[@]} -gt 0 ]; then
+            echo "Restarting specific services: ${service_names[*]}"
+            for service in "${service_names[@]}"; do
+                # Call the service function to restart each service
+                service restart "$service" || {
+                    echo "❌ Failed to restart service: $service" >&2
+                    return 1
+                }
+            done
+            echo "✅ Successfully restarted ${#service_names[@]} service(s)"
+            return 0
+        fi
+    fi
     
     # If no profile specified via command line, try to get from .env file
     if [ "$profile_specified" = false ]; then
@@ -905,14 +936,16 @@ function restart() {
             echo "" >&2
             list_profiles >&2
             echo "" >&2
-            echo "Usage: ./aixcl stack restart [--profile <profile>]" >&2
+            echo "Usage: ./aixcl stack restart [--profile <profile>] [service1] [service2] ..." >&2
             echo "       ./aixcl stack restart -p <profile>" >&2
+            echo "       ./aixcl stack restart ollama llm-council" >&2
             echo "" >&2
             echo "Note: You can set PROFILE=<profile> in .env file to use a default profile" >&2
             echo "" >&2
             echo "Examples:" >&2
-            echo "  ./aixcl stack restart --profile sys" >&2
-            echo "  ./aixcl stack restart -p dev" >&2
+            echo "  ./aixcl stack restart --profile sys          # Restart entire stack" >&2
+            echo "  ./aixcl stack restart ollama llm-council     # Restart specific services" >&2
+            echo "  ./aixcl stack restart -p dev                 # Restart entire stack with profile" >&2
             exit 1
         fi
     fi
@@ -969,7 +1002,7 @@ function start_service() {
         echo "  ${ALL_SERVICES[*]}"
         echo ""
         echo "Note: Continue is a VS Code plugin, not a containerized service"
-        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
+        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -983,7 +1016,7 @@ function start_service() {
         echo "Runtime Core Services (always enabled): ollama, llm-council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
-        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
+        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -1072,7 +1105,7 @@ function stop_service() {
         echo "Runtime Core Services (always enabled): ollama, llm-council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
-        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
+        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -1085,7 +1118,7 @@ function stop_service() {
         echo "Runtime Core Services (always enabled): ollama, llm-council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
-        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
+        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -1198,7 +1231,7 @@ function service() {
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "Note: Continue is a VS Code plugin, not a containerized service"
-        echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
+        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -1352,7 +1385,7 @@ function logs() {
                 echo "Runtime Core Services: ollama, llm-council"
                 echo "Operational Services: open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
                 echo ""
-                echo "For service contracts and profiles, see: aixcl_governance/service_contracts/"
+                echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
                 return 1
                 ;;
         esac
@@ -1955,7 +1988,7 @@ function help_menu() {
     echo ""
     echo "Service: service <action> <name>"
     echo "  Runtime Core (always enabled): ollama, llm-council"
-    echo "  Operational Services (profile-dependent): see aixcl_governance/02_profiles.md"
+    echo "  Operational Services (profile-dependent): see docs/architecture/governance/02_profiles.md"
     echo ""
     echo "Models: models <action> [name]"
     echo "  models add <name>                   - Add model(s) to Ollama"
@@ -1975,7 +2008,7 @@ function help_menu() {
     echo "  utils check-env                     - Verify environment setup"
     echo "  utils bash-completion               - Install bash completion"
     echo ""
-    echo "For detailed profile definitions, see: aixcl_governance/02_profiles.md"
+    echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
     exit 1
 }
 
@@ -2992,7 +3025,7 @@ function stack_cmd() {
         echo "  $0 stack start --profile ops  - Start ops profile (runtime core + observability)"
         echo "  $0 stack start --profile sys  - Start all services"
         echo "  $0 stack stop                 - Stop all services"
-        echo "  $0 stack restart --profile <profile> - Restart the entire stack (profile required)"
+        echo "  $0 stack restart [--profile <profile>] [service1] [service2] ... - Restart stack or specific services"
         echo "  $0 stack status               - Show service status (runtime core vs operational)"
         echo "  $0 stack logs                 - Show logs for all services"
         echo "  $0 stack logs ollama          - Show logs for a specific service"
@@ -3000,7 +3033,7 @@ function stack_cmd() {
         echo "  $0 stack clean                - Remove unused Docker resources"
         echo ""
         echo "Valid profiles: usr, dev, ops, sys (default: sys)"
-        echo "For detailed profile definitions, see: aixcl_governance/02_profiles.md"
+        echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
         return 1
     fi
 
@@ -3045,7 +3078,7 @@ function stack_cmd() {
             echo "Error: Unknown stack action '$action'"
             echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
             echo ""
-            echo "For profiles and service contracts, see: aixcl_governance/"
+            echo "For profiles and service contracts, see: docs/architecture/governance/"
             return 1
             ;;
     esac

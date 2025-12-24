@@ -55,5 +55,5 @@ We thank all security researchers and users who report vulnerabilities. If you w
 
 ---
 
-**Note:** Place this file in the root of your repository as `SECURITY.md` and link to it in your README.
+**Note:** This file is located in `docs/reference/security.md` and should be linked from the main README.
 

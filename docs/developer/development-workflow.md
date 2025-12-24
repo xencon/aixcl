@@ -224,7 +224,7 @@ gh issue view <number> --json labels
 When working with AI assistants (like Cursor, GitHub Copilot, etc.), include this prompt:
 
 ```
-Follow the development workflow documented in DEVELOPMENT_WORKFLOW.md:
+Follow the development workflow documented in this document:
 1. Always create an issue first using 'gh issue create' with appropriate labels
 2. Create a branch with format 'issue-<number>/<description>'
 3. Make changes and commit with conventional commit format
@@ -273,7 +273,7 @@ gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>
 ## Questions?
 
 If you're unsure about the workflow, check:
-- This document (`DEVELOPMENT_WORKFLOW.md`)
-- `CONTRIBUTING.md` for general contribution guidelines
+- This document (`development-workflow.md`)
+- [`contributing.md`](./contributing.md) for general contribution guidelines
 - Existing issues and PRs for examples
 

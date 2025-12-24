@@ -219,7 +219,19 @@ AIXCL maintains strict architectural invariants to preserve platform integrity:
 
 The runtime core must be runnable without any operational services, and operational services may depend on the runtime core but never vice versa.
 
-For detailed architectural documentation, see [`aixcl_governance/`](./aixcl_governance/).
+For detailed architectural documentation, see [`docs/architecture/governance/`](./docs/architecture/governance/).
+
+## Documentation
+
+Comprehensive documentation is organized in the [`docs/`](./docs/) directory:
+
+- **User Guides** ([`docs/user/`](./docs/user/)): Setup and usage guides
+- **Developer Guides** ([`docs/developer/`](./docs/developer/)): Contributing and development workflow
+- **Operations** ([`docs/operations/`](./docs/operations/)): Performance tuning and operations guides
+- **Architecture** ([`docs/architecture/`](./docs/architecture/)): Governance, profiles, and service contracts
+- **Reference** ([`docs/reference/`](./docs/reference/)): Command reference and security policy
+
+See [`docs/README.md`](./docs/README.md) for the complete documentation index.
 
 ## License
 
