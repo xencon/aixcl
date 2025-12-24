@@ -1456,7 +1456,19 @@ function status() {
                 curl)
                     # Safe curl-based health check - URL is passed as argument and quoted
                     if [ -n "$health_check_arg" ]; then
-                        health_result=$(curl -s -o /dev/null -w "%{http_code}" "$health_check_arg" 2>/dev/null || echo "000")
+                        # Try health endpoint first with a short timeout
+                        health_result=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$health_check_arg" 2>/dev/null || echo "000")
+                        # If health endpoint returns 404 or 000, try root endpoint as fallback (for services like Open WebUI)
+                        if [ "$health_result" = "404" ] || [ "$health_result" = "000" ]; then
+                            # Extract base URL by removing /health or any trailing path
+                            local base_url="${health_check_arg%/health}"
+                            base_url="${base_url%/}"
+                            # Try root endpoint with fallback
+                            local root_result=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$base_url/" 2>/dev/null || echo "000")
+                            if [ "$root_result" = "200" ] || [ "$root_result" = "302" ] || [ "$root_result" = "307" ]; then
+                                health_result="$root_result"
+                            fi
+                        fi
                     fi
                     ;;
                 pg_isready)
@@ -1490,7 +1502,7 @@ function status() {
                     ;;
             esac
             
-            if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "healthy" ]; then
+            if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "307" ] || [ "$health_result" = "healthy" ]; then
                 health_status=" (Healthy)"
                 is_healthy=true
             else

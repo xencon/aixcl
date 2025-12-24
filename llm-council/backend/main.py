@@ -648,15 +648,6 @@ Please provide a helpful response based on the context provided above."""
                 }
             )
         else:
-            # Add metadata at the top: model name and response time (always include)
-            primary_source = stage3_result.get('primary_source')
-            top_ranked = stage3_result.get('top_ranked_model')
-            model_name = primary_source or top_ranked or stage3_result.get('model', 'Unknown')
-            
-            # Always include response time (may be approximate in some edge cases)
-            metadata_header = f"# Model: {model_name}\n# Response time: {elapsed_time:.2f}s\n\n"
-            final_content = metadata_header + final_content
-            
             # Format the content to ensure proper markdown rendering in Continue plugin
             if ENABLE_MARKDOWN_FORMATTING:
                 original_length = len(final_content)
@@ -665,6 +656,34 @@ Please provide a helpful response based on the context provided above."""
                 print(f"DEBUG: final_content preview (after formatting) = {final_content[:200]}", flush=True)
             else:
                 print(f"DEBUG: Markdown formatting disabled, using original content", flush=True)
+            
+            # Remove any existing metadata lines added by chairman (they're in # format)
+            # We'll replace them with italics format at the bottom
+            lines = final_content.split('\n')
+            cleaned_lines = []
+            for line in lines:
+                stripped = line.strip()
+                # Skip lines that look like metadata comments from chairman
+                if stripped.startswith('# Primary source:') or stripped.startswith('# Confidence:'):
+                    continue
+                cleaned_lines.append(line)
+            
+            final_content = '\n'.join(cleaned_lines).rstrip()
+            
+            # Add all metadata at the bottom in italics format
+            primary_source = stage3_result.get('primary_source')
+            top_ranked = stage3_result.get('top_ranked_model')
+            model_name = primary_source or top_ranked or stage3_result.get('model', 'Unknown')
+            confidence = stage3_result.get('confidence')
+            
+            metadata_parts = []
+            metadata_parts.append(f"*Model: {model_name}*")
+            metadata_parts.append(f"*Response time: {elapsed_time:.2f}s*")
+            if confidence is not None:
+                metadata_parts.append(f"*Confidence: {confidence}%*")
+            
+            metadata_footer = "\n\n" + " | ".join(metadata_parts)
+            final_content = final_content + metadata_footer
         
         # Save assistant response to database BEFORE deciding on streaming
         # This ensures it's saved regardless of streaming mode
