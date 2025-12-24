@@ -1,12 +1,10 @@
 # AIXCL
 
-**A local AI platform for software development.**
+**Local-first AI, built for real development workflows.**
 
 ## About AIXCL
 
-AIXCL is an opinionated AI development platform and curated composition of upstream open-source projects. It's focused on providing a cohesive local and single-node AI development experience. It enables developers to run LLMs locally, orchestrate multiple models, and integrate AI assistance directly into their development workflow.
-
-AIXCL is **not** a general-purpose LLM framework or a pluggable inference abstraction layer. It is an opinionated platform that delivers a complete, production-ready local AI development environment.
+AIXCL is a local-first AI development platform for developers and teams who want full control over their models and tooling. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate large language models directly into your workflow.
 
 ## Technology Stack
 
