@@ -60,7 +60,8 @@ This will:
 ### 3. Add Models
 
 ```bash
-./aixcl models add phi3:latest qwen2.5:7b
+# Recommended default models (optimized for performance)
+./aixcl models add deepseek-coder:1.3b codegemma:2b qwen2.5-coder:3b
 ```
 
 ### 4. Configure Council
@@ -70,8 +71,15 @@ This will:
 ```
 
 Interactive setup to select:
-- Chairman model (synthesizes final response)
-- Council members (provide initial opinions)
+- Chairman model (synthesizes final response) - Recommended: `deepseek-coder:1.3b`
+- Council members (provide initial opinions) - Recommended: `codegemma:2b`, `qwen2.5-coder:3b`
+
+**Recommended Default Configuration:**
+- **Chairman**: `deepseek-coder:1.3b` (776MB) - Best keep-alive performance
+- **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
+- **Performance**: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
+
+See `docs/model-recommendations.md` for alternative configurations.
 
 ### 5. Check Status
 
@@ -107,12 +115,25 @@ Shows:
 # List current models
 ./aixcl models list
 
-# Add new model
-./aixcl models add codellama:7b
+# Add new model (examples)
+./aixcl models add deepseek-coder:1.3b    # Small, fast chairman
+./aixcl models add codegemma:2b            # Small council member
+./aixcl models add qwen2.5-coder:3b        # Small council member
+
+# For larger GPUs (16GB+), you can use larger models:
+./aixcl models add qwen2.5-coder:7b        # Medium-sized model
+./aixcl models add ministral-3:3b           # Balanced option
 
 # Update council configuration
 ./aixcl council configure
 ```
+
+**Recommended Models by Use Case:**
+- **Ultra-lightweight** (default): `deepseek-coder:1.3b`, `codegemma:2b`, `qwen2.5-coder:3b`
+- **Balanced**: `ministral-3:3b`, `codegemma:2b`, `deepseek-coder:1.3b`
+- **Medium**: `qwen2.5-coder:7b`, `codegemma:2b`, `deepseek-coder:1.3b`
+
+See `docs/model-recommendations.md` for complete details.
 
 ### Troubleshooting
 

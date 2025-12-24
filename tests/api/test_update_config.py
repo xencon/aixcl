@@ -14,8 +14,8 @@ print(json.dumps(response.json(), indent=2))
 # Update config
 print("\nUpdating configuration...")
 update_data = {
-    "council_models": ["deepseek-coder-v2:latest", "qwen3:latest"],
-    "chairman_model": "qwen3:latest"
+    "council_models": ["codegemma:2b", "qwen2.5-coder:3b"],
+    "chairman_model": "deepseek-coder:1.3b"
 }
 response = requests.put(f"{API_URL}/api/config", json=update_data)
 print(f"Status: {response.status_code}")

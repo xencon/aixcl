@@ -111,5 +111,5 @@ Then restart: `./aixcl stack restart ollama`
 
 ## Full Documentation
 
-See [`ollama-performance-tuning.md`](./ollama-performance-tuning.md) for complete details, troubleshooting, and monitoring guidance.
+See `docs/ollama-performance-tuning.md` for complete details, troubleshooting, and monitoring guidance.
 
