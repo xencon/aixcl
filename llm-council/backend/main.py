@@ -588,13 +588,16 @@ Please provide a helpful response based on the context provided above."""
         
         # Run the 3-stage council process
         print("DEBUG: about to call run_full_council", flush=True)
+        start_time = time.time()
         stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
             user_query
         )
+        elapsed_time = time.time() - start_time
         print(f"DEBUG: run_full_council returned")
         print(f"DEBUG: stage1_results count = {len(stage1_results)}")
         print(f"DEBUG: stage2_results count = {len(stage2_results)}")
         print(f"DEBUG: stage3_result = {stage3_result}")
+        print(f"DEBUG: Response time: {elapsed_time:.2f}s", flush=True)
         
         # Check if stage3_result is an error result
         if stage3_result.get('model') == 'error':
@@ -645,6 +648,15 @@ Please provide a helpful response based on the context provided above."""
                 }
             )
         else:
+            # Add metadata at the top: model name and response time (always include)
+            primary_source = stage3_result.get('primary_source')
+            top_ranked = stage3_result.get('top_ranked_model')
+            model_name = primary_source or top_ranked or stage3_result.get('model', 'Unknown')
+            
+            # Always include response time (may be approximate in some edge cases)
+            metadata_header = f"# Model: {model_name}\n# Response time: {elapsed_time:.2f}s\n\n"
+            final_content = metadata_header + final_content
+            
             # Format the content to ensure proper markdown rendering in Continue plugin
             if ENABLE_MARKDOWN_FORMATTING:
                 original_length = len(final_content)
@@ -653,21 +665,6 @@ Please provide a helpful response based on the context provided above."""
                 print(f"DEBUG: final_content preview (after formatting) = {final_content[:200]}", flush=True)
             else:
                 print(f"DEBUG: Markdown formatting disabled, using original content", flush=True)
-            
-            # Append model information and confidence if available
-            primary_source = stage3_result.get('primary_source')
-            top_ranked = stage3_result.get('top_ranked_model')
-            confidence = stage3_result.get('confidence')
-            
-            info_parts = []
-            if primary_source or top_ranked:
-                info_parts.append(f"*Primary source: {primary_source or top_ranked}*")
-            if confidence is not None:
-                info_parts.append(f"*Confidence: {confidence}%*")
-            
-            if info_parts:
-                model_info = f"\n\n---\n" + " | ".join(info_parts)
-                final_content = final_content + model_info
         
         # Save assistant response to database BEFORE deciding on streaming
         # This ensures it's saved regardless of streaming mode
