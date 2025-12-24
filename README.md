@@ -1,6 +1,6 @@
 # AIXCL
 
-**Local-first AI, built for real development workflows.**
+**A self-hosted AI stack for running and integrating LLMs locally.**
 
 ## About AIXCL
 
