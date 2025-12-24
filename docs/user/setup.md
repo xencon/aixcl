@@ -138,13 +138,28 @@ If the schema wasn't created automatically:
 
 After successful setup:
 
-1. **Add Models**: `./aixcl models add <model-name>`
-2. **Configure Council**: `./aixcl council configure`
+1. **Add Models** (recommended defaults):
+   ```bash
+   ./aixcl models add deepseek-coder:1.3b codegemma:2b qwen2.5-coder:3b
+   ```
+2. **Configure Council**: 
+   ```bash
+   ./aixcl council configure
+   # Select: Chairman: deepseek-coder:1.3b
+   # Select: Council: codegemma:2b, qwen2.5-coder:3b
+   ```
 3. **Access Web UIs**:
    - Open WebUI: http://localhost:8080
    - pgAdmin: http://localhost:5050
    - Grafana: http://localhost:3000
 4. **Configure Continue Plugin**: See README.md for Continue integration
+
+**Recommended Default Configuration:**
+- **Chairman**: `deepseek-coder:1.3b` (776MB)
+- **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
+- **Performance**: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
+
+See `docs/model-recommendations.md` for alternative configurations.
 
 ## Database Configuration
 

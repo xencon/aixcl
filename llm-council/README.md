@@ -44,7 +44,7 @@ Get your API key at [openrouter.ai](https://openrouter.ai/). Make sure to purcha
 
 ### 3. Configure Models (Optional)
 
-Edit `backend/config.py` to customize the council:
+**For OpenRouter mode**, edit `backend/config.py`:
 
 ```python
 COUNCIL_MODELS = [
@@ -56,6 +56,26 @@ COUNCIL_MODELS = [
 
 CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
 ```
+
+**For Ollama mode** (default in AIXCL), configure via environment variables:
+
+```bash
+# Recommended default configuration (optimized for performance)
+CHAIRMAN_MODEL=deepseek-coder:1.3b
+COUNCIL_MODELS=codegemma:2b,qwen2.5-coder:3b
+```
+
+Or use the interactive wizard:
+```bash
+./aixcl council configure
+```
+
+**Model Recommendations:**
+- **Ultra-lightweight** (default): Chairman `deepseek-coder:1.3b`, Council `codegemma:2b,qwen2.5-coder:3b` (~4.3GB VRAM, ~24s avg)
+- **Balanced**: Chairman `ministral-3:3b`, Council `codegemma:2b,deepseek-coder:1.3b` (~5.9GB VRAM, ~24s avg)
+- **Medium**: Chairman `qwen2.5-coder:7b`, Council `codegemma:2b,deepseek-coder:1.3b` (~7.6GB VRAM, ~32s avg)
+
+See `docs/model-recommendations.md` for complete details.
 
 ## Running the Application
 

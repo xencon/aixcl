@@ -193,7 +193,22 @@ Based on current models available on [Ollama](https://ollama.com/search), here a
    - **Alternative**: `llama3.1:8b-q5_0` or `deepseek-r1:7b-q5_0`
    - **Rationale**: Needs to synthesize and evaluate code responses. Q5_0 quantization provides better quality while maintaining efficiency
 
-**For NVIDIA 40XX GPUs (12GB VRAM)**:
+**For NVIDIA 40XX GPUs (8GB VRAM) - Default Configuration**:
+
+1. **Council Members**:
+   - **Recommended Default**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
+   - **Alternative Options**:
+     - `deepseek-coder:1.3b` (776MB) - Smallest option
+     - `phi3:mini` (2.2GB) - Lightweight Microsoft model
+     - `llama3.2:3b` (2.0GB) - General purpose
+   - **Rationale**: Lower VRAM requirements allow 2-3 models loaded simultaneously without memory pressure
+
+2. **Chairman**:
+   - **Recommended Default**: `deepseek-coder:1.3b` (776MB)
+   - **Alternative**: `ministral-3:3b` (3.0GB) for better quality (requires 16GB+ GPU)
+   - **Rationale**: Smallest model provides best keep-alive performance and reliability
+
+**For NVIDIA 40XX GPUs (12GB+ VRAM)**:
 
 1. **Council Members**:
    - **Primary Recommendations**:

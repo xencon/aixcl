@@ -108,10 +108,10 @@ The system automatically creates a `.env` file from `.env.example` if needed. Mo
 **5. Add your first model**
 
 ```bash
-./aixcl models add llama3:latest
+./aixcl models add deepseek-coder:1.3b
 ```
 
-Examples: `llama3:latest`, `mistral:7b`. Model downloads may take several minutes depending on your connection.
+Examples: `deepseek-coder:1.3b`, `codegemma:2b`, `qwen2.5-coder:3b`. Model downloads may take several minutes depending on your connection.
 
 **6. Configure LLM Council (optional)**
 
@@ -120,6 +120,12 @@ Examples: `llama3:latest`, `mistral:7b`. Model downloads may take several minute
 ```
 
 Interactive wizard guides you through selecting council members and a chairman model.
+
+**Recommended default configuration:**
+- **Chairman**: `deepseek-coder:1.3b` (776MB)
+- **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
+
+This configuration provides excellent performance (~24s average) with low VRAM usage (~4.3GB). See `docs/model-recommendations.md` for details.
 
 **7. Access the web interface (if not using usr profile)**
 
