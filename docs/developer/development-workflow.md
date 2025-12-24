@@ -152,11 +152,13 @@ Labels are organized into categories using prefixes:
 - `profile:sys` - Affects sys profile (full deployment)
 
 #### Category Labels (Select All That Apply)
-- `Fix` - A fix for a bug or issue (use with Bug or Task type)
-- `Enhancement` - Improvement to existing functionality (use with Feature or Task type)
-- `Refactor` - Code refactoring without changing functionality (use with Task type)
-- `Maintenance` - Maintenance tasks and housekeeping (use with Task type)
+- `Fix` - A fix for a bug or issue (use with Bug issue type)
+- `Enhancement` - Improvement to existing functionality (use with Feature issue type)
+- `Refactor` - Code refactoring without changing functionality (use with Task issue type)
+- `Maintenance` - Maintenance tasks and housekeeping (use with Task issue type)
 - `documentation` - Improvements or additions to documentation (GitHub default)
+
+**Note:** "Task" is an issue type, not a label. Use the Task issue type for tasks, refactoring, and maintenance work. Do not create a "Task" label as it's redundant with the issue type.
 
 #### Other Labels
 - `dependencies` - Dependency updates and management
@@ -179,6 +181,7 @@ gh issue edit <number> --add-label "component:cli"
 
 **Issue Type and Label Selection Guidelines:**
 1. **Always select one GitHub issue type** - Bug, Feature, or Task (set via GitHub's Type field)
+   - **Note:** "Task" is an issue type only, not a label. Do not create or use a "Task" label.
 2. **Select relevant component labels** - Helps identify which part of the system is affected
 3. **Select category labels if applicable** - Fix, Enhancement, Refactor, Maintenance for additional context
 4. **Select priority if applicable** - Helps prioritize work
