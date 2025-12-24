@@ -22,15 +22,15 @@ Status: Running
 
 Runtime Core (Strict - Always Enabled)
 ---------------------------------------
-✅ ollama          Running    Healthy (API responding)
-✅ llm-council     Running    Healthy (API responding)
+✅ ollama          Running
+✅ llm-council     Running
 ✅ continue        Active     Connected (VS Code plugin)
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
-✅ postgres        Running    Healthy (database ready)
-✅ open-webui      Running    Healthy (web UI accessible)
-✅ pgadmin         Running    Healthy (admin UI accessible)
+✅ postgres        Running
+✅ open-webui      Running
+✅ pgadmin         Running
 ⏸  prometheus      Stopped    (not in 'dev' profile)
 ⏸  grafana         Stopped    (not in 'dev' profile)
 ⏸  watchtower      Stopped    (not in 'dev' profile)
@@ -46,19 +46,19 @@ Overall:      ✅ All critical services healthy
 
 ### Runtime Core Health
 - **Critical**: All runtime core services must be healthy for AIXCL to function
+- **Status indicators**: ✅ (running and healthy), ❌ (stopped or unhealthy)
 - **Status meanings**:
-  - `Healthy`: Service is running and API/interface is responding
-  - `Degraded`: Service is running but experiencing issues
-  - `Unhealthy`: Service is not responding or has failed
-  - `Stopped`: Service is not running (should never happen for runtime core)
+  - ✅: Service is running and API/interface is responding
+  - ❌: Service is not running or not responding
+  - ⚠️: Service is starting up or experiencing issues
 
 ### Operational Services Health
 - **Informational**: Operational services support but do not define the product
+- **Status indicators**: ✅ (running and healthy), ❌ (stopped or unhealthy)
 - **Status meanings**:
-  - `Healthy`: Service is running and functioning normally
-  - `Degraded`: Service is running but experiencing issues
-  - `Unhealthy`: Service is not responding or has failed
-  - `Stopped`: Service is not running (may be expected if not in active profile)
+  - ✅: Service is running and functioning normally
+  - ❌: Service is not running or not responding
+  - ⚠️: Service is starting up or experiencing issues
 
 ## Profile-Specific Status
 
