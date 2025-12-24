@@ -3,6 +3,7 @@
 import httpx
 from typing import List, Dict, Any, Optional
 import os
+from .config import MODEL_TIMEOUT
 
 # Get OLLAMA_BASE_URL from environment (set by docker-compose or .env)
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -13,8 +14,10 @@ print(f"DEBUG: ollama_adapter loaded, OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
 async def query_model(
     model: str,
     messages: List[Dict[str, str]],
-    timeout: float = 120.0
+    timeout: Optional[float] = None
 ) -> Optional[Dict[str, Any]]:
+    if timeout is None:
+        timeout = MODEL_TIMEOUT
     """
     Query a single model via Ollama API.
 

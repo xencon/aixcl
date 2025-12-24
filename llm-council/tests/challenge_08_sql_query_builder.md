@@ -1,0 +1,36 @@
+# Challenge 8: SQL Query Builder (Advanced)
+
+**Difficulty:** ⭐⭐⭐⭐ Advanced
+
+**CODING CHALLENGE:** Build a safe SQL query builder that prevents SQL injection.
+
+**Your task:** Implement a complete Python class that solves this problem. Provide working code.
+
+**Requirements:**
+- Create a `QueryBuilder` class for building SELECT queries
+- Methods: `select(columns)`, `from_table(table)`, `where(conditions)`, `build() -> tuple[str, list]`
+- Return tuple: (SQL string with placeholders, parameter list)
+- Prevent SQL injection by using parameterized queries
+- Support multiple WHERE conditions with AND/OR
+- Handle edge cases: empty conditions, special characters in values
+
+**Example:**
+```python
+builder = QueryBuilder()
+query, params = (builder
+    .select(["name", "email"])
+    .from_table("users")
+    .where({"age": 30, "city": "New York"})
+    .build())
+
+# Expected query: "SELECT name, email FROM users WHERE age = ? AND city = ?"
+# Expected params: [30, "New York"]
+```
+
+**What to evaluate:**
+- Correctness: Query building logic, edge cases
+- Security: SQL injection prevention (CRITICAL - must use parameterized queries)
+- Code quality: Fluent interface design, error handling
+- Best practices: Parameterized queries, input validation
+- Security: No string concatenation for values, proper escaping
+
