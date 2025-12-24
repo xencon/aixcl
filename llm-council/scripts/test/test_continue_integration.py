@@ -445,7 +445,7 @@ async def test_continue_integration():
     test_messages = [
         {
             "role": "user",
-            "content": "Hello! This is a test message from the Continue plugin integration test. Can you tell me what 2+2 equals?"
+            "content": "What does `2+2` equal?"
         }
     ]
     
@@ -551,7 +551,7 @@ async def test_continue_integration():
         },
         {
             "role": "user",
-            "content": "What about 3+3?"
+            "content": "What's `len('abc')`?"
         }
     ]
     
