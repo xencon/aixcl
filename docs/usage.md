@@ -28,7 +28,7 @@ For detailed architectural documentation, service contracts, and profiles, see [
 ### 1. Check Environment
 
 ```bash
-./aixcl.sh utils check-env
+./aixcl utils check-env
 ```
 
 This validates:
@@ -41,10 +41,10 @@ This validates:
 
 ```bash
 # First time: specify profile
-./aixcl.sh stack start --profile sys
+./aixcl stack start --profile sys
 
 # Subsequent times: uses PROFILE from .env file
-./aixcl.sh stack start
+./aixcl stack start
 ```
 
 This will:
@@ -55,18 +55,18 @@ This will:
 - Start all services
 - Wait for services to be ready
 
-**Note:** After the first run, you can set `PROFILE=<profile>` in `.env` file to use a default profile. Then `./aixcl.sh stack start` will use that profile automatically.
+**Note:** After the first run, you can set `PROFILE=<profile>` in `.env` file to use a default profile. Then `./aixcl stack start` will use that profile automatically.
 
 ### 3. Add Models
 
 ```bash
-./aixcl.sh models add phi3:latest qwen2.5:7b
+./aixcl models add phi3:latest qwen2.5:7b
 ```
 
 ### 4. Configure Council
 
 ```bash
-./aixcl.sh council configure
+./aixcl council configure
 ```
 
 Interactive setup to select:
@@ -76,13 +76,14 @@ Interactive setup to select:
 ### 5. Check Status
 
 ```bash
-./aixcl.sh stack status
+./aixcl stack status
 ```
 
 Shows:
-- Container status (running/stopped)
-- Service health (API responses)
+- Container status (✅ running / ❌ stopped)
+- Service health checks (visual indicators only)
 - Service logs for failed services
+- Runtime core vs operational services separation
 
 ## Common Workflows
 
@@ -90,45 +91,45 @@ Shows:
 
 ```bash
 # Start everything (uses PROFILE from .env if set, or specify --profile)
-./aixcl.sh stack start [--profile sys]
+./aixcl stack start [--profile sys]
 
 # Check everything is running
-./aixcl.sh stack status
+./aixcl stack status
 
 # Open dashboards
-./aixcl.sh dashboard openwebui
-./aixcl.sh dashboard grafana
+./aixcl dashboard openwebui
+./aixcl dashboard grafana
 ```
 
 ### Adding New Models
 
 ```bash
 # List current models
-./aixcl.sh models list
+./aixcl models list
 
 # Add new model
-./aixcl.sh models add codellama:7b
+./aixcl models add codellama:7b
 
 # Update council configuration
-./aixcl.sh council configure
+./aixcl council configure
 ```
 
 ### Troubleshooting
 
 ```bash
 # Check service logs
-./aixcl.sh stack logs ollama 50
-./aixcl.sh stack logs llm-council 100
+./aixcl stack logs ollama 50
+./aixcl stack logs llm-council 100
 
 # Restart a specific service
-./aixcl.sh service restart postgres
+./aixcl service restart postgres
 
 # Restart entire stack (uses PROFILE from .env if set)
-./aixcl.sh stack restart [--profile sys]
+./aixcl stack restart [--profile sys]
 
 # Clean up and start fresh
-./aixcl.sh stack clean
-./aixcl.sh stack start [--profile sys]
+./aixcl stack clean
+./aixcl stack start [--profile sys]
 ```
 
 ### Continue Plugin Setup
@@ -136,14 +137,14 @@ Shows:
 1. **Start services:**
    ```bash
    # First time: specify profile
-   ./aixcl.sh stack start --profile sys
+   ./aixcl stack start --profile sys
    # Subsequent times: uses PROFILE from .env
-   ./aixcl.sh stack start
+   ./aixcl stack start
    ```
 
 2. **Verify LLM Council is running:**
    ```bash
-   ./aixcl.sh stack status
+   ./aixcl stack status
    ```
 
 3. **Configure Continue plugin** (in `.continue/config.json`):
@@ -172,26 +173,26 @@ Shows:
 
 ```bash
 # Start a service
-./aixcl.sh service start grafana
+./aixcl service start grafana
 
 # Stop a service
-./aixcl.sh service stop prometheus
+./aixcl service stop prometheus
 
 # Restart a service
-./aixcl.sh service restart ollama
+./aixcl service restart ollama
 ```
 
 ### Viewing Logs
 
 ```bash
 # All services (follow mode)
-./aixcl.sh stack logs
+./aixcl stack logs
 
 # Specific service, last 50 lines
-./aixcl.sh stack logs ollama 50
+./aixcl stack logs ollama 50
 
 # Specific service, last 100 lines, follow
-./aixcl.sh stack logs postgres 100
+./aixcl stack logs postgres 100
 ```
 
 ## Council Management
@@ -199,7 +200,7 @@ Shows:
 ### Interactive Configuration
 
 ```bash
-./aixcl.sh council configure
+./aixcl council configure
 ```
 
 This interactive wizard:
@@ -213,7 +214,7 @@ This interactive wizard:
 ### Check Council Status
 
 ```bash
-./aixcl.sh council status
+./aixcl council status
 ```
 
 Shows:
@@ -228,35 +229,36 @@ Shows:
 
 ```bash
 # Grafana (metrics and monitoring)
-./aixcl.sh dashboard grafana
+./aixcl dashboard grafana
 
 # Open WebUI (chat interface)
-./aixcl.sh dashboard openwebui
+./aixcl dashboard openwebui
 
 # pgAdmin (database administration)
-./aixcl.sh dashboard pgadmin
+./aixcl dashboard pgadmin
 ```
 
 ### Check Service Health
 
 ```bash
-./aixcl.sh stack status
+./aixcl stack status
 ```
 
 This comprehensive status check shows:
-- **Container Status:** Which containers are running
-- **Service Health:** HTTP endpoints responding correctly
+- **Container Status:** Visual indicators (✅ running / ❌ stopped) for each service
+- **Service Health:** Health check results displayed with visual indicators only
 - **Logs:** Recent log entries for failed services
 - **Runtime vs Operational:** Status output distinguishes between runtime core (critical) and operational services (informational)
+- **Health Summary:** Counts of healthy services by category
 
-Note: Runtime core services (ollama, llm-council) health is critical. Operational services health is informational and graceful degradation is acceptable.
+Note: Runtime core services (ollama, llm-council) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses visual indicators (✅/❌) without text labels to avoid confusion.
 
 ## Maintenance
 
 ### Clean Up Resources
 
 ```bash
-./aixcl.sh stack clean
+./aixcl stack clean
 ```
 
 This removes:
@@ -275,19 +277,19 @@ cd services
 docker-compose pull
 
 # Restart services (uses PROFILE from .env if set)
-./aixcl.sh stack restart [--profile sys]
+./aixcl stack restart [--profile sys]
 ```
 
 ## Tips
 
 1. **Always check status first:**
    ```bash
-   ./aixcl.sh stack status
+   ./aixcl stack status
    ```
 
 2. **Use logs for debugging:**
    ```bash
-   ./aixcl.sh stack logs <service> 100
+   ./aixcl stack logs <service> 100
    ```
 
 3. **Test Continue integration:**
@@ -297,7 +299,7 @@ docker-compose pull
 
 4. **Keep models updated:**
    ```bash
-   ./aixcl.sh models list
+   ./aixcl models list
    # Remove old, add new
    ```
 
