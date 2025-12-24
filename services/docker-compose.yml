@@ -87,7 +87,7 @@ services:
       PGADMIN_LISTEN_PORT: 5050
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     volumes:
-      - ../backups:/var/lib/pgadmin/storage
+      - ../pg-backup:/var/lib/pgadmin/storage
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-data:/var/lib/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json

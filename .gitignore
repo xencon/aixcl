@@ -58,8 +58,8 @@ pgadmin-servers.json
 *.key
 
 # Database backups (user-generated)
-backups/*
-!backups/.gitkeep
+pg-backup/*
+!pg-backup/.gitkeep
 
 # Temporary files
 *.tmp
