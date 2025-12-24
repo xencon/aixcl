@@ -19,7 +19,7 @@ DESCRIPTION
 COMMANDS
        stack start [--profile <profile>]
               Start all services. Uses PROFILE from .env file if set, otherwise
-              --profile is required.
+              shows available profiles. Use --profile to specify a profile explicitly.
 
        stack stop
               Stop all services

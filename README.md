@@ -105,7 +105,7 @@ Available profiles:
 - `ops` - Observability-focused (runtime core + monitoring/logging)
 - `sys` - System-oriented (complete stack with automation)
 
-The system automatically creates a `.env` file from `.env.example` if needed. Wait for all containers to be healthy (monitor with `./aixcl stack status`).
+The system automatically creates a `.env` file from `.env.example` if needed. Monitor service status with `./aixcl stack status`.
 
 **5. Add your first model**
 
