@@ -88,7 +88,7 @@ list_profiles() {
         echo "  - $profile: $(get_profile_description "$profile")"
     done
     echo ""
-    echo "For detailed profile information, see: aixcl_governance/02_profiles.md"
+    echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
 }
 
 # Print detailed information about a profile

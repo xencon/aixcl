@@ -669,7 +669,7 @@ test_database_connection() {
     fi
     
     # Check if Python test script exists
-    DB_TEST_SCRIPT="${LLM_COUNCIL_DIR}/scripts/test/test_db_connection.py"
+    DB_TEST_SCRIPT="${SCRIPT_DIR}/tests/database/test_db_connection.py"
     if [ ! -f "$DB_TEST_SCRIPT" ]; then
         print_error "Database test script not found: $DB_TEST_SCRIPT"
         record_test "fail" "Database test script not found"
@@ -694,7 +694,7 @@ test_database_connection() {
     
     if command -v uv &> /dev/null; then
         echo "Using uv to run database tests..."
-        if uv run python scripts/test/test_db_connection.py; then
+        if uv run python ../tests/database/test_db_connection.py; then
             print_success "Database connection tests passed"
             record_test "pass" "Database connection tests passed"
         else
@@ -712,7 +712,7 @@ test_database_connection() {
                 python3 -m pip install --user asyncpg 2>/dev/null || echo "   Could not install asyncpg. Please install manually: pip install asyncpg"
             fi
         fi
-        if python3 scripts/test/test_db_connection.py; then
+        if python3 ../tests/database/test_db_connection.py; then
             print_success "Database connection tests passed"
             record_test "pass" "Database connection tests passed"
         else
@@ -909,7 +909,7 @@ test_continue_integration() {
     fi
     
     # Check if Python test script exists
-    CONTINUE_TEST_SCRIPT="${LLM_COUNCIL_DIR}/scripts/test/test_continue_integration.py"
+    CONTINUE_TEST_SCRIPT="${SCRIPT_DIR}/tests/api/test_continue_integration.py"
     if [ ! -f "$CONTINUE_TEST_SCRIPT" ]; then
         print_error "Continue integration test script not found: $CONTINUE_TEST_SCRIPT"
         record_test "fail" "Continue integration test script not found"
@@ -929,7 +929,7 @@ test_continue_integration() {
     # Check if uv is available (preferred method)
     if command -v uv &> /dev/null; then
         echo "Using uv to run Continue integration tests..."
-        if uv run python scripts/test/test_continue_integration.py; then
+        if uv run python ../tests/api/test_continue_integration.py; then
             print_success "Continue integration tests passed"
             record_test "pass" "Continue integration tests passed"
         else
@@ -958,7 +958,7 @@ test_continue_integration() {
                 }
             fi
         fi
-        if python3 scripts/test/test_continue_integration.py; then
+        if python3 ../tests/api/test_continue_integration.py; then
             print_success "Continue integration tests passed"
             record_test "pass" "Continue integration tests passed"
         else
@@ -989,7 +989,7 @@ test_council_members() {
     fi
     
     # Check if Python test script exists
-    COUNCIL_TEST_SCRIPT="${LLM_COUNCIL_DIR}/scripts/test_council_members.py"
+    COUNCIL_TEST_SCRIPT="${SCRIPT_DIR}/tests/runtime-core/test_council_members.py"
     if [ ! -f "$COUNCIL_TEST_SCRIPT" ]; then
         print_warning "Council members test script not found: $COUNCIL_TEST_SCRIPT"
         record_test "skip" "Council members test script not found"
@@ -999,17 +999,23 @@ test_council_members() {
     echo "Running council members operational tests..."
     echo ""
     
-    # Change to llm-council directory for proper Python path
-    cd "$LLM_COUNCIL_DIR" || {
-        print_error "Cannot change to llm-council directory"
-        record_test "fail" "Cannot change to llm-council directory"
+    # Change to project root for proper Python path
+    cd "$SCRIPT_DIR" || {
+        print_error "Cannot change to project root directory"
+        record_test "fail" "Cannot change to project root directory"
         return
     }
     
     # Check if uv is available (preferred method)
     if command -v uv &> /dev/null; then
         echo "Using uv to run council members tests..."
-        if uv run python scripts/test_council_members.py; then
+        # Change to llm-council for uv context
+        cd "$LLM_COUNCIL_DIR" || {
+            print_error "Cannot change to llm-council directory"
+            record_test "fail" "Cannot change to llm-council directory"
+            return
+        }
+        if uv run python ../tests/runtime-core/test_council_members.py; then
             print_success "Council members tests passed"
             record_test "pass" "Council members tests passed"
         else
@@ -1025,7 +1031,7 @@ test_council_members() {
             cd "$SCRIPT_DIR" || true
             return
         fi
-        if python3 scripts/test_council_members.py; then
+        if python3 tests/runtime-core/test_council_members.py; then
             print_success "Council members tests passed"
             record_test "pass" "Council members tests passed"
         else

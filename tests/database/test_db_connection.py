@@ -5,10 +5,11 @@ import asyncio
 import sys
 import os
 
-# Add backend to path (go up two levels from scripts/test to llm-council root)
-# This matches the pattern used in test_continue_integration.py
+# Add backend to path
+# Script is now in tests/database/, need to find llm-council directory
 script_dir = os.path.dirname(os.path.abspath(__file__))
-llm_council_dir = os.path.dirname(os.path.dirname(script_dir))
+project_root = os.path.dirname(os.path.dirname(script_dir))  # Go up from tests/database/ to project root
+llm_council_dir = os.path.join(project_root, 'llm-council')
 backend_dir = os.path.join(llm_council_dir, 'backend')
 
 # Verify we're in the right place
@@ -18,11 +19,11 @@ if not os.path.exists(backend_dir) or not os.path.exists(os.path.join(llm_counci
     print(f"   Expected llm-council dir: {llm_council_dir}")
     print(f"   Backend dir exists: {os.path.exists(backend_dir)}")
     print(f"   Current working directory: {os.getcwd()}")
-    print("\n   Please run this script from the llm-council directory:")
+    print("\n   Please run this script from the project root:")
+    print("   python3 tests/database/test_db_connection.py")
+    print("   # or from llm-council directory:")
     print("   cd llm-council")
-    print("   uv run python scripts/test/test_db_connection.py")
-    print("   # or")
-    print("   python3 scripts/test/test_db_connection.py")
+    print("   uv run python ../tests/database/test_db_connection.py")
     sys.exit(1)
 
 # Change to llm-council directory to ensure relative imports work

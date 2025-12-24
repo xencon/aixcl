@@ -2,7 +2,7 @@
 
 This document verifies that AIXCL works out of the box for fresh deployments.
 
-> **Note**: AIXCL follows a governance model separating Runtime Core (always enabled) from Operational Services (profile-dependent). See [`aixcl_governance/`](../aixcl_governance/) for architectural documentation.
+> **Note**: AIXCL follows a governance model separating Runtime Core (always enabled) from Operational Services (profile-dependent). See [`architecture/governance/`](../architecture/governance/) for architectural documentation.
 
 ## Fresh Installation Checklist
 
@@ -59,8 +59,12 @@ docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "\d cha
 Run the test script to verify everything works:
 
 ```bash
+# From project root
+python3 tests/database/test_db_connection.py
+
+# Or from llm-council directory with uv
 cd llm-council
-python3 scripts/test/test_db_connection.py
+uv run python ../tests/database/test_db_connection.py
 ```
 
 Expected output:
@@ -73,7 +77,11 @@ Expected output:
 Test the API with persistence:
 
 ```bash
-./llm-council/scripts/test/test_api.sh
+# Run API integration test
+python3 tests/api/test_continue_integration.py
+
+# Or via platform test suite
+./tests/platform-tests.sh --component api
 ```
 
 Expected output:
@@ -151,6 +159,9 @@ Both databases are automatically created on startup. The webui database schema i
 - All database migrations run automatically on startup
 - The system gracefully degrades if database is unavailable (continues without persistence)
 - Database credentials are shared with Open WebUI for simplicity
-- Test scripts are located in `llm-council/scripts/test/`
+- Test scripts are organized by component under `tests/`:
+  - Runtime core: `tests/runtime-core/`
+  - Database: `tests/database/`
+  - API: `tests/api/`
 - Database utility scripts are in `scripts/db/`
 

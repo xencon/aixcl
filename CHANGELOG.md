@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Governance Model and Architecture Documentation
-- **Governance Framework**: Added comprehensive architectural governance model in `aixcl_governance/`
+- **Governance Framework**: Added comprehensive architectural governance model in `docs/architecture/governance/`
   - Runtime Core vs Operational Services separation
   - Service contracts defining dependencies and boundaries
   - Profile definitions (core, dev, ops, full)

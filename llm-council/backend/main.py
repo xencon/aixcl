@@ -154,6 +154,11 @@ async def startup_event():
     # Initialize config manager (loads config from file or environment)
     config = await get_config()
     print(f"DEBUG: Configuration loaded: council_models={config['council_models']}, chairman={config['chairman_model']}")
+    
+    # Preload models to keep them warm in GPU memory
+    if BACKEND_MODE == "ollama":
+        from .ollama_adapter import preload_council_models
+        await preload_council_models(config)
 
 @app.on_event("shutdown")
 async def shutdown_event():
