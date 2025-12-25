@@ -27,7 +27,6 @@ import sys
 import os
 import json
 from typing import Dict, Any, Optional
-from datetime import datetime
 
 # Add backend to path
 # Script is now in tests/api/, need to find llm-council directory
