@@ -1,17 +1,15 @@
-# 🚀 Pull Request
+<!-- Link to the related issue -->
+Fixes #<issue-number>
 
-## What's Changed?
-<!-- Briefly describe what you've changed and why -->
+## Changes
+<!-- List the changes made in this PR using checkboxes -->
+- [ ] Change description 1
+- [ ] Change description 2
 
-## Related Issues
-<!-- Link any related issues (e.g., "Fixes #123") -->
+## Testing
+<!-- Describe how you tested these changes -->
+- Test description 1
+- Test description 2
 
-## Checklist
-- [ ] I've tested these changes
-- [ ] I've updated documentation (if needed)
-- [ ] My code follows the project's style
-
-## Screenshots (if applicable)
-<!-- Add screenshots if your changes include visual elements -->
-
-Thanks for contributing to AIXCL! 💙
+## Additional Notes
+<!-- Any additional context, screenshots, or notes -->
