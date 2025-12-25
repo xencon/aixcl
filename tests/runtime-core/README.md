@@ -30,6 +30,15 @@ User-focused performance test for Ollama optimizations. Simulates real user expe
 # Option 1: Use wrapper script (recommended - auto-setup)
 ./tests/runtime-core/run_test.sh
 
+# With warmup (recommended for accurate benchmarks)
+./tests/runtime-core/run_test.sh --warmup
+
+# Run multiple iterations and aggregate results
+./tests/runtime-core/run_test.sh --iterations 5
+
+# Warmup + multiple iterations
+./tests/runtime-core/run_test.sh --warmup --iterations 3
+
 # Option 2: Direct execution (requires httpx)
 python3 tests/runtime-core/test_council_performance.py
 
@@ -38,6 +47,12 @@ python3 tests/runtime-core/test_council_performance.py
 source tests/runtime-core/.venv/bin/activate
 python3 tests/runtime-core/test_council_performance.py
 ```
+
+**Command-Line Options:**
+- `--warmup`: Warm up models before benchmarking (recommended for accurate results)
+- `--no-warmup`: Explicitly disable warmup (default behavior)
+- `--iterations N`: Run benchmark N times and report mean values (default: 1)
+- `--help` or `-h`: Show help message
 
 See `test_council_performance_README.md` for detailed usage instructions.
 
@@ -56,7 +71,17 @@ Wrapper script that automatically sets up a virtual environment if needed and ru
 
 **Usage:**
 ```bash
+# Basic test
 ./tests/runtime-core/run_test.sh
+
+# With warmup (recommended)
+./tests/runtime-core/run_test.sh --warmup
+
+# Multiple iterations (aggregated results)
+./tests/runtime-core/run_test.sh --iterations 5
+
+# Show help
+./tests/runtime-core/run_test.sh --help
 ```
 
 ### `setup_test_env.sh`

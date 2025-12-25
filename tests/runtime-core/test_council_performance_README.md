@@ -1,6 +1,6 @@
 # User-Focused Performance Test with Benchmarking Metrics
 
-This test script simulates the **real user experience** by testing the council API from outside the container, exactly as users would interact with it. It includes professional benchmarking metrics like tokens/second, model information, and CSV export capabilities.
+This test script simulates the **real user experience** by testing the council API from outside the container, exactly as users would interact with it. It includes professional benchmarking metrics like tokens/second, model information, and aggregated results from multiple iterations.
 
 ## What It Tests
 
@@ -28,17 +28,17 @@ This test script simulates the **real user experience** by testing the council A
 **Use the wrapper script** - it handles all setup automatically:
 
 ```bash
-# Basic test (backward compatible)
+# Basic test (single iteration)
 ./tests/runtime-core/run_test.sh
 
 # With warmup (recommended for accurate benchmarks)
 ./tests/runtime-core/run_test.sh --warmup
 
-# Export results to CSV
-./tests/runtime-core/run_test.sh --csv benchmark.csv
+# Run multiple iterations and aggregate results
+./tests/runtime-core/run_test.sh --iterations 5
 
-# Both warmup and CSV export
-./tests/runtime-core/run_test.sh --warmup --csv benchmark.csv
+# Warmup + multiple iterations (recommended for reliable benchmarks)
+./tests/runtime-core/run_test.sh --warmup --iterations 3
 
 # Show help
 ./tests/runtime-core/run_test.sh --help
@@ -67,8 +67,8 @@ uv run python ../tests/runtime-core/test_council_performance.py [OPTIONS]
 ### Command-Line Options
 
 - `--warmup`: Warm up models before benchmarking (recommended for accurate results)
-- `--csv [FILE]`: Export results to CSV file. If FILE is not specified, uses default: `benchmark_YYYYMMDD_HHMMSS.csv`
 - `--no-warmup`: Explicitly disable warmup (default behavior)
+- `--iterations N`: Run benchmark N times and report mean values (default: 1). Results will be aggregated and mean values with standard deviation will be displayed.
 - `--help` or `-h`: Show help message
 
 ## What to Expect
@@ -85,9 +85,10 @@ uv run python ../tests/runtime-core/test_council_performance.py [OPTIONS]
 
 For accurate benchmarks:
 1. **Use warmup**: Run with `--warmup` flag to pre-load models
-2. **Disable other workloads**: Ensure no other processes are using GPU
-3. **Consistent prompts**: Test uses standardized prompt length (~50 chars)
-4. **Multiple runs**: Run several times and compare CSV exports
+2. **Use multiple iterations**: Run with `--iterations 3` or more to get aggregated mean values and reduce impact of outliers
+3. **Disable other workloads**: Ensure no other processes are using GPU
+4. **Consistent prompts**: Test uses standardized prompt length (~50 chars)
+5. **Review aggregated results**: When using `--iterations`, the output shows mean values ± standard deviation for more reliable measurements
 
 ### Performance Indicators
 
@@ -111,26 +112,26 @@ The test measures **real user experience** - the time from when a user sends a r
 ### Key Metrics
 
 - **Elapsed Time**: Total time for complete council workflow (Stage 1 → Stage 2 → Stage 3)
+  - When using `--iterations`, shows mean ± standard deviation (e.g., `12.34±1.23`)
 - **Tokens/Second**: Token generation speed (completion_tokens / elapsed_time)
 - **Token Breakdown**: Prompt tokens vs completion tokens
 - **Consistency**: Variation between multiple queries (lower is better)
 - **Keep-Alive**: Improvement on rapid queries (faster second query = models stayed loaded)
 - **Model Information**: Model name, quantization level, context size (if available)
+- **Performance Score**: At-a-glance performance metric (0-200 for individual models, 0-100 for council)
+- **Runs**: Number of successful test runs included in aggregated results (when using `--iterations`)
 
-### CSV Export Format
+### Aggregated Results (Multiple Iterations)
 
-When using `--csv`, the output includes:
-- `timestamp`: When the test was run
-- `model`: Model name (e.g., "council")
-- `quantization`: Quantization level (e.g., "q4_0", "q5_0")
-- `context_size`: Model context size (if available)
-- `prompt_tokens`: Number of prompt tokens
-- `completion_tokens`: Number of completion tokens
-- `total_tokens`: Total tokens used
-- `elapsed_seconds`: Response time in seconds
-- `tokens_per_second`: Token generation speed
-- `query_number`: Query sequence number
-- `test_type`: "consistency" or "rapid"
+When using `--iterations N`, the benchmark:
+- Runs all tests N times
+- Aggregates results by model and test type
+- Calculates mean values for all metrics
+- Computes standard deviation for elapsed time
+- Shows min/max ranges in insights
+- Displays aggregated results in the benchmark table with "Runs" column showing the number of successful runs
+
+This provides more reliable performance measurements by averaging across multiple iterations, reducing the impact of outliers and variability.
 
 ## Troubleshooting
 

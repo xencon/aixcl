@@ -20,26 +20,22 @@ Run performance tests for Ollama optimizations with benchmarking metrics.
 
 Options:
     --warmup              Warm up models before benchmarking (recommended)
-    --csv [FILE]          Export results to CSV file
-                          If FILE is not specified, uses default: benchmark_YYYYMMDD_HHMMSS.csv
     --no-warmup           Explicitly disable warmup (default behavior)
+    --iterations N        Run benchmark N times and report mean values (default: 1)
     -h, --help            Show this help message
 
 Examples:
-    # Basic test (backward compatible)
+    # Basic test (single iteration)
     $0
     
-    # With warmup
+    # With warmup (recommended for accurate benchmarks)
     $0 --warmup
     
-    # Export to CSV
-    $0 --csv benchmark.csv
+    # Run 5 iterations and aggregate results
+    $0 --iterations 5
     
-    # Both warmup and CSV export
-    $0 --warmup --csv benchmark.csv
-    
-    # CSV with default filename
-    $0 --csv
+    # Warmup + multiple iterations
+    $0 --warmup --iterations 3
 
 EOF
 }
