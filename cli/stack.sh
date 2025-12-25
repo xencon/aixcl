@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# DEPRECATED: This file is no longer used. Stack management is handled directly in the main aixcl script.
+# This file is kept for reference but should not be called.
 # Stack management commands (start, stop, restart, status, logs, clean)
 
 # Get script directory and source libraries
