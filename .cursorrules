@@ -1,13 +1,33 @@
 # Cursor Rules for AIXCL Development
 
+## IMPORTANT: Before Starting Work
+
+**Always review these documents before beginning any work:**
+
+1. **Development Workflow**: Read `docs/developer/development-workflow.md` completely
+   - Understand the Issue-First Development workflow
+   - Review label guidelines and issue types
+   - Understand commit message format and PR requirements
+
+2. **PR Template**: Review `.github/PULL_REQUEST_TEMPLATE.md`
+   - Use the template format for PR descriptions
+   - Follow the checklist requirements
+
+3. **Governance Policies**: Review `docs/architecture/governance/` directory
+   - `00_invariants.md` - Platform invariants (strict)
+   - `01_ai_guidance.md` - AI assistant guidance
+   - `02_profiles.md` - Profile definitions
+   - `03_stack_status.md` - Stack status specification
+   - `service_contracts/` - Service dependency rules
+
 ## Development Workflow
 
-Follow the Issue-First Development workflow documented in `DEVELOPMENT_WORKFLOW.md`:
+Follow the Issue-First Development workflow documented in `docs/developer/development-workflow.md`:
 
 1. **Always create an issue first** using `gh issue create` before starting any work
 2. **Create a branch** with format `issue-<number>/<description>` or `feature/<name>` or `fix/<name>`
 3. **Make changes** and commit using conventional commit format: `type: Description\n\nFixes #<number>`
-4. **Push branch** and create PR that references the issue: `gh pr create --title "Fix: Title (#<number>)" --body "Fixes #<number>"`
+4. **Push branch** and create PR that references the issue: `gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>"`
 5. **Use plain text formatting**: Use markdown checkboxes `- [x]` instead of Unicode characters (✓, ✔, ✅) to avoid encoding issues
 
 ## Formatting Guidelines
@@ -26,14 +46,17 @@ Follow the Issue-First Development workflow documented in `DEVELOPMENT_WORKFLOW.
 
 ## PR Descriptions
 
+- Always use the PR template format from `.github/PULL_REQUEST_TEMPLATE.md`
 - Always link to the issue: `Fixes #<number>` or `Addresses #<number>`
 - Use markdown checkboxes for change lists: `- [x] Change description`
 - Describe what changed and why
 - Include testing notes if applicable
+- Note: PR titles should NOT include colons (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
 
 ## Reference Documentation
 
-- `DEVELOPMENT_WORKFLOW.md` - Complete workflow guide
-- `CONTRIBUTING.md` - General contribution guidelines
-- `aixcl_governance/` - Architectural guidelines and invariants
+- `docs/developer/development-workflow.md` - Complete workflow guide
+- `docs/developer/contributing.md` - General contribution guidelines
+- `docs/architecture/governance/` - Architectural guidelines and invariants
+- `.github/PULL_REQUEST_TEMPLATE.md` - PR template format
 

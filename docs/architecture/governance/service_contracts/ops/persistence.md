@@ -25,6 +25,7 @@ Provides PostgreSQL database storage for runtime data (Open WebUI conversations,
 
 ## Notes
 - **Runtime/Operational Boundary**: PostgreSQL serves both runtime (conversation storage) and operational (admin) purposes. This creates a design tension with the invariant that "runtime core must be runnable without operational services."
-- **Resolution**: Runtime core (LLM-Council) may use PostgreSQL if available, but should be able to function with file-based persistence as fallback. The `core` profile should support file-based persistence for true independence.
+- **Resolution**: Runtime core (LLM-Council) may use PostgreSQL if available via `ENABLE_DB_STORAGE` environment variable, but can function without it. When `ENABLE_DB_STORAGE=false` or PostgreSQL is unavailable, LLM-Council operates normally but conversations are not persisted. File-based persistence fallback exists in code (`storage.py`) but is not currently automatically enabled when database is unavailable.
+- **Current Implementation**: All profiles (`usr`, `dev`, `ops`, `sys`) include PostgreSQL for persistence. The `usr` profile includes PostgreSQL as the minimal operational service for runtime persistence.
 - **pgAdmin**: Purely operational/admin tooling, never required for runtime.
 - **Database Separation**: Continue conversations use a separate database (`continue`) from Open WebUI conversations, maintaining logical separation.

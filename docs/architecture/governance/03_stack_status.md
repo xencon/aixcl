@@ -62,10 +62,10 @@ Overall:      ✅ All critical services healthy
 
 ## Profile-Specific Status
 
-### core Profile
+### usr Profile
 ```
 Runtime Core: 3/3 healthy
-Operational:  0/0 (no operational services enabled)
+Operational:  1/1 healthy (postgres)
 ```
 
 ### dev Profile
@@ -77,13 +77,13 @@ Operational:  3/3 healthy (postgres, open-webui, pgadmin)
 ### ops Profile
 ```
 Runtime Core: 3/3 healthy
-Operational:  6/6 healthy (observability stack: prometheus, grafana, loki, promtail, cadvisor, node-exporter)
+Operational:  8/8 healthy (postgres, prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter)
 ```
 
-### full Profile
+### sys Profile
 ```
 Runtime Core: 3/3 healthy
-Operational:  9/9 healthy (all services enabled)
+Operational:  10/10 healthy (all services enabled: postgres, open-webui, pgadmin, prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter, watchtower)
 ```
 
 ## AI Guidance for Status Implementation

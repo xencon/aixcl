@@ -1583,7 +1583,25 @@ function status() {
     echo "---------------------------------------"
     check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
     check_service_status "LLM-Council" "llm-council" "curl" "http://localhost:8000/health" "true" "true"
-    # Note: Continue is a VS Code plugin, not a containerized service
+    
+    # Continue is a VS Code plugin, not a containerized service
+    # Check if LLM-Council API is accessible (which Continue connects to)
+    local continue_status="❌"
+    local continue_state="Inactive"
+    local continue_note="(VS Code plugin - LLM-Council unavailable)"
+    local continue_healthy=false
+    if curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://localhost:8000/health" 2>/dev/null | grep -q "200"; then
+        continue_status="✅"
+        continue_state="Active"
+        continue_note="Connected (VS Code plugin)"
+        continue_healthy=true
+        ((runtime_core_total++)) || true
+        ((runtime_core_healthy++)) || true
+    else
+        continue_state="Inactive"
+        ((runtime_core_total++)) || true
+    fi
+    echo "  ${continue_status} continue        ${continue_state}     ${continue_note}"
     echo ""
     
     # Operational Services (Guided - Profile-Dependent) per governance model
