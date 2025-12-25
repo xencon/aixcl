@@ -22,6 +22,7 @@ Documentation for operations and performance tuning:
 ### Architecture Documentation (`architecture/`)
 Documentation about system architecture and design:
 - [`governance/`](architecture/governance/) - Governance model, invariants, profiles, and service contracts
+  - [`GOVERNANCE_COMPLIANCE.md`](architecture/governance/GOVERNANCE_COMPLIANCE.md) - Session compliance confirmation and checklist
 - [`build/`](architecture/build/) - Build and deployment architecture documentation
 
 ### Reference Documentation (`reference/`)
