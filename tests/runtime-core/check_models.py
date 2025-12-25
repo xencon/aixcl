@@ -6,7 +6,6 @@ Quick diagnostic script to check if council models are available in Ollama.
 import os
 import sys
 import subprocess
-import json
 
 # Get models from environment
 # Read from CHAIRMAN_MODEL and COUNCIL_MODELS environment variables
