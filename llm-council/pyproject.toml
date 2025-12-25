@@ -12,3 +12,8 @@ dependencies = [
     "pydantic==2.12.4",
     "asyncpg==0.29.0",
 ]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.10"
