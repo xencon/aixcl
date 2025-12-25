@@ -128,8 +128,6 @@ GitHub provides native issue types that must be set for each issue. These are se
 Labels are organized into categories using prefixes:
 
 #### Component Labels (Select All That Apply)
-
-#### Component Labels (Select All That Apply)
 - `component:runtime-core` - Runtime core services (Ollama, LLM-Council, Continue)
 - `component:ollama` - Ollama LLM inference engine
 - `component:llm-council` - LLM Council multi-model orchestration
