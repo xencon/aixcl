@@ -6,7 +6,6 @@ Tests each council model and the chairman model with a simple query.
 
 import asyncio
 import httpx
-import sys
 from typing import Dict, List, Optional
 
 # API base URL
