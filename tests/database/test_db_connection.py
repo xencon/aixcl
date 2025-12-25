@@ -45,7 +45,7 @@ if backend_dir not in sys.path:
 
 from backend import db
 from backend import db_storage
-from backend.conversation_tracker import generate_conversation_id, create_message_entry
+from backend.conversation_tracker import generate_conversation_id
 
 
 async def test_database_connection():
