@@ -512,7 +512,6 @@ async def chat_completions(request: ChatCompletionRequest):
         
         # Handle conversation tracking and database storage
         conversation_id = None
-        is_new_conversation = False
         
         if ENABLE_DB_STORAGE:
             # Generate or find conversation ID
@@ -534,7 +533,6 @@ async def chat_completions(request: ChatCompletionRequest):
                     title = first_user_msg[:50] + "..." if len(first_user_msg) > 50 else first_user_msg
                     created_conv = await db_storage.create_continue_conversation(conversation_id, first_user_msg, title)
                     if created_conv:
-                        is_new_conversation = True
                         print(f"DEBUG: Created new conversation {conversation_id}", flush=True)
                     else:
                         logging.warning(f"Failed to create conversation {conversation_id} in database")
