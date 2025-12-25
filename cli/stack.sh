@@ -3,6 +3,10 @@
 # This file is kept for reference but should not be called.
 # Stack management commands (start, stop, restart, status, logs, clean)
 
+echo "ERROR: cli/stack.sh is deprecated and must not be used."
+echo "       Stack management is now handled directly by the main 'aixcl' script."
+exit 1
+
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
