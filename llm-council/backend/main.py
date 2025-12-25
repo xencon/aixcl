@@ -532,9 +532,13 @@ async def chat_completions(request: ChatCompletionRequest):
                 if first_user_msg:
                     # Generate title from first message
                     title = first_user_msg[:50] + "..." if len(first_user_msg) > 50 else first_user_msg
-                    existing_conv = await db_storage.create_continue_conversation(conversation_id, first_user_msg, title)
-                    is_new_conversation = True
-                    print(f"DEBUG: Created new conversation {conversation_id}", flush=True)
+                    created_conv = await db_storage.create_continue_conversation(conversation_id, first_user_msg, title)
+                    if created_conv:
+                        is_new_conversation = True
+                        print(f"DEBUG: Created new conversation {conversation_id}", flush=True)
+                    else:
+                        logging.warning(f"Failed to create conversation {conversation_id} in database")
+                        print(f"DEBUG: Failed to create conversation {conversation_id} in database", flush=True)
                 else:
                     print(f"DEBUG: No user message found, skipping conversation creation", flush=True)
             else:
