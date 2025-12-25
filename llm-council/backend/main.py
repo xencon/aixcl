@@ -14,7 +14,6 @@ import time
 import sys
 import re
 import logging
-import traceback
 
 from . import storage
 from . import db
@@ -180,16 +179,8 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch all unhandled exceptions and return proper JSON response."""
-    # Log full exception details server-side for debugging
+    # Log full exception details server-side for debugging (includes stack trace)
     logging.error(f"Global exception handler caught: {type(exc).__name__}", exc_info=True)
-    print(f"DEBUG: Global exception handler caught: {type(exc).__name__}: {exc}", flush=True)
-    try:
-        print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
-    except Exception:
-        # Fallback if traceback fails
-        import sys
-        import traceback as tb
-        print(f"DEBUG: Traceback (fallback):\n{''.join(tb.format_exception(*sys.exc_info()))}", flush=True)
     
     # If it's an HTTPException, let FastAPI handle it normally
     if isinstance(exc, HTTPException):
@@ -713,9 +704,8 @@ Please provide a helpful response based on the context provided above."""
                 else:
                     print(f"DEBUG: [SAVE] ❌ add_message_to_conversation returned False for conversation {conversation_id}", flush=True)
             except Exception as save_error:
-                print(f"DEBUG: [SAVE] ❌ EXCEPTION saving assistant message: {save_error}", flush=True)
-                import traceback
-                print(f"DEBUG: [SAVE] Traceback: {traceback.format_exc()}", flush=True)
+                # Log full exception details server-side (includes stack trace)
+                logging.error(f"[SAVE] Exception saving assistant message: {save_error}", exc_info=True)
         else:
             print(f"DEBUG: [SAVE] ⚠️ Skipping save - ENABLE_DB_STORAGE={ENABLE_DB_STORAGE}, conversation_id={conversation_id}", flush=True)
         
@@ -881,16 +871,8 @@ Please provide a helpful response based on the context provided above."""
         # Re-raise HTTPExceptions as-is (they're already properly formatted)
         raise
     except Exception as e:
-        # Log full exception details server-side for debugging
-        logging.error("Exception in chat_completions", exc_info=True)
-        print(f"DEBUG: Exception in chat_completions: {type(e).__name__}: {e}", flush=True)
-        try:
-            print(f"DEBUG: Traceback:\n{traceback.format_exc()}", flush=True)
-        except Exception:
-            # Fallback if traceback fails
-            import traceback as tb
-            print(f"DEBUG: Traceback (fallback):\n{''.join(tb.format_exception(*sys.exc_info()))}", flush=True)
-        sys.stdout.flush()
+        # Log full exception details server-side for debugging (includes stack trace)
+        logging.error(f"Exception in chat_completions: {type(e).__name__}: {e}", exc_info=True)
         # Return OpenAI-compatible error response with sanitized message
         # Full error details are logged server-side above
         return JSONResponse(
