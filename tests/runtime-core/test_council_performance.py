@@ -31,7 +31,7 @@ import httpx
 import json
 import sys
 import time
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, Any
 from datetime import datetime
 
 # API endpoints (as users would access them)
