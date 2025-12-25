@@ -3,12 +3,15 @@
 import httpx
 from typing import List, Dict, Any, Optional
 import os
+import logging
 from .config import MODEL_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 # Get OLLAMA_BASE_URL from environment (set by docker-compose or .env)
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-print(f"DEBUG: ollama_adapter loaded, OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
+logger.debug(f"ollama_adapter loaded, OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
 
 
 async def query_model(

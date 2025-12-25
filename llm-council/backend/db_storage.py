@@ -462,7 +462,6 @@ async def list_continue_conversations(limit: int = 50, offset: int = 0) -> List[
             chat_data = row["chat"]
             if isinstance(chat_data, str):
                 try:
-                    import json
                     chat_data = json.loads(chat_data)
                 except (json.JSONDecodeError, TypeError):
                     chat_data = {}
