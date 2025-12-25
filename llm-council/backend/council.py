@@ -324,7 +324,8 @@ Provide the solution code directly:"""
         try:
             source_line = [line for line in content.split('\n') if '# Primary source:' in line][0]
             primary_source = source_line.split('# Primary source:')[1].strip()
-        except:
+        except (IndexError, ValueError, AttributeError):
+            # If parsing fails, primary_source remains None
             pass
     
     # Extract confidence percentage from content if present
@@ -338,7 +339,8 @@ Provide the solution code directly:"""
             match = re.search(r'(\d+)%', confidence_str)
             if match:
                 chairman_confidence = int(match.group(1))
-        except:
+        except (IndexError, ValueError, AttributeError):
+            # If parsing fails, chairman_confidence remains None
             pass
     
     # If not found in content, use top-ranked model from Stage 2
