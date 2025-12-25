@@ -1,6 +1,6 @@
-# User-Focused Performance Test
+# User-Focused Performance Test with Benchmarking Metrics
 
-This test script simulates the **real user experience** by testing the council API from outside the container, exactly as users would interact with it.
+This test script simulates the **real user experience** by testing the council API from outside the container, exactly as users would interact with it. It includes professional benchmarking metrics like tokens/second, model information, and CSV export capabilities.
 
 ## What It Tests
 
@@ -8,10 +8,13 @@ This test script simulates the **real user experience** by testing the council A
    - Average response time
    - Performance consistency
    - Response quality
+   - Token generation speed (tokens/sec)
+   - Token breakdown (prompt vs completion)
 
 2. **Rapid Query Test**: Tests two queries in quick succession to verify:
    - Keep-alive effectiveness (models staying loaded)
    - Performance improvement on second query
+   - Token speed comparison
 
 ## Running the Test
 
@@ -19,54 +22,54 @@ This test script simulates the **real user experience** by testing the council A
 
 1. Services must be running: `./aixcl stack start`
 2. Council must be configured: `./aixcl council configure`
-3. Install httpx using one of these methods:
 
-**Option 1: Install globally (simplest)**
+### Main Entry Point (Recommended)
 
-First, install pip if not already installed:
+**Use the wrapper script** - it handles all setup automatically:
+
 ```bash
-# On Ubuntu/Debian
-sudo apt update
-sudo apt install python3-pip
-
-# Then install httpx
-pip3 install httpx
-
-# Run test
-python3 tests/runtime-core/test_council_performance.py
-```
-
-**Option 2: Use virtual environment (recommended)**
-```bash
-# Setup venv (first time only)
-./tests/runtime-core/setup_test_env.sh
-
-# Run test
-source tests/runtime-core/.venv/bin/activate
-python3 tests/runtime-core/test_council_performance.py
-```
-
-**Option 3: Use wrapper script (easiest - auto-setup)**
-```bash
+# Basic test (backward compatible)
 ./tests/runtime-core/run_test.sh
+
+# With warmup (recommended for accurate benchmarks)
+./tests/runtime-core/run_test.sh --warmup
+
+# Export results to CSV
+./tests/runtime-core/run_test.sh --csv benchmark.csv
+
+# Both warmup and CSV export
+./tests/runtime-core/run_test.sh --warmup --csv benchmark.csv
+
+# Show help
+./tests/runtime-core/run_test.sh --help
 ```
 
-**Option 4: Use uv (if installed)**
+The wrapper script automatically:
+- Checks if httpx is available
+- Sets up virtual environment if needed
+- Installs httpx if missing
+- Passes all arguments to the Python script
+
+### Alternative Methods
+
+**Option 1: Direct Python execution (if httpx is installed)**
+```bash
+python3 tests/runtime-core/test_council_performance.py [OPTIONS]
+```
+
+**Option 2: Use uv (if installed)**
 ```bash
 cd llm-council
 uv sync
-uv run python ../tests/runtime-core/test_council_performance.py
+uv run python ../tests/runtime-core/test_council_performance.py [OPTIONS]
 ```
 
-### Run the Test
+### Command-Line Options
 
-```bash
-# From project root (after installing httpx)
-python3 tests/runtime-core/test_council_performance.py
-
-# Or use the wrapper script (handles venv setup automatically)
-./tests/runtime-core/run_test.sh
-```
+- `--warmup`: Warm up models before benchmarking (recommended for accurate results)
+- `--csv [FILE]`: Export results to CSV file. If FILE is not specified, uses default: `benchmark_YYYYMMDD_HHMMSS.csv`
+- `--no-warmup`: Explicitly disable warmup (default behavior)
+- `--help` or `-h`: Show help message
 
 ## What to Expect
 
@@ -76,6 +79,15 @@ python3 tests/runtime-core/test_council_performance.py
 - **Subsequent queries**: 10-20 seconds (models stay loaded)
 - **Consistency**: <30% variation between queries
 - **Rapid queries**: Second query should be faster (10-30% improvement)
+- **Token speed**: Varies by model, typically 20-100+ tokens/sec for quantized models
+
+### Benchmarking Best Practices
+
+For accurate benchmarks:
+1. **Use warmup**: Run with `--warmup` flag to pre-load models
+2. **Disable other workloads**: Ensure no other processes are using GPU
+3. **Consistent prompts**: Test uses standardized prompt length (~50 chars)
+4. **Multiple runs**: Run several times and compare CSV exports
 
 ### Performance Indicators
 
@@ -99,8 +111,26 @@ The test measures **real user experience** - the time from when a user sends a r
 ### Key Metrics
 
 - **Elapsed Time**: Total time for complete council workflow (Stage 1 → Stage 2 → Stage 3)
+- **Tokens/Second**: Token generation speed (completion_tokens / elapsed_time)
+- **Token Breakdown**: Prompt tokens vs completion tokens
 - **Consistency**: Variation between multiple queries (lower is better)
 - **Keep-Alive**: Improvement on rapid queries (faster second query = models stayed loaded)
+- **Model Information**: Model name, quantization level, context size (if available)
+
+### CSV Export Format
+
+When using `--csv`, the output includes:
+- `timestamp`: When the test was run
+- `model`: Model name (e.g., "council")
+- `quantization`: Quantization level (e.g., "q4_0", "q5_0")
+- `context_size`: Model context size (if available)
+- `prompt_tokens`: Number of prompt tokens
+- `completion_tokens`: Number of completion tokens
+- `total_tokens`: Total tokens used
+- `elapsed_seconds`: Response time in seconds
+- `tokens_per_second`: Token generation speed
+- `query_number`: Query sequence number
+- `test_type`: "consistency" or "rapid"
 
 ## Troubleshooting
 
