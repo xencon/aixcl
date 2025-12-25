@@ -100,6 +100,8 @@ async def get_council_config() -> Optional[Dict]:
             if response.status_code == 200:
                 return response.json()
     except Exception:
+        # Silently return None if config fetch fails (API may not be available)
+        # This is acceptable in test context where API availability is checked separately
         pass
     return None
 
@@ -132,6 +134,8 @@ async def get_ollama_model_info(model_name: str) -> Dict[str, Any]:
                 _model_info_cache[model_name] = info
                 return info
     except Exception:
+        # Silently fall back to name-based extraction if API call fails
+        # This is acceptable in test context where model info is optional
         pass
     
     # Fallback: try to extract info from model name
@@ -671,6 +675,8 @@ Examples:
         try:
             model_info = await get_ollama_model_info(chairman_model)
         except Exception:
+            # Silently continue if model info fetch fails (API may not be available)
+            # Model info is optional for test execution
             pass
     
     # Warmup if requested
