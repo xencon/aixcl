@@ -18,7 +18,7 @@ import logging
 from . import storage
 from . import db
 from . import db_storage
-from .conversation_tracker import generate_conversation_id, extract_conversation_context
+from .conversation_tracker import generate_conversation_id
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
 from .config import BACKEND_MODE, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING, ENABLE_DB_STORAGE
 from .config_manager import get_config, update_config, reload_config, validate_ollama_models
