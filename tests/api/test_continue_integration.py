@@ -78,7 +78,7 @@ except ImportError as e:
     print("   cd llm-council")
     print("   uv sync")
     print("\n   Then run the test with:")
-    print("   uv run python scripts/test/test_continue_integration.py")
+    print("   uv run python tests/api/test_continue_integration.py")
     print("\n   Or if you prefer to use pip directly:")
     print(f"   {sys.executable} -m pip install httpx")
     sys.exit(1)
