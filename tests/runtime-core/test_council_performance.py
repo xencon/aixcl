@@ -28,7 +28,6 @@ import argparse
 import asyncio
 import httpx
 import json
-import os
 import sys
 import time
 from typing import Dict, Optional, List, Any
