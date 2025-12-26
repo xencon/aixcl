@@ -23,7 +23,7 @@ Instead, please report them via one of the following methods:
 
 1. **GitHub Security Advisories (Preferred)**: Use the [GitHub Security Advisory](https://github.com/xencon/aixcl/security/advisories/new) feature to report vulnerabilities privately.
 
-2. **Email**: If you prefer email, contact the maintainers directly (contact information available in repository metadata).
+2. **Email**: If you prefer email, contact us at `security@example.com` (replace this with a monitored security contact address for this project).
 
 ### What to Include
 
@@ -101,7 +101,7 @@ When deploying AIXCL:
 6. **Monitoring**: Enable observability features to detect anomalies
 7. **Backups**: Regularly backup PostgreSQL data and configurations
 
-For detailed security guidance, see [`docs/reference/security.md`](docs/reference/security.md).
+For detailed security guidance, see the security documentation in the [`docs/` directory](docs/).
 
 ## Security Updates
 
@@ -119,7 +119,7 @@ If you wish to be acknowledged for your report, please let us know. Otherwise, w
 
 ---
 
-**Last Updated**: 2024
+**Last Updated**: December 2024
 
 For questions about this security policy, please open a discussion in the repository.
 
