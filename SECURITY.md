@@ -23,7 +23,7 @@ Instead, please report them via one of the following methods:
 
 1. **GitHub Security Advisories (Preferred)**: Use the [GitHub Security Advisory](https://github.com/xencon/aixcl/security/advisories/new) feature to report vulnerabilities privately.
 
-2. **Email**: If you prefer email, contact the maintainers directly (contact information available in repository metadata).
+2. **Email**: If you prefer email, contact us at `security@example.com` (replace this with a monitored security contact address for this project).
 
 ### What to Include
 
