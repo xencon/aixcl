@@ -125,7 +125,7 @@ Interactive wizard guides you through selecting council members and a chairman m
 - **Chairman**: `deepseek-coder:1.3b` (776MB)
 - **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
 
-This configuration provides excellent performance (~24s average) with low VRAM usage (~4.3GB). See `docs/model-recommendations.md` for details.
+This configuration provides excellent performance (~24s average) with low VRAM usage (~4.3GB). See [`docs/operations/model-recommendations.md`](docs/operations/model-recommendations.md) for details.
 
 **7. Access the web interface (if not using usr profile)**
 
@@ -224,6 +224,44 @@ AIXCL maintains strict architectural invariants to preserve platform integrity:
 The runtime core must be runnable without any operational services, and operational services may depend on the runtime core but never vice versa.
 
 For detailed architectural documentation, see [`docs/architecture/governance/`](./docs/architecture/governance/).
+
+## Component Documentation
+
+### Runtime Core Components
+
+- **Ollama**: LLM inference engine with performance optimizations for multi-model orchestration
+  - See [`docs/operations/ollama-performance-tuning.md`](docs/operations/ollama-performance-tuning.md) for tuning guide
+  - Optimized for parallel requests, model keep-alive, and GPU utilization
+
+- **LLM-Council**: Multi-model orchestration system for consensus-based responses
+  - Component docs: [`llm-council/README.md`](llm-council/README.md)
+  - Testing: [`llm-council/TESTING.md`](llm-council/TESTING.md)
+  - Performance optimizations: [`llm-council/PERFORMANCE_OPTIMIZATIONS.md`](llm-council/PERFORMANCE_OPTIMIZATIONS.md)
+
+- **Continue**: VS Code plugin integration for AI-powered code assistance
+  - Configured via `.continue/config.json` to use LLM-Council API endpoint
+
+### Performance Tuning
+
+AIXCL includes comprehensive performance optimizations for running multiple LLM models efficiently:
+
+**Ollama Optimizations:**
+- Parallel request handling (`OLLAMA_NUM_PARALLEL=8`) for concurrent council queries
+- Model keep-alive (`OLLAMA_KEEP_ALIVE=600`) to prevent reload delays
+- Maximum loaded models (`OLLAMA_MAX_LOADED_MODELS=3`) for GPU memory management
+- Explicit GPU configuration for optimal utilization
+
+**Model Recommendations:**
+- **Default Configuration** (8GB GPUs): `deepseek-coder:1.3b` (chairman), `codegemma:2b` + `qwen2.5-coder:3b` (council)
+  - Performance: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
+- **Alternative Configurations**: Available for 12GB+ and 16GB+ GPUs with larger models
+- See [`docs/operations/model-recommendations.md`](docs/operations/model-recommendations.md) for complete details
+
+**Performance Test Results:**
+- Comprehensive testing of model configurations and optimization impact
+- See [`docs/operations/performance-test-results.md`](docs/operations/performance-test-results.md) for detailed analysis
+
+For complete performance tuning documentation, see [`docs/operations/`](docs/operations/).
 
 ## Documentation
 

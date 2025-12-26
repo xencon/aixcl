@@ -79,7 +79,7 @@ Interactive setup to select:
 - **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
 - **Performance**: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
 
-See `docs/model-recommendations.md` for alternative configurations.
+See [`docs/operations/model-recommendations.md`](../operations/model-recommendations.md) for alternative configurations.
 
 ### 5. Check Status
 
@@ -133,7 +133,7 @@ Shows:
 - **Balanced**: `ministral-3:3b`, `codegemma:2b`, `deepseek-coder:1.3b`
 - **Medium**: `qwen2.5-coder:7b`, `codegemma:2b`, `deepseek-coder:1.3b`
 
-See `docs/model-recommendations.md` for complete details.
+See [`docs/operations/model-recommendations.md`](../operations/model-recommendations.md) for complete details.
 
 ### Troubleshooting
 

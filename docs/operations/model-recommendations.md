@@ -156,5 +156,5 @@ environment:
   - OLLAMA_NUM_GPU=1
 ```
 
-See `docs/ollama-performance-tuning.md` for complete optimization guide.
+See [`ollama-performance-tuning.md`](./ollama-performance-tuning.md) for complete optimization guide.
 

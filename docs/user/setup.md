@@ -159,7 +159,7 @@ After successful setup:
 - **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
 - **Performance**: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
 
-See `docs/model-recommendations.md` for alternative configurations.
+See [`docs/operations/model-recommendations.md`](../operations/model-recommendations.md) for alternative configurations.
 
 ## Database Configuration
 
