@@ -97,10 +97,10 @@ async def get_council_config() -> Optional[Dict]:
             response = await client.get(f"{API_BASE_URL}/api/config")
             if response.status_code == 200:
                 return response.json()
-    except Exception:
-        # Silently return None if config fetch fails (API may not be available)
+    except Exception as exc:
+        # Log and return None if config fetch fails (API may not be available)
         # This is acceptable in test context where API availability is checked separately
-        pass
+        print(f"[{datetime.now().isoformat()}] Failed to fetch council config: {exc}", file=sys.stderr)
     return None
 
 
