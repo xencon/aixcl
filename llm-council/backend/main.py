@@ -23,6 +23,10 @@ from .council import run_full_council, generate_conversation_title, stage1_colle
 from .config import BACKEND_MODE, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING, ENABLE_DB_STORAGE
 from .config_manager import get_config, update_config, reload_config, validate_ollama_models
 
+# Constants for list types used in markdown formatting
+LIST_TYPE_BULLET = "bullet"
+LIST_TYPE_NUMBERED = "numbered"
+
 
 def format_markdown_response(content: str) -> str:
     """
@@ -35,7 +39,8 @@ def format_markdown_response(content: str) -> str:
     lines = content.split('\n')
     formatted_lines = []
     in_list = False
-    list_type = None  # 'bullet' or 'numbered'
+    # None, LIST_TYPE_BULLET, or LIST_TYPE_NUMBERED
+    list_type = None
     list_counter = 1  # For numbered lists
     
     for i, line in enumerate(lines):
@@ -50,24 +55,24 @@ def format_markdown_response(content: str) -> str:
         if bullet_match:
             # Normalize bullet points to use '- ' (standard markdown)
             content_text = bullet_match.group(1)
-            if not in_list or list_type != 'bullet':
+            if not in_list or list_type != LIST_TYPE_BULLET:
                 # Start new list, ensure blank line before
                 if formatted_lines and formatted_lines[-1].strip() and not formatted_lines[-1].startswith('-'):
                     formatted_lines.append('')
                 in_list = True
-                list_type = 'bullet'
+                list_type = LIST_TYPE_BULLET
                 list_counter = 1
             formatted_lines.append(f'- {content_text}')
         elif numbered_match:
             # Normalize numbered lists - preserve the number for better compatibility
             number = int(numbered_match.group(1))
             content_text = numbered_match.group(2)
-            if not in_list or list_type != 'numbered':
+            if not in_list or list_type != LIST_TYPE_NUMBERED:
                 # Start new list, ensure blank line before
                 if formatted_lines and formatted_lines[-1].strip() and not re.match(r'^\d+[.)]', formatted_lines[-1].strip()):
                     formatted_lines.append('')
                 in_list = True
-                list_type = 'numbered'
+                list_type = LIST_TYPE_NUMBERED
                 list_counter = number
             # Use the actual number (markdown will render it correctly)
             formatted_lines.append(f'{list_counter}. {content_text}')
