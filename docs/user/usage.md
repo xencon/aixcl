@@ -15,7 +15,15 @@ Runtime core services are non-negotiable and must be running for AIXCL to functi
 ### Operational Services (Guided - Profile-Dependent)
 These services support, observe, or operate the runtime:
 - **Persistence**: PostgreSQL (database), pgAdmin (database admin)
-- **Observability**: Prometheus (metrics), Grafana (dashboards), Loki (logs), Promtail (log shipping), cAdvisor (container metrics), node-exporter (host metrics), postgres-exporter (database metrics), nvidia-gpu-exporter (GPU metrics)
+- **Observability**:
+  - Prometheus (metrics)
+  - Grafana (dashboards)
+  - Loki (logs)
+  - Promtail (log shipping)
+  - cAdvisor (container metrics)
+  - node-exporter (host metrics)
+  - postgres-exporter (database metrics)
+  - nvidia-gpu-exporter (GPU metrics)
 - **UI**: Open WebUI (web interface)
 - **Automation**: Watchtower (automatic container updates)
 
