@@ -115,7 +115,7 @@ Shows:
 # List current models
 ./aixcl models list
 
-# Add new model (examples)
+# Add example starter models
 ./aixcl models add deepseek-coder:1.3b    # Small, fast chairman
 ./aixcl models add codegemma:2b            # Small council member
 ./aixcl models add qwen2.5-coder:3b        # Small council member
