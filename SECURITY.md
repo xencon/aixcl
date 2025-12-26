@@ -119,7 +119,7 @@ If you wish to be acknowledged for your report, please let us know. Otherwise, w
 
 ---
 
-**Last Updated**: 2024
+**Last Updated**: December 2024
 
 For questions about this security policy, please open a discussion in the repository.
 
