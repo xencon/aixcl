@@ -142,6 +142,18 @@ print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
 print("DEBUG: Configuration will be loaded dynamically on startup")
 print("=" * 60)
 
+# Configure allowed CORS origins from environment or use safe defaults for local development
+_allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
+if _allowed_origins_env:
+    ALLOWED_ORIGINS = [origin.strip() for origin in _allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Default to common localhost origins; adjust via ALLOWED_ORIGINS env var for production
+    ALLOWED_ORIGINS = [
+        "http://localhost",
+        "http://127.0.0.1",
+    ]
+print(f"DEBUG: CORS ALLOWED_ORIGINS = {ALLOWED_ORIGINS}")
+
 # Initialize database connection pool on startup
 @app.on_event("startup")
 async def startup_event():
@@ -166,10 +178,10 @@ async def shutdown_event():
     print("DEBUG: Database connection pool closed")
 
 # Enable CORS for local development
-# Continue plugin may run from various origins, so allow all localhost ports
+# Continue plugin may run from various origins; configure allowed origins via ALLOWED_ORIGINS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for Continue plugin compatibility
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
