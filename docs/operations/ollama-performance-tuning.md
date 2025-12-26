@@ -24,7 +24,7 @@ This document presents performance tuning optimizations for Ollama to maximize e
 # Select: Council: codegemma:2b, qwen2.5-coder:3b
 ```
 
-See `docs/model-recommendations.md` for alternative configurations and `docs/performance-test-results.md` for detailed test results.
+See [`model-recommendations.md`](./model-recommendations.md) for alternative configurations and [`performance-test-results.md`](./performance-test-results.md) for detailed test results.
 
 ## Current Configuration Analysis
 

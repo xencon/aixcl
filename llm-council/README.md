@@ -75,7 +75,7 @@ Or use the interactive wizard:
 - **Balanced**: Chairman `ministral-3:3b`, Council `codegemma:2b,deepseek-coder:1.3b` (~5.9GB VRAM, ~24s avg)
 - **Medium**: Chairman `qwen2.5-coder:7b`, Council `codegemma:2b,deepseek-coder:1.3b` (~7.6GB VRAM, ~32s avg)
 
-See `docs/model-recommendations.md` for complete details.
+See [`docs/operations/model-recommendations.md`](../docs/operations/model-recommendations.md) for complete details.
 
 ## Running the Application
 
