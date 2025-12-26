@@ -315,7 +315,7 @@ docker-compose pull
 
 3. **Test Continue integration:**
    ```bash
-   python3 tests/api/test_continue_integration.py
+   pytest tests/api -k continue_integration
    ```
 
 4. **Keep models updated:**
