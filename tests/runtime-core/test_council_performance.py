@@ -97,10 +97,10 @@ async def get_council_config() -> Optional[Dict]:
             response = await client.get(f"{API_BASE_URL}/api/config")
             if response.status_code == 200:
                 return response.json()
-    except Exception:
-        # Silently return None if config fetch fails (API may not be available)
+    except Exception as exc:
+        # Log and return None if config fetch fails (API may not be available)
         # This is acceptable in test context where API availability is checked separately
-        pass
+        print(f"[{datetime.now().isoformat()}] Failed to fetch council config: {exc}", file=sys.stderr)
     return None
 
 
@@ -677,10 +677,11 @@ def calculate_performance_score(result: Dict) -> float:
         Performance score from 0-100
     """
     tokens_per_sec = result.get('tokens_per_second', 0) or 0
-    elapsed_time = result.get('elapsed_time', 0) or 0.1  # Avoid division by zero
+    elapsed_time = result.get('elapsed_time') or 0
     model_name = result.get('model', '')
     
-    if tokens_per_sec == 0 or elapsed_time == 0:
+    # If we don't have a valid elapsed_time, treat the measurement as invalid
+    if tokens_per_sec == 0 or not isinstance(elapsed_time, (int, float)) or elapsed_time <= 0:
         return 0.0
     
     # Different scoring for council vs individual models

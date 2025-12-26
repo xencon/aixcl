@@ -78,7 +78,7 @@ except ImportError as e:
     print("   cd llm-council")
     print("   uv sync")
     print("\n   Then run the test with:")
-    print("   uv run python scripts/test/test_continue_integration.py")
+    print("   uv run python tests/api/test_continue_integration.py")
     print("\n   Or if you prefer to use pip directly:")
     print(f"   {sys.executable} -m pip install httpx")
     sys.exit(1)
@@ -90,7 +90,13 @@ from backend.conversation_tracker import generate_conversation_id
 
 # Configuration
 API_URL = os.getenv("LLM_COUNCIL_API_URL", "http://localhost:8000")
-API_TIMEOUT = 180.0  # 180 seconds timeout for API calls (models can take time to load and respond)
+# Timeout for API calls (models can take time to load and respond).
+# Can be overridden via LLM_COUNCIL_API_TIMEOUT environment variable.
+try:
+    API_TIMEOUT = float(os.getenv("LLM_COUNCIL_API_TIMEOUT", "60.0"))
+except ValueError:
+    # Fall back to a safe default if the environment variable is invalid
+    API_TIMEOUT = 60.0
 
 
 async def wait_for_api(max_retries: int = 30, delay: float = 1.0) -> bool:
@@ -112,8 +118,8 @@ async def wait_for_api(max_retries: int = 30, delay: float = 1.0) -> bool:
                 if response.status_code == 200:
                     print("✅ API is ready")
                     return True
-            except Exception as e:
-                # Silently retry on any exception (network errors, timeouts, etc.)
+            except httpx.RequestError:
+                # Silently retry on request-related exceptions (network errors, timeouts, etc.)
                 # This is expected during API startup, so we don't log every attempt
                 pass
             
@@ -167,7 +173,8 @@ async def send_continue_request(
                 # Return error response JSON so test can check for conversation_id
                 try:
                     return response.json()
-                except Exception:
+                except ValueError as json_error:
+                    print(f"   ❌ Failed to parse error response as JSON: {json_error}")
                     return None
             
             # Check if response body is empty
@@ -410,6 +417,43 @@ async def verify_database_storage(
     return True
 
 
+def get_test_messages():
+    """
+    Return the list of test messages to send to the API.
+
+    This is configurable via the CONTINUE_TEST_MESSAGES_JSON environment variable,
+    which should contain a JSON array of message objects, e.g.:
+
+        [{"role": "user", "content": "Hello"}]
+
+    If the variable is not set or cannot be parsed, a small default set of
+    messages is used to provide basic coverage.
+    """
+    env_value = os.getenv("CONTINUE_TEST_MESSAGES_JSON")
+    if env_value:
+        try:
+            messages = json.loads(env_value)
+            # Basic shape check: expect a list of dicts with role/content
+            if isinstance(messages, list):
+                return messages
+            else:
+                print("⚠️  CONTINUE_TEST_MESSAGES_JSON is not a list; using default messages")
+        except Exception as e:
+            print(f"⚠️  Failed to parse CONTINUE_TEST_MESSAGES_JSON: {e!r}; using default messages")
+
+    # Default messages used when env var is not provided or invalid
+    return [
+        {
+            "role": "user",
+            "content": "What does `2+2` equal?"
+        },
+        {
+            "role": "user",
+            "content": "Give a short explanation of what an integration test is."
+        },
+    ]
+
+
 async def test_continue_integration():
     """
     Main test function that exercises the full Continue → LLM Council → Database flow.
@@ -442,12 +486,7 @@ async def test_continue_integration():
     # Test 3: Send Continue plugin request
     print("\n[Test 3] Continue Plugin Request")
     print("-" * 70)
-    test_messages = [
-        {
-            "role": "user",
-            "content": "What does `2+2` equal?"
-        }
-    ]
+    test_messages = get_test_messages()
     
     api_response = await send_continue_request(test_messages, stream=False)
     if api_response is None:
