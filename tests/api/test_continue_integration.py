@@ -90,7 +90,13 @@ from backend.conversation_tracker import generate_conversation_id
 
 # Configuration
 API_URL = os.getenv("LLM_COUNCIL_API_URL", "http://localhost:8000")
-API_TIMEOUT = 180.0  # 180 seconds timeout for API calls (models can take time to load and respond)
+# Timeout for API calls (models can take time to load and respond).
+# Can be overridden via LLM_COUNCIL_API_TIMEOUT environment variable.
+try:
+    API_TIMEOUT = float(os.getenv("LLM_COUNCIL_API_TIMEOUT", "60.0"))
+except ValueError:
+    # Fall back to a safe default if the environment variable is invalid
+    API_TIMEOUT = 60.0
 
 
 async def wait_for_api(max_retries: int = 30, delay: float = 1.0) -> bool:
