@@ -39,8 +39,12 @@ async def get_pool() -> Optional[asyncpg.Pool]:
         # Properly escape special characters in user, password, and database name to prevent injection
         safe_user = quote_plus(POSTGRES_USER)
         safe_password = quote_plus(POSTGRES_PASSWORD)
-        safe_database = quote_plus(POSTGRES_CONTINUE_DATABASE)
+        # Store in local variable early to avoid NameError in exception handlers
+        db_name = POSTGRES_CONTINUE_DATABASE
+        safe_database = quote_plus(db_name)
         dsn = f"postgresql://{safe_user}:{safe_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{safe_database}"
+        
+        logger.debug("Attempting to create database connection pool for database: %s", db_name)
         
         # Create connection pool
         _pool = await asyncpg.create_pool(
@@ -50,14 +54,27 @@ async def get_pool() -> Optional[asyncpg.Pool]:
             command_timeout=60,
         )
         
-        logger.info(f"Database connection pool created for {POSTGRES_CONTINUE_DATABASE}")
+        logger.info("Database connection pool created for %s", db_name)
         
         # Verify connection and create schema if needed
         await ensure_schema()
         
         return _pool
+    except NameError as e:
+        import traceback
+        logger.error("Failed to create database connection pool - NameError: %s", str(e))
+        logger.error("Full traceback:\n%s", traceback.format_exc())
+        # Try to get the value safely - re-import if needed
+        try:
+            from .config import POSTGRES_CONTINUE_DATABASE as db_name_check
+            logger.error("POSTGRES_CONTINUE_DATABASE re-import successful: %s", db_name_check)
+        except Exception as import_err:
+            logger.error("POSTGRES_CONTINUE_DATABASE re-import failed: %s", str(import_err))
+        return None
     except Exception as e:
-        logger.error(f"Failed to create database connection pool: {e}")
+        import traceback
+        logger.error(f"Failed to create database connection pool: {type(e).__name__}: {e}")
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
         return None
 
 

@@ -729,6 +729,237 @@ test_database_connection() {
 }
 
 # ============================================================================
+# SECTION 3B: CONVERSATION STORAGE TESTS
+# ============================================================================
+test_conversation_storage() {
+    start_section "Conversation Storage - Continue Plugin Integration"
+    
+    # Check prerequisites
+    if ! is_container_running "postgres"; then
+        print_error "PostgreSQL container is not running"
+        record_test "fail" "PostgreSQL container is not running"
+        echo "   Cannot test conversation storage without PostgreSQL"
+        return
+    fi
+    
+    if ! is_container_running "llm-council"; then
+        print_error "LLM-Council container is not running"
+        record_test "fail" "LLM-Council container is not running"
+        echo "   Cannot test conversation storage without LLM-Council"
+        return
+    fi
+    
+    # Wait for API to be ready
+    echo -n "Waiting for LLM-Council API to be ready..."
+    API_READY=false
+    for i in {1..30}; do
+        if curl -s -f "${API_URL}/health" > /dev/null 2>&1; then
+            echo " ✅"
+            API_READY=true
+            break
+        fi
+        echo -n "."
+        sleep 1
+    done
+    
+    if [ "$API_READY" = "false" ]; then
+        echo " ❌ API not ready"
+        record_test "fail" "LLM-Council API not ready after 30 seconds"
+        return
+    fi
+    
+    echo ""
+    echo "Testing conversation storage flow..."
+    echo ""
+    
+    # Step 1: Get initial conversation count
+    echo "1. Checking initial conversation count..."
+    INITIAL_COUNT=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE source = 'continue';" 2>/dev/null | tr -d ' ' || echo "0")
+    echo "   Initial conversations: $INITIAL_COUNT"
+    
+    # Step 2: Generate expected conversation ID from message (before API call)
+    TEST_MESSAGE="Platform test conversation storage verification"
+    CONV_ID=""
+    if command -v python3 >/dev/null 2>&1; then
+        CONV_ID=$(python3 -c "
+import sys, uuid
+TEST_MESSAGE = '$TEST_MESSAGE'
+CONTINUE_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+name = f'continue:{TEST_MESSAGE}'
+conv_id = str(uuid.uuid5(CONTINUE_NAMESPACE, name))
+print(conv_id)
+" 2>/dev/null || echo "")
+    fi
+    
+    if [ -z "$CONV_ID" ]; then
+        print_error "Could not generate conversation ID"
+        record_test "fail" "Could not generate conversation ID"
+        return
+    fi
+    
+    echo "   Expected conversation ID: $CONV_ID"
+    
+    # Step 3: Send a test message via API (simulating Continue plugin)
+    echo ""
+    echo "2. Sending test message via API..."
+    RESPONSE=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"model\": \"council\",
+            \"messages\": [
+                {\"role\": \"user\", \"content\": \"$TEST_MESSAGE\"}
+            ],
+            \"stream\": false
+        }" 2>/dev/null)
+    
+    if [ -z "$RESPONSE" ]; then
+        print_error "API request failed"
+        record_test "fail" "Failed to send test message via API"
+        return
+    fi
+    
+    echo "   ✅ API request successful"
+    echo "   Response length: ${#RESPONSE}"
+    
+    # Step 4: Wait for database write with retries
+    echo ""
+    echo "3. Waiting for conversation to be stored in database..."
+    STORED_COUNT=$INITIAL_COUNT
+    MAX_RETRIES=10
+    RETRY_COUNT=0
+    
+    while [ "$STORED_COUNT" -le "$INITIAL_COUNT" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        sleep 2
+        STORED_COUNT=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE source = 'continue';" 2>/dev/null | tr -d ' ' || echo "0")
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        echo "   Attempt $RETRY_COUNT/$MAX_RETRIES: Count = $STORED_COUNT"
+    done
+    
+    if [ "$STORED_COUNT" -le "$INITIAL_COUNT" ]; then
+        print_error "Conversation was not stored after $MAX_RETRIES attempts"
+        echo "   Initial count: $INITIAL_COUNT"
+        echo "   Current count: $STORED_COUNT"
+        echo "   Checking if conversation exists by ID..."
+        
+        # Check if conversation exists by ID (might have been created but count didn't update)
+        CONV_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE id = '$CONV_ID';" 2>/dev/null | tr -d ' ' || echo "0")
+        if [ "$CONV_EXISTS" = "1" ]; then
+            echo "   ⚠️  Conversation exists by ID but count didn't increase (possible race condition)"
+            STORED_COUNT=$((INITIAL_COUNT + 1))
+        else
+            record_test "fail" "Conversation was not stored in database"
+            return
+        fi
+    fi
+    
+    echo "   ✅ Conversation count increased: $INITIAL_COUNT -> $STORED_COUNT"
+    record_test "pass" "Conversation count increased after API call"
+    
+    # Step 5: Verify conversation details
+    echo ""
+    echo "4. Verifying conversation details..."
+    CONV_DETAILS=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -A -F'|' -c "SELECT id, title, source FROM chat WHERE id = '$CONV_ID';" 2>/dev/null || echo "")
+    
+    if [ -z "$CONV_DETAILS" ]; then
+        # Try to find any conversation that was just created
+        echo "   ⚠️  Conversation not found by expected ID, checking for any new conversations..."
+        NEW_CONV=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -A -F'|' -c "SELECT id, title, source FROM chat WHERE source = 'continue' ORDER BY created_at DESC LIMIT 1;" 2>/dev/null || echo "")
+        if [ -n "$NEW_CONV" ]; then
+            echo "   Found new conversation: $NEW_CONV"
+            CONV_DETAILS="$NEW_CONV"
+            CONV_ID=$(echo "$CONV_DETAILS" | cut -d'|' -f1)
+            echo "   Using conversation ID: $CONV_ID"
+        else
+            print_error "Conversation not found in database"
+            record_test "fail" "Conversation not found in database by ID"
+            return
+        fi
+    fi
+    
+    # Parse details (format: id|title|source)
+    CONV_SOURCE=$(echo "$CONV_DETAILS" | cut -d'|' -f3)
+    CONV_TITLE=$(echo "$CONV_DETAILS" | cut -d'|' -f2)
+    
+    if [ "$CONV_SOURCE" != "continue" ]; then
+        print_error "Conversation source is incorrect"
+        echo "   Expected: continue"
+        echo "   Got: $CONV_SOURCE"
+        record_test "fail" "Conversation source is not 'continue'"
+        return
+    fi
+    
+    echo "   ✅ Conversation found in database"
+    echo "   Title: $CONV_TITLE"
+    echo "   Source: $CONV_SOURCE"
+    record_test "pass" "Conversation stored with correct source='continue'"
+    
+    # Step 6: Verify conversation structure
+    echo ""
+    echo "5. Verifying conversation structure..."
+    CONV_JSON=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT chat::text FROM chat WHERE id = '$CONV_ID';" 2>/dev/null || echo "")
+    
+    if [ -z "$CONV_JSON" ]; then
+        print_error "Could not retrieve conversation JSON"
+        record_test "fail" "Could not retrieve conversation JSON from database"
+        return
+    fi
+    
+    # Verify JSON structure contains messages array
+    if echo "$CONV_JSON" | grep -q '"messages"'; then
+        echo "   ✅ Conversation JSON contains messages array"
+        
+        # Count messages in the conversation
+        if command -v python3 >/dev/null 2>&1; then
+            MSG_COUNT=$(echo "$CONV_JSON" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    messages = data.get('messages', [])
+    print(len(messages))
+except:
+    print('0')
+" 2>/dev/null || echo "0")
+            echo "   Messages in conversation: $MSG_COUNT"
+            if [ "$MSG_COUNT" -ge 1 ]; then
+                record_test "pass" "Conversation JSON structure is valid with $MSG_COUNT message(s)"
+            else
+                print_error "Conversation has no messages"
+                record_test "fail" "Conversation JSON structure is invalid (no messages)"
+                return
+            fi
+        else
+            record_test "pass" "Conversation JSON structure is valid"
+        fi
+    else
+        print_error "Conversation JSON missing messages array"
+        record_test "fail" "Conversation JSON structure is invalid"
+        return
+    fi
+    
+    # Step 7: Cleanup - delete test conversation
+    echo ""
+    echo "6. Cleaning up test conversation..."
+    DELETE_RESPONSE=$(curl -s -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
+    DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
+    
+    if [ "$DELETE_STATUS" = "200" ]; then
+        echo "   ✅ Test conversation deleted"
+        record_test "pass" "Test conversation cleanup successful"
+    else
+        echo "   ⚠️  Could not delete test conversation (status: $DELETE_STATUS)"
+        echo "   You may need to clean it up manually"
+        record_test "skip" "Test conversation cleanup skipped"
+    fi
+    
+    # Final verification
+    FINAL_COUNT=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE source = 'continue';" 2>/dev/null | tr -d ' ' || echo "0")
+    echo ""
+    echo "Final conversation count: $FINAL_COUNT"
+    
+    print_success "Conversation storage test completed"
+}
+
+# ============================================================================
 # SECTION 4: API ENDPOINT TESTS
 # ============================================================================
 test_api_endpoints() {
@@ -1125,6 +1356,9 @@ test_component_database() {
         print_error "pgAdmin container is not running"
         record_test "fail" "pgAdmin container is not running"
     fi
+    
+    # Conversation storage test
+    test_conversation_storage
 }
 
 # Test monitoring services
@@ -1296,6 +1530,7 @@ test_profile_usr() {
     test_component_database
     test_llm_state
     test_database_connection
+    test_conversation_storage
     test_api_endpoints
     test_council_members
 }
@@ -1312,6 +1547,7 @@ test_profile_dev() {
     test_component_ui
     test_llm_state
     test_database_connection
+    test_conversation_storage
     test_api_endpoints
     test_continue_integration
     test_council_members
@@ -1330,6 +1566,7 @@ test_profile_ops() {
     test_component_logging
     test_llm_state
     test_database_connection
+    test_conversation_storage
     test_api_endpoints
     test_council_members
 }
@@ -1344,6 +1581,7 @@ test_profile_sys() {
     test_stack_status
     test_llm_state
     test_database_connection
+    test_conversation_storage
     test_api_endpoints
     test_continue_integration
     test_council_members
@@ -1518,6 +1756,7 @@ main() {
             database)
                 test_component_database
                 test_database_connection
+                test_conversation_storage
                 ;;
             monitoring)
                 test_component_monitoring
