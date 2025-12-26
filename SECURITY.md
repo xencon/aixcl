@@ -101,7 +101,7 @@ When deploying AIXCL:
 6. **Monitoring**: Enable observability features to detect anomalies
 7. **Backups**: Regularly backup PostgreSQL data and configurations
 
-For detailed security guidance, see [`docs/reference/security.md`](docs/reference/security.md).
+For detailed security guidance, see the security documentation in the [`docs/` directory](docs/).
 
 ## Security Updates
 
