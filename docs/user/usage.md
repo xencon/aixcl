@@ -15,7 +15,15 @@ Runtime core services are non-negotiable and must be running for AIXCL to functi
 ### Operational Services (Guided - Profile-Dependent)
 These services support, observe, or operate the runtime:
 - **Persistence**: PostgreSQL (database), pgAdmin (database admin)
-- **Observability**: Prometheus (metrics), Grafana (dashboards), Loki (logs), Promtail (log shipping), cAdvisor (container metrics), node-exporter (host metrics), postgres-exporter (database metrics), nvidia-gpu-exporter (GPU metrics)
+- **Observability**:
+  - Prometheus (metrics)
+  - Grafana (dashboards)
+  - Loki (logs)
+  - Promtail (log shipping)
+  - cAdvisor (container metrics)
+  - node-exporter (host metrics)
+  - postgres-exporter (database metrics)
+  - nvidia-gpu-exporter (GPU metrics)
 - **UI**: Open WebUI (web interface)
 - **Automation**: Watchtower (automatic container updates)
 
@@ -61,7 +69,9 @@ This will:
 
 ```bash
 # Recommended default models (optimized for performance)
-./aixcl models add deepseek-coder:1.3b codegemma:2b qwen2.5-coder:3b
+./aixcl models add deepseek-coder:1.3b
+./aixcl models add codegemma:2b
+./aixcl models add qwen2.5-coder:3b
 ```
 
 ### 4. Configure Council
@@ -327,5 +337,5 @@ docker-compose pull
 5. **Backup database before clean:**
    ```bash
    # pgAdmin or direct pg_dump
-   docker exec postgres pg_dump -U webui webui > backup.sql
+   docker-compose exec postgres pg_dump -U webui webui > backup.sql
    ```
