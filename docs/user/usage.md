@@ -327,5 +327,5 @@ docker-compose pull
 5. **Backup database before clean:**
    ```bash
    # pgAdmin or direct pg_dump
-   docker exec postgres pg_dump -U webui webui > backup.sql
+   docker compose exec postgres pg_dump -U webui webui > backup.sql
    ```
