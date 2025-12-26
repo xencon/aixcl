@@ -677,10 +677,11 @@ def calculate_performance_score(result: Dict) -> float:
         Performance score from 0-100
     """
     tokens_per_sec = result.get('tokens_per_second', 0) or 0
-    elapsed_time = result.get('elapsed_time', 0) or 0.1  # Avoid division by zero
+    elapsed_time = result.get('elapsed_time') or 0
     model_name = result.get('model', '')
     
-    if tokens_per_sec == 0 or elapsed_time == 0:
+    # If we don't have a valid elapsed_time, treat the measurement as invalid
+    if tokens_per_sec == 0 or not isinstance(elapsed_time, (int, float)) or elapsed_time <= 0:
         return 0.0
     
     # Different scoring for council vs individual models
