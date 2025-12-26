@@ -61,7 +61,9 @@ This will:
 
 ```bash
 # Recommended default models (optimized for performance)
-./aixcl models add deepseek-coder:1.3b codegemma:2b qwen2.5-coder:3b
+./aixcl models add deepseek-coder:1.3b
+./aixcl models add codegemma:2b
+./aixcl models add qwen2.5-coder:3b
 ```
 
 ### 4. Configure Council
