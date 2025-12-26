@@ -220,6 +220,16 @@ gh issue view <number> --json labels
 - Use emoji in technical documentation
 - Use special Unicode characters that may not render consistently
 
+## Handling Automated PRs
+
+**GitHub Code Quality AI findings and automated fixes:**
+- Automated PRs from GitHub Code Quality (Copilot Autofix) may bypass the Issue-First workflow
+- These PRs should still be reviewed carefully before merging
+- After merging automated PRs, create a documentation issue to track the work completed
+- This ensures traceability even when automation creates PRs directly
+
+**Example:** If automated PRs #351-355 are merged, create issue #356 documenting them.
+
 ## AI Assistant Instructions
 
 When working with AI assistants (like Cursor, GitHub Copilot, etc.), include this prompt:
@@ -233,6 +243,7 @@ Follow the development workflow documented in this document:
 5. Use plain text formatting (markdown checkboxes - [x], not Unicode)
 6. Reference the issue number in commits and PRs
 7. Add labels to issues (type, component, priority, profile as applicable)
+8. For automated PRs, document them retroactively with an issue
 ```
 
 ## Quick Reference Commands
