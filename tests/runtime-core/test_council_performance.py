@@ -185,16 +185,6 @@ async def get_ollama_model_info(model_name: str) -> Dict[str, Any]:
                         if q_match:
                             quantization = q_match.group(1)
                 
-                # Debug: Print what we found (can be removed later)
-                # Uncomment to debug context_size extraction:
-                # if context_size is None:
-                #     print(f"DEBUG: Model {model_name} - modelfile type: {type(modelfile)}")
-                #     if isinstance(modelfile, str):
-                #         print(f"DEBUG: Modelfile preview: {modelfile[:500]}")
-                #     print(f"DEBUG: Data keys: {list(data.keys())}")
-                #     print(f"DEBUG: Parameters: {data.get('parameters')}")
-                #     print(f"DEBUG: Details: {data.get('details')}")
-                
                 info = {
                     'name': model_name,
                     'quantization': quantization,
