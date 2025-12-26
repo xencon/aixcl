@@ -112,8 +112,8 @@ async def wait_for_api(max_retries: int = 30, delay: float = 1.0) -> bool:
                 if response.status_code == 200:
                     print("✅ API is ready")
                     return True
-            except Exception as e:
-                # Silently retry on any exception (network errors, timeouts, etc.)
+            except httpx.RequestError:
+                # Silently retry on request-related exceptions (network errors, timeouts, etc.)
                 # This is expected during API startup, so we don't log every attempt
                 pass
             
