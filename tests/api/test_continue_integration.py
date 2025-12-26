@@ -167,7 +167,8 @@ async def send_continue_request(
                 # Return error response JSON so test can check for conversation_id
                 try:
                     return response.json()
-                except Exception:
+                except ValueError as json_error:
+                    print(f"   ❌ Failed to parse error response as JSON: {json_error}")
                     return None
             
             # Check if response body is empty
