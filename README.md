@@ -258,7 +258,7 @@ AIXCL includes comprehensive performance optimizations for running multiple LLM 
 - See [`docs/operations/model-recommendations.md`](docs/operations/model-recommendations.md) for complete details
 
 **Performance Test Results:**
-- Comprehensive testing of model configurations and optimization impact
+- Experimental testing of model configurations and optimization impact
 - See [`docs/operations/performance-test-results.md`](docs/operations/performance-test-results.md) for detailed analysis
 
 For complete performance tuning documentation, see [`docs/operations/`](docs/operations/).
