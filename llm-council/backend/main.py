@@ -152,6 +152,13 @@ _allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
 if _allowed_origins_env:
     ALLOWED_ORIGINS = [origin.strip() for origin in _allowed_origins_env.split(",") if origin.strip()]
 else:
+    # Default to common localhost origins (including common ports for VS Code/Continue plugin)
+    # Adjust via ALLOWED_ORIGINS env var for production
+    ALLOWED_ORIGINS = [
+        "http://localhost",
+        "http://localhost:8000",
+        "http://127.0.0.1",
+        "http://127.0.0.1:8000",
     ]
 print(f"DEBUG: CORS ALLOWED_ORIGINS = {ALLOWED_ORIGINS}")
 
