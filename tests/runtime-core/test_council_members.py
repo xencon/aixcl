@@ -5,6 +5,7 @@ Tests each council model and the chairman model with a simple query.
 """
 
 import asyncio
+import os
 import sys
 import httpx
 from typing import Dict, List, Optional
@@ -15,6 +16,10 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 
 # Test query - simple and fast
 TEST_QUERY = "Say 'OK' if you can read this."
+
+# Model test timeout - can be overridden via COUNCIL_MEMBER_TEST_TIMEOUT environment variable
+# Default to 60 seconds to match MODEL_TIMEOUT
+MODEL_TEST_TIMEOUT = float(os.getenv("COUNCIL_MEMBER_TEST_TIMEOUT", "60.0"))
 
 
 async def check_service_health() -> bool:
@@ -70,7 +75,7 @@ async def test_model_operational(model: str, backend_mode: str) -> Dict[str, any
     try:
         if backend_mode == "ollama":
             # Test via Ollama directly
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=MODEL_TEST_TIMEOUT) as client:
                 payload = {
                     "model": model,
                     "messages": [{"role": "user", "content": TEST_QUERY}],
@@ -104,7 +109,7 @@ async def test_model_operational(model: str, backend_mode: str) -> Dict[str, any
         return {
             "operational": False,
             "response_time": 0.0,
-            "error": "Timeout - model did not respond within 15 seconds",
+            "error": f"Timeout - model did not respond within {int(MODEL_TEST_TIMEOUT)} seconds",
             "response_preview": None
         }
     except httpx.HTTPStatusError as e:
