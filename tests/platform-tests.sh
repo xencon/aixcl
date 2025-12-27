@@ -802,6 +802,9 @@ print(conv_id)
     # Step 3: Send a test message via API (simulating Continue plugin)
     echo ""
     echo "2. Sending test message via API..."
+    echo "   Sending request to ${API_URL}/v1/chat/completions..."
+    # Flush output buffer (helps with VSCode terminal buffering)
+    [ -t 1 ] && printf "" || true
     RESPONSE=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
         -H "Content-Type: application/json" \
         -d "{
@@ -939,8 +942,8 @@ except:
     # Step 7: Cleanup - delete test conversation
     echo ""
     echo "6. Cleaning up test conversation..."
-    DELETE_RESPONSE=$(curl -s -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
-    DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
+    DELETE_RESPONSE=$(curl -s --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
+    DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
     
     if [ "$DELETE_STATUS" = "200" ]; then
         echo "   ✅ Test conversation deleted"
@@ -969,12 +972,14 @@ test_api_endpoints() {
     echo -n "Waiting for API to be ready..."
     API_READY=false
     for i in {1..30}; do
-        if curl -s -f "${API_URL}/health" > /dev/null 2>&1; then
+        if curl -s -f --max-time 5 "${API_URL}/health" > /dev/null 2>&1; then
             echo " ✅"
             API_READY=true
             break
         fi
         echo -n "."
+        # Flush output buffer (helps with VSCode terminal buffering)
+        [ -t 1 ] && printf "" || true
         sleep 1
     done
     
@@ -998,7 +1003,7 @@ test_api_endpoints() {
     
     # Test 2: Send a test chat completion
     echo -e "\n2. Testing chat completion (Continue conversation)..."
-    RESPONSE=$(curl -s -X POST "${API_URL}/v1/chat/completions" \
+    RESPONSE=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
         -H "Content-Type: application/json" \
         -d '{
             "model": "council",
@@ -1063,7 +1068,7 @@ except:
     
     # Test 3: Test conversation continuity
     echo -e "\n3. Testing conversation continuity (second message)..."
-    RESPONSE2=$(curl -s -X POST "${API_URL}/v1/chat/completions" \
+    RESPONSE2=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
         -H "Content-Type: application/json" \
         -d '{
             "model": "council",
@@ -1101,8 +1106,8 @@ print(conv_id)
 " 2>/dev/null || echo "")
         
         if [ -n "$TEST_CONV_ID" ]; then
-            DELETE_RESPONSE=$(curl -s -X DELETE "${API_URL}/v1/chat/completions/$TEST_CONV_ID" 2>/dev/null)
-            DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${API_URL}/v1/chat/completions/$TEST_CONV_ID" 2>/dev/null)
+            DELETE_RESPONSE=$(curl -s --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$TEST_CONV_ID" 2>/dev/null)
+            DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$TEST_CONV_ID" 2>/dev/null)
             
             if [ "$DELETE_STATUS" = "200" ] && echo "$DELETE_RESPONSE" | grep -q "success"; then
                 echo "   ✅ Conversation deleted successfully"
