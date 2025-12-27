@@ -4,7 +4,7 @@
 
 ## About AIXCL
 
-AIXCL is a local-first AI development platform for individuals and teams who want full control over their models and tooling. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate large language models directly into your workflow.
+AIXCL is a privacy focused, local-first AI development platform for individuals and teams who want full control over their models and tooling. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate large language models directly into your workflow.
 
 ## Technology Stack
 
