@@ -570,7 +570,7 @@ function start() {
             echo "Note: Set PROFILE=<profile> in .env file to use a default profile"
             echo ""
             echo "Examples:"
-            echo "  ./aixcl stack start --profile usr   # User-oriented runtime (minimal footprint with database persistence)"
+            echo "  ./aixcl stack start --profile usr    # User-oriented runtime (minimal footprint with database persistence)"
             echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
             echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
             echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
@@ -1321,7 +1321,7 @@ function logs() {
         
         if [ "$found_any" = false ]; then
             echo "⚠️  No services are currently running."
-            echo "   Start services with: ./aixcl start"
+            echo "   Start services with: ./aixcl stack start"
             return 0
         fi
         
@@ -2490,14 +2490,14 @@ function test_council_operational() {
     # Check if LLM-Council service is running
     if ! docker ps --format "{{.Names}}" | grep -q "llm-council"; then
         echo "❌ Error: LLM-Council service is not running."
-        echo "   Please start the service first with: ./aixcl start"
+        echo "   Please start the service first with: ./aixcl stack start"
         return 1
     fi
     
     # Check if Ollama is running
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
         echo "❌ Error: Ollama container is not running."
-        echo "   Please start the services first with: ./aixcl start"
+        echo "   Please start the services first with: ./aixcl stack start"
         return 1
     fi
     
@@ -2729,7 +2729,7 @@ function configure_council() {
     # Check if Ollama is running
     if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
         echo "❌ Error: Ollama container is not running."
-        echo "   Please start the services first with: ./aixcl start"
+        echo "   Please start the services first with: ./aixcl stack start"
         return 1
     fi
     
@@ -2969,7 +2969,7 @@ function configure_council() {
     echo ""
     echo "Next steps:"
     echo "  1. Restart the LLM-Council service to apply changes:"
-    echo "     ./aixcl restart"
+    echo "     ./aixcl stack restart"
     echo "  2. The configuration will be loaded automatically"
     echo ""
     
@@ -3108,7 +3108,7 @@ function council_cmd() {
         echo "Error: Council action is required"
         echo "Usage: $0 council [configure|status]"
         echo "Examples:"
-        echo "  $0 council status      - Show council configuration and operational status"
+        echo "  $0 council status     - Show council configuration and operational status"
         echo "  $0 council configure  - Configure council models and chairman"
         return 1
     fi
@@ -3134,7 +3134,7 @@ function council_cmd() {
             echo "Error: Unknown council action '$action'"
             echo "Usage: $0 council [configure|status]"
             echo "Examples:"
-            echo "  $0 council status      - Show council configuration and operational status"
+            echo "  $0 council status     - Show council configuration and operational status"
             echo "  $0 council configure  - Configure council models and chairman"
             return 1
             ;;
