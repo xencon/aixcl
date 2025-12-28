@@ -9,12 +9,12 @@ Commercial services are available to help **Small Teams** adopt AIXCL safely, pr
 - Repository workflow standardization using `.md` files
 - AI-assisted issue and pull request workflow design
 - System prompt design and governance
-- SME-focused on-prem workshops (up to 8 participants)
+- Delivery focused on-prem workshops (up to 8 participants)
 
 ### On-Prem Workshop
 A hands-on workshop where teams leave with:
 - A fully configured on-prem AIXCL environment
-- Repositories structured so Markdown files drive automation
+- Repositories structured. Spec files driven automation
 - Defined system prompts for consistent AI behavior
 - Lightweight project governance using Git as the source of truth
 
