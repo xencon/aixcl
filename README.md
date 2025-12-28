@@ -1,3 +1,5 @@
+[![Watch the video](https://img.youtube.com/vi/YaBABt0TsPI/0.jpg)](https://youtu.be/YaBABt0TsPI)
+
 # AIXCL
 
 **A self-hosted AI stack for running and integrating LLMs locally.**
