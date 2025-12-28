@@ -2,7 +2,7 @@
 
 AIXCL is an open-source project focused on standardizing AI-assisted repository workflows using governed, Markdown-driven specifications.
 
-Commercial services are available to help **Small Teams** adopt AIXCL safely, predictably, and on-premises.
+Commercial services are available to help teams adopt AIXCL safely, predictably, and on-premises.
 
 ### Available Services
 - On-prem installation and configuration
