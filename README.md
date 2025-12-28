@@ -1,4 +1,6 @@
-[![Watch the video](https://img.youtube.com/vi/YaBABt0TsPI/0.jpg)](https://youtu.be/YaBABt0TsPI)
+<a href="https://youtu.be/YaBABt0TsPI">
+  <img src="6551931d-3936-49b8-83ab-920cc0675ab4.png" width="600"/>
+</a>
 
 # AIXCL
 
