@@ -1,5 +1,5 @@
 <a href="https://youtu.be/YaBABt0TsPI">
-  <img src="AIXCL.png" alt="AIXCL" width="800" height=600/>
+  <img src="AIXCL.png" alt="AIXCL" width="800" height=500/>
 </a>
 
 # AIXCL
