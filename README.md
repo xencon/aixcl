@@ -201,7 +201,7 @@ Run the platform test suite to verify your installation:
 ./tests/platform-tests.sh --profile usr     # Runtime core + PostgreSQL
 ./tests/platform-tests.sh --profile dev     # Core + database + UI
 ./tests/platform-tests.sh --profile ops     # Core + monitoring + logging
-./tests/platform-tests.sh --profile full    # All services
+./tests/platform-tests.sh --profile sys     # All services
 
 # Test by component (targeted testing)
 ./tests/platform-tests.sh --component runtime-core
