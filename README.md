@@ -2,6 +2,11 @@
   <img src="AIXCL.png" alt="AIXCL" width="800" height=500/>
 </a>
 
+## 🚀 Run this project in GitHub Codespaces
+
+[Open in GitHub Codespaces](https://github.com/codespaces/new?repo=OWNER/REPO)
+
+
 # AIXCL
 
 **A self-hosted AI stack for running and integrating LLMs locally.**
