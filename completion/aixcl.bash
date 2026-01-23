@@ -5,6 +5,9 @@
 # This script provides command completion for the aixcl command-line tool.
 # It offers suggestions for commands and model names when using the add/remove commands.
 #
+# Compatibility: macOS, WSL, Linux, and other Unix systems
+# Requires: bash 3.2+ (macOS default), docker
+#
 # Governance Model:
 # - Runtime Core (Strict): Always enabled, never optional (ollama, llm-council)
 # - Operational Services (Guided): Profile-dependent, support/observe runtime
@@ -12,17 +15,29 @@
 #
 # To use this script:
 # 1. Source it directly: source /path/to/completion/aixcl.bash
-# 2. Or install it system-wide: sudo cp completion/aixcl.bash /etc/bash_completion.d/aixcl
-# 3. Or run: ./aixcl bash-completion
+# 2. Or install it system-wide: 
+#    - Linux/WSL: sudo cp completion/aixcl.bash /etc/bash_completion.d/aixcl
+#    - macOS: cp completion/aixcl.bash /usr/local/etc/bash_completion.d/aixcl
+# 3. Or run: ./aixcl utils bash-completion
 #
 
 # Function to get available models from Ollama
+# Compatible with macOS, WSL, and Linux Docker implementations
 _get_ollama_models() {
+    # Check if docker command is available
+    if ! command -v docker >/dev/null 2>&1; then
+        return 0
+    fi
+    
     # Check if Ollama container is running
-    if docker ps --format "{{.Names}}" | grep -q "ollama" 2>/dev/null; then
+    # Use portable grep syntax that works on macOS, WSL, and Linux
+    if docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^ollama$|_ollama$|ollama_" 2>/dev/null; then
         # Get list of models from Ollama
-        local models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}')
-        echo "$models"
+        # Handle both docker exec formats (works on all platforms)
+        local models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}' 2>/dev/null)
+        if [ -n "$models" ]; then
+            echo "$models"
+        fi
     fi
 }
 
@@ -31,11 +46,25 @@ _aixcl_complete() {
     COMPREPLY=()
     
     # Disable default filename completion to prevent showing files/directories like "tests"
-    compopt -o default 2>/dev/null || true
+    # compopt is bash 4.0+, so handle gracefully for macOS bash 3.2 compatibility
+    if type compopt >/dev/null 2>&1; then
+        compopt -o default 2>/dev/null || true
+    fi
     
     # Get current word and previous word
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    # Use safe array access compatible with bash 3.2+ (macOS default)
+    if [ ${COMP_CWORD} -ge 0 ] && [ ${COMP_CWORD} -lt ${#COMP_WORDS[@]} ]; then
+        cur="${COMP_WORDS[COMP_CWORD]}"
+    else
+        cur=""
+    fi
+    
+    if [ ${COMP_CWORD} -ge 1 ] && [ $((COMP_CWORD - 1)) -lt ${#COMP_WORDS[@]} ]; then
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    else
+        prev=""
+    fi
+    
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
     
@@ -62,7 +91,8 @@ _aixcl_complete() {
     local profiles="usr dev ops sys"
     
     # If we're completing the first argument (right after the command)
-    if (( cword == 1 )); then
+    # Use arithmetic comparison compatible with bash 3.2+ (macOS default)
+    if [ "$cword" -eq 1 ]; then
         COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
         return 0
     fi
@@ -88,35 +118,45 @@ _aixcl_complete() {
             # If previous word was 'service', complete with service names
             # Note: Runtime core services (ollama, llm-council) should always be running
             # Operational services are profile-dependent
-            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
-                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
-                return 0
-            fi
-            # If previous word was 'stack', complete with profile options (optional)
-            # Profile can come from .env file, but --profile/-p is still available
-            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
-                COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
-                return 0
+            # Use arithmetic comparison compatible with bash 3.2+ (macOS default)
+            if [ "$cword" -ge 2 ]; then
+                local prev_idx=$((cword - 2))
+                if [ "$prev_idx" -ge 0 ] && [ "$prev_idx" -lt ${#words[@]} ] && [ "${words[$prev_idx]}" = "service" ]; then
+                    COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                    return 0
+                fi
+                # If previous word was 'stack', complete with profile options (optional)
+                # Profile can come from .env file, but --profile/-p is still available
+                if [ "$prev_idx" -ge 0 ] && [ "$prev_idx" -lt ${#words[@]} ] && [ "${words[$prev_idx]}" = "stack" ]; then
+                    COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
+                    return 0
+                fi
             fi
             ;;
         'restart')
             # If previous word was 'service', complete with service names
-            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
-                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
-                return 0
-            fi
-            # If previous word was 'stack', complete with profile options (optional)
-            # Profile can come from .env file, but --profile/-p is still available
-            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
-                COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
-                return 0
+            if [ "$cword" -ge 2 ]; then
+                local prev_idx=$((cword - 2))
+                if [ "$prev_idx" -ge 0 ] && [ "$prev_idx" -lt ${#words[@]} ] && [ "${words[$prev_idx]}" = "service" ]; then
+                    COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                    return 0
+                fi
+                # If previous word was 'stack', complete with profile options (optional)
+                # Profile can come from .env file, but --profile/-p is still available
+                if [ "$prev_idx" -ge 0 ] && [ "$prev_idx" -lt ${#words[@]} ] && [ "${words[$prev_idx]}" = "stack" ]; then
+                    COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
+                    return 0
+                fi
             fi
             ;;
         'stop')
             # If previous word was 'service', complete with service names
-            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
-                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
-                return 0
+            if [ "$cword" -ge 2 ]; then
+                local prev_idx=$((cword - 2))
+                if [ "$prev_idx" -ge 0 ] && [ "$prev_idx" -lt ${#words[@]} ] && [ "${words[$prev_idx]}" = "service" ]; then
+                    COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                    return 0
+                fi
             fi
             ;;
         '--profile'|'-p')
@@ -146,17 +186,22 @@ _aixcl_complete() {
             ;;
         'add'|'remove')
             # If previous word was 'models', complete with available models
-            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
-                local available_models=$(_get_ollama_models)
-                if [ -n "$available_models" ]; then
-                    COMPREPLY=( $(compgen -W "$available_models" -- "$cur") )
+            # Use arithmetic comparison compatible with bash 3.2+ (macOS default)
+            if [ "$cword" -ge 2 ]; then
+                local prev_idx=$((cword - 2))
+                if [ "$prev_idx" -ge 0 ] && [ "$prev_idx" -lt ${#words[@]} ] && [ "${words[$prev_idx]}" = "models" ]; then
+                    local available_models=$(_get_ollama_models)
+                    if [ -n "$available_models" ]; then
+                        COMPREPLY=( $(compgen -W "$available_models" -- "$cur") )
+                    fi
+                    return 0
                 fi
-                return 0
             fi
             ;;
     esac
     
     # If we reach here and COMPREPLY is empty, explicitly prevent filename completion
+    # Use portable array length check compatible with bash 3.2+ (macOS default)
     if [ ${#COMPREPLY[@]} -eq 0 ]; then
         COMPREPLY=()
         return 0
@@ -167,5 +212,6 @@ _aixcl_complete() {
 
 # Register the completion function
 # This will work for: aixcl, ./aixcl, /path/to/aixcl, etc.
+# Compatible with macOS, WSL, and Linux bash completion systems
 # -o default is not set, so filename completion won't be used as fallback
-complete -F _aixcl_complete aixcl
+complete -F _aixcl_complete aixcl 2>/dev/null || true

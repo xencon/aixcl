@@ -133,6 +133,7 @@ services:
       context: ../llm-council
       dockerfile: Dockerfile
     image: llm-council:latest
+    pull_policy: build
     container_name: llm-council
     environment:
       - BACKEND_MODE=ollama
