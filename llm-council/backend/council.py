@@ -32,19 +32,16 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
         print("ERROR: No council models configured!", flush=True)
         return []
     
-    # Wrap user query with instructions to provide solution, not ask questions
+    # Wrap user query with instructions for plain-text responses
     solution_prompt = f"""{user_query}
 
-CRITICAL INSTRUCTIONS:
-- Solve ONLY the stated problem. Do not add extra functions or features.
-- Match function signatures exactly as specified.
-- Handle all edge cases mentioned (None, empty strings, whitespace, etc.).
-- Provide complete, production-ready code.
-- Use standard library solutions when available (e.g., s[::-1] for reversal, email.utils for email).
+RESPONSE GUIDANCE:
+- Answer the user's request directly and concisely.
+- Use plain text unless the user explicitly asks for code.
+- If code is explicitly requested, provide only the code without extra commentary.
 - Make reasonable assumptions if details are missing.
 - Do NOT ask questions or request clarification.
-- Do NOT read files or interpret challenge descriptions as input.
-- Provide code directly, no meta-commentary."""
+- Do NOT reference tools, files, or the council process."""
     
     messages = [{"role": "user", "content": solution_prompt}]
     print(f"DEBUG: messages = {messages}")
@@ -117,60 +114,84 @@ async def stage2_collect_rankings(
         for label, result in zip(labels, stage1_results)
     ])
 
-    ranking_prompt = f"""Evaluate code responses to this question: {user_query}
+    ranking_prompt = f"""Evaluate responses to this question: {user_query}
 
 Responses (anonymized):
 {responses_text}
 
-EVALUATION CRITERIA (weighted):
-1. CORRECTNESS (40%): 
+First determine whether the user explicitly requested code. Use the criteria that match the request type:
+- If code was requested, apply CODE CRITERIA.
+- If code was not requested, apply PLAIN TEXT CRITERIA and do not penalize responses for lacking code.
+
+PLAIN TEXT CRITERIA (weighted):
+1. CORRECTNESS (45%):
+   - Directly answers the request?
+   - Accurate and free of factual errors?
+   - No contradictions?
+2. COMPLETENESS (20%):
+   - Covers key requirements?
+   - Reasonable assumptions stated?
+   - Handles edge cases when relevant?
+3. CLARITY (15%):
+   - Clear structure and concise wording?
+   - Easy to follow?
+4. SAFETY/SECURITY (10%):
+   - Avoids unsafe guidance?
+   - Notes risks or limitations when important?
+5. PRACTICALITY (10%):
+   - Actionable and useful?
+   - No unnecessary extras?
+
+CODE CRITERIA (weighted):
+1. CORRECTNESS (40%):
    - Function signature matches requirements?
    - Solves the exact problem stated?
    - All edge cases handled?
    - No logic errors or bugs?
    - Production-ready?
-
 2. SECURITY (20%):
    - Input validation present?
    - Injection risks prevented?
    - Safe error messages?
    - Secure coding practices?
-
 3. CODE QUALITY (15%):
    - Documentation present?
    - Readable and clear?
    - Follows best practices?
    - Appropriate style?
-
 4. PERFORMANCE (10%):
    - Efficient algorithm?
    - Good time/space complexity?
    - Appropriate data structures?
-
 5. MAINTAINABILITY (10%):
    - Modular structure?
    - Easy to understand?
    - Extensible design?
-
 6. STANDARD PRACTICES (5%):
    - Uses standard library?
    - Proven patterns?
    - Conservative approach?
 
 RED FLAGS (rank lower):
-- Wrong function signature
-- Missing required functionality
-- Extra unrelated functions
-- Logic errors/bugs
-- Misunderstanding problem (e.g., reading challenge file as input)
-- Missing edge cases
-- Security vulnerabilities
+- For plain text requests:
+  - Does not answer the question
+  - Incorrect or misleading content
+  - Requests clarification or asks questions
+  - Provides code when code was not requested
+- For code requests:
+  - Wrong function signature
+  - Missing required functionality
+  - Extra unrelated functions
+  - Logic errors/bugs
+  - Missing edge cases
+  - Security vulnerabilities
+  - No code provided
 
-IMPORTANT: 
-- Prefer standard solutions over experimental ones
-- Flag exotic approaches
-- Rank solutions that solve the exact problem highest
-- Rank solutions with extra code or wrong signatures lowest
+IMPORTANT:
+- Apply only the criteria that match the request type.
+- Prefer standard solutions over experimental ones.
+- Flag exotic approaches.
+- Rank solutions that solve the exact problem highest.
 - Provide ranking only. Do not ask questions.
 
 Evaluate each response briefly, then provide ranking:
@@ -249,7 +270,7 @@ async def stage3_synthesize_final(
     aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
     top_model = aggregate_rankings[0]['model'] if aggregate_rankings else None
 
-    chairman_prompt = f"""Synthesize the best code solution from multiple responses.
+    chairman_prompt = f"""Synthesize the best response from multiple responses.
 
 Original question: {user_query}
 
@@ -260,44 +281,18 @@ Peer rankings:
 {stage2_text}
 
 SYNTHESIS RULES:
-1. REJECT solutions that don't match function signature or solve wrong problem
-2. PRIORITIZE correctness and security (mandatory)
-3. PREFER solutions ranked highly by multiple models (consensus)
-4. SYNTHESIZE best aspects: correctness from one, efficiency from another, clarity from a third
-5. USE standard library solutions over custom code
-6. FLAG exotic approaches unless explicitly requested
-7. PROVIDE code directly - no preamble, no process explanations, no tool references
+1. PRIORITIZE correctness and security (mandatory)
+2. PREFER responses ranked highly by multiple models (consensus)
+3. SYNTHESIZE best aspects: accuracy from one, clarity from another, brevity from a third
+4. USE plain text unless the user explicitly asked for code
+5. If code is requested, provide code only (no preamble, no process explanations)
+6. AVOID meta-commentary about the council process
 
-CRITICAL: 
-- Output ONLY the code solution
-- No "Given the context..." or "Based on evaluations..." 
-- No meta-commentary about the council process
-- Just the code that solves the problem
-
-After the code, add two lines:
+After the response, add two lines:
 # Primary source: ModelName (or "Synthesized from multiple models" if combining)
-# Confidence: XX% (your confidence this solution is correct, 0-100)
+# Confidence: XX% (your confidence this response is correct, 0-100)
 
-CRITICAL CONFIDENCE RULES (MUST FOLLOW):
-1. Check function signature FIRST:
-   - If signature doesn't match requirements (e.g., returns bool instead of tuple) → confidence MUST be 50% or below
-   - If signature matches → can proceed to other checks
-
-2. Check required functionality:
-   - Missing error messages when required → subtract 20% from confidence
-   - Missing normalization when required → subtract 15% from confidence
-   - Missing edge case handling → subtract 10% from confidence
-
-3. Final confidence ranges:
-   - 90-100%: Perfect - signature correct, ALL requirements met, production-ready
-   - 70-89%: Good - signature correct, minor issues only (missing docstring)
-   - 50-69%: Partial - signature correct BUT missing key requirements
-   - 30-49%: Poor - wrong signature OR multiple missing requirements
-   - 0-29%: Wrong - solves different problem or critical errors
-
-EXAMPLE: If function should return tuple[bool, str] but returns bool → confidence MUST be ≤50%
-
-Provide the solution code directly:"""
+Provide the response directly:"""
 
     messages = [{"role": "user", "content": chairman_prompt}]
 
