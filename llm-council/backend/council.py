@@ -290,7 +290,7 @@ SYNTHESIS RULES:
 
 After the response, add two lines:
 # Primary source: ModelName (or "Synthesized from multiple models" if combining)
-# Confidence: XX% (your confidence this solution is correct, 0-100)
+# Confidence: XX% (your confidence this response is correct, 0-100)
 
 Provide the response directly:"""
 
