@@ -114,60 +114,84 @@ async def stage2_collect_rankings(
         for label, result in zip(labels, stage1_results)
     ])
 
-    ranking_prompt = f"""Evaluate code responses to this question: {user_query}
+    ranking_prompt = f"""Evaluate responses to this question: {user_query}
 
 Responses (anonymized):
 {responses_text}
 
-EVALUATION CRITERIA (weighted):
-1. CORRECTNESS (40%): 
+First determine whether the user explicitly requested code. Use the criteria that match the request type:
+- If code was requested, apply CODE CRITERIA.
+- If code was not requested, apply PLAIN TEXT CRITERIA and do not penalize responses for lacking code.
+
+PLAIN TEXT CRITERIA (weighted):
+1. CORRECTNESS (45%):
+   - Directly answers the request?
+   - Accurate and free of factual errors?
+   - No contradictions?
+2. COMPLETENESS (20%):
+   - Covers key requirements?
+   - Reasonable assumptions stated?
+   - Handles edge cases when relevant?
+3. CLARITY (15%):
+   - Clear structure and concise wording?
+   - Easy to follow?
+4. SAFETY/SECURITY (10%):
+   - Avoids unsafe guidance?
+   - Notes risks or limitations when important?
+5. PRACTICALITY (10%):
+   - Actionable and useful?
+   - No unnecessary extras?
+
+CODE CRITERIA (weighted):
+1. CORRECTNESS (40%):
    - Function signature matches requirements?
    - Solves the exact problem stated?
    - All edge cases handled?
    - No logic errors or bugs?
    - Production-ready?
-
 2. SECURITY (20%):
    - Input validation present?
    - Injection risks prevented?
    - Safe error messages?
    - Secure coding practices?
-
 3. CODE QUALITY (15%):
    - Documentation present?
    - Readable and clear?
    - Follows best practices?
    - Appropriate style?
-
 4. PERFORMANCE (10%):
    - Efficient algorithm?
    - Good time/space complexity?
    - Appropriate data structures?
-
 5. MAINTAINABILITY (10%):
    - Modular structure?
    - Easy to understand?
    - Extensible design?
-
 6. STANDARD PRACTICES (5%):
    - Uses standard library?
    - Proven patterns?
    - Conservative approach?
 
 RED FLAGS (rank lower):
-- Wrong function signature
-- Missing required functionality
-- Extra unrelated functions
-- Logic errors/bugs
-- Misunderstanding problem (e.g., reading challenge file as input)
-- Missing edge cases
-- Security vulnerabilities
+- For plain text requests:
+  - Does not answer the question
+  - Incorrect or misleading content
+  - Requests clarification or asks questions
+  - Provides code when code was not requested
+- For code requests:
+  - Wrong function signature
+  - Missing required functionality
+  - Extra unrelated functions
+  - Logic errors/bugs
+  - Missing edge cases
+  - Security vulnerabilities
+  - No code provided
 
-IMPORTANT: 
-- Prefer standard solutions over experimental ones
-- Flag exotic approaches
-- Rank solutions that solve the exact problem highest
-- Rank solutions with extra code or wrong signatures lowest
+IMPORTANT:
+- Apply only the criteria that match the request type.
+- Prefer standard solutions over experimental ones.
+- Flag exotic approaches.
+- Rank solutions that solve the exact problem highest.
 - Provide ranking only. Do not ask questions.
 
 Evaluate each response briefly, then provide ranking:
