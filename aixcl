@@ -1446,6 +1446,26 @@ function status() {
     if [ -f "$env_file" ]; then
         current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
     fi
+
+    local profile_valid=false
+    local profile_services=""
+    if [ -n "$current_profile" ] && is_valid_profile "$current_profile" 2>/dev/null; then
+        profile_valid=true
+        profile_services="$(get_profile_services "$current_profile")"
+    fi
+
+    is_service_in_profile() {
+        local service_key="$1"
+        if [ "$profile_valid" != "true" ]; then
+            return 0
+        fi
+        for service in $profile_services; do
+            if [ "$service" = "$service_key" ]; then
+                return 0
+            fi
+        done
+        return 1
+    }
     
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
@@ -1469,19 +1489,25 @@ function status() {
         local health_check_arg="$4"
         local is_critical="${5:-false}"
         local is_runtime_core="${6:-false}"
+
+        if [ "$is_runtime_core" != "true" ] && ! is_service_in_profile "$container_name"; then
+            printf "  %-4s %-16s %s\n" "SKIP" "$service_name" "Stopped (not in '${current_profile}' profile)"
+            return 0
+        fi
         
         # Check container status
         local container_running=false
         if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
             container_running=true
-            local container_status="✅"
+            local container_status="OK"
         else
-            container_status="❌"
+            container_status="DOWN"
         fi
         
         # Check health (only if container is running)
         local health_status=""
         local is_healthy=false
+        local is_warn=false
         if [ "$container_running" = "true" ] && [ -n "$health_check_type" ]; then
             local health_result=""
             
@@ -1538,6 +1564,9 @@ function status() {
             if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "307" ] || [ "$health_result" = "healthy" ]; then
                 health_status=""
                 is_healthy=true
+            elif [ "$health_result" = "503" ]; then
+                health_status=""
+                is_warn=true
             else
                 health_status=""
                 if [ "$is_critical" = "true" ]; then
@@ -1561,8 +1590,21 @@ function status() {
                 ((operational_healthy++)) || true
             fi
         fi
-        
-        echo "  ${container_status} ${service_name}${health_status}"
+
+        local service_state="Stopped"
+        if [ "$container_running" = "true" ]; then
+            service_state="Running"
+        fi
+        if [ "$container_running" = "true" ] && [ "$health_check_type" != "" ] && [ "$is_healthy" != "true" ]; then
+            container_status="WARN"
+            if [ "$is_warn" = "true" ]; then
+                service_state="Running (starting)"
+            else
+                service_state="Running (unhealthy)"
+            fi
+        fi
+
+        printf "  %-4s %-16s %s\n" "$container_status" "$service_name" "$service_state"
     }
     
     # Header section
@@ -1586,12 +1628,12 @@ function status() {
     
     # Continue is a VS Code plugin, not a containerized service
     # Check if LLM-Council API is accessible (which Continue connects to)
-    local continue_status="❌"
+    local continue_status="DOWN"
     local continue_state="Inactive"
     local continue_note="(VS Code plugin - LLM-Council unavailable)"
     local continue_healthy=false
     if curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://localhost:8000/health" 2>/dev/null | grep -q "200"; then
-        continue_status="✅"
+        continue_status="OK"
         continue_state="Active"
         continue_note="Connected (VS Code plugin)"
         continue_healthy=true
@@ -1601,7 +1643,7 @@ function status() {
         continue_state="Inactive"
         ((runtime_core_total++)) || true
     fi
-    echo "  ${continue_status} continue        ${continue_state}     ${continue_note}"
+    printf "  %-4s %-16s %s     %s\n" "$continue_status" "continue" "$continue_state" "$continue_note"
     echo ""
     
     # Operational Services (Guided - Profile-Dependent) per governance model
@@ -1618,7 +1660,7 @@ function status() {
     # Sanitize: only allow alphanumeric, underscore, and hyphen
     if [[ ! "$postgres_user" =~ ^[A-Za-z0-9_-]+$ ]]; then
         postgres_user="webui"
-        echo "⚠️  Warning: Invalid POSTGRES_USER value, using default 'webui'" >&2
+        echo "WARNING: Invalid POSTGRES_USER value, using default 'webui'" >&2
     fi
     check_service_status "PostgreSQL" "postgres" "pg_isready" "$postgres_user" "false" "false"
     
@@ -1641,58 +1683,22 @@ function status() {
     POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
     check_service_status "Postgres Exporter" "postgres-exporter" "status_var" "POSTGRES_EXPORTER_STATUS" "false" "false"
 
-    if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
-        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
-        check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
-    else
-        echo "  ⚠️  NVIDIA GPU Exporter (expected on non-GPU systems)"
-        # Don't count NVIDIA GPU Exporter in totals if it's not expected
-    fi
+    NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+    check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
 
     # (Loki and Promtail are part of Observability)
-    if docker ps --format "{{.Names}}" | grep -q "^loki$"; then
-        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
-        if [ "$LOKI_STATUS" = "200" ]; then
-            echo "  ✅ Loki"
-            ((operational_total++)) || true
-            ((operational_healthy++)) || true
-        elif [ "$LOKI_STATUS" = "503" ]; then
-            echo "  ⚠️  Loki (starting up)"
-            ((operational_total++)) || true
-        else
-            echo "  ❌ Loki"
-            echo "    Checking Loki logs (last 3 lines):"
-            timeout 2 docker logs loki --tail 3 2>/dev/null || echo "    (Logs unavailable or timeout)"
-            ((operational_total++)) || true
-        fi
-    else
-        echo "  ❌ Loki"
-        ((operational_total++)) || true
-    fi
+    check_service_status "Loki" "loki" "curl" "http://localhost:3100/ready" "false" "false"
 
+    PROMTAIL_STATUS="unhealthy"
     if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
         if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
-            echo "  ✅ Promtail"
-            ((operational_total++)) || true
-            ((operational_healthy++)) || true
-        else
-            echo "  ❌ Promtail"
-            ((operational_total++)) || true
+            PROMTAIL_STATUS="healthy"
         fi
-    else
-        echo "  ❌ Promtail"
-        ((operational_total++)) || true
     fi
+    check_service_status "Promtail" "promtail" "status_var" "PROMTAIL_STATUS" "false" "false"
 
     # Automation Services
-    if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
-        echo "  ✅ Watchtower"
-        ((operational_total++)) || true
-        ((operational_healthy++)) || true
-    else
-        echo "  ❌ Watchtower"
-        ((operational_total++)) || true
-    fi
+    check_service_status "Watchtower" "watchtower" "" "" "false" "false"
     
     # Health Summary section
     echo ""
@@ -1708,18 +1714,18 @@ function status() {
     
     # Operational summary
     if [ $operational_total -gt 0 ]; then
-        echo "Operational:  $operational_healthy/$operational_total healthy"
+        echo "Operational:  $operational_healthy/$operational_total healthy (of $operational_total enabled)"
     else
         echo "Operational:  0/0 (no operational services enabled)"
     fi
     
     # Overall status
     if [ $runtime_core_healthy -eq $runtime_core_total ] && [ $runtime_core_total -gt 0 ]; then
-        echo "Overall:      ✅ All critical services healthy"
+        echo "Overall:      OK All critical services healthy"
     elif [ $runtime_core_total -eq 0 ]; then
-        echo "Overall:      ⚠️  No services running"
+        echo "Overall:      WARN No services running"
     else
-        echo "Overall:      ❌ Critical services unhealthy"
+        echo "Overall:      DOWN Critical services unhealthy"
     fi
     echo ""
 }
