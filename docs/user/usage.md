@@ -98,7 +98,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ```
 
 Shows:
-- Container status (✅ running / ❌ stopped)
+- Container status (OK running / DOWN stopped)
 - Service health checks (visual indicators only)
 - Service logs for failed services
 - Runtime core vs operational services separation
@@ -276,13 +276,13 @@ Shows:
 ```
 
 This comprehensive status check shows:
-- **Container Status:** Visual indicators (✅ running / ❌ stopped) for each service
+- **Container Status:** Text labels (OK running / DOWN stopped) for each service
 - **Service Health:** Health check results displayed with visual indicators only
 - **Logs:** Recent log entries for failed services
 - **Runtime vs Operational:** Status output distinguishes between runtime core (critical) and operational services (informational)
 - **Health Summary:** Counts of healthy services by category
 
-Note: Runtime core services (ollama, llm-council) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses visual indicators (✅/❌) without text labels to avoid confusion.
+Note: Runtime core services (ollama, llm-council) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
 
 ## Maintenance
 

@@ -2,9 +2,9 @@
   <img src="AIXCL.png" alt="AIXCL" width="800" height=500/>
 </a>
 
-## 🚀 Run this project in GitHub Codespaces
+## Run this project in GitHub Codespaces
 
-[Open in GitHub Codespaces](https://github.com/codespaces/new?repo=OWNER/REPO)
+[Open in GitHub Codespaces](https://github.com/codespaces/new?repo=xencon/aixcl)
 
 
 # AIXCL

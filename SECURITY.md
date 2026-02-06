@@ -6,10 +6,10 @@ We provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| `main` branch | :white_check_mark: Yes |
-| Latest release | :white_check_mark: Yes |
-| Previous minor versions | :white_check_mark: Maintenance only |
-| Older versions | :x: No |
+| `main` branch | Yes |
+| Latest release | Yes |
+| Previous minor versions | Maintenance only |
+| Older versions | No |
 
 ## Reporting a Vulnerability
 

@@ -8,7 +8,7 @@ This document presents performance tuning optimizations for Ollama to maximize e
 - **GPU**: Single NVIDIA 40XX GPU
 - **Use Case**: Code-focused LLM Council with parallel model queries
 
-## Recommended Default Configuration ✅
+## Recommended Default Configuration
 
 **Current Default Setup** (optimized for 8GB GPUs):
 - **Chairman**: `deepseek-coder:1.3b` (776MB)

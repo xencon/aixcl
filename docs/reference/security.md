@@ -4,9 +4,9 @@
 
 | Version                        | Supported? | Notes                    |
 | ------------------------------ | ---------- | ------------------------ |
-| `main` branch / latest release | ✅ Yes      | Actively maintained      |
-| Previous minor versions        | ✅ Yes      | Maintenance only         |
-| Older versions                 | ❌ No       | Please upgrade to latest |
+| `main` branch / latest release | Yes         | Actively maintained      |
+| Previous minor versions        | Yes         | Maintenance only         |
+| Older versions                 | No          | Please upgrade to latest |
 
 ## 2. How to report a vulnerability
 

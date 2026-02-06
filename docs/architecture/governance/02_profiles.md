@@ -9,7 +9,8 @@ Profiles define **which operational services are enabled** alongside the **alway
 - Ollama
 - LLM-Council
 - Continue
-- Required runtime persistence
+
+Note: Runtime persistence is provided by PostgreSQL as an operational service in all current profiles.
 
 ---
 

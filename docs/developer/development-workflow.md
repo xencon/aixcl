@@ -209,14 +209,14 @@ gh issue view <number> --json labels
 
 **IMPORTANT: Use plain text formatting to avoid encoding issues.**
 
-### ✅ DO:
+### DO:
 - Use markdown checkboxes: `- [x]` for completed items
 - Use standard markdown: `**bold**`, `*italic*`, `` `code` ``
 - Use plain ASCII characters
 - Use numbered lists: `1.`, `2.`, `3.`
 
-### ❌ DON'T:
-- Use Unicode checkmarks: `✓`, `✔`, `✅` (these can appear garbled)
+### DON'T:
+- Use Unicode checkmarks (for example, `\\u2713`, `\\u2714`, or checkmark emoji) as they can appear garbled
 - Use emoji in technical documentation
 - Use special Unicode characters that may not render consistently
 
