@@ -9,7 +9,7 @@ December 24, 2025
 - **Chairman**: `deepseek-coder:1.3b` (776 MB)
 - **Council Members**: `codegemma:2b` (1.6 GB) + `qwen2.5-coder:3b` (1.9 GB)
 - **Total VRAM**: ~4.3 GB
-- **Status**: ✅ **Recommended**
+- **Status**: Recommended
 
 **Results:**
 - Average time: 24.75s (within expected range)
@@ -31,7 +31,7 @@ December 24, 2025
 - **Chairman**: `ministral-3:3b` (3.0 GB)
 - **Council Members**: `codegemma:2b` (1.6 GB) + `deepseek-coder:1.3b` (776 MB)
 - **Total VRAM**: ~5.9 GB
-- **Status**: ⚠️ **GPU Memory Pressure Issues**
+- **Status**: Warning - GPU Memory Pressure Issues
 
 **Results:**
 - Average time: 24.05s (within expected range)
@@ -61,7 +61,7 @@ December 24, 2025
 - **Chairman**: `qwen2.5-coder:7b` (4.7 GB)
 - **Council Members**: `codegemma:2b` (1.6 GB) + `deepseek-coder:1.3b` (776 MB)
 - **Total VRAM**: ~7.6 GB
-- **Status**: ⚠️ **Acceptable but could be better**
+- **Status**: Warning - Acceptable but could be better
 
 **Results:**
 - Average time: 31.91s (slightly above expected range)
@@ -102,7 +102,7 @@ December 24, 2025
 
 ## Recommendations
 
-### ✅ Recommended Configuration: Option 1 (Ultra-Lightweight)
+### Recommended Configuration: Option 1 (Ultra-Lightweight)
 
 **Why:**
 - Best keep-alive performance (68.1% improvement)
@@ -114,10 +114,10 @@ December 24, 2025
 **Configuration:**
 ```bash
 Chairman: deepseek-coder:1.3b
-Council: codegemma:2b,deepseek-coder:1.3b
+Council: codegemma:2b,qwen2.5-coder:3b
 ```
 
-### ⚠️ If Better Quality Needed: Option 2 (with fixes)
+### If Better Quality Needed: Option 2 (with fixes)
 
 **Requirements:**
 - Need more GPU memory (16GB+ recommended)
@@ -157,8 +157,8 @@ Council: codegemma:2b,deepseek-coder:1.3b
 
 ## Next Steps
 
-1. ✅ Use Option 1 for production (most reliable)
-2. ⚠️ If Option 2 needed: Upgrade GPU or use quantized models
-3. 📊 Monitor GPU memory usage in production
-4. 🔧 Consider model quantization for larger models
+1. Use Option 1 for production (most reliable)
+2. If Option 2 needed: Upgrade GPU or use quantized models
+3. Monitor GPU memory usage in production
+4. Consider model quantization for larger models
 

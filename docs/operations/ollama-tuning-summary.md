@@ -29,7 +29,7 @@ Based on analysis of your LLM Council implementation and Ollama performance rese
 
 ## Recommended Model Strategy
 
-### Default Configuration (Recommended) ✅
+### Default Configuration (Recommended)
 
 **Current Default Setup** (optimized for 8GB GPUs):
 - **Chairman**: `deepseek-coder:1.3b` (776MB)

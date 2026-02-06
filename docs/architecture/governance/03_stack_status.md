@@ -22,43 +22,44 @@ Status: Running
 
 Runtime Core (Strict - Always Enabled)
 ---------------------------------------
-✅ ollama          Running
-✅ llm-council     Running
-✅ continue        Active     Connected (VS Code plugin)
+OK  ollama          Running
+OK  llm-council     Running
+OK  continue        Active     Connected (VS Code plugin)
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
-✅ postgres        Running
-✅ open-webui      Running
-✅ pgadmin         Running
-⏸  prometheus      Stopped    (not in 'dev' profile)
-⏸  grafana         Stopped    (not in 'dev' profile)
-⏸  watchtower      Stopped    (not in 'dev' profile)
+OK   postgres        Running
+OK   open-webui      Running
+OK   pgadmin         Running
+SKIP prometheus      Stopped    (not in 'dev' profile)
+SKIP grafana         Stopped    (not in 'dev' profile)
+SKIP watchtower      Stopped    (not in 'dev' profile)
 
 Health Summary
 --------------
 Runtime Core: 3/3 healthy
 Operational:  3/3 healthy (of 3 enabled)
-Overall:      ✅ All critical services healthy
+Overall:      OK All critical services healthy
 ```
 
 ## Health Semantics
 
 ### Runtime Core Health
 - **Critical**: All runtime core services must be healthy for AIXCL to function
-- **Status indicators**: ✅ (running and healthy), ❌ (stopped or unhealthy)
+- **Status indicators**: OK (running and healthy), DOWN (stopped or unhealthy), WARN (starting or issues)
 - **Status meanings**:
-  - ✅: Service is running and API/interface is responding
-  - ❌: Service is not running or not responding
-  - ⚠️: Service is starting up or experiencing issues
+  - OK: Service is running and API/interface is responding
+  - DOWN: Service is not running or not responding
+  - WARN: Service is starting up or experiencing issues
 
 ### Operational Services Health
 - **Informational**: Operational services support but do not define the product
-- **Status indicators**: ✅ (running and healthy), ❌ (stopped or unhealthy)
+- **Status indicators**: OK (running and healthy), DOWN (stopped or unhealthy), WARN (starting or issues), SKIP (not in profile)
 - **Status meanings**:
-  - ✅: Service is running and functioning normally
-  - ❌: Service is not running or not responding
-  - ⚠️: Service is starting up or experiencing issues
+  - OK: Service is running and functioning normally
+  - DOWN: Service is not running or not responding
+  - WARN: Service is starting up or experiencing issues
+  - SKIP: Service is not enabled in the active profile
 
 ## Profile-Specific Status
 

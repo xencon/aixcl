@@ -1,19 +1,19 @@
 # Model Size Recommendations for Performance
 
-## Current Configuration ✅
+## Current Configuration
 
 **Default Configuration (Recommended):**
-- **Chairman**: `deepseek-coder:1.3b` (776MB) ✅
-- **Council Members**: `codegemma:2b` (1.6GB) + `qwen2.5-coder:3b` (1.9GB) ✅
+- **Chairman**: `deepseek-coder:1.3b` (776MB)
+- **Council Members**: `codegemma:2b` (1.6GB) + `qwen2.5-coder:3b` (1.9GB)
 - **Total VRAM**: ~4.3GB
 - **Performance**: 24.75s average, 68.1% keep-alive improvement
 
 This configuration provides:
-- ✅ Excellent keep-alive performance (68.1% improvement)
-- ✅ Low VRAM usage (~4.3GB)
-- ✅ Good response times (24.75s average)
-- ✅ No GPU memory pressure issues
-- ✅ Most reliable performance
+- Excellent keep-alive performance (68.1% improvement)
+- Low VRAM usage (~4.3GB)
+- Good response times (24.75s average)
+- No GPU memory pressure issues
+- Most reliable performance
 
 ## Previous Issue (Resolved)
 
@@ -27,46 +27,46 @@ This configuration provides:
 
 ## Alternative Model Configurations
 
-### Option 1: Ultra-Lightweight Setup (✅ CURRENT DEFAULT)
+### Option 1: Ultra-Lightweight Setup (CURRENT DEFAULT)
 
 **Best for**: Maximum speed, minimal VRAM usage, most reliable
 
 **Council Members** (2 models):
-- `codegemma:2b` (1.6GB) ✅
-- `qwen2.5-coder:3b` (1.9GB) ✅
+- `codegemma:2b` (1.6GB)
+- `qwen2.5-coder:3b` (1.9GB)
 
 **Chairman**:
-- `deepseek-coder:1.3b` (776MB) ✅
+- `deepseek-coder:1.3b` (776MB)
 
 **Total VRAM**: ~4.3GB
 **Performance**: 24.75s average, 68.1% keep-alive improvement
 
-### Option 2: Balanced Small Setup (⚠️ GPU Memory Pressure)
+### Option 2: Balanced Small Setup (Warning: GPU Memory Pressure)
 
 **Best for**: Better consistency, but requires more GPU memory
 
 **Council Members** (2 models):
-- `codegemma:2b` (1.6GB) ✅
-- `deepseek-coder:1.3b` (776MB) ✅
+- `codegemma:2b` (1.6GB)
+- `deepseek-coder:1.3b` (776MB)
 
 **Chairman**:
-- `ministral-3:3b` (3.0GB) ✅
+- `ministral-3:3b` (3.0GB)
 
 **Total VRAM**: ~5.9GB
 **Performance**: 24.05s average, 23.8% consistency (best), but GPU memory pressure issues
 
 **Note**: This configuration has GPU memory pressure issues on 8GB GPUs. Models may be evicted causing reload delays. Requires 16GB+ GPU or quantized models.
 
-### Option 3: Medium Performance Setup (⚠️ Slower)
+### Option 3: Medium Performance Setup (Warning: Slower)
 
 **Best for**: Better code quality with larger chairman model
 
 **Council Members** (2 models):
-- `codegemma:2b` (1.6GB) ✅
-- `deepseek-coder:1.3b` (776MB) ✅
+- `codegemma:2b` (1.6GB)
+- `deepseek-coder:1.3b` (776MB)
 
 **Chairman**:
-- `qwen2.5-coder:7b` (4.7GB) ✅
+- `qwen2.5-coder:7b` (4.7GB)
 
 **Total VRAM**: ~7.6GB
 **Performance**: 31.91s average, 55.7% consistency, 13.4% keep-alive improvement
@@ -83,8 +83,8 @@ This configuration provides:
 ```
 
 **Select these models:**
-- **Council Members**: `codegemma:2b`, `deepseek-coder:1.3b`
-- **Chairman**: `qwen2.5-coder:3b`
+- **Council Members**: `codegemma:2b`, `qwen2.5-coder:3b`
+- **Chairman**: `deepseek-coder:1.3b`
 
 ### Step 2: Verify Configuration
 
@@ -101,22 +101,22 @@ This configuration provides:
 **Expected Results with Small Models:**
 - First query: 10-20 seconds
 - Subsequent queries: 8-15 seconds
-- Average time: < 20 seconds ✅
+- Average time: < 20 seconds
 
 ## Model Size Comparison
 
 | Model | Size | Use Case | Speed |
 |-------|------|----------|-------|
-| `deepseek-coder:1.3b` | 776MB | Council member | ⚡⚡⚡ Very Fast |
-| `codegemma:2b` | 1.6GB | Council member | ⚡⚡⚡ Very Fast |
-| `qwen2.5-coder:3b` | 1.9GB | Council member/Chairman | ⚡⚡ Fast |
-| `llama3.2:3b` | 2.0GB | Council member | ⚡⚡ Fast |
-| `phi3:mini` | 2.2GB | Council member | ⚡⚡ Fast |
-| `codellama:7b` | 3.8GB | Council member/Chairman | ⚡ Medium |
-| `deepseek-coder:6.7b` | 3.8GB | Council member | ⚡ Medium |
-| `qwen2.5:7b` | 4.7GB | Chairman | ⚡ Medium |
-| `ministral-3:8b` | 6.0GB | Too large ❌ | 🐌 Slow |
-| `gemma3:12b` | 8.1GB | Too large ❌ | 🐌 Very Slow |
+| `deepseek-coder:1.3b` | 776MB | Council member | Very fast |
+| `codegemma:2b` | 1.6GB | Council member | Very fast |
+| `qwen2.5-coder:3b` | 1.9GB | Council member/Chairman | Fast |
+| `llama3.2:3b` | 2.0GB | Council member | Fast |
+| `phi3:mini` | 2.2GB | Council member | Fast |
+| `codellama:7b` | 3.8GB | Council member/Chairman | Medium |
+| `deepseek-coder:6.7b` | 3.8GB | Council member | Medium |
+| `qwen2.5:7b` | 4.7GB | Chairman | Medium |
+| `ministral-3:8b` | 6.0GB | Too large (not recommended) | Slow |
+| `gemma3:12b` | 8.1GB | Too large (not recommended) | Very slow |
 
 ## Why Smaller Models?
 
@@ -128,12 +128,12 @@ This configuration provides:
 ## Current Performance vs Expected
 
 **Your Current Setup** (large models):
-- Average: 104.85 seconds ❌
+- Average: 104.85 seconds (too slow)
 - Expected: 15-30 seconds
 - **Problem**: Models too large, can't stay loaded
 
 **With Small Models** (Option 1):
-- Expected: 10-20 seconds ✅
+- Expected: 10-20 seconds
 - **Benefit**: Models stay loaded, parallel execution works
 
 ## Next Steps

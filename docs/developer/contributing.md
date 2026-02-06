@@ -78,4 +78,4 @@ We aim to respond to all issues and PRs within a few days.
 
 Be kind, respectful, and constructive in all interactions. We're building something cool together!
 
-Thank you for helping make AIXCL better! 🚀
+Thank you for helping make AIXCL better!

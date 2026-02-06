@@ -20,20 +20,20 @@ git clone https://github.com/xencon/aixcl.git
 cd aixcl
 
 # Check system requirements
-./aixcl check-env
+./aixcl utils check-env
 
 # Start services (automatically creates .env from .env.example if it exists)
-./aixcl start
+./aixcl stack start
 ```
 
 ### 3. Automatic Configuration
 
 The following are configured automatically:
 
-- ✅ **Environment File**: `.env` is created from `.env.example` if it exists
-- ✅ **Database Schema**: PostgreSQL schema is created automatically on first startup
-- ✅ **pgAdmin Configuration**: Database server connection is auto-configured
-- ✅ **Database Persistence**: LLM-Council conversations are automatically stored in PostgreSQL
+- [x] **Environment File**: `.env` is created from `.env.example` if it exists
+- [x] **Database Schema**: PostgreSQL schema is created automatically on first startup
+- [x] **pgAdmin Configuration**: Database server connection is auto-configured
+- [x] **Database Persistence**: LLM-Council conversations are automatically stored in PostgreSQL
 
 ### 4. Database Persistence Verification
 
@@ -68,9 +68,9 @@ uv run python ../tests/database/test_db_connection.py
 ```
 
 Expected output:
-- ✅ Database connection pool created successfully
-- ✅ Database schema verified/created
-- ✅ Conversation creation, retrieval, and deletion tests pass
+- [x] Database connection pool created successfully
+- [x] Database schema verified/created
+- [x] Conversation creation, retrieval, and deletion tests pass
 
 ### 6. Test API Endpoints
 
@@ -85,28 +85,28 @@ python3 tests/api/test_continue_integration.py
 ```
 
 Expected output:
-- ✅ Health endpoint responds
-- ✅ Chat completion creates conversation in database
-- ✅ Conversation continuity works
-- ✅ Deletion endpoint works
+- [x] Health endpoint responds
+- [x] Chat completion creates conversation in database
+- [x] Conversation continuity works
+- [x] Deletion endpoint works
 
 ### 7. Verify Services
 
 Check all services are running:
 
 ```bash
-./aixcl status
+./aixcl stack status
 ```
 
 Expected services:
-- ✅ ollama
-- ✅ open-webui
-- ✅ postgres
-- ✅ pgadmin
-- ✅ llm-council
-- ✅ prometheus
-- ✅ grafana
-- ✅ (and other monitoring services)
+- [x] ollama
+- [x] open-webui
+- [x] postgres
+- [x] pgadmin
+- [x] llm-council
+- [x] prometheus
+- [x] grafana
+- [x] (and other monitoring services)
 
 ## Troubleshooting
 
@@ -152,7 +152,7 @@ After successful setup:
    - Open WebUI: http://localhost:8080
    - pgAdmin: http://localhost:5050
    - Grafana: http://localhost:3000
-4. **Configure Continue Plugin**: See README.md for Continue integration
+4. **Configure Continue Plugin**: See [`README.md`](../../README.md) for Continue integration
 
 **Recommended Default Configuration:**
 - **Chairman**: `deepseek-coder:1.3b` (776MB)
