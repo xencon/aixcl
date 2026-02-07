@@ -829,23 +829,9 @@ Please provide a helpful response based on the context provided above."""
             )
         
         # Non-streaming response
+        # Note: Database save already handled above (before streaming decision)
         response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
         created_time = int(time.time())
-        
-        # Save assistant response to database if enabled
-        if ENABLE_DB_STORAGE and conversation_id:
-            stage_data = {
-                "stage1": stage1_results,
-                "stage2": stage2_results,
-                "stage3": stage3_result,
-            }
-            await db_storage.add_message_to_conversation(
-                conversation_id,
-                "assistant",
-                final_content,
-                stage_data
-            )
-            print(f"DEBUG: Saved assistant message to conversation {conversation_id}", flush=True)
         
         # Create OpenAI-compatible response
         response = ChatCompletionResponse(
