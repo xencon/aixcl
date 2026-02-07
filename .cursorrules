@@ -24,11 +24,12 @@
 
 Follow the Issue-First Development workflow documented in `docs/developer/development-workflow.md`:
 
-1. **Always create an issue first** using `gh issue create` before starting any work
+1. **Always create an issue first** using `gh issue create` before starting any work, with appropriate labels and `--assignee`
 2. **Create a branch** with format `issue-<number>/<description>` or `feature/<name>` or `fix/<name>`
 3. **Make changes** and commit using conventional commit format: `type: Description\n\nFixes #<number>`
 4. **Push branch** and create PR that references the issue: `gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>"`
-5. **Use plain text formatting**: Use markdown checkboxes `- [x]` instead of Unicode characters (✓, ✔, ✅) to avoid encoding issues
+5. **Assign and label the PR** matching the issue labels: `gh pr edit <number> --add-assignee <user> --add-label "component:..."`
+6. **Use plain text formatting**: Use markdown checkboxes `- [x]` instead of Unicode characters to avoid encoding issues
 
 ## Formatting Guidelines
 
