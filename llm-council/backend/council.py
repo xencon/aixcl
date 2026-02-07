@@ -1,8 +1,11 @@
 """3-stage LLM Council orchestration."""
 
+import logging
 from typing import List, Dict, Any, Tuple
 from .config import BACKEND_MODE
 from .config_manager import get_council_models, get_chairman_model
+
+logger = logging.getLogger(__name__)
 
 # Import appropriate backend based on configuration
 if BACKEND_MODE == "ollama":
@@ -21,15 +24,15 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
     Returns:
         List of dicts with 'model' and 'response' keys
     """
-    print("DEBUG: stage1_collect_responses called", flush=True)
+    logger.debug("stage1_collect_responses called")
     
     # Get current council models dynamically
     council_models = await get_council_models()
-    print(f"DEBUG: COUNCIL_MODELS = {council_models}", flush=True)
-    print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}", flush=True)
+    logger.debug("COUNCIL_MODELS = %s", council_models)
+    logger.debug("BACKEND_MODE = %s", BACKEND_MODE)
     
     if not council_models:
-        print("ERROR: No council models configured!", flush=True)
+        logger.error("No council models configured!")
         return []
     
     # Wrap user query with instructions for plain-text responses
@@ -44,40 +47,37 @@ RESPONSE GUIDANCE:
 - Do NOT reference tools, files, or the council process."""
     
     messages = [{"role": "user", "content": solution_prompt}]
-    print(f"DEBUG: messages = {messages}")
 
     # Query all models in parallel
-    print("DEBUG: calling query_models_parallel")
+    logger.debug("calling query_models_parallel")
     responses = await query_models_parallel(council_models, messages)
-    print(f"DEBUG: query_models_parallel returned {len(responses)} responses")
-    print(f"DEBUG: responses keys = {list(responses.keys())}")
+    logger.debug("query_models_parallel returned %d responses", len(responses))
 
     # Format results
     stage1_results = []
     failed_models = []
     for model, response in responses.items():
-        print(f"DEBUG: processing model {model}, response is None: {response is None}")
         if response is not None:  # Only include successful responses
             content = response.get('content', '')
-            print(f"DEBUG: model {model} content length = {len(content)}")
+            logger.debug("model %s content length = %d", model, len(content))
             stage1_results.append({
                 "model": model,
                 "response": content
             })
         else:
-            print(f"DEBUG: model {model} returned None, skipping")
+            logger.debug("model %s returned None, skipping", model)
             failed_models.append(model)
 
     if failed_models:
-        print(f"WARNING: {len(failed_models)} model(s) failed: {', '.join(failed_models)}", flush=True)
-        print("This could mean:", flush=True)
-        print("  1. Models are not installed in Ollama", flush=True)
-        print("  2. Models are not loaded/ready", flush=True)
-        print("  3. Ollama service is not responding", flush=True)
-        print("  4. Check Ollama logs: docker logs ollama", flush=True)
-        print("  5. Verify models exist: docker exec ollama ollama list", flush=True)
+        logger.warning(
+            "%d model(s) failed: %s. Check: 1) Models installed in Ollama, "
+            "2) Models loaded/ready, 3) Ollama service responding, "
+            "4) Ollama logs: docker logs ollama, "
+            "5) Verify models: docker exec ollama ollama list",
+            len(failed_models), ', '.join(failed_models)
+        )
 
-    print(f"DEBUG: stage1_collect_responses returning {len(stage1_results)} results")
+    logger.debug("stage1_collect_responses returning %d results", len(stage1_results))
     return stage1_results
 
 
@@ -95,12 +95,12 @@ async def stage2_collect_rankings(
     Returns:
         Tuple of (rankings list, label_to_model mapping)
     """
-    print("DEBUG: stage2_collect_rankings called")
-    print(f"DEBUG: stage1_results count = {len(stage1_results)}")
+    logger.debug("stage2_collect_rankings called")
+    logger.debug("stage1_results count = %d", len(stage1_results))
     
     # Create anonymized labels for responses (Response A, Response B, etc.)
     labels = [chr(65 + i) for i in range(len(stage1_results))]  # A, B, C, ...
-    print(f"DEBUG: created labels = {labels}")
+    logger.debug("created labels = %s", labels)
 
     # Create mapping from label to model name
     label_to_model = {
@@ -204,10 +204,10 @@ FINAL RANKING:
     messages = [{"role": "user", "content": ranking_prompt}]
 
     # Get rankings from all council models in parallel
-    print("DEBUG: calling query_models_parallel for stage2")
+    logger.debug("calling query_models_parallel for stage2")
     council_models = await get_council_models()
     responses = await query_models_parallel(council_models, messages)
-    print(f"DEBUG: stage2 query_models_parallel returned {len(responses)} responses")
+    logger.debug("stage2 query_models_parallel returned %d responses", len(responses))
 
     # Format results
     stage2_results = []
@@ -240,13 +240,13 @@ async def stage3_synthesize_final(
     Returns:
         Dict with 'model' and 'response' keys
     """
-    print("DEBUG: stage3_synthesize_final called", flush=True)
+    logger.debug("stage3_synthesize_final called")
     
     # Get current chairman model dynamically
     chairman_model = await get_chairman_model()
-    print(f"DEBUG: CHAIRMAN_MODEL = {chairman_model}", flush=True)
-    print(f"DEBUG: stage1_results count = {len(stage1_results)}")
-    print(f"DEBUG: stage2_results count = {len(stage2_results)}")
+    logger.debug("CHAIRMAN_MODEL = %s", chairman_model)
+    logger.debug("stage1_results count = %d", len(stage1_results))
+    logger.debug("stage2_results count = %d", len(stage2_results))
     
     # Build comprehensive context for chairman
     stage1_text = "\n\n".join([
@@ -297,21 +297,20 @@ Provide the response directly:"""
     messages = [{"role": "user", "content": chairman_prompt}]
 
     # Query the chairman model
-    print("DEBUG: calling query_model for chairman")
+    logger.debug("calling query_model for chairman")
     response = await query_model(chairman_model, messages)
-    print(f"DEBUG: chairman query_model returned, is None: {response is None}")
+    logger.debug("chairman query_model returned, is None: %s", response is None)
 
     if response is None:
         # Fallback if chairman fails
-        print("DEBUG: chairman returned None, using fallback")
+        logger.warning("Chairman model returned None, using fallback")
         return {
             "model": chairman_model,
             "response": "Error: Unable to generate final synthesis."
         }
 
     content = response.get('content', '')
-    print(f"DEBUG: chairman content length = {len(content)}")
-    print(f"DEBUG: chairman content preview = {content[:200]}")
+    logger.debug("chairman content length = %d", len(content))
     
     # Extract primary source model from content if present
     primary_source = None
@@ -407,7 +406,7 @@ Provide the response directly:"""
     
     # Log penalty application for debugging
     if penalties > 0:
-        print(f"DEBUG: Applied {penalties}% penalty to confidence. Base: {base_confidence}%, Final: {confidence}%", flush=True)
+        logger.debug("Applied %d%% penalty to confidence. Base: %d%%, Final: %d%%", penalties, base_confidence, confidence)
     
     return {
         "model": chairman_model,
@@ -548,47 +547,45 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
     Returns:
         Tuple of (stage1_results, stage2_results, stage3_result, metadata)
     """
-    print("DEBUG: run_full_council called", flush=True)
-    print(f"DEBUG: user_query = {user_query[:100]}...", flush=True)
+    logger.debug("run_full_council called")
+    logger.debug("user_query = %.100s...", user_query)
     
     # Stage 1: Collect individual responses
-    print("DEBUG: starting stage1")
+    logger.debug("starting stage1")
     stage1_results = await stage1_collect_responses(user_query)
-    print(f"DEBUG: stage1 completed, results count = {len(stage1_results)}")
+    logger.debug("stage1 completed, results count = %d", len(stage1_results))
 
     # If no models responded successfully, return error
     if not stage1_results:
-        print("ERROR: stage1_results is empty - all models failed!", flush=True)
-        print("Troubleshooting steps:", flush=True)
-        print("  1. Check if Ollama is running: docker ps | grep ollama", flush=True)
-        print("  2. Check Ollama logs: docker logs ollama", flush=True)
-        print("  3. Verify models are installed: docker exec ollama ollama list", flush=True)
-        print("  4. Check council models in .env: COUNCIL_MODELS and CHAIRMAN_MODEL", flush=True)
-        print("  5. Test a model directly: docker exec ollama ollama run <model-name> 'test'", flush=True)
+        logger.error(
+            "stage1_results is empty - all models failed! "
+            "Check: 1) Ollama running, 2) Ollama logs, 3) Models installed, "
+            "4) COUNCIL_MODELS and CHAIRMAN_MODEL in .env, "
+            "5) Test model directly: docker exec ollama ollama run <model> 'test'"
+        )
         error_result = {
             "model": "error",
             "response": "All models failed to respond. Please check:\n1. Ollama service is running\n2. Models are installed and available\n3. Check logs: docker logs ollama\n4. Verify models: docker exec ollama ollama list"
         }
-        print(f"DEBUG: returning error_result = {error_result}")
         return [], [], error_result, {}
 
     # Stage 2: Collect rankings
-    print("DEBUG: starting stage2")
+    logger.debug("starting stage2")
     stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
-    print(f"DEBUG: stage2 completed, results count = {len(stage2_results)}")
+    logger.debug("stage2 completed, results count = %d", len(stage2_results))
 
     # Calculate aggregate rankings
     aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
-    print(f"DEBUG: aggregate_rankings = {aggregate_rankings}")
+    logger.debug("aggregate_rankings = %s", aggregate_rankings)
 
     # Stage 3: Synthesize final answer
-    print("DEBUG: starting stage3")
+    logger.debug("starting stage3")
     stage3_result = await stage3_synthesize_final(
         user_query,
         stage1_results,
         stage2_results
     )
-    print(f"DEBUG: stage3 completed, result = {stage3_result}")
+    logger.debug("stage3 completed")
 
     # Prepare metadata
     metadata = {
@@ -596,5 +593,5 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
         "aggregate_rankings": aggregate_rankings
     }
 
-    print("DEBUG: run_full_council returning")
+    logger.debug("run_full_council returning")
     return stage1_results, stage2_results, stage3_result, metadata

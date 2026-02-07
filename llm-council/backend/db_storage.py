@@ -312,25 +312,24 @@ async def add_message_to_conversation(
         return False
     
     try:
-        print(f"DEBUG: [DB_STORAGE] add_message_to_conversation called: conv_id={conversation_id}, role={role}, content_len={len(content)}", flush=True)
+        logger.debug("add_message_to_conversation called: conv_id=%s, role=%s, content_len=%d", conversation_id, role, len(content))
         
         # Get current conversation
         conversation = await get_continue_conversation(conversation_id)
         if not conversation:
-            print(f"DEBUG: [DB_STORAGE] ❌ Conversation {conversation_id} not found", flush=True)
-            logger.warning(f"Conversation {conversation_id} not found")
+            logger.warning("Conversation %s not found", conversation_id)
             return False
         
-        print(f"DEBUG: [DB_STORAGE] ✅ Found conversation {conversation_id}, current messages: {len(conversation['chat'].get('messages', []))}", flush=True)
+        logger.debug("Found conversation %s, current messages: %d", conversation_id, len(conversation['chat'].get('messages', [])))
         
         # Create new message entry
         new_message = create_message_entry(role, content, stage_data)
-        print(f"DEBUG: [DB_STORAGE] Created message entry: role={new_message.get('role')}, has_stage_data={bool(stage_data)}", flush=True)
+        logger.debug("Created message entry: role=%s, has_stage_data=%s", new_message.get('role'), bool(stage_data))
         
         # Add message to conversation
         messages = conversation["chat"].get("messages", [])
         messages.append(new_message)
-        print(f"DEBUG: [DB_STORAGE] Updated messages list: {len(messages)} total messages", flush=True)
+        logger.debug("Updated messages list: %d total messages", len(messages))
         
         # Update conversation in database
         # Use bigint (milliseconds since epoch) for updated_at to match Open WebUI schema
@@ -347,15 +346,12 @@ async def add_message_to_conversation(
                 current_timestamp_ms,
                 conversation_id
             )
-            print(f"DEBUG: [DB_STORAGE] UPDATE executed: {result}", flush=True)
+            logger.debug("UPDATE executed: %s", result)
         
-        print(f"DEBUG: [DB_STORAGE] ✅ Successfully added {role} message to conversation {conversation_id}", flush=True)
+        logger.debug("Successfully added %s message to conversation %s", role, conversation_id)
         return True
     except Exception as e:
-        print(f"DEBUG: [DB_STORAGE] ❌ EXCEPTION in add_message_to_conversation: {e}", flush=True)
-        import traceback
-        print(f"DEBUG: [DB_STORAGE] Traceback: {traceback.format_exc()}", flush=True)
-        logger.error(f"Failed to add message to conversation: {e}")
+        logger.error("Failed to add message to conversation: %s", e, exc_info=True)
         return False
 
 
