@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+---
+
+## [v1.0.0-rc2] - 2026-02-07
+
+### Summary
+
+Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 covering refactoring, bug fixes, feature enhancements, dependency updates, and documentation improvements.
+
+### Added
+
+- Token usage reporting with actual Ollama counts for accurate model usage tracking
+- Continue council YAML configuration replacing legacy agent config
+- Commercial licensing documentation (`COMMERCIAL.md`)
+- Explicit timeouts to platform test script API calls
+- Council members test timeout increase to prevent false failures
+
+### Changed
+
+- Consolidated duplicated code between `aixcl` CLI and lib modules
+- Replaced DEBUG print statements with proper logging throughout codebase
+- Removed hardcoded confidence penalty heuristics from council
+- Aligned chairman confidence wording and stage 2 ranking criteria
+- Defaulted council to plain text responses
+- Updated Open WebUI to v0.7.2
+- Bumped `wheel` dependency from 0.45.1 to 0.46.2
+- Updated README with privacy emphasis and profile testing options
+- Improved documentation consistency across project
+
+### Fixed
+
+- Guarded interactive prompts against `set -e` on EOF
+- Removed duplicate database save in non-streaming chat completions path
+- Aligned platform test profile messaging
+- Updated command references in help messages and error output
+- Removed temporary `pr-body-temp.md` file
+
+### Documentation
+
+- Clarified Continue plugin omission from `RUNTIME_CORE_SERVICES`
+- Added assignee and PR labeling requirements to development workflow
+- Improved overall documentation consistency
+
+---
+
+## [v1.0.0-rc1] - 2025-12-26
+
 ### Added
 
 #### Governance Model and Architecture Documentation
@@ -18,8 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Stack status specification
 - **Documentation Updates**: Updated README.md, docs, and manpage to reflect governance model
 - **Bash Completion**: Updated completion script to reflect service categorization
-
-### Added
 
 #### Database Persistence for LLM-Council
 - **PostgreSQL Integration**: Added automatic PostgreSQL-based storage for LLM-Council conversations
@@ -155,10 +201,4 @@ None
 - Database credentials are managed via environment variables
 - Connection pooling with configurable pool size
 - Graceful degradation when database is unavailable (service continues without persistence)
-
----
-
-## Previous Versions
-
-Previous changelog entries would be listed here in reverse chronological order.
 
