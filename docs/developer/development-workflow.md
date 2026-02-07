@@ -25,7 +25,7 @@ We follow an **Issue-First Development** workflow:
 ```bash
 # Note: GitHub CLI doesn't support setting issue type directly
 # Set the type in GitHub UI, then add labels:
-gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "component:cli"
+gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "component:cli" --assignee <your-github-username>
 ```
 
 **Best Practices:**
@@ -34,6 +34,7 @@ gh issue create --title "Brief description" --body "Detailed description of the 
 - Include steps to reproduce (for bugs)
 - Use plain text formatting (avoid special Unicode characters)
 - **Always add appropriate labels** (see Label Guidelines below)
+- **Always assign the issue** to the person working on it using `--assignee`
 
 ### 2. Create a Branch
 
@@ -78,11 +79,16 @@ Push your branch and create a PR:
 ```bash
 git push -u origin <branch-name>
 gh pr create --title "Title referencing issue" --body "Description linking to issue #<number>"
+
+# Always assign yourself and add matching labels to the PR
+gh pr edit <number> --add-assignee <your-github-username> --add-label "component:cli"
 ```
 
 **PR Best Practices:**
 - Title should reference the issue without colon: `"Fix Issue title (#<number>)"`
 - **Note:** Both issue titles and PR titles should NOT use colons (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
+- **Always assign the PR** to the author
+- **Always add labels to the PR** matching the labels on the linked issue
 - Description should:
   - Link to the issue: `"Fixes #<number>"` or `"Addresses #<number>"`
   - Describe what changed
@@ -236,25 +242,26 @@ When working with AI assistants (like Cursor, GitHub Copilot, etc.), include thi
 
 ```
 Follow the development workflow documented in this document:
-1. Always create an issue first using 'gh issue create' with appropriate labels
+1. Always create an issue first using 'gh issue create' with appropriate labels and assignee
 2. Create a branch with format 'issue-<number>/<description>'
 3. Make changes and commit with conventional commit format
 4. Push branch and create PR that references the issue
-5. Use plain text formatting (markdown checkboxes - [x], not Unicode)
-6. Reference the issue number in commits and PRs
-7. Add labels to issues (type, component, priority, profile as applicable)
-8. For automated PRs, document them retroactively with an issue
+5. Assign the PR and add matching labels to it
+6. Use plain text formatting (markdown checkboxes - [x], not Unicode)
+7. Reference the issue number in commits and PRs
+8. Add labels to issues (type, component, priority, profile as applicable)
+9. For automated PRs, document them retroactively with an issue
 ```
 
 ## Quick Reference Commands
 
 ```bash
-# Create issue with labels (set issue type in GitHub UI)
+# Create issue with labels and assignee (set issue type in GitHub UI)
 # Note: Both issue and PR titles should NOT include colon (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
-gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,priority:high"
+gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,priority:high" --assignee <your-github-username>
 
-# Or add labels after creation
-gh issue edit <number> --add-label "component:cli"
+# Or add labels/assignee after creation
+gh issue edit <number> --add-label "component:cli" --add-assignee <your-github-username>
 
 # Create branch
 git checkout -b issue-<number>/<description>
@@ -272,6 +279,9 @@ gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>
 ## Changes
 - [x] Change 1
 - [x] Change 2"
+
+# Assign and label the PR (matching the issue labels)
+gh pr edit <number> --add-assignee <your-github-username> --add-label "component:cli,priority:high"
 ```
 
 ## Why This Workflow?
