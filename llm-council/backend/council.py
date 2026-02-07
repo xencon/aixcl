@@ -63,7 +63,9 @@ RESPONSE GUIDANCE:
             logger.debug("model %s content length = %d", model, len(content))
             stage1_results.append({
                 "model": model,
-                "response": content
+                "response": content,
+                "prompt_tokens": response.get('prompt_tokens', 0),
+                "completion_tokens": response.get('completion_tokens', 0),
             })
         else:
             logger.debug("model %s returned None, skipping", model)
@@ -219,7 +221,9 @@ FINAL RANKING:
             stage2_results.append({
                 "model": model,
                 "ranking": full_text,
-                "parsed_ranking": parsed
+                "parsed_ranking": parsed,
+                "prompt_tokens": response.get('prompt_tokens', 0),
+                "completion_tokens": response.get('completion_tokens', 0),
             })
 
     return stage2_results, label_to_model
@@ -311,7 +315,10 @@ Provide the response directly:"""
         }
 
     content = response.get('content', '')
-    logger.debug("chairman content length = %d", len(content))
+    chairman_prompt_tokens = response.get('prompt_tokens', 0)
+    chairman_completion_tokens = response.get('completion_tokens', 0)
+    logger.debug("chairman content length = %d, prompt_tokens = %d, completion_tokens = %d",
+                 len(content), chairman_prompt_tokens, chairman_completion_tokens)
     
     # Extract primary source model from content if present
     primary_source = None
@@ -366,7 +373,9 @@ Provide the response directly:"""
         "response": content,
         "primary_source": primary_source,
         "top_ranked_model": top_model,
-        "confidence": confidence
+        "confidence": confidence,
+        "prompt_tokens": chairman_prompt_tokens,
+        "completion_tokens": chairman_completion_tokens,
     }
 
 
@@ -540,10 +549,26 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
     )
     logger.debug("stage3 completed")
 
+    # Accumulate token usage across all council stages
+    total_prompt_tokens = (
+        sum(r.get('prompt_tokens', 0) for r in stage1_results) +
+        sum(r.get('prompt_tokens', 0) for r in stage2_results) +
+        stage3_result.get('prompt_tokens', 0)
+    )
+    total_completion_tokens = (
+        sum(r.get('completion_tokens', 0) for r in stage1_results) +
+        sum(r.get('completion_tokens', 0) for r in stage2_results) +
+        stage3_result.get('completion_tokens', 0)
+    )
+    logger.debug("Total token usage: prompt=%d, completion=%d",
+                 total_prompt_tokens, total_completion_tokens)
+
     # Prepare metadata
     metadata = {
         "label_to_model": label_to_model,
-        "aggregate_rankings": aggregate_rankings
+        "aggregate_rankings": aggregate_rankings,
+        "total_prompt_tokens": total_prompt_tokens,
+        "total_completion_tokens": total_completion_tokens,
     }
 
     logger.debug("run_full_council returning")

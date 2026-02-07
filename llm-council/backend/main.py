@@ -300,6 +300,34 @@ class ChatCompletionResponse(BaseModel):
     usage: Dict[str, Any]
 
 
+def _estimate_tokens(text: str) -> int:
+    """Estimate token count from text using character-based heuristic (~4 chars per token)."""
+    return max(1, len(text) // 4)
+
+
+def _build_token_usage(user_query: str, final_content: str, metadata: Dict[str, Any]) -> Dict[str, int]:
+    """Build token usage dict using actual Ollama counts when available, with estimation fallback."""
+    total_prompt = metadata.get('total_prompt_tokens', 0)
+    total_completion = metadata.get('total_completion_tokens', 0)
+
+    if total_prompt > 0 or total_completion > 0:
+        # Use actual token counts accumulated from Ollama API responses
+        return {
+            "prompt_tokens": total_prompt,
+            "completion_tokens": total_completion,
+            "total_tokens": total_prompt + total_completion,
+        }
+
+    # Fallback: character-based estimation (~4 chars per token)
+    prompt_est = _estimate_tokens(user_query)
+    completion_est = _estimate_tokens(final_content)
+    return {
+        "prompt_tokens": prompt_est,
+        "completion_tokens": completion_est,
+        "total_tokens": prompt_est + completion_est,
+    }
+
+
 @app.get("/")
 async def root():
     """Health check endpoint."""
@@ -825,11 +853,7 @@ Please provide a helpful response based on the context provided above."""
                     finish_reason="stop"
                 )
             ],
-            usage={
-                "prompt_tokens": len(user_query.split()),  # Rough estimate
-                "completion_tokens": len(final_content.split()),  # Rough estimate
-                "total_tokens": len(user_query.split()) + len(final_content.split())
-            }
+            usage=_build_token_usage(user_query, final_content, metadata)
         )
         
         logger.debug("returning non-streaming response")
