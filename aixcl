@@ -2247,7 +2247,12 @@ function configure_council() {
     local chairman_index
     local chairman_model
     while true; do
-        read -p "Select chairman model (1-$model_count): " chairman_index
+        read -p "Select chairman model (1-$model_count): " chairman_index || true
+        if [[ -z "${chairman_index:-}" ]]; then
+            echo ""
+            echo "Input cancelled."
+            return 1
+        fi
         if [[ "$chairman_index" =~ ^[0-9]+$ ]] && [[ "$chairman_index" -ge 1 ]] && [[ "$chairman_index" -le $model_count ]]; then
             chairman_model="${models_array[$((chairman_index - 1))]}"
             echo "✅ Selected chairman: $chairman_model"
@@ -2339,7 +2344,12 @@ function configure_council() {
         prompt_msg="$prompt_msg: "
         
         echo ""
-        read -p "$prompt_msg" selection
+        read -p "$prompt_msg" selection || true
+        if [[ -z "${selection:-}" ]]; then
+            echo ""
+            echo "Input cancelled."
+            return 1
+        fi
         
         # Handle 'done' option - only allow if minimum members are selected
         if [[ "$selection" == "done" ]] || [[ "$selection" == "d" ]]; then
@@ -2393,7 +2403,7 @@ function configure_council() {
         echo ""
         echo "❌ Error: Council must have at least 2 models (1 chairman + 1 member)."
         echo "   You selected only the chairman."
-        exit 1
+        return 1
     fi
     
     # Build council models string (comma-separated, excluding chairman)
@@ -2426,15 +2436,15 @@ function configure_council() {
     echo ""
     
     # Ask for confirmation
-    read -p "Apply this configuration? (yes/no): " confirm
-    if [[ "$confirm" != "yes" ]] && [[ "$confirm" != "y" ]]; then
+    read -p "Apply this configuration? (yes/no): " confirm || true
+    if [[ "${confirm:-}" != "yes" ]] && [[ "${confirm:-}" != "y" ]]; then
         echo "Configuration cancelled."
-        exit 0
+        return 0
     fi
     
     # Update .env file for persistence (this will overwrite existing values)
     if ! update_env_file "$council_models_str" "$chairman_model"; then
-        exit 1
+        return 1
     fi
     
     echo ""
@@ -2447,8 +2457,8 @@ function configure_council() {
     echo ""
     
     # Ask if user wants to restart services
-    read -p "Restart LLM-Council service now? (yes/no): " restart_confirm
-    if [[ "$restart_confirm" == "yes" ]] || [[ "$restart_confirm" == "y" ]]; then
+    read -p "Restart LLM-Council service now? (yes/no): " restart_confirm || true
+    if [[ "${restart_confirm:-}" == "yes" ]] || [[ "${restart_confirm:-}" == "y" ]]; then
         echo ""
         echo "Restarting LLM-Council service to apply new configuration..."
         set_compose_cmd
@@ -2464,7 +2474,7 @@ function configure_council() {
         run_compose up -d llm-council
         echo "✅ LLM-Council service restarted with new configuration"
     fi
-    exit 0
+    return 0
 }
 
 function utils_cmd() {
