@@ -1,6 +1,7 @@
 """3-stage LLM Council orchestration."""
 
 import logging
+import re
 from typing import List, Dict, Any, Tuple
 from .config import BACKEND_MODE
 from .config_manager import get_council_models, get_chairman_model
@@ -329,7 +330,6 @@ Provide the response directly:"""
             confidence_line = [line for line in content.split('\n') if '# Confidence:' in line][0]
             confidence_str = confidence_line.split('# Confidence:')[1].strip()
             # Extract number before % sign
-            import re
             match = re.search(r'(\d+)%', confidence_str)
             if match:
                 chairman_confidence = int(match.group(1))
@@ -345,68 +345,21 @@ Provide the response directly:"""
     if not primary_source:
         primary_source = chairman_model
     
-    # Calculate base confidence (from chairman or consensus)
+    # Determine confidence from chairman self-report or consensus-based fallback
     if chairman_confidence is not None:
-        base_confidence = chairman_confidence
+        confidence = chairman_confidence
     else:
-        base_confidence = 70
+        confidence = 70
         if aggregate_rankings and len(aggregate_rankings) > 0:
-            # Higher confidence if top model has clear lead
+            # Higher confidence if top model has clear lead in rankings
             top_rank = aggregate_rankings[0]['average_rank']
             if len(aggregate_rankings) > 1:
                 second_rank = aggregate_rankings[1]['average_rank']
                 gap = second_rank - top_rank
                 # Confidence based on ranking gap (larger gap = higher confidence)
-                base_confidence = min(90, max(60, 70 + int(gap * 10)))
+                confidence = min(90, max(60, 70 + int(gap * 10)))
             else:
-                base_confidence = 75
-    
-    # ALWAYS apply correctness penalties, even if chairman provided confidence
-    # Check for correctness issues in the synthesized response (content) and top-ranked response
-    penalties = 0
-    
-    # Check synthesized response (content) for issues
-    content_lower = content.lower()
-    user_query_lower = user_query.lower()
-    
-    # Check if function signature might be wrong in synthesized response
-    if '-> bool' in content_lower and 'tuple' in user_query_lower:
-        penalties += 30  # Wrong return type
-    if '-> str' in content_lower and 'tuple' in user_query_lower and '-> tuple' not in content_lower:
-        penalties += 30  # Wrong return type
-    if 'def validate_email' in content_lower and '-> tuple' not in content_lower and 'tuple' in user_query_lower:
-        penalties += 30  # Missing tuple return type annotation
-    
-    # Check for missing error messages in return statements
-    if 'return false' in content_lower or 'return true' in content_lower:
-        if 'tuple' in user_query_lower and '(' not in content.split('return')[1][:20] if 'return' in content else '':
-            penalties += 20  # Missing tuple return (should return (False, "message"))
-    
-    # Check for missing normalization when required
-    if 'normalize' in user_query_lower or 'lowercase' in user_query_lower:
-        if 'lower()' not in content_lower and 'lowercase' in user_query_lower:
-            penalties += 15  # Missing lowercase normalization
-        if 'strip()' not in content_lower and 'trim' in user_query_lower:
-            penalties += 10  # Missing whitespace trimming
-    
-    # Also check top-ranked response for additional context
-    if top_model and stage1_results:
-        top_response = next((r for r in stage1_results if r['model'] == top_model), None)
-        if top_response:
-            response_text = top_response.get('response', '').lower()
-            
-            # Additional penalties if top response has issues
-            if '-> bool' in response_text and 'tuple' in user_query_lower:
-                penalties += 10  # Top response also has wrong signature
-            if 'return false' in response_text and 'tuple' in user_query_lower:
-                penalties += 5  # Top response missing tuple return
-    
-    # Apply penalties (always, even if chairman provided confidence)
-    confidence = max(30, base_confidence - penalties)
-    
-    # Log penalty application for debugging
-    if penalties > 0:
-        logger.debug("Applied %d%% penalty to confidence. Base: %d%%, Final: %d%%", penalties, base_confidence, confidence)
+                confidence = 75
     
     return {
         "model": chairman_model,
