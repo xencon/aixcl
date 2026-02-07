@@ -56,11 +56,16 @@ async def query_model(
             data = response.json()
             
             content = data.get('message', {}).get('content', '')
-            logger.debug("extracted content length = %d", len(content))
+            prompt_eval_count = data.get('prompt_eval_count', 0)
+            eval_count = data.get('eval_count', 0)
+            logger.debug("extracted content length = %d, prompt_tokens = %d, completion_tokens = %d",
+                         len(content), prompt_eval_count, eval_count)
             
             return {
                 'content': content,
-                'reasoning_details': None
+                'reasoning_details': None,
+                'prompt_tokens': prompt_eval_count,
+                'completion_tokens': eval_count,
             }
 
     except Exception as e:
