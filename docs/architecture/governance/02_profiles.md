@@ -6,9 +6,13 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 ## 1. Runtime Core (Always Enabled)
 
-- Ollama
-- LLM-Council
-- Continue
+The runtime core consists of three components:
+
+- **Ollama** - LLM inference engine (Docker-managed service)
+- **LLM-Council** - Multi-model orchestration (Docker-managed service)
+- **Continue** - AI-powered code assistance (VS Code plugin, not Docker-managed)
+
+Continue is a client-side IDE plugin that connects to LLM-Council via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or `PROFILE_SERVICES` mappings in `cli/lib/profile.sh`.
 
 Note: Runtime persistence is provided by PostgreSQL as an operational service in all current profiles.
 
