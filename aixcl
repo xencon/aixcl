@@ -4,384 +4,38 @@ set -e  # Exit on error
 set -u  # Treat unset variables as an error
 set -o pipefail  # Catch errors in pipelines
 
-# Get script directory early (needed for compose file paths)
+# Get script directory early (needed for compose file paths and library sourcing)
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-# Safe function to load environment variables from .env file
-load_env_file() {
-    local env_file="$1"
-    if [ -f "$env_file" ]; then
-        # Use a safer method to parse .env files
-        while IFS= read -r line || [ -n "$line" ]; do
-            # Skip empty lines and comments
-            [ -z "$line" ] && continue
-            [ "${line#\#}" != "$line" ] && continue
-            
-            # Extract key and value, handling quoted values
-            if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
-                local key="${BASH_REMATCH[1]}"
-                local value="${BASH_REMATCH[2]}"
-                
-                # Remove leading/trailing whitespace from key
-                key="${key%"${key##*[![:space:]]}"}"
-                key="${key#"${key%%[![:space:]]*}"}"
-                
-                # Remove leading/trailing whitespace from value
-                value="${value%"${value##*[![:space:]]}"}"
-                value="${value#"${value%%[![:space:]]*}"}"
-                
-                # Remove surrounding quotes if present
-                if [[ "$value" =~ ^\".*\"$ ]]; then
-                    value="${value#\"}"
-                    value="${value%\"}"
-                elif [[ "$value" =~ ^\'.*\'$ ]]; then
-                    value="${value#\'}"
-                    value="${value%\'}"
-                fi
-                
-                # Only export if key is not empty and contains valid characters
-                # Note: Bash cannot export variables with hyphens
-                # Docker Compose reads these directly from .env file, so we don't need to export them
-                # We'll only export standard bash-compatible variable names
-                if [ -n "$key" ]; then
-                    # Check if variable name contains hyphens (Docker Compose compatible but not bash exportable)
-                    if [[ "$key" =~ - ]]; then
-                        # Variable contains hyphen - docker-compose will read it from .env directly
-                        # We can't export it in bash, but that's fine - docker-compose handles it
-                        # Silently skip (don't show warning) since this is expected behavior
-                        :
-                    # Check if variable name is bash-compatible (no hyphens)
-                    elif [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-                        # Standard bash variable name - safe to export
-                        export "$key"="$value"
-                    else
-                        echo "⚠️ Skipping invalid environment variable key: '$key'" >&2
-                    fi
-                fi
-            fi
-        done < "$env_file"
-    fi
-}
+# ── Source shared libraries ──────────────────────────────────────────────────
+# Order matters: color.sh and common.sh first (no dependencies), then modules
+# that depend on them. load_env_file must run before docker_utils.sh so that
+# COMPOSE_FILE from .env is picked up during validation.
+source "${SCRIPT_DIR}/lib/color.sh"
+source "${SCRIPT_DIR}/lib/common.sh"
 
-# Load environment variables from .env file
+# Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
 load_env_file ".env"
 
-# Allow custom Docker Compose file via environment variable
-COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
+# docker_utils.sh validates COMPOSE_FILE and sets default COMPOSE_CMD/COMPOSE_WORKDIR
+source "${SCRIPT_DIR}/lib/docker_utils.sh"
+source "${SCRIPT_DIR}/lib/logging.sh"
+source "${SCRIPT_DIR}/lib/env_check.sh"
+source "${SCRIPT_DIR}/lib/pgadmin_utils.sh"
+source "${SCRIPT_DIR}/lib/council_utils.sh"
+source "${SCRIPT_DIR}/cli/lib/profile.sh"
 
-# Sanitize COMPOSE_FILE
-# Reject any value containing non-alphanumeric, dash, underscore, dot or slash
-# Updated regex to properly handle file paths and prevent directory traversal
-if [[ ! "$COMPOSE_FILE" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$COMPOSE_FILE" =~ \.\. ]] || [[ "$COMPOSE_FILE" =~ ^/ ]]; then
-    echo "❌ Invalid COMPOSE_FILE value: $COMPOSE_FILE"
-    echo "   Allowed characters: A-Z, a-z, 0-9, ., _, -, /"
-    echo "   Cannot start with / or contain .."
-    exit 1
-fi
-
-# Use array for safer command construction
-COMPOSE_CMD=(docker-compose -f "${COMPOSE_FILE}")
-COMPOSE_WORKDIR="${SCRIPT_DIR}/services"
+# ── AIXCL-specific constants ─────────────────────────────────────────────────
 CONTAINER_NAME="open-webui"
 
-# Define all services from docker-compose.yml
-# This list should match the services defined in docker-compose.yml
-ALL_SERVICES=(
-    "ollama"
-    "open-webui"
-    "llm-council"
-    "postgres"
-    "pgadmin"
-    "watchtower"
-    "prometheus"
-    "grafana"
-    "cadvisor"
-    "node-exporter"
-    "postgres-exporter"
-    "nvidia-gpu-exporter"
-    "loki"
-    "promtail"
-)
-
-# Function to validate service name
-function is_valid_service() {
-    local service="$1"
-    for valid_service in "${ALL_SERVICES[@]}"; do
-        if [ "$service" = "$valid_service" ]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-# Get the actual Ollama container name (handles hash-prefixed containers)
-function get_ollama_container() {
-    docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^ollama$|_[0-9a-f]+_ollama$|^[0-9a-f]+_ollama$" | head -1
-}
-
-# Function to get container name from service name
-function get_container_name() {
-    local service="$1"
-    case "$service" in
-        "open-webui")
-            echo "open-webui"
-            ;;
-        "node-exporter")
-            echo "node-exporter"
-            ;;
-        "postgres-exporter")
-            echo "postgres-exporter"
-            ;;
-        "nvidia-gpu-exporter")
-            echo "nvidia-gpu-exporter"
-            ;;
-        *)
-            echo "$service"
-            ;;
-    esac
-}
-
-# Detect if NVIDIA GPU is available
-function has_nvidia() {
-    if command -v nvidia-smi >/dev/null 2>&1; then
-        nvidia-smi >/dev/null 2>&1 && return 0 || return 1
-    fi
-    if docker info 2>/dev/null | grep -qi "nvidia"; then
-        return 0
-    fi
-    return 1
-}
-
-# Detect if running on ARM64 architecture
-function is_arm64() {
-    local arch=$(uname -m)
-    case "$arch" in
-        arm64|aarch64)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
-# Build docker-compose command with optional GPU and ARM overrides if present
-function set_compose_cmd() {
-    local services_dir="${SCRIPT_DIR}/services"
-    # Use full path for compose file
-    local compose_file="${services_dir}/${COMPOSE_FILE}"
-    local files=( -f "$compose_file" )
-    
-    # Check for ARM64 architecture
-    if is_arm64 && [ -f "${services_dir}/docker-compose.arm.yml" ]; then
-        echo "Detected ARM64 architecture. Enabling ARM platform overrides."
-        files+=( -f "${services_dir}/docker-compose.arm.yml" )
-    fi
-    
-    # Check for NVIDIA GPU
-    if has_nvidia && [ -f "${services_dir}/docker-compose.gpu.yml" ]; then
-        echo "Detected NVIDIA GPU. Enabling GPU overrides."
-        files+=( -f "${services_dir}/docker-compose.gpu.yml" )
-    else
-        echo "No NVIDIA GPU detected. Running without GPU overrides."
-    fi
-    
-    COMPOSE_CMD=(docker-compose "${files[@]}")
-    COMPOSE_WORKDIR="${services_dir}"
-}
-
-# Helper function to run docker-compose commands from the services directory
-function run_compose() {
-    if [ -z "${COMPOSE_WORKDIR}" ]; then
-        echo "❌ Error: COMPOSE_WORKDIR is not set. Please call set_compose_cmd() first."
-        return 1
-    fi
-    if [ ! -d "${COMPOSE_WORKDIR}" ]; then
-        echo "❌ Error: Services directory does not exist: ${COMPOSE_WORKDIR}"
-        return 1
-    fi
-    # Export ENABLE_DB_STORAGE explicitly if it's set, to ensure it's available to docker-compose
-    # This fixes the issue where the variable might not be visible in the subshell
-    if [ -n "${ENABLE_DB_STORAGE:-}" ]; then
-        export ENABLE_DB_STORAGE
-    fi
-    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@")
-}
-
 # Source the autocomplete script if it exists (with security validation)
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
 if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
     source "$COMPLETION_SCRIPT"
 fi
 
-function check_env() {
-    echo "Checking environment dependencies..."
-    local missing_deps=0
 
-    local is_wsl=0
-    if grep -qi "microsoft" /proc/sys/kernel/osrelease 2>/dev/null || \
-       grep -qi "microsoft" /proc/version 2>/dev/null; then
-        is_wsl=1
-        echo "ℹ️  Windows Subsystem for Linux detected. GPU checks rely on nvidia-smi/docker instead of lspci."
-    fi
-
-    # Check Docker
-    if ! command -v docker &> /dev/null; then
-        echo "❌ Docker is not installed"
-        echo "   Install from: https://docs.docker.com/get-docker/"
-        missing_deps=1
-    else
-        echo "✅ Docker is installed"
-        # Check if Docker daemon is running
-        if ! docker info &> /dev/null; then
-            echo "❌ Docker daemon is not running"
-            echo "   Start with: sudo systemctl start docker"
-            missing_deps=1
-        else
-            echo "✅ Docker daemon is running"
-        fi
-    fi
-
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        echo "❌ Docker Compose is not installed"
-        echo "   Install from: https://docs.docker.com/compose/install/"
-        missing_deps=1
-    else
-        echo "✅ Docker Compose is installed"
-    fi
-
-    # Check Bash shell
-    echo -e "\nChecking shell environment..."
-    if ! command -v bash &> /dev/null; then
-        echo "❌ Bash shell is not installed"
-        echo "   Install bash to continue: https://www.gnu.org/software/bash/"
-        missing_deps=1
-    else
-        echo "✅ Bash shell is available"
-    fi
-
-    # Check NVIDIA drivers and toolkit (optional)
-    echo -e "\nChecking NVIDIA support..."
-    local os_id=""
-    local os_pretty=""
-    if [ -f /etc/os-release ]; then
-        # shellcheck disable=SC1091
-        . /etc/os-release
-        os_id="${ID:-}"
-        os_pretty="${PRETTY_NAME:-$os_id}"
-    fi
-
-    if [ -n "$os_pretty" ]; then
-        echo "Detected operating system: $os_pretty"
-    else
-        echo "⚠️ Could not determine operating system (using generic GPU checks)"
-    fi
-
-    local has_gpu_hardware=0
-    if command -v lspci &> /dev/null; then
-        if lspci | grep -qi "nvidia"; then
-            echo "✅ NVIDIA GPU hardware detected"
-            has_gpu_hardware=1
-        else
-            echo "⚠️ NVIDIA GPU hardware not detected"
-        fi
-    else
-        if [ "$is_wsl" -eq 1 ]; then
-            echo "⚠️ lspci is unavailable in WSL; falling back to runtime detection."
-            if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
-                echo "✅ NVIDIA GPU support detected via nvidia-smi"
-                has_gpu_hardware=1
-            elif [ -e /dev/dxg ]; then
-                echo "✅ NVIDIA GPU hardware exposed via /dev/dxg"
-                has_gpu_hardware=1
-            elif has_nvidia; then
-                echo "✅ NVIDIA GPU support detected via Docker runtime checks"
-                has_gpu_hardware=1
-            else
-                echo "ℹ️  Unable to confirm NVIDIA GPU support in WSL."
-                echo "   If you expect GPU access, ensure you've installed the Windows CUDA drivers"
-                echo "   and enabled GPU sharing in WSL: https://learn.microsoft.com/windows/wsl/tutorials/gpu-compute"
-            fi
-        else
-            echo "⚠️ Unable to detect GPU hardware (missing lspci command)"
-            echo "   Install pciutils to enable hardware detection (e.g., sudo apt install pciutils)"
-        fi
-    fi
-
-    if command -v nvidia-smi &> /dev/null; then
-        echo "✅ NVIDIA drivers installed"
-    elif [ "$has_gpu_hardware" -eq 1 ]; then
-        echo "❌ NVIDIA drivers not found"
-        case "$os_id" in
-            ubuntu|debian)
-                echo "   Install drivers with: sudo ubuntu-drivers autoinstall"
-                ;;
-            fedora)
-                echo "   Install drivers with RPM Fusion: sudo dnf install akmod-nvidia xorg-x11-drv-nvidia-cuda"
-                ;;
-            *)
-                echo "   Refer to NVIDIA docs for driver installation: https://www.nvidia.com/Download/index.aspx"
-                ;;
-        esac
-    else
-        echo "⚠️ NVIDIA drivers not found (no GPU detected)"
-    fi
-
-    # Check NVIDIA Container Toolkit
-    if command -v nvidia-container-cli &> /dev/null; then
-        echo "✅ NVIDIA Container Toolkit installed"
-    elif command -v dpkg &> /dev/null && dpkg -l | grep -q nvidia-container-toolkit; then
-        echo "✅ NVIDIA Container Toolkit installed"
-    elif command -v rpm &> /dev/null && rpm -qa | grep -q nvidia-container-toolkit; then
-        echo "✅ NVIDIA Container Toolkit installed"
-    else
-        echo "⚠️ NVIDIA Container Toolkit not found (optional)"
-        case "$os_id" in
-            ubuntu|debian)
-                echo "   Install toolkit with:"
-                echo "   sudo apt update && sudo apt install -y nvidia-container-toolkit"
-                ;;
-            fedora)
-                echo "   Install toolkit with:"
-                echo "   sudo dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/fedora/libnvidia-container.repo"
-                echo "   sudo dnf install -y nvidia-container-toolkit"
-                ;;
-            *)
-                echo "   Install instructions: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
-                ;;
-        esac
-    fi
-
-    # Check available disk space
-    echo -e "\nChecking system resources..."
-    local required_space=10 # GB
-    local available_space=$(df -BG "$(pwd)" | awk 'NR==2 {print $4}' | sed 's/G//')
-    
-    if [ "$available_space" -lt "$required_space" ]; then
-        echo "❌ Insufficient disk space. Required: ${required_space}GB, Available: ${available_space}GB"
-        missing_deps=1
-    else
-        echo "✅ Sufficient disk space available"
-    fi
-
-    # Check memory
-    local total_mem=$(free -g | awk '/^Mem:/{print $2}')
-    if [ "$total_mem" -lt 8 ]; then
-        echo "⚠️ Low memory detected (${total_mem}GB). Recommended: 8GB+"
-    else
-        echo "✅ Sufficient memory available"
-    fi
-
-    if [ $missing_deps -eq 1 ]; then
-        echo -e "\n❌ Environment check failed. Please address the issues above."
-        return 1
-    else
-        echo -e "\n✅ Environment check passed! You're ready to run AIXCL."
-        return 0
-    fi
-}
+# check_env() is provided by lib/env_check.sh
 
 function ensure_databases() {
     # Ensure required databases exist (webui and continue)
@@ -454,57 +108,13 @@ function ensure_databases() {
     fi
 }
 
-function generate_pgadmin_config() {
-    echo "Generating pgAdmin server configuration..."
-    
-    # Validate required environment variables
-    if [ -z "${POSTGRES_USER}" ] || [ -z "${POSTGRES_PASSWORD}" ]; then
-        echo "❌ Error: POSTGRES_USER and POSTGRES_PASSWORD must be set in .env file"
-        echo "   Please check your .env file and ensure these variables are configured"
-        return 1
-    fi
-    
-    # Use SCRIPT_DIR to ensure we're writing to the correct location
-    local pgadmin_config="${SCRIPT_DIR}/pgadmin-servers.json"
-    
-    # Create pgadmin-servers.json with populated environment values
-    cat > "$pgadmin_config" << EOF
-{
-  "Servers": {
-    "1": {
-      "Group": "Servers",
-      "Name": "AIXCL",
-      "Host": "localhost",
-      "Port": 5432,
-      "MaintenanceDB": "postgres",
-      "Username": "${POSTGRES_USER}",
-      "Password": "${POSTGRES_PASSWORD}",
-      "SSLMode": "prefer",
-      "Favorite": true
-    }
-  }
-}
-EOF
-    
-    # Set restrictive file permissions (read/write for owner only)
-    chmod 600 "$pgadmin_config"
-    
-    echo "✅ Generated pgadmin-servers.json with populated values and secure permissions"
-}
+# generate_pgadmin_config() is provided by lib/pgadmin_utils.sh
 
 function start() {
     local profile=""
     local profile_specified=false
     
-    # Source profile library early (needed for validation and service lists)
-    if ! type is_valid_profile >/dev/null 2>&1; then
-        if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
-            source "${SCRIPT_DIR}/cli/lib/profile.sh"
-        else
-            echo "❌ Error: Profile library not found at ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
-            exit 1
-        fi
-    fi
+    # Profile library is sourced at script startup (cli/lib/profile.sh)
     
     # Parse arguments for profile
     local remaining_args=()
@@ -848,15 +458,7 @@ function restart() {
     local profile=""
     local profile_specified=false
     
-    # Source profile library early (needed for validation)
-    if ! type is_valid_profile >/dev/null 2>&1; then
-        if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
-            source "${SCRIPT_DIR}/cli/lib/profile.sh"
-        else
-            echo "❌ Error: Profile library not found at ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
-            exit 1
-        fi
-    fi
+    # Profile library is sourced at script startup (cli/lib/profile.sh)
     
     # Parse arguments for profile and service names
     local remaining_args=()
@@ -1435,10 +1037,7 @@ function clean() {
 }
 
 function status() {
-    # Source profile library for profile information
-    if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
-        source "${SCRIPT_DIR}/cli/lib/profile.sh"
-    fi
+    # Profile library is sourced at script startup (cli/lib/profile.sh)
     
     # Get current profile from .env file
     local current_profile=""
@@ -2152,134 +1751,8 @@ fi"
     fi
 }
 
-function get_available_models() {
-    # Get list of available models from Ollama
-    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        echo "❌ Error: Ollama container is not running. Please start the services first."
-        return 1
-    fi
-    
-    # Get models list, skip header line, extract model names
-    local ollama_container
-    ollama_container=$(get_ollama_container)
-    if [ -n "$ollama_container" ]; then
-        docker exec "$ollama_container" ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
-    fi
-}
-
-function update_env_file() {
-    local council_models="$1"
-    local chairman_model="$2"
-    local env_file=".env"
-    
-    # Validate inputs
-    if [[ -z "$chairman_model" ]]; then
-        echo "❌ Error: Chairman model is required"
-        return 1
-    fi
-    
-    if [[ -z "$council_models" ]]; then
-        echo "❌ Error: At least one council member is required"
-        return 1
-    fi
-    
-    # Check if .env file exists
-    if [[ ! -f "$env_file" ]]; then
-        echo "❌ Error: .env file not found at: $env_file"
-        echo "   Please run './aixcl start' first to create it."
-        return 1
-    fi
-    
-    # Create backup
-    cp "$env_file" "${env_file}.backup.$(date +%s)" || {
-        echo "❌ Error: Failed to create backup of .env file"
-        return 1
-    }
-    
-    # Remove all existing LLM Council configuration
-    # This ensures we completely overwrite any existing configuration
-    # Remove entire section including all comment lines and variables
-    if [[ "$(uname)" == "Darwin" ]]; then
-        # macOS uses BSD sed
-        # Remove section header and all related comments
-        sed -i '' '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
-        sed -i '' '/^[[:space:]]*#.*Chairman/d' "$env_file"
-        sed -i '' '/^[[:space:]]*#.*Council Members/d' "$env_file"
-        sed -i '' '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
-        sed -i '' '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
-        sed -i '' '/^[[:space:]]*#.*CHAIRMAN=/d' "$env_file"
-        sed -i '' '/^[[:space:]]*#.*COUNCILLOR-/d' "$env_file"
-        # Remove variable assignments
-        sed -i '' '/^[[:space:]]*COUNCIL_MODELS=/d' "$env_file"
-        sed -i '' '/^[[:space:]]*CHAIRMAN_MODEL=/d' "$env_file"
-        sed -i '' '/^[[:space:]]*CHAIRMAN=/d' "$env_file"
-        sed -i '' '/^[[:space:]]*COUNCILLOR-/d' "$env_file"
-        # Remove "Configure with" comment lines
-        sed -i '' '/^[[:space:]]*#.*Configure with.*council configure/d' "$env_file"
-    else
-        # Linux uses GNU sed
-        # Remove section header and all related comments
-        sed -i '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
-        sed -i '/^[[:space:]]*#.*Chairman/d' "$env_file"
-        sed -i '/^[[:space:]]*#.*Council Members/d' "$env_file"
-        sed -i '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
-        sed -i '/^[[:space:]]*#.*CHAIRMAN_MODEL/d' "$env_file"
-        sed -i '/^[[:space:]]*#.*CHAIRMAN=/d' "$env_file"
-        sed -i '/^[[:space:]]*#.*COUNCILLOR-/d' "$env_file"
-        # Remove variable assignments
-        sed -i '/^[[:space:]]*COUNCIL_MODELS=/d' "$env_file"
-        sed -i '/^[[:space:]]*CHAIRMAN_MODEL=/d' "$env_file"
-        sed -i '/^[[:space:]]*CHAIRMAN=/d' "$env_file"
-        sed -i '/^[[:space:]]*COUNCILLOR-/d' "$env_file"
-        # Remove "Configure with" comment lines
-        sed -i '/^[[:space:]]*#.*Configure with.*council configure/d' "$env_file"
-    fi
-    
-    # Remove consecutive blank lines (more than 2 in a row) to clean up the file
-    if [[ "$(uname)" == "Darwin" ]]; then
-        # macOS: Use awk to remove excessive blank lines
-        awk 'BEGIN{blank=0} /^[[:space:]]*$/{blank++; if(blank<=1) print; next} {blank=0; print}' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
-    else
-        # Linux: Use awk to remove excessive blank lines
-        awk 'BEGIN{blank=0} /^[[:space:]]*$/{blank++; if(blank<=1) print; next} {blank=0; print}' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
-    fi
-    
-    # Ensure file ends with newline before appending
-    if [[ -s "$env_file" ]] && [[ "$(tail -c 1 "$env_file" 2>/dev/null)" != "" ]]; then
-        echo "" >> "$env_file" || {
-            echo "❌ Error: Failed to append newline to .env file"
-            return 1
-        }
-    fi
-    
-    # Add legacy format: CHAIRMAN_MODEL and COUNCIL_MODELS (bash-compatible)
-    {
-        echo ""
-        echo "# LLM Council Configuration"
-        echo "# Chairman model - synthesizes final response"
-        echo "CHAIRMAN_MODEL=${chairman_model}"
-        echo ""
-        echo "# Council Members - Comma-separated list of models that participate in the council"
-        echo "COUNCIL_MODELS=${council_models}"
-    } >> "$env_file" || {
-        echo "❌ Error: Failed to write council configuration to .env file"
-        return 1
-    }
-    
-    # Verify the values were written correctly
-    if ! grep -q "^CHAIRMAN_MODEL=${chairman_model}$" "$env_file" 2>/dev/null; then
-        echo "❌ Error: Failed to verify CHAIRMAN_MODEL was written correctly"
-        return 1
-    fi
-    
-    if ! grep -q "^COUNCIL_MODELS=${council_models}$" "$env_file" 2>/dev/null; then
-        echo "❌ Error: Failed to verify COUNCIL_MODELS was written correctly"
-        return 1
-    fi
-    
-    echo "✅ Updated .env file with council configuration (CHAIRMAN_MODEL and COUNCIL_MODELS)"
-    return 0
-}
+# get_available_models() is provided by lib/council_utils.sh
+# update_env_file() is provided by lib/council_utils.sh
 
 function status_council() {
     echo "📋 LLM Council Status"

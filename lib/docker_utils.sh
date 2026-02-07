@@ -21,6 +21,10 @@ if [[ ! "$COMPOSE_FILE" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$COMPOSE_FILE" =~ \.\. ]
     exit 1
 fi
 
+# Default compose command (before set_compose_cmd detects GPU/ARM overrides)
+COMPOSE_CMD=(docker-compose -f "${SERVICES_DIR}/${COMPOSE_FILE}")
+COMPOSE_WORKDIR="${SERVICES_DIR}"
+
 # Build docker-compose command with optional GPU and ARM overrides if present
 set_compose_cmd() {
     local files=( -f "${SERVICES_DIR}/${COMPOSE_FILE}" )
@@ -40,6 +44,25 @@ set_compose_cmd() {
     fi
     
     COMPOSE_CMD=(docker-compose "${files[@]}")
+    COMPOSE_WORKDIR="${SERVICES_DIR}"
+}
+
+# Helper function to run docker-compose commands from the services directory
+run_compose() {
+    if [ -z "${COMPOSE_WORKDIR:-}" ]; then
+        echo "❌ Error: COMPOSE_WORKDIR is not set. Please call set_compose_cmd() first." >&2
+        return 1
+    fi
+    if [ ! -d "${COMPOSE_WORKDIR}" ]; then
+        echo "❌ Error: Services directory does not exist: ${COMPOSE_WORKDIR}" >&2
+        return 1
+    fi
+    # Export ENABLE_DB_STORAGE explicitly if it's set, to ensure it's available to docker-compose
+    # This fixes the issue where the variable might not be visible in the subshell
+    if [ -n "${ENABLE_DB_STORAGE:-}" ]; then
+        export ENABLE_DB_STORAGE
+    fi
+    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@")
 }
 
 # Check if a container is running (handles both exact name and hash-prefixed names)
