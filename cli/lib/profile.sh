@@ -5,7 +5,9 @@
 # Valid profiles array
 VALID_PROFILES=(usr dev ops sys)
 
-# Runtime core services (always present in all profiles)
+# Runtime core services managed by Docker Compose (always present in all profiles).
+# Note: Continue is also part of the architectural runtime core (see 00_invariants.md)
+# but is a VS Code plugin, not a Docker-managed service, so it is not listed here.
 RUNTIME_CORE_SERVICES=(ollama llm-council)
 
 # Profile descriptions
@@ -16,8 +18,10 @@ declare -A PROFILE_DESCRIPTIONS=(
     [sys]="System-oriented (complete stack with automation)"
 )
 
-# Profile service mappings
-# Each profile includes runtime core services plus profile-specific services
+# Profile service mappings (Docker-managed services only)
+# Each profile includes runtime core services plus profile-specific services.
+# Continue (VS Code plugin) is part of the runtime core architecture but is
+# not managed by Docker Compose and therefore not listed in these mappings.
 declare -A PROFILE_SERVICES=(
     [usr]="ollama llm-council postgres"
     [dev]="ollama llm-council open-webui postgres pgadmin"
