@@ -3,10 +3,13 @@
 import os
 import json
 import asyncio
+import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import httpx
 from .config import BACKEND_MODE, OLLAMA_BASE_URL
+
+logger = logging.getLogger(__name__)
 
 # Configuration file path
 CONFIG_FILE = Path(os.getenv("CONFIG_FILE", "/app/data/council_config.json"))
@@ -42,7 +45,7 @@ def _load_config_from_file() -> Optional[Dict[str, Any]]:
             with open(CONFIG_FILE, 'r') as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            print(f"WARNING: Failed to load config from file: {e}")
+            logger.warning("Failed to load config from file: %s", e)
     return None
 
 
@@ -54,7 +57,7 @@ def _save_config_to_file(config: Dict[str, Any]) -> bool:
             json.dump(config, f, indent=2)
         return True
     except IOError as e:
-        print(f"ERROR: Failed to save config to file: {e}")
+        logger.error("Failed to save config to file: %s", e)
         return False
 
 
@@ -82,23 +85,23 @@ async def get_config() -> Dict[str, Any]:
                 
                 # If environment values differ from file, environment takes precedence
                 if file_models != env_models or file_chairman != env_chairman:
-                    print(f"DEBUG: Environment config differs from file config")
-                    print(f"DEBUG:   File models: {file_config.get('council_models')}")
-                    print(f"DEBUG:   Env models: {env_config.get('council_models')}")
-                    print(f"DEBUG:   File chairman: {file_config.get('chairman_model')}")
-                    print(f"DEBUG:   Env chairman: {env_config.get('chairman_model')}")
-                    print(f"DEBUG: Using environment config (source of truth)")
+                    logger.debug("Environment config differs from file config")
+                    logger.debug("  File models: %s", file_config.get('council_models'))
+                    logger.debug("  Env models: %s", env_config.get('council_models'))
+                    logger.debug("  File chairman: %s", file_config.get('chairman_model'))
+                    logger.debug("  Env chairman: %s", env_config.get('chairman_model'))
+                    logger.debug("Using environment config (source of truth)")
                     _config_cache = env_config
                     # Update file to match environment
                     _save_config_to_file(_config_cache)
                 else:
                     # File matches environment, use file (may have additional API-updated fields)
                     _config_cache = file_config
-                    print(f"DEBUG: Loaded config from file (matches environment): {_config_cache}")
+                    logger.debug("Loaded config from file (matches environment): %s", _config_cache)
             else:
                 # No file exists, use environment and save to file
                 _config_cache = env_config
-                print(f"DEBUG: Loaded config from environment: {_config_cache}")
+                logger.debug("Loaded config from environment: %s", _config_cache)
                 _save_config_to_file(_config_cache)
         
         return _config_cache.copy()
@@ -132,7 +135,7 @@ async def update_config(
         _config_cache = current_config
         _save_config_to_file(_config_cache)
         
-        print(f"DEBUG: Updated config: {_config_cache}")
+        logger.debug("Updated config: %s", _config_cache)
         return _config_cache.copy()
 
 
@@ -182,7 +185,7 @@ async def validate_ollama_models(models: List[str]) -> Dict[str, bool]:
             
             return validation
     except Exception as e:
-        print(f"WARNING: Failed to validate models with Ollama: {e}")
+        logger.warning("Failed to validate models with Ollama: %s", e)
         # On error, assume models are valid (optimistic)
         return {model: True for model in models}
 

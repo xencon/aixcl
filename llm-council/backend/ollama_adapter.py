@@ -32,8 +32,8 @@ async def query_model(
     Returns:
         Response dict with 'content', or None if failed
     """
-    print(f"DEBUG: query_model called for model={model}, OLLAMA_BASE_URL={OLLAMA_BASE_URL}", flush=True)
-    print(f"DEBUG: messages count = {len(messages)}", flush=True)
+    logger.debug("query_model called for model=%s, OLLAMA_BASE_URL=%s", model, OLLAMA_BASE_URL)
+    logger.debug("messages count = %d", len(messages))
     
     # Ollama uses OpenAI-compatible chat completions API
     payload = {
@@ -41,26 +41,22 @@ async def query_model(
         "messages": messages,
         "stream": False
     }
-    print(f"DEBUG: payload = {payload}")
 
     try:
         url = f"{OLLAMA_BASE_URL}/api/chat"
-        print(f"DEBUG: POST {url}")
+        logger.debug("POST %s", url)
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 url,
                 json=payload
             )
-            print(f"DEBUG: response status = {response.status_code}")
+            logger.debug("response status = %d", response.status_code)
             response.raise_for_status()
 
             data = response.json()
-            print(f"DEBUG: response data keys = {list(data.keys())}")
-            print(f"DEBUG: response data message keys = {list(data.get('message', {}).keys())}")
             
             content = data.get('message', {}).get('content', '')
-            print(f"DEBUG: extracted content length = {len(content)}")
-            print(f"DEBUG: content preview = {content[:200]}")
+            logger.debug("extracted content length = %d", len(content))
             
             return {
                 'content': content,
@@ -68,9 +64,7 @@ async def query_model(
             }
 
     except Exception as e:
-        print(f"DEBUG: Error querying Ollama model {model}: {type(e).__name__}: {e}")
-        import traceback
-        print(f"DEBUG: Traceback:\n{traceback.format_exc()}")
+        logger.error("Error querying Ollama model %s: %s", model, e, exc_info=True)
         return None
 
 
@@ -91,18 +85,18 @@ async def query_models_parallel(
     import asyncio
     import time
 
-    print(f"DEBUG: query_models_parallel called with {len(models)} models: {models}", flush=True)
+    logger.debug("query_models_parallel called with %d models: %s", len(models), models)
     start_time = time.time()
 
     # Create tasks for all models (truly parallel execution)
     tasks = [query_model(model, messages) for model in models]
-    print(f"DEBUG: Created {len(tasks)} parallel tasks", flush=True)
+    logger.debug("Created %d parallel tasks", len(tasks))
 
     # Wait for all to complete (parallel execution)
     responses = await asyncio.gather(*tasks)
     
     elapsed = time.time() - start_time
-    print(f"DEBUG: Parallel queries completed in {elapsed:.2f}s for {len(models)} models", flush=True)
+    logger.debug("Parallel queries completed in %.2fs for %d models", elapsed, len(models))
 
     # Map models to their responses
     return {model: response for model, response in zip(models, responses)}
@@ -119,7 +113,7 @@ async def preload_model(model: str, timeout: Optional[float] = 30.0) -> bool:
     Returns:
         True if preload successful, False otherwise
     """
-    print(f"DEBUG: Preloading model: {model}", flush=True)
+    logger.debug("Preloading model: %s", model)
     
     try:
         # Send a minimal query to load the model
@@ -135,10 +129,10 @@ async def preload_model(model: str, timeout: Optional[float] = 30.0) -> bool:
                 json=payload
             )
             response.raise_for_status()
-            print(f"DEBUG: Successfully preloaded model: {model}", flush=True)
+            logger.info("Successfully preloaded model: %s", model)
             return True
     except Exception as e:
-        print(f"DEBUG: Failed to preload model {model}: {type(e).__name__}: {e}", flush=True)
+        logger.warning("Failed to preload model %s: %s", model, e)
         return False
 
 
@@ -162,10 +156,10 @@ async def preload_council_models(config: Dict[str, Any]) -> None:
         all_models.append(chairman_model)
     
     if not all_models:
-        print("DEBUG: No models to preload", flush=True)
+        logger.debug("No models to preload")
         return
     
-    print(f"DEBUG: Preloading {len(all_models)} models: {all_models}", flush=True)
+    logger.info("Preloading %d models: %s", len(all_models), all_models)
     
     # Preload all models in parallel
     import asyncio
@@ -173,5 +167,5 @@ async def preload_council_models(config: Dict[str, Any]) -> None:
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
     successful = sum(1 for r in results if r is True)
-    print(f"DEBUG: Preloaded {successful}/{len(all_models)} models successfully", flush=True)
+    logger.info("Preloaded %d/%d models successfully", successful, len(all_models))
 

@@ -11,7 +11,6 @@ import json
 import asyncio
 import os
 import time
-import sys
 import re
 import logging
 
@@ -22,6 +21,8 @@ from .conversation_tracker import generate_conversation_id
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
 from .config import BACKEND_MODE, OLLAMA_BASE_URL, FORCE_STREAMING, ENABLE_MARKDOWN_FORMATTING, ENABLE_DB_STORAGE
 from .config_manager import get_config, update_config, reload_config, validate_ollama_models
+
+logger = logging.getLogger(__name__)
 
 # Constants for list types used in markdown formatting
 LIST_TYPE_BULLET = "bullet"
@@ -138,14 +139,11 @@ def format_markdown_response(content: str) -> str:
 
 app = FastAPI(title="LLM Council API")
 
-# Print startup configuration
-print("=" * 60)
-print("DEBUG: LLM Council API starting up")
-print(f"DEBUG: BACKEND_MODE = {BACKEND_MODE}")
-print(f"DEBUG: OLLAMA_BASE_URL = {OLLAMA_BASE_URL}")
-print(f"DEBUG: ENABLE_DB_STORAGE = {ENABLE_DB_STORAGE}")
-print("DEBUG: Configuration will be loaded dynamically on startup")
-print("=" * 60)
+# Log startup configuration
+logger.info("LLM Council API starting up")
+logger.info("BACKEND_MODE = %s", BACKEND_MODE)
+logger.info("OLLAMA_BASE_URL = %s", OLLAMA_BASE_URL)
+logger.info("ENABLE_DB_STORAGE = %s", ENABLE_DB_STORAGE)
 
 # Configure allowed CORS origins from environment or use safe defaults for local development
 _allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
@@ -160,7 +158,7 @@ else:
         "http://127.0.0.1",
         "http://127.0.0.1:8000",
     ]
-print(f"DEBUG: CORS ALLOWED_ORIGINS = {ALLOWED_ORIGINS}")
+logger.info("CORS ALLOWED_ORIGINS = %s", ALLOWED_ORIGINS)
 
 # Initialize database connection pool on startup
 @app.on_event("startup")
@@ -168,11 +166,11 @@ async def startup_event():
     """Initialize database connection and config on startup."""
     if ENABLE_DB_STORAGE:
         await db.get_pool()
-        print("DEBUG: Database connection pool initialized")
+        logger.info("Database connection pool initialized")
     
     # Initialize config manager (loads config from file or environment)
     config = await get_config()
-    print(f"DEBUG: Configuration loaded: council_models={config['council_models']}, chairman={config['chairman_model']}")
+    logger.info("Configuration loaded: council_models=%s, chairman=%s", config['council_models'], config['chairman_model'])
     
     # Preload models to keep them warm in GPU memory
     if BACKEND_MODE == "ollama":
@@ -183,7 +181,7 @@ async def startup_event():
 async def shutdown_event():
     """Close database connection pool on shutdown."""
     await db.close_pool()
-    print("DEBUG: Database connection pool closed")
+    logger.info("Database connection pool closed")
 
 # Enable CORS for local development
 # Continue plugin may run from various origins; configure allowed origins via ALLOWED_ORIGINS
@@ -513,19 +511,12 @@ async def chat_completions(request: ChatCompletionRequest):
     OpenAI-compatible chat completions endpoint for Continue plugin integration.
     Saves conversations to PostgreSQL if ENABLE_DB_STORAGE is enabled.
     """
-    print("DEBUG: chat_completions called", flush=True)
-    print(f"DEBUG: request.stream = {request.stream}", flush=True)
-    print(f"DEBUG: request.model = {request.model}", flush=True)
-    sys.stdout.flush()
+    logger.debug("chat_completions called, stream=%s, model=%s", request.stream, request.model)
     try:
-        # Log all messages to see what Continue is sending
-        print(f"DEBUG: received {len(request.messages)} messages", flush=True)
+        # Log message metadata
+        logger.debug("received %d messages", len(request.messages))
         for i, msg in enumerate(request.messages):
-            print(f"DEBUG: message[{i}] role={msg.role}, content_length={len(msg.content)}", flush=True)
-            if len(msg.content) > 500:
-                print(f"DEBUG: message[{i}] content preview: {msg.content[:500]}...", flush=True)
-            else:
-                print(f"DEBUG: message[{i}] content: {msg.content}", flush=True)
+            logger.debug("message[%d] role=%s, content_length=%d", i, msg.role, len(msg.content))
         
         # Convert messages to dict format for processing
         messages_dict = [{"role": msg.role, "content": msg.content} for msg in request.messages]
@@ -553,14 +544,13 @@ async def chat_completions(request: ChatCompletionRequest):
                     title = first_user_msg[:50] + "..." if len(first_user_msg) > 50 else first_user_msg
                     created_conv = await db_storage.create_continue_conversation(conversation_id, first_user_msg, title)
                     if created_conv:
-                        print(f"DEBUG: Created new conversation {conversation_id}", flush=True)
+                        logger.debug("Created new conversation %s", conversation_id)
                     else:
-                        logging.warning(f"Failed to create conversation {conversation_id} in database")
-                        print(f"DEBUG: Failed to create conversation {conversation_id} in database", flush=True)
+                        logger.warning("Failed to create conversation %s in database", conversation_id)
                 else:
-                    print(f"DEBUG: No user message found, skipping conversation creation", flush=True)
+                    logger.debug("No user message found, skipping conversation creation")
             else:
-                print(f"DEBUG: Found existing conversation {conversation_id}", flush=True)
+                logger.debug("Found existing conversation %s", conversation_id)
         
         # Build the full context from all messages
         # Continue sends file context in system messages and conversation in user/assistant messages
@@ -587,7 +577,7 @@ async def chat_completions(request: ChatCompletionRequest):
         # Save user message to database if enabled
         if ENABLE_DB_STORAGE and conversation_id:
             await db_storage.add_message_to_conversation(conversation_id, "user", user_query)
-            print(f"DEBUG: Saved user message to conversation {conversation_id}", flush=True)
+            logger.debug("Saved user message to conversation %s", conversation_id)
         
         # If there's context (file contents, previous messages), prepend it
         if context_parts:
@@ -601,26 +591,22 @@ User's question or request:
 
 Please provide a helpful response based on the context provided above."""
         
-        print(f"DEBUG: final user_query length = {len(user_query)}", flush=True)
-        print(f"DEBUG: user_query preview = {user_query[:500]}...", flush=True)
+        logger.debug("final user_query length = %d", len(user_query))
         
         # Run the 3-stage council process
-        print("DEBUG: about to call run_full_council", flush=True)
+        logger.debug("about to call run_full_council")
         start_time = time.time()
         stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
             user_query
         )
         elapsed_time = time.time() - start_time
-        print(f"DEBUG: run_full_council returned")
-        print(f"DEBUG: stage1_results count = {len(stage1_results)}")
-        print(f"DEBUG: stage2_results count = {len(stage2_results)}")
-        print(f"DEBUG: stage3_result = {stage3_result}")
-        print(f"DEBUG: Response time: {elapsed_time:.2f}s", flush=True)
+        logger.debug("run_full_council returned in %.2fs, stage1=%d, stage2=%d",
+                     elapsed_time, len(stage1_results), len(stage2_results))
         
         # Check if stage3_result is an error result
         if stage3_result.get('model') == 'error':
             error_message = stage3_result.get('response', 'An error occurred while processing your request.')
-            print(f"DEBUG: Council returned error: {error_message}", flush=True)
+            logger.error("Council returned error: %s", error_message)
             # Return OpenAI-compatible error response with both id and conversation_id
             response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
             created_time = int(time.time())
@@ -645,15 +631,11 @@ Please provide a helpful response based on the context provided above."""
         # Extract the final response from stage 3
         # Note: stage3_result uses 'response' key, not 'content'
         final_content = stage3_result.get('response', stage3_result.get('content', ''))
-        print(f"DEBUG: final_content length (before formatting) = {len(final_content)}", flush=True)
-        print(f"DEBUG: final_content preview (before formatting) = {final_content[:200]}", flush=True)
+        logger.debug("final_content length (before formatting) = %d", len(final_content))
         
         # If content is empty, log the full stage3_result for debugging
         if not final_content:
-            print(f"DEBUG: WARNING - final_content is empty!", flush=True)
-            print(f"DEBUG: stage3_result keys = {list(stage3_result.keys())}", flush=True)
-            print(f"DEBUG: stage3_result full = {stage3_result}", flush=True)
-            sys.stdout.flush()
+            logger.warning("final_content is empty! stage3_result keys = %s", list(stage3_result.keys()))
             # Return OpenAI-compatible error response for empty content
             return JSONResponse(
                 status_code=500,
@@ -670,10 +652,9 @@ Please provide a helpful response based on the context provided above."""
             if ENABLE_MARKDOWN_FORMATTING:
                 original_length = len(final_content)
                 final_content = format_markdown_response(final_content)
-                print(f"DEBUG: Markdown formatting applied (length: {original_length} -> {len(final_content)})", flush=True)
-                print(f"DEBUG: final_content preview (after formatting) = {final_content[:200]}", flush=True)
+                logger.debug("Markdown formatting applied (length: %d -> %d)", original_length, len(final_content))
             else:
-                print(f"DEBUG: Markdown formatting disabled, using original content", flush=True)
+                logger.debug("Markdown formatting disabled, using original content")
             
             # Remove any existing metadata lines added by chairman (they're in # format)
             # We'll replace them with italics format at the bottom
@@ -707,9 +688,7 @@ Please provide a helpful response based on the context provided above."""
         # This ensures it's saved regardless of streaming mode
         if ENABLE_DB_STORAGE and conversation_id:
             try:
-                print(f"DEBUG: [SAVE] About to save assistant message to conversation {conversation_id}", flush=True)
-                print(f"DEBUG: [SAVE] ENABLE_DB_STORAGE={ENABLE_DB_STORAGE}, conversation_id={conversation_id}", flush=True)
-                print(f"DEBUG: [SAVE] final_content length={len(final_content)}", flush=True)
+                logger.debug("Saving assistant message to conversation %s (content length=%d)", conversation_id, len(final_content))
                 stage_data = {
                     "stage1": stage1_results,
                     "stage2": stage2_results,
@@ -722,21 +701,20 @@ Please provide a helpful response based on the context provided above."""
                     stage_data
                 )
                 if save_result:
-                    print(f"DEBUG: [SAVE] ✅ Successfully saved assistant message to conversation {conversation_id}", flush=True)
+                    logger.debug("Successfully saved assistant message to conversation %s", conversation_id)
                 else:
-                    print(f"DEBUG: [SAVE] ❌ add_message_to_conversation returned False for conversation {conversation_id}", flush=True)
+                    logger.warning("add_message_to_conversation returned False for conversation %s", conversation_id)
             except Exception as save_error:
-                # Log full exception details server-side (includes stack trace)
-                logging.error(f"[SAVE] Exception saving assistant message: {save_error}", exc_info=True)
+                logger.error("Exception saving assistant message: %s", save_error, exc_info=True)
         else:
-            print(f"DEBUG: [SAVE] ⚠️ Skipping save - ENABLE_DB_STORAGE={ENABLE_DB_STORAGE}, conversation_id={conversation_id}", flush=True)
+            logger.debug("Skipping save - ENABLE_DB_STORAGE=%s, conversation_id=%s", ENABLE_DB_STORAGE, conversation_id)
         
         # Handle streaming if requested or forced
         should_stream = request.stream or FORCE_STREAMING
         if should_stream:
             if FORCE_STREAMING and not request.stream:
-                print("DEBUG: FORCE_STREAMING enabled, converting to streaming response", flush=True)
-            print("DEBUG: Streaming response requested", flush=True)
+                logger.debug("FORCE_STREAMING enabled, converting to streaming response")
+            logger.debug("Streaming response requested")
             
             async def generate_stream():
                 response_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
@@ -816,7 +794,6 @@ Please provide a helpful response based on the context provided above."""
                     }
                     yield f"data: {json.dumps(error_chunk)}\n\n"
                     yield "data: [DONE]\n\n"
-                    print("DEBUG: Error in stream (details logged server-side)", flush=True)
             
             return StreamingResponse(
                 generate_stream(),
@@ -855,23 +832,9 @@ Please provide a helpful response based on the context provided above."""
             }
         )
         
-        print("DEBUG: returning non-streaming response", flush=True)
-        response_dict = response.model_dump()
-        print(f"DEBUG: response dict keys = {list(response_dict.keys())}", flush=True)
-        print(f"DEBUG: response choices count = {len(response_dict.get('choices', []))}", flush=True)
-        if response_dict.get('choices'):
-            choice = response_dict['choices'][0]
-            print(f"DEBUG: choice keys = {list(choice.keys())}", flush=True)
-            print(f"DEBUG: message keys = {list(choice.get('message', {}).keys())}", flush=True)
-            content = choice.get('message', {}).get('content', '')
-            print(f"DEBUG: message content length = {len(content)}", flush=True)
-            print(f"DEBUG: message content first 100 chars = {content[:100]}", flush=True)
-            print(f"DEBUG: message content last 100 chars = {content[-100:]}", flush=True)
-        sys.stdout.flush()
+        logger.debug("returning non-streaming response")
         
         # Return the response dict (FastAPI will serialize to JSON automatically)
-        # Using model_dump() ensures proper serialization with all fields
-        # FastAPI will set Content-Type: application/json automatically
         # Use model_dump(mode='json') to ensure proper JSON serialization
         return response.model_dump(mode='json')
     
@@ -879,8 +842,7 @@ Please provide a helpful response based on the context provided above."""
         # Re-raise HTTPExceptions as-is (they're already properly formatted)
         raise
     except Exception as e:
-        # Log full exception details server-side for debugging (includes stack trace)
-        logging.error(f"Exception in chat_completions: {type(e).__name__}: {e}", exc_info=True)
+        logger.error("Exception in chat_completions: %s", e, exc_info=True)
         # Return OpenAI-compatible error response with sanitized message
         # Full error details are logged server-side above
         return JSONResponse(
