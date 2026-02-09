@@ -2629,14 +2629,7 @@ function council_cmd() {
 }
 
 # ── System prompt for clean Goose/Ollama query output ─────────────────────────
-QUERY_SYSTEM_PROMPT="You are a concise technical assistant for the AIXCL platform.
-Rules:
-- Answer directly. No preamble, no restating the question.
-- Use plain text unless code is explicitly requested.
-- When showing code, show only the relevant snippet.
-- Use bullet points for lists. Keep paragraphs short.
-- Do not add disclaimers or offer further help.
-- Do not describe your reasoning process."
+QUERY_SYSTEM_PROMPT="Answer directly and concisely. No preamble, no restating the question. Use plain text unless code is explicitly requested. Use bullet points for lists. Do not add disclaimers or offer further help."
 
 function query_cmd() {
     # Check if goose is installed
@@ -2678,7 +2671,7 @@ function query_cmd() {
     done
 
     if [[ "$session_mode" == "true" ]]; then
-        # Interactive session with system prompt injected
+        # Interactive session with system prompt (extensions loaded from profile)
         exec goose session --system "$QUERY_SYSTEM_PROMPT"
     fi
 
@@ -2701,8 +2694,11 @@ function query_cmd() {
         fi
     fi
 
-    # Run goose in quiet mode with no session file for clean one-shot output
-    goose run --quiet --no-session --system "$QUERY_SYSTEM_PROMPT" --text "$query_text"
+    # Run in quiet mode with --no-profile to disable all extensions (pure chat,
+    # no tool calls). This avoids tool-call JSON parsing errors from the model.
+    goose run --quiet --no-session --no-profile \
+        --system "$QUERY_SYSTEM_PROMPT" \
+        --text "$query_text"
 }
 
 function main() {
