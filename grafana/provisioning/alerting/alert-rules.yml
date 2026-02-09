@@ -376,7 +376,7 @@ groups:
     rules:
       - uid: log-high-error-rate
         title: High Error Log Rate
-        condition: A
+        condition: C
         data:
           - refId: A
             relativeTimeRange:
@@ -384,9 +384,36 @@ groups:
               to: 0
             datasourceUid: loki
             model:
-              expr: sum(rate({compose_project="services"} |~ "(?i)(error|exception|fatal|panic)" [5m])) > 10
+              expr: sum(rate({compose_project="services", compose_service!~"grafana|loki|promtail|cadvisor|prometheus|node-exporter"} |~ "(?i)(error|exception|fatal|panic)" [5m]))
               intervalMs: 1000
               maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              conditions:
+                - type: query
+                  evaluator:
+                    type: gt
+                    params: [0]
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - type: query
+                  evaluator:
+                    type: gt
+                    params: [10]
         noDataState: OK
         execErrState: Alerting
         for: 5m
@@ -396,7 +423,7 @@ groups:
 
       - uid: log-critical-errors
         title: Critical Errors in Logs
-        condition: A
+        condition: C
         data:
           - refId: A
             relativeTimeRange:
@@ -404,9 +431,36 @@ groups:
               to: 0
             datasourceUid: loki
             model:
-              expr: sum(count_over_time({compose_project="services"} |~ "(?i)(out of memory|oom|database connection failed|connection refused)" [5m])) > 0
+              expr: sum(count_over_time({compose_project="services", compose_service!~"grafana|loki|promtail|cadvisor|prometheus|node-exporter"} |~ "(?i)(out of memory|oom|database connection failed|connection refused)" [5m]))
               intervalMs: 1000
               maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              conditions:
+                - type: query
+                  evaluator:
+                    type: gt
+                    params: [0]
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - type: query
+                  evaluator:
+                    type: gt
+                    params: [0]
         noDataState: OK
         execErrState: Alerting
         for: 1m
