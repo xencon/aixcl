@@ -1616,6 +1616,10 @@ function help_menu() {
     echo "  council configure                   - Configure council models and chairman"
     echo "  council status                      - Show council configuration and status"
     echo ""
+    echo "Query: query [options] <question>"
+    echo "  query '<question>'                  - One-shot query via Goose (clean output)"
+    echo "  query session                       - Start interactive Goose session"
+    echo ""
     echo "Dashboard: dashboard <name>"
     echo "  dashboard openwebui                 - Open Open WebUI"
     echo "  dashboard grafana                   - Open Grafana monitoring"
@@ -2624,6 +2628,83 @@ function council_cmd() {
     esac
 }
 
+# ── System prompt for clean Goose/Ollama query output ─────────────────────────
+QUERY_SYSTEM_PROMPT="You are a concise technical assistant for the AIXCL platform.
+Rules:
+- Answer directly. No preamble, no restating the question.
+- Use plain text unless code is explicitly requested.
+- When showing code, show only the relevant snippet.
+- Use bullet points for lists. Keep paragraphs short.
+- Do not add disclaimers or offer further help.
+- Do not describe your reasoning process."
+
+function query_cmd() {
+    # Check if goose is installed
+    if ! command -v goose >/dev/null 2>&1; then
+        print_error "Goose CLI is not installed. See docs/developer/goose-setup.md"
+        return 1
+    fi
+
+    # Handle subcommands and options
+    local session_mode=false
+    local text_args=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            session)
+                session_mode=true
+                shift
+                ;;
+            -h|--help)
+                echo "Usage: $0 query [options] <question>"
+                echo ""
+                echo "Send a query to the local LLM via Goose with clean output."
+                echo ""
+                echo "Options:"
+                echo "  session                     - Start an interactive Goose session"
+                echo "  <question>                  - One-shot query (returns answer and exits)"
+                echo ""
+                echo "Examples:"
+                echo "  $0 query 'What is a Kubernetes pod?'"
+                echo "  $0 query session"
+                echo "  echo 'Explain Docker volumes' | $0 query -"
+                return 0
+                ;;
+            *)
+                text_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    if [[ "$session_mode" == "true" ]]; then
+        # Interactive session with system prompt injected
+        exec goose session --system "$QUERY_SYSTEM_PROMPT"
+    fi
+
+    # One-shot query mode
+    if [[ ${#text_args[@]} -eq 0 ]]; then
+        echo "Error: No query provided"
+        echo "Usage: $0 query <question>"
+        echo "       $0 query session"
+        return 1
+    fi
+
+    local query_text="${text_args[*]}"
+
+    # Handle stdin piping (aixcl query -)
+    if [[ "$query_text" == "-" ]]; then
+        query_text=$(cat)
+        if [[ -z "$query_text" ]]; then
+            print_error "No input received from stdin"
+            return 1
+        fi
+    fi
+
+    # Run goose in quiet mode with no session file for clean one-shot output
+    goose run --quiet --no-session --system "$QUERY_SYSTEM_PROMPT" --text "$query_text"
+}
+
 function main() {
     if [[ $# -lt 1 ]]; then
         help_menu
@@ -2641,6 +2722,10 @@ function main() {
         dashboard)
             shift
             dashboard "$@"
+            ;;
+        query)
+            shift
+            query_cmd "$@"
             ;;
         help)
             help_menu

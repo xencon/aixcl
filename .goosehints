@@ -1,5 +1,19 @@
 # AIXCL Project Hints for Goose
 
+## Output Formatting (ALWAYS FOLLOW)
+
+When responding to queries:
+- Be direct and concise. Lead with the answer, not preamble.
+- Do NOT echo the question back or restate what you were asked.
+- Do NOT add disclaimers, caveats, or "let me know if you need more help" filler.
+- Do NOT describe your thinking process or narrate what you are about to do.
+- Use short paragraphs. Prefer bullet points for lists of items.
+- When showing code, show only the relevant snippet - no boilerplate unless asked.
+- When executing shell commands, report results briefly (success/failure + key output).
+- If a task succeeds, say so in one line. Do not over-explain success.
+- If a task fails, show the relevant error and a concrete fix.
+- Avoid markdown headers unless the response has multiple distinct sections.
+
 ## Project Overview
 
 AIXCL is a self-hosted AI development platform with a fixed runtime core (Ollama, LLM-Council, Continue).

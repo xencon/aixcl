@@ -40,7 +40,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands
-    local commands="stack service models dashboard utils council help bash-completion check-env"
+    local commands="stack service models dashboard query utils council help bash-completion check-env"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -142,6 +142,11 @@ _aixcl_complete() {
         'council')
             local council_actions="configure status"
             COMPREPLY=( $(compgen -W "$council_actions" -- "$cur") )
+            return 0
+            ;;
+        'query')
+            local query_actions="session"
+            COMPREPLY=( $(compgen -W "$query_actions" -- "$cur") )
             return 0
             ;;
         'add'|'remove')

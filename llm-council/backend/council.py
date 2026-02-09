@@ -40,11 +40,13 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
     solution_prompt = f"""{user_query}
 
 RESPONSE GUIDANCE:
-- Answer the user's request directly and concisely.
+- Answer directly. Lead with the answer, not preamble or restatement of the question.
 - Use plain text unless the user explicitly asks for code.
 - If code is explicitly requested, provide only the code without extra commentary.
+- Keep responses concise. Use bullet points for lists, short paragraphs for prose.
 - Make reasonable assumptions if details are missing.
 - Do NOT ask questions or request clarification.
+- Do NOT add disclaimers, caveats, or offers of further help.
 - Do NOT reference tools, files, or the council process."""
     
     messages = [{"role": "user", "content": solution_prompt}]
@@ -291,9 +293,11 @@ SYNTHESIS RULES:
 3. SYNTHESIZE best aspects: accuracy from one, clarity from another, brevity from a third
 4. USE plain text unless the user explicitly asked for code
 5. If code is requested, provide code only (no preamble, no process explanations)
-6. AVOID meta-commentary about the council process
+6. NEVER add meta-commentary about the council process, model names, or how the answer was produced
+7. Do NOT restate the question. Do NOT add disclaimers or offers of further help
+8. Keep the response concise. Use bullet points for lists, short paragraphs for prose
 
-After the response, add two lines:
+After the response, add exactly two metadata lines (these will be stripped from user-facing output):
 # Primary source: ModelName (or "Synthesized from multiple models" if combining)
 # Confidence: XX% (your confidence this response is correct, 0-100)
 
