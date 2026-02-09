@@ -89,6 +89,9 @@ build/
 .continue/config.json
 !.continue/config.json.example
 
+# Goose CLI agent
+.goose/
+
 # LLM-Council runtime data
 llm-council-data/
 
