@@ -1,0 +1,57 @@
+# AIXCL Project Hints for Goose
+
+## Project Overview
+
+AIXCL is a self-hosted AI development platform with a fixed runtime core (Ollama, LLM-Council, Continue).
+See docs/architecture/governance/ for architectural invariants.
+
+## Development Workflow (MANDATORY)
+
+Follow the Issue-First Development workflow:
+
+1. **Always create an issue first** before starting any work:
+   ```
+   gh issue create --title "Brief description" --body "Description" --label "component:cli" --assignee sbadakhc
+   ```
+
+2. **Create a branch** from main:
+   ```
+   git checkout -b issue-<number>/<short-description>
+   ```
+
+3. **Commit** with conventional format:
+   ```
+   git commit -m "type: Description
+
+   Fixes #<number>"
+   ```
+
+4. **Push and create PR** that references the issue:
+   ```
+   gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>"
+   gh pr edit <number> --add-assignee sbadakhc --add-label "component:..."
+   ```
+
+## Label Guidelines
+
+- Component: component:runtime-core, component:ollama, component:llm-council, component:cli, component:persistence, component:observability, component:ui, component:infrastructure, component:testing
+- Priority: P1 (high), P2 (medium), P3 (low)
+- Category: Feature, Fix, Refactor, Maintenance, Enhancement
+- Profile: profile:usr, profile:dev, profile:ops, profile:sys
+
+## Commit Types
+
+fix:, feat:, refactor:, docs:, test:, chore:
+
+## Architectural Rules
+
+- Do NOT modify runtime core components (Ollama, LLM-Council, Continue)
+- Do NOT introduce dependencies from runtime core to operational services
+- Prefer declarative configuration over imperative logic
+- Keep changes small and reversible
+
+## Formatting
+
+- Use markdown checkboxes: `- [x]` not Unicode checkmarks
+- PR titles should NOT include colons
+- Keep commit first line under 72 characters
