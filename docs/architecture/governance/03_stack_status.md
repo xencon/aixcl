@@ -28,10 +28,9 @@ OK  continue        Active     Connected (VS Code plugin)
 
 Configured Models
 -----------------
-  Ollama:             Default: llama3.2
-  Council:            Chairman: llama3.2; Members: llama3.2, codellama
-  Continue (VS Code): Models: llama3.2, codellama
-  Continue CLI:       Config: .continue/cli-ollama.yaml; Models: llama3.2
+  ✅ Council            Chairman: llama3.2; Members: llama3.2, codellama
+  ✅ Continue (VS Code) Models: llama3.2, codellama
+  ✅ Continue CLI       Config: AIXCL CLI (Ollama)   Model: llama3.2
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
@@ -115,7 +114,7 @@ When implementing stack status:
 
 4. **Output Format**
    - Default: Human-readable, grouped by category
-   - After Runtime Core, show **Configured Models**: Ollama default model, Council (chairman + members), Continue VS Code plugin models, Continue CLI config and models
+   - After Runtime Core, show **Configured Models**: Council, Continue VS Code plugin, Continue CLI (no Ollama). Use green (✅) when models are configured, red (❌) when not, to match other services. Continue CLI in same format as `cn`: Config: <name>   Model: <current model> (prefer `cn -p "/info"` when available; else parse .continue/cli-ollama.yaml)
    - Verbose: Include service details, ports, dependencies
    - JSON: Machine-readable format for automation
 
