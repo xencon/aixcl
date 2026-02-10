@@ -63,7 +63,9 @@ AIXCL services are divided into two categories:
 **Invariants:**
 - Runtime core must be runnable **without** any operational services
 - Operational services may depend on runtime core
-- Runtime core must **never** depend on operational services
+- Runtime core must **never** depend on operational services (monitoring, logging, UI, automation)
+
+**Runtime persistence:** The runtime may use persistence (e.g. for conversation storage) implemented via a shared database. That does not violate the boundary: the prohibition is on depending on operational *capabilities* (observability, UI, automation), not on using the same persistence technology or instance when persistence is a documented runtime requirement.
 
 ---
 
