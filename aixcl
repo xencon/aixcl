@@ -1858,7 +1858,6 @@ function continue_config() {
         grep -q "model: AUTODETECT" "$plugin_config" 2>/dev/null && extra="${extra:+$extra, }Autodetect"
         [[ -n "$extra" ]] && echo "Included ${extra} from plugin config."
     fi
-    echo "Use: cn --config ${config_absolute}"
 }
 
 function continue_cmd() {
