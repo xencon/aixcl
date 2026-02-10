@@ -39,13 +39,15 @@ Reference: [cli-docs-alignment-report.md](./cli-docs-alignment-report.md)
 
 ## PR grouping (for implementation)
 
-| PR | Scope | Checklist items |
-|----|--------|------------------|
-| 1 | docs/user/setup.md | 1 |
-| 2 | llm-council/TESTING.md | 2 |
-| 3 | docs/reference/manpage.txt | 3, 4, 5, 6, 7, 8, 9 |
-| 4 | README.md | 10, 12, 13, 14 |
-| 5 | docs/user/usage.md | 11, 15, 16 |
+| PR | Issue | Scope | Checklist items |
+|----|--------|--------|------------------|
+| [#424](https://github.com/xencon/aixcl/pull/424) | #423 | docs/user/setup.md + alignment report & checklist | 1 |
+| [#426](https://github.com/xencon/aixcl/pull/426) | #425 | llm-council/TESTING.md | 2 |
+| [#428](https://github.com/xencon/aixcl/pull/428) | #427 | docs/reference/manpage.txt | 3, 4, 5, 6, 7, 8, 9 |
+| [#430](https://github.com/xencon/aixcl/pull/430) | #429 | README.md | 10, 12, 13, 14 |
+| [#432](https://github.com/xencon/aixcl/pull/432) | #431 | docs/user/usage.md | 11, 15, 16 |
+
+**Suggested merge order:** 424 (adds checklist and report), then 426, 428, 430, 432. Verify and test each before merging.
 
 ---
 
