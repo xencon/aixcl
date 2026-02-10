@@ -138,6 +138,8 @@ Shows:
 ./aixcl council configure
 ```
 
+You can add or remove multiple models in one command: `./aixcl models add a b c`, `./aixcl models remove a b`.
+
 **Recommended Models by Use Case:**
 - **Ultra-lightweight** (default): `deepseek-coder:1.3b`, `codegemma:2b`, `qwen2.5-coder:3b`
 - **Balanced**: `ministral-3:3b`, `codegemma:2b`, `deepseek-coder:1.3b`
@@ -157,6 +159,9 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 
 # Restart entire stack (uses PROFILE from .env if set)
 ./aixcl stack restart [--profile sys]
+
+# Restart specific services only (no profile needed)
+./aixcl stack restart ollama llm-council
 
 # Clean up and start fresh
 ./aixcl stack clean
@@ -219,7 +224,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 # All services (follow mode)
 ./aixcl stack logs
 
-# Specific service, last 50 lines
+# Specific service, last 50 lines (default; n in range 1-10000), then follow
 ./aixcl stack logs ollama 50
 
 # Specific service, last 100 lines, follow
