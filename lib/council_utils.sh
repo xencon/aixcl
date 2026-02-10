@@ -54,13 +54,13 @@ update_env_file() {
         return 1
     }
     
-    # Remove all existing LLM Council configuration
+    # Remove all existing Council configuration
     # This ensures we completely overwrite any existing configuration
     # Remove entire section including all comment lines and variables
     if [[ "$(uname)" == "Darwin" ]]; then
         # macOS uses BSD sed
         # Remove section header and all related comments
-        sed -i '' '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
+        sed -i '' '/^[[:space:]]*#.*Council Configuration/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*Chairman/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*Council Members/d' "$env_file"
         sed -i '' '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
@@ -77,7 +77,7 @@ update_env_file() {
     else
         # Linux uses GNU sed
         # Remove section header and all related comments
-        sed -i '/^[[:space:]]*#.*LLM Council Configuration/d' "$env_file"
+        sed -i '/^[[:space:]]*#.*Council Configuration/d' "$env_file"
         sed -i '/^[[:space:]]*#.*Chairman/d' "$env_file"
         sed -i '/^[[:space:]]*#.*Council Members/d' "$env_file"
         sed -i '/^[[:space:]]*#.*COUNCIL_MODELS/d' "$env_file"
@@ -113,7 +113,7 @@ update_env_file() {
     # Add legacy format: CHAIRMAN_MODEL and COUNCIL_MODELS (bash-compatible)
     {
         echo ""
-        echo "# LLM Council Configuration"
+        echo "# Council Configuration"
         echo "# Chairman model - synthesizes final response"
         echo "CHAIRMAN_MODEL=${chairman_model}"
         echo ""

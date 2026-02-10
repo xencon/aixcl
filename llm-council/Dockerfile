@@ -1,4 +1,4 @@
-# LLM-Council Dockerfile for AIXCL Platform
+# Council Dockerfile for AIXCL Platform
 # Based on https://github.com/karpathy/llm-council
 FROM python:3.11.14-slim
 

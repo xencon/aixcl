@@ -7,7 +7,7 @@ AIXCL follows a governance model that separates **Runtime Core** from **Operatio
 ### Runtime Core (Strict - Always Enabled)
 These services define what AIXCL is and are always present:
 - **Ollama**: LLM inference engine
-- **LLM-Council**: Multi-model orchestration and coordination
+- **Council**: Multi-model orchestration and coordination
 - **Continue**: VS Code plugin for AI-powered code assistance
 
 Runtime core services are non-negotiable and must be running for AIXCL to function.
@@ -152,7 +152,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ```bash
 # Check service logs
 ./aixcl stack logs ollama 50
-./aixcl stack logs llm-council 100
+./aixcl stack logs council 100
 
 # Restart a specific service
 ./aixcl service restart postgres
@@ -161,7 +161,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl stack restart [--profile sys]
 
 # Restart specific services only (no profile needed)
-./aixcl stack restart ollama llm-council
+./aixcl stack restart ollama council
 
 # Clean up and start fresh
 ./aixcl stack clean
@@ -178,7 +178,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
    ./aixcl stack start
    ```
 
-2. **Verify LLM Council is running:**
+2. **Verify Council is running:**
    ```bash
    ./aixcl stack status
    ```
@@ -189,7 +189,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
      "models": [
        {
          "model": "council",
-         "title": "LLM-Council (Multi-Model)",
+         "title": "Council (Multi-Model)",
          "provider": "openai",
          "apiBase": "http://localhost:8000/v1",
          "apiKey": "local"
@@ -245,7 +245,7 @@ This interactive wizard:
 3. Prompts for council members (1-4 additional models)
 4. Shows configuration summary
 5. Updates `.env` file
-6. Optionally restarts LLM-Council service
+6. Optionally restarts Council service
 
 ### Check Council Status
 
@@ -256,7 +256,7 @@ This interactive wizard:
 Shows:
 - Current configuration (chairman, members)
 - Operational status of each model
-- Service status (LLM-Council, Ollama)
+- Service status (Council, Ollama)
 - Summary statistics
 
 ## Monitoring
@@ -287,7 +287,7 @@ This comprehensive status check shows:
 - **Runtime vs Operational:** Status output distinguishes between runtime core (critical) and operational services (informational)
 - **Health Summary:** Counts of healthy services by category
 
-Note: Runtime core services (ollama, llm-council) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
+Note: Runtime core services (ollama, council) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
 
 ## Maintenance
 

@@ -2,11 +2,11 @@
 
 ## Executive Summary
 
-This document presents performance tuning optimizations for Ollama to maximize efficiency and accuracy of the LLM Council system. The council orchestrates multiple models in parallel (Stage 1), then has them review each other (Stage 2), and finally synthesizes a response (Stage 3). All optimizations are tailored for:
+This document presents performance tuning optimizations for Ollama to maximize efficiency and accuracy of the Council system. The council orchestrates multiple models in parallel (Stage 1), then has them review each other (Stage 2), and finally synthesizes a response (Stage 3). All optimizations are tailored for:
 - **Platform**: Containerized deployment (Docker)
 - **OS**: Linux
 - **GPU**: Single NVIDIA 40XX GPU
-- **Use Case**: Code-focused LLM Council with parallel model queries
+- **Use Case**: Code-focused Council with parallel model queries
 
 ## Recommended Default Configuration
 

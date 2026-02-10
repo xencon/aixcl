@@ -1,6 +1,6 @@
 # Example Prompts
 
-This directory contains ready-to-use prompts formatted correctly for LLM Council.
+This directory contains ready-to-use prompts formatted correctly for Council.
 
 ## Usage
 

@@ -6,9 +6,9 @@ This directory contains all tests organized by component. Tests are designed to 
 
 Tests are organized by component:
 
-- **`runtime-core/`** - Tests for Ollama and LLM-Council runtime components
+- **`runtime-core/`** - Tests for Ollama and Council runtime components
 - **`database/`** - Tests for PostgreSQL database connection and persistence
-- **`api/`** - Tests for LLM-Council API endpoints and integration flows
+- **`api/`** - Tests for Council API endpoints and integration flows
 - **`monitoring/`** - Tests for monitoring components (Prometheus, Grafana)
 - **`logging/`** - Tests for logging components (Loki, Promtail)
 - **`ui/`** - Tests for UI components (Open WebUI)

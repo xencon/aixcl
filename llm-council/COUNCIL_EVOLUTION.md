@@ -1,8 +1,8 @@
-# LLM Council: Evolution from Original to Enhanced
+# Council: Evolution from Original to Enhanced
 
 ## Overview
 
-The LLM Council has been significantly enhanced from its original "vibe coded" implementation to a production-ready system optimized for code-focused tasks with rigorous evaluation criteria.
+The Council has been significantly enhanced from its original "vibe coded" implementation to a production-ready system optimized for code-focused tasks with rigorous evaluation criteria.
 
 ## Original Implementation (Before)
 

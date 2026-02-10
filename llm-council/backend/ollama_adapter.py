@@ -1,4 +1,4 @@
-"""Ollama API adapter for LLM Council to work with local Ollama instances."""
+"""Ollama API adapter for Council to work with local Ollama instances."""
 
 import httpx
 from typing import List, Dict, Any, Optional

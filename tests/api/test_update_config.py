@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for updating LLM-Council configuration."""
+"""Test script for updating Council configuration."""
 
 import requests
 import json

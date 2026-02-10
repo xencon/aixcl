@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to update LLM-Council configuration via API
+# Script to update Council configuration via API
 
 API_URL="${LLM_COUNCIL_API_URL:-http://localhost:8000}"
 

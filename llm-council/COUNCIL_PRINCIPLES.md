@@ -1,4 +1,4 @@
-# LLM Council Principles
+# Council Principles
 
 ## Core Principles
 

@@ -1,10 +1,10 @@
-# How to Use the LLM Council Test Suite
+# How to Use the Council Test Suite
 
 ## Quick Start
 
 ### 1. Create a Branch
 
-First, create a branch for testing the enhanced LLM Council:
+First, create a branch for testing the enhanced Council:
 
 ```bash
 git checkout main
@@ -14,15 +14,15 @@ git checkout -b feature/code-focused-council-enhancements
 # git checkout -b issue-<number>/code-focused-council-enhancements
 ```
 
-### 2. Start the LLM Council Service
+### 2. Start the Council Service
 
-Ensure the LLM Council service is running:
+Ensure the Council service is running:
 
 ```bash
 # From the project root
 ./aixcl stack start
 # Or if already running, restart to pick up changes
-./aixcl stack restart llm-council
+./aixcl stack restart council
 ```
 
 Verify it's running:
@@ -44,13 +44,13 @@ Make sure you have council models configured:
 
 ### Method 1: Using Continue Plugin (Recommended)
 
-The Continue plugin integrates directly with LLM Council:
+The Continue plugin integrates directly with Council:
 
 1. **Open Continue in your IDE**
 2. **Select a challenge file** from `llm-council/tests/`
 3. **Format the challenge** using the template below (IMPORTANT: Models need clear context)
 4. **Paste the formatted prompt** into Continue
-5. **Submit the query** - Continue will send it to LLM Council via `/v1/chat/completions`
+5. **Submit the query** - Continue will send it to Council via `/v1/chat/completions`
 6. **Review the response** - Check Stage 1, Stage 2, and Stage 3 results
 
 **CRITICAL: Use this format to avoid confusion:**
@@ -118,7 +118,7 @@ import requests
 import json
 
 def test_challenge(challenge_file):
-    """Test a challenge file with LLM Council"""
+    """Test a challenge file with Council"""
     with open(challenge_file, 'r') as f:
         challenge_content = f.read()
     
@@ -327,7 +327,7 @@ Review the final response:
 Create a test log:
 
 ```markdown
-# LLM Council Test Results
+# Council Test Results
 
 ## Challenge 1: Simple String Processing
 - Date: 2025-12-23
@@ -350,10 +350,10 @@ Create a test log:
 
 ```bash
 # Check service status
-docker ps | grep llm-council
+docker ps | grep council
 
 # Check logs
-docker logs llm-council
+docker logs council
 
 # Verify models are configured
 ./aixcl council status

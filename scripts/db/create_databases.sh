@@ -51,7 +51,7 @@ else
     echo "Creating continue database..."
     docker exec postgres psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$CONTINUE_DATABASE\";" 2>/dev/null
     echo "✅ Continue database created: $CONTINUE_DATABASE"
-    echo "   Note: The LLM Council service will automatically create the schema when it starts."
+    echo "   Note: The Council service will automatically create the schema when it starts."
 fi
 
 # Remove unwanted "admin" database if it exists and is not the intended database

@@ -1,4 +1,4 @@
-"""Helper function to format challenge files as coding problems for LLM Council."""
+"""Helper function to format challenge files as coding problems for Council."""
 
 def format_challenge_prompt(challenge_content: str) -> str:
     """

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Integration test for Continue plugin → LLM Council → Database flow.
+Integration test for Continue plugin → Council → Database flow.
 
 This test simulates a Continue plugin request:
-1. Sends a prompt via OpenAI-compatible API to LLM Council
-2. Verifies the response from LLM Council
+1. Sends a prompt via OpenAI-compatible API to Council
+2. Verifies the response from Council
 3. Verifies the conversation is stored in PostgreSQL database
 4. Verifies the conversation structure includes stage data
 
@@ -101,7 +101,7 @@ except ValueError:
 
 async def wait_for_api(max_retries: int = 30, delay: float = 1.0) -> bool:
     """
-    Wait for the LLM Council API to be ready.
+    Wait for the Council API to be ready.
     
     Args:
         max_retries: Maximum number of retry attempts
@@ -110,7 +110,7 @@ async def wait_for_api(max_retries: int = 30, delay: float = 1.0) -> bool:
     Returns:
         True if API is ready, False otherwise
     """
-    print("Waiting for LLM Council API to be ready...")
+    print("Waiting for Council API to be ready...")
     async with httpx.AsyncClient(timeout=5.0) as client:
         for i in range(max_retries):
             try:
@@ -195,7 +195,7 @@ async def send_continue_request(
                 print(f"   Response length: {len(response_text)}")
                 print(f"   Response preview: {response_text[:500]}")
                 print(f"   Note: This test expects non-streaming JSON response")
-                print(f"   Check if FORCE_STREAMING is enabled in LLM Council config")
+                print(f"   Check if FORCE_STREAMING is enabled in Council config")
                 # Try to parse as SSE and reconstruct full message from chunks
                 # SSE format: "data: {json}\n\n"
                 # IMPORTANT: httpx.AsyncClient should consume the entire stream when reading response.text
@@ -456,10 +456,10 @@ def get_test_messages():
 
 async def test_continue_integration():
     """
-    Main test function that exercises the full Continue → LLM Council → Database flow.
+    Main test function that exercises the full Continue → Council → Database flow.
     """
     print("=" * 70)
-    print("Continue Plugin → LLM Council → Database Integration Test")
+    print("Continue Plugin → Council → Database Integration Test")
     print("=" * 70)
     
     # Test 1: Wait for API

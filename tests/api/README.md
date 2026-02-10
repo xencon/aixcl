@@ -1,13 +1,13 @@
 # API Tests
 
-Tests for LLM-Council API endpoints and integration flows.
+Tests for Council API endpoints and integration flows.
 
 ## Test Scripts
 
 ### `test_continue_integration.py`
-Comprehensive integration test for the full Continue plugin → LLM Council → Database flow:
+Comprehensive integration test for the full Continue plugin → Council → Database flow:
 - Simulates Continue plugin requests (OpenAI-compatible format)
-- Verifies LLM Council API responses
+- Verifies Council API responses
 - Verifies conversation storage in PostgreSQL
 - Verifies conversation structure includes stage data (stage1, stage2, stage3)
 - Tests conversation continuity (follow-up messages)
@@ -24,7 +24,7 @@ uv run python ../tests/api/test_continue_integration.py
 ```
 
 **Prerequisites:**
-- LLM-Council service must be running on `http://localhost:8000`
+- Council service must be running on `http://localhost:8000`
 - PostgreSQL service must be running
 - Council must be configured: `./aixcl council configure`
 - `httpx` Python package installed (installed automatically if using uv)
@@ -34,7 +34,7 @@ uv run python ../tests/api/test_continue_integration.py
 - `DELETE_TEST_CONVERSATION`: Set to `true` to delete test conversation after test (default: `false`)
 
 ### `test_update_config.py`
-Test script for updating LLM-Council configuration via the API.
+Test script for updating Council configuration via the API.
 
 **Usage:**
 ```bash
@@ -42,7 +42,7 @@ python3 tests/api/test_update_config.py
 ```
 
 **Prerequisites:**
-- LLM-Council service must be running
+- Council service must be running
 - `requests` Python package installed
 
 ### `test_request.json`

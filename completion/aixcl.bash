@@ -6,7 +6,7 @@
 # It offers suggestions for commands and model names when using the add/remove commands.
 #
 # Governance Model:
-# - Runtime Core (Strict): Always enabled, never optional (ollama, llm-council)
+# - Runtime Core (Strict): Always enabled, never optional (ollama, council)
 # - Operational Services (Guided): Profile-dependent, support/observe runtime
 # - See docs/architecture/governance/ for full architectural documentation
 #
@@ -45,7 +45,7 @@ _aixcl_complete() {
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
     # Note: Continue is a VS Code plugin, not a containerized service
-    local runtime_core_services="ollama llm-council"
+    local runtime_core_services="ollama council"
     
     # Operational Services (Guided): Profile-dependent, support/observe runtime
     # - Persistence: postgres, pgadmin
@@ -86,7 +86,7 @@ _aixcl_complete() {
             ;;
         'start')
             # If previous word was 'service', complete with service names
-            # Note: Runtime core services (ollama, llm-council) should always be running
+            # Note: Runtime core services (ollama, council) should always be running
             # Operational services are profile-dependent
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
                 COMPREPLY=( $(compgen -W "$services" -- "$cur") )

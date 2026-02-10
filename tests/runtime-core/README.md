@@ -1,11 +1,11 @@
 # Runtime Core Tests
 
-Tests for the runtime core components: Ollama and LLM-Council.
+Tests for the runtime core components: Ollama and Council.
 
 ## Test Scripts
 
 ### `test_council_members.py`
-Verifies all LLM Council members (council models and chairman) are operational.
+Verifies all Council members (council models and chairman) are operational.
 
 **Usage:**
 ```bash

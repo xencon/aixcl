@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This framework provides objective criteria for evaluating LLM Council responses. Evaluations inform the council's principles and should be direct, factual, and focused on key reasoning points.
+This framework provides objective criteria for evaluating Council responses. Evaluations inform the council's principles and should be direct, factual, and focused on key reasoning points.
 
 ## Evaluation Criteria (Weighted)
 

@@ -2,7 +2,7 @@
 
 ## Problem
 
-The LLM Council was taking too long to respond, causing poor user experience.
+The Council was taking too long to respond, causing poor user experience.
 
 ## Root Causes Identified
 

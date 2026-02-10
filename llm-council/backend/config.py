@@ -1,4 +1,4 @@
-"""Configuration for the LLM Council."""
+"""Configuration for the Council."""
 
 import os
 import logging

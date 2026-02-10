@@ -2,7 +2,7 @@
 
 ## Key Findings
 
-Based on analysis of your LLM Council implementation and Ollama performance research, here are the critical optimizations for your containerized deployment on a single NVIDIA 40XX GPU.
+Based on analysis of your Council implementation and Ollama performance research, here are the critical optimizations for your containerized deployment on a single NVIDIA 40XX GPU.
 
 ## Critical Optimizations (Must Implement)
 

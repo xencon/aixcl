@@ -1,4 +1,4 @@
-"""3-stage LLM Council orchestration."""
+"""3-stage Council orchestration."""
 
 import logging
 import re
