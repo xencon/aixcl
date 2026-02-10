@@ -5,7 +5,7 @@ Continue CLI provides a terminal-based agent (TUI and headless) that uses **Olla
 ## Prerequisites
 
 - **Ollama** running and reachable (e.g. AIXCL stack: `./aixcl stack start`).
-- Models pulled in Ollama: `qwen3-coder:latest`, `glm-4.7-flash:latest` (or add via `./aixcl models add qwen3-coder:latest glm-4.7-flash:latest`).
+- Models pulled in Ollama (e.g. add via `./aixcl models add qwen3-coder:latest glm-4.7-flash:latest`). The Continue CLI config includes **all** models currently in Ollama.
 - **Node.js 20+** for installing the CLI.
 
 ## Install Continue CLI
@@ -25,8 +25,8 @@ Verify: `cn --version` and `which cn`.
 AIXCL provides an Ollama-only config with agentic models and `tool_use`:
 
 - **Config file:** `.continue/cli-ollama.yaml`
-- **Models:** `qwen3-coder:latest`, `glm-4.7-flash:latest` (must exist in Ollama)
-- **Agent mode:** Config sets `capabilities: [tool_use]` for both models.
+- **Models:** The config is generated from **all models currently in Ollama**. After adding models with `./aixcl models add`, the config is updated automatically. To refresh the list manually (e.g. after pulling models outside aixcl), run: `./aixcl continue config`
+- **Agent mode:** Config sets `capabilities: [tool_use]` for each model.
 
 **Important:** Use an **absolute path** for `--config` so the CLI finds the file:
 
@@ -78,7 +78,7 @@ Describe the work you want to do (e.g. "add docs for Continue CLI" or "fix the e
 ## Troubleshooting
 
 - **Config not found:** Use an absolute path for `--config` (e.g. `$(pwd)/.continue/cli-ollama.yaml`).
-- **Model not found:** Ensure Ollama is running and the model is pulled: `curl -s http://localhost:11434/api/tags`.
+- **Model not found / limited models in cn:** Ensure Ollama is running and models are pulled. Regenerate the Continue config so it includes all Ollama models: `./aixcl continue config`. List models: `./aixcl models list` or `curl -s http://localhost:11434/api/tags`.
 - **No tool use:** Ensure your config includes `capabilities: [tool_use]` for the model and you are not in headless mode if you need interactive tool approval.
 - **Agent does not create the issue:** The agent must call the Bash tool to run `gh issue create`. If it only prints the command, the agent instructions may not be followed by the model. Try: (1) Look for a tool approval prompt in the TUI (e.g. "Run this command?") and approve it. (2) Run with `--auto` once to allow all tools without asking and confirm the issue is created (then use without `--auto` for normal use).
 - **Verbose logs:** `cn --verbose ...`; logs under `~/.continue/logs/cn.log`.
