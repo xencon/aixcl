@@ -26,6 +26,13 @@ OK  ollama          Running
 OK  council     Running
 OK  continue        Active     Connected (VS Code plugin)
 
+Configured Models
+-----------------
+  Ollama:             Default: llama3.2
+  Council:            Chairman: llama3.2; Members: llama3.2, codellama
+  Continue (VS Code): Models: llama3.2, codellama
+  Continue CLI:       Config: .continue/cli-ollama.yaml; Models: llama3.2
+
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
 OK   postgres        Running
@@ -108,6 +115,7 @@ When implementing stack status:
 
 4. **Output Format**
    - Default: Human-readable, grouped by category
+   - After Runtime Core, show **Configured Models**: Ollama default model, Council (chairman + members), Continue VS Code plugin models, Continue CLI config and models
    - Verbose: Include service details, ports, dependencies
    - JSON: Machine-readable format for automation
 
