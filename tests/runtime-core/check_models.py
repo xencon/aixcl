@@ -121,6 +121,6 @@ else:
     print("If models are still failing, check:")
     print("   1. Ollama logs: docker logs ollama")
     print("   2. Test a model: docker exec ollama ollama run <model-name> 'test'")
-    print("   3. Check LLM Council logs: docker logs llm-council")
+    print("   3. Check Council logs: docker logs council")
     sys.exit(0)
 

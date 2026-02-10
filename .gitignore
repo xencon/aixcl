@@ -89,8 +89,8 @@ build/
 .continue/config.json
 !.continue/config.json.example
 
-# LLM-Council runtime data
-llm-council-data/
+# Council runtime data
+council-data/
 
 # System files
 Thumbs.db

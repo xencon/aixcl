@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script to verify all LLM Council members are operational.
+Test script to verify all Council members are operational.
 Tests each council model and the chairman model with a simple query.
 """
 
@@ -23,7 +23,7 @@ MODEL_TEST_TIMEOUT = float(os.getenv("COUNCIL_MEMBER_TEST_TIMEOUT", "60.0"))
 
 
 async def check_service_health() -> bool:
-    """Check if the LLM Council service is running."""
+    """Check if the Council service is running."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{API_BASE_URL}/health")
@@ -131,17 +131,17 @@ async def test_model_operational(model: str, backend_mode: str) -> Dict[str, any
 async def main():
     """Main function to test all council members."""
     print("=" * 70)
-    print("LLM Council Member Operational Status Check")
+    print("Council Member Operational Status Check")
     print("=" * 70)
     print()
     
     # Check service health
-    print("1. Checking LLM Council service health...")
+    print("1. Checking Council service health...")
     if not await check_service_health():
-        print("   ❌ LLM Council service is not running or not accessible")
+        print("   ❌ Council service is not running or not accessible")
         print(f"   Please ensure the service is running at {API_BASE_URL}")
         sys.exit(1)
-    print("   ✅ LLM Council service is running")
+    print("   ✅ Council service is running")
     print()
     
     # Get configuration
@@ -205,11 +205,11 @@ async def main():
         if not council_models and not chairman_model:
             print()
             print("   ❌ Council configuration is still empty after reload attempt.")
-            print("   This indicates the llm-council container was started before")
+            print("   This indicates the council container was started before")
             print("   the .env file had council configuration.")
             print()
-            print("   SOLUTION: Restart the llm-council container to pick up environment variables:")
-            print("     ./aixcl service restart llm-council")
+            print("   SOLUTION: Restart the council container to pick up environment variables:")
+            print("     ./aixcl service restart council")
             print("   OR:")
             print("     ./aixcl stack restart")
             print()

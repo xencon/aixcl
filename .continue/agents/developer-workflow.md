@@ -67,7 +67,7 @@ You may run one step at a time and wait for the user to say "next" or "do step 2
 
 ## Label reference (from workflow doc)
 
-- **Component (at least one):** `component:runtime-core`, `component:ollama`, `component:llm-council`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`
+- **Component (at least one):** `component:runtime-core`, `component:ollama`, `component:council`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`
 - **Priority (optional):** `priority:high`, `priority:medium`, `priority:low`
 - **Profile:** `profile:usr`, `profile:dev`, `profile:ops`, `profile:sys`
 - **Category:** `Fix`, `Enhancement`, `Refactor`, `Maintenance`, `documentation`

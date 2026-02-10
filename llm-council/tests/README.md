@@ -1,6 +1,6 @@
-# LLM Council Test Suite
+# Council Test Suite
 
-This directory contains 10 progressively challenging coding tests designed to evaluate the enhanced LLM Council system's ability to:
+This directory contains 10 progressively challenging coding tests designed to evaluate the enhanced Council system's ability to:
 
 1. **Prioritize correctness** - Handle edge cases and error conditions
 2. **Evaluate security** - Identify vulnerabilities and secure coding practices
@@ -35,9 +35,9 @@ Each challenge file contains:
 
 **Ready-to-use prompts** are available in `example_prompts/` directory for quick testing.
 
-### Testing the LLM Council
+### Testing the Council
 
-1. Submit each challenge to the LLM Council via the API or Continue plugin
+1. Submit each challenge to the Council via the API or Continue plugin
 2. Review Stage 2 rankings to see if models prioritize:
    - Correctness (40% weight)
    - Security (20% weight)
@@ -75,7 +75,7 @@ Each challenge file contains:
 
 ## Success Criteria
 
-The enhanced LLM Council should demonstrate:
+The enhanced Council should demonstrate:
 
 ✅ **Correctness First**: Solutions handle all edge cases correctly  
 ✅ **Security Awareness**: Vulnerabilities are identified and prevented  

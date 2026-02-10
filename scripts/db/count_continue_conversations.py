@@ -5,7 +5,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add the llm-council backend to the path
+# Add the council backend to the path (directory name llm-council)
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "llm-council" / "backend"))
 
 from db import get_pool, close_pool

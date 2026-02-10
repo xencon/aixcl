@@ -157,5 +157,5 @@ With our enhanced prompts:
 - **Stage 3** should use this as the primary solution
 - Other responses should be compared against this standard
 
-This is the kind of response we want the enhanced LLM Council to prioritize!
+This is the kind of response we want the enhanced Council to prioritize!
 

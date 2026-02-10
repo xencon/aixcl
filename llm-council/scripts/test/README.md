@@ -1,10 +1,10 @@
-# LLM-Council Test Scripts
+# Council Test Scripts
 
 **Note:** Test scripts have been reorganized by component. See the new structure:
 
-- **Runtime Core Tests**: `tests/runtime-core/` - Tests for Ollama and LLM-Council
+- **Runtime Core Tests**: `tests/runtime-core/` - Tests for Ollama and Council
 - **Database Tests**: `tests/database/` - Tests for PostgreSQL connection and persistence
-- **API Tests**: `tests/api/` - Tests for LLM-Council API endpoints and integration
+- **API Tests**: `tests/api/` - Tests for Council API endpoints and integration
 
 ## New Test Structure
 
@@ -25,7 +25,7 @@ See `tests/runtime-core/README.md` for details.
 See `tests/database/README.md` for details.
 
 ### API (`tests/api/`)
-- `test_continue_integration.py` - Full Continue plugin → LLM Council → Database flow
+- `test_continue_integration.py` - Full Continue plugin → Council → Database flow
 - `test_update_config.py` - Configuration update tests
 - `test_request.json` - Sample request JSON
 

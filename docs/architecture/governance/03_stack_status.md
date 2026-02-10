@@ -23,7 +23,7 @@ Status: Running
 Runtime Core (Strict - Always Enabled)
 ---------------------------------------
 OK  ollama          Running
-OK  llm-council     Running
+OK  council     Running
 OK  continue        Active     Connected (VS Code plugin)
 
 Operational Services (Guided - Profile-Dependent)

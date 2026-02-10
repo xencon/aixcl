@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and push LLM-Council container to local registry
+# Build and push Council container to local registry
 
 set -e
 
@@ -11,12 +11,12 @@ cd "$SCRIPT_DIR"
 LOCAL_REGISTRY="localhost:5000"
 REGISTRY_CONTAINER="local_registry"
 SERVICES_DIR="${SCRIPT_DIR}/services"
-IMAGE_NAME="llm-council"
+IMAGE_NAME="council"
 IMAGE_TAG="latest"
 LOCAL_IMAGE="${LOCAL_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 echo "=========================================="
-echo "Building and Pushing LLM-Council"
+echo "Building and Pushing Council"
 echo "=========================================="
 echo ""
 
@@ -57,7 +57,7 @@ done
 echo ""
 
 # Step 2: Build the image using docker-compose
-echo "Step 2: Building LLM-Council image..."
+echo "Step 2: Building Council image..."
 cd "$SERVICES_DIR"
 
 # Set up compose command (check for GPU/ARM overrides)

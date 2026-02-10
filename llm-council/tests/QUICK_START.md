@@ -1,4 +1,4 @@
-# Quick Start: Testing the Enhanced LLM Council
+# Quick Start: Testing the Enhanced Council
 
 ## 1. Create Branch
 
@@ -11,7 +11,7 @@ git checkout -b feature/code-focused-council-enhancements
 ## 2. Start Services
 
 ```bash
-# Start LLM Council
+# Start Council
 ./aixcl stack start
 
 # Verify it's running

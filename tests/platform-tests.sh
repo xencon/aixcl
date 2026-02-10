@@ -7,8 +7,8 @@
 # 1. Stack Status - Container status and health checks
 # 2. LLM State - Model availability and operational status
 # 3. Database Connection - PostgreSQL connection and schema verification
-# 4. API Endpoints - LLM-Council API functionality
-# 5. Continue Integration - Full Continue plugin → LLM Council → Database flow
+# 4. API Endpoints - Council API functionality
+# 5. Continue Integration - Full Continue plugin → Council → Database flow
 # 6. Council Members - Council model availability and operational status
 #
 # Usage:
@@ -53,7 +53,7 @@ CONTAINER_NAME="open-webui"
 POSTGRES_USER=${POSTGRES_USER:-webui}
 BACKEND_MODE=${BACKEND_MODE:-ollama}
 API_URL=${LLM_COUNCIL_API_URL:-http://localhost:8000}
-LLM_COUNCIL_DIR="${SCRIPT_DIR}/llm-council"
+COUNCIL_DIR="${SCRIPT_DIR}/llm-council"
 
 # Test counters
 TESTS_PASSED=0
@@ -171,12 +171,12 @@ test_stack_status() {
         record_test "fail" "Open WebUI container is not running"
     fi
     
-    if is_container_running "llm-council"; then
-        print_success "LLM-Council"
-        record_test "pass" "LLM-Council container is running"
+    if is_container_running "council"; then
+        print_success "Council"
+        record_test "pass" "Council container is running"
     else
-        print_error "LLM-Council"
-        record_test "fail" "LLM-Council container is not running"
+        print_error "Council"
+        record_test "fail" "Council container is not running"
     fi
     
     # Database Services
@@ -355,14 +355,14 @@ test_stack_status() {
         fi
     fi
     
-    # LLM-Council health check
+    # Council health check
     COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${API_URL}/health 2>/dev/null || echo "000")
     if [ "$COUNCIL_STATUS" = "200" ]; then
-        print_success "LLM-Council"
-        record_test "pass" "LLM-Council health check passed"
+        print_success "Council"
+        record_test "pass" "Council health check passed"
     else
-        print_error "LLM-Council"
-        record_test "fail" "LLM-Council health check failed (HTTP $COUNCIL_STATUS)"
+        print_error "Council"
+        record_test "fail" "Council health check failed (HTTP $COUNCIL_STATUS)"
     fi
     
     # Database Services
@@ -679,10 +679,10 @@ test_database_connection() {
     echo "Running database connection tests..."
     echo ""
     
-    # Change to llm-council directory for proper Python path
-    cd "$LLM_COUNCIL_DIR" || {
-        print_error "Cannot change to llm-council directory"
-        record_test "fail" "Cannot change to llm-council directory"
+    # Change to council component directory for proper Python path
+    cd "$COUNCIL_DIR" || {
+        print_error "Cannot change to council component directory"
+        record_test "fail" "Cannot change to council component directory"
         return
     }
     
@@ -742,15 +742,15 @@ test_conversation_storage() {
         return
     fi
     
-    if ! is_container_running "llm-council"; then
-        print_error "LLM-Council container is not running"
-        record_test "fail" "LLM-Council container is not running"
-        echo "   Cannot test conversation storage without LLM-Council"
+    if ! is_container_running "council"; then
+        print_error "Council container is not running"
+        record_test "fail" "Council container is not running"
+        echo "   Cannot test conversation storage without Council"
         return
     fi
     
     # Wait for API to be ready
-    echo -n "Waiting for LLM-Council API to be ready..."
+    echo -n "Waiting for Council API to be ready..."
     API_READY=false
     for i in {1..30}; do
         if curl -s -f "${API_URL}/health" > /dev/null 2>&1; then
@@ -764,7 +764,7 @@ test_conversation_storage() {
     
     if [ "$API_READY" = "false" ]; then
         echo " ❌ API not ready"
-        record_test "fail" "LLM-Council API not ready after 30 seconds"
+        record_test "fail" "Council API not ready after 30 seconds"
         return
     fi
     
@@ -966,7 +966,7 @@ except:
 # SECTION 4: API ENDPOINT TESTS
 # ============================================================================
 test_api_endpoints() {
-    start_section "API Endpoints - LLM-Council API"
+    start_section "API Endpoints - Council API"
     
     # Wait for service to be ready
     echo -n "Waiting for API to be ready..."
@@ -985,11 +985,11 @@ test_api_endpoints() {
     
     if [ "$API_READY" = "false" ]; then
         echo " ❌ API not ready"
-        record_test "fail" "LLM-Council API not ready after 30 seconds"
+        record_test "fail" "Council API not ready after 30 seconds"
         return
     fi
     
-    record_test "pass" "LLM-Council API is ready"
+    record_test "pass" "Council API is ready"
     
     # Test 1: Health check
     echo -e "\n1. Testing health endpoint..."
@@ -1136,11 +1136,11 @@ print(conv_id)
 test_continue_integration() {
     start_section "Continue Integration - Full Flow"
     
-    # Check if LLM-Council container is running
-    if ! is_container_running "llm-council"; then
-        print_error "LLM-Council container is not running"
-        record_test "fail" "LLM-Council container is not running"
-        echo "   Cannot run Continue integration tests without LLM-Council"
+    # Check if Council container is running
+    if ! is_container_running "council"; then
+        print_error "Council container is not running"
+        record_test "fail" "Council container is not running"
+        echo "   Cannot run Continue integration tests without Council"
         return
     fi
     
@@ -1155,10 +1155,10 @@ test_continue_integration() {
     echo "Running Continue integration tests..."
     echo ""
     
-    # Change to llm-council directory for proper Python path
-    cd "$LLM_COUNCIL_DIR" || {
-        print_error "Cannot change to llm-council directory"
-        record_test "fail" "Cannot change to llm-council directory"
+    # Change to council component directory for proper Python path
+    cd "$COUNCIL_DIR" || {
+        print_error "Cannot change to council component directory"
+        record_test "fail" "Cannot change to council component directory"
         return
     }
     
@@ -1216,11 +1216,11 @@ test_continue_integration() {
 test_council_members() {
     start_section "Council Members - Operational Status"
     
-    # Check if LLM-Council container is running
-    if ! is_container_running "llm-council"; then
-        print_error "LLM-Council container is not running"
-        record_test "fail" "LLM-Council container is not running"
-        echo "   Cannot run council members tests without LLM-Council"
+    # Check if Council container is running
+    if ! is_container_running "council"; then
+        print_error "Council container is not running"
+        record_test "fail" "Council container is not running"
+        echo "   Cannot run council members tests without Council"
         return
     fi
     
@@ -1245,10 +1245,10 @@ test_council_members() {
     # Check if uv is available (preferred method)
     if command -v uv &> /dev/null; then
         echo "Using uv to run council members tests..."
-        # Change to llm-council for uv context
-        cd "$LLM_COUNCIL_DIR" || {
-            print_error "Cannot change to llm-council directory"
-            record_test "fail" "Cannot change to llm-council directory"
+        # Change to council for uv context
+        cd "$COUNCIL_DIR" || {
+            print_error "Cannot change to council component directory"
+            record_test "fail" "Cannot change to council component directory"
             return
         }
         if uv run python ../tests/runtime-core/test_council_members.py; then
@@ -1287,9 +1287,9 @@ test_council_members() {
 # COMPONENT-BASED TEST FUNCTIONS
 # ============================================================================
 
-# Test runtime core services (ollama, llm-council)
+# Test runtime core services (ollama, council)
 test_component_runtime_core() {
-    start_section "Runtime Core - Ollama & LLM-Council"
+    start_section "Runtime Core - Ollama & Council"
     
     # Ollama
     if is_container_running "ollama"; then
@@ -1307,21 +1307,21 @@ test_component_runtime_core() {
         record_test "fail" "Ollama container is not running"
     fi
     
-    # LLM-Council
-    if is_container_running "llm-council"; then
-        print_success "LLM-Council container is running"
-        record_test "pass" "LLM-Council container is running"
+    # Council
+    if is_container_running "council"; then
+        print_success "Council container is running"
+        record_test "pass" "Council container is running"
         COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${API_URL}/health 2>/dev/null || echo "000")
         if [ "$COUNCIL_STATUS" = "200" ]; then
-            print_success "LLM-Council health check passed"
-            record_test "pass" "LLM-Council health check passed"
+            print_success "Council health check passed"
+            record_test "pass" "Council health check passed"
         else
-            print_error "LLM-Council health check failed (HTTP $COUNCIL_STATUS)"
-            record_test "fail" "LLM-Council health check failed (HTTP $COUNCIL_STATUS)"
+            print_error "Council health check failed (HTTP $COUNCIL_STATUS)"
+            record_test "fail" "Council health check failed (HTTP $COUNCIL_STATUS)"
         fi
     else
-        print_error "LLM-Council container is not running"
-        record_test "fail" "LLM-Council container is not running"
+        print_error "Council container is not running"
+        record_test "fail" "Council container is not running"
     fi
 }
 
@@ -1643,13 +1643,13 @@ main() {
                 echo "  sys   - All services"
                 echo ""
                 echo "Components:"
-                echo "  runtime-core  - Ollama and LLM-Council"
+                echo "  runtime-core  - Ollama and Council"
                 echo "  database      - PostgreSQL and pgAdmin"
                 echo "  monitoring    - Prometheus, Grafana, exporters"
                 echo "  logging       - Loki and Promtail"
                 echo "  ui            - Open WebUI"
                 echo "  automation    - Watchtower"
-                echo "  api           - LLM-Council API endpoints"
+                echo "  api           - Council API endpoints"
                 exit 0
                 ;;
             *)
@@ -1672,13 +1672,13 @@ main() {
         echo "  sys   - All services"
         echo ""
         echo "Components:"
-        echo "  runtime-core  - Ollama and LLM-Council"
+        echo "  runtime-core  - Ollama and Council"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
         echo "  ui            - Open WebUI"
         echo "  automation    - Watchtower"
-        echo "  api           - LLM-Council API endpoints"
+        echo "  api           - Council API endpoints"
         exit 0
     fi
     
@@ -1694,19 +1694,19 @@ main() {
         echo "  $0 --help                    # Show detailed help"
         echo ""
         echo "Profiles:"
-        echo "  usr   - Runtime core services + database (ollama, llm-council, postgres)"
+        echo "  usr   - Runtime core services + database (ollama, council, postgres)"
         echo "  dev   - Runtime core + database + UI (for development)"
         echo "  ops   - Runtime core + database + monitoring + logging (for operations)"
         echo "  sys   - All services (complete stack)"
         echo ""
         echo "Components:"
-        echo "  runtime-core  - Ollama and LLM-Council"
+        echo "  runtime-core  - Ollama and Council"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
         echo "  ui            - Open WebUI"
         echo "  automation    - Watchtower"
-        echo "  api           - LLM-Council API endpoints"
+        echo "  api           - Council API endpoints"
         echo ""
         echo "Examples:"
         echo "  $0 --profile usr                # Test usr profile"

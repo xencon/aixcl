@@ -54,7 +54,7 @@ See [`development-workflow.md`](./development-workflow.md) for complete workflow
 
 AIXCL maintains strict architectural invariants to preserve platform integrity:
 
-- **Runtime Core** (ollama, llm-council, continue) is non-negotiable and must not be removed or conditionally disabled
+- **Runtime Core** (ollama, council, continue) is non-negotiable and must not be removed or conditionally disabled
 - **Operational Services** can be added, modified, or removed based on profiles
 - **Service Boundaries**: Runtime core must never depend on operational services
 - **Service Contracts**: See [`architecture/governance/service_contracts/`](../architecture/governance/service_contracts/) for dependency rules

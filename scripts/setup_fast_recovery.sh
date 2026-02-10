@@ -157,8 +157,8 @@ else
     echo ""
     
     for img in $images; do
-        # Skip llm-council (handled separately)
-        if [ "$img" = "llm-council:latest" ]; then
+        # Skip council (handled separately)
+        if [ "$img" = "council:latest" ]; then
             continue
         fi
         
@@ -199,13 +199,13 @@ fi
 echo ""
 info "Pre-built images: $cached_count cached, $failed_count failed"
 
-# Step 4: Build and cache llm-council
-step "Step 4: Building and caching llm-council..."
+# Step 4: Build and cache council
+step "Step 4: Building and caching council..."
 
 # Check if already cached
-cached_tags=$(curl -s "http://${LOCAL_REGISTRY}/v2/llm-council/tags/list" 2>/dev/null | jq -r '.tags[]' 2>/dev/null || echo "")
-if [ -n "$cached_tags" ]; then
-    success "llm-council already cached in registry"
+cached_tags=$(curl -s "http://${LOCAL_REGISTRY}/v2/council/tags/list" 2>/dev/null | jq -r '.tags[]' 2>/dev/null || echo "")
+  if [ -n "$cached_tags" ]; then
+    success "council already cached in registry"
     info "Skipping build (use --force to rebuild)"
     if [ "$1" != "--force" ]; then
         skip_build=true
@@ -228,23 +228,23 @@ if [ "$skip_build" != "true" ]; then
         info "Detected ARM64, using ARM compose override"
     fi
     
-    info "Building llm-council image (this may take a few minutes)..."
-    if $COMPOSE_CMD build llm-council >/dev/null 2>&1; then
-        success "llm-council built successfully"
+    info "Building council image (this may take a few minutes)..."
+    if $COMPOSE_CMD build council >/dev/null 2>&1; then
+        success "council built successfully"
         
         # Tag and push to local registry
-        LOCAL_IMAGE="${LOCAL_REGISTRY}/llm-council:latest"
-        if docker tag "llm-council:latest" "$LOCAL_IMAGE" 2>/dev/null; then
+        LOCAL_IMAGE="${LOCAL_REGISTRY}/council:latest"
+        if docker tag "council:latest" "$LOCAL_IMAGE" 2>/dev/null; then
             if docker push "$LOCAL_IMAGE" >/dev/null 2>&1; then
-                success "llm-council cached in local registry"
+                success "council cached in local registry"
             else
-                warning "Failed to push llm-council (may already exist)"
+                warning "Failed to push council (may already exist)"
             fi
         else
-            warning "Failed to tag llm-council"
+            warning "Failed to tag council"
         fi
     else
-        error "Failed to build llm-council"
+        error "Failed to build council"
         exit 1
     fi
 fi
@@ -271,7 +271,7 @@ success "Fast recovery is now configured"
 echo ""
 info "What was cached:"
 echo "  • $cached_count pre-built images"
-echo "  • llm-council (built and cached)"
+echo "  • council (built and cached)"
 echo ""
 info "What will persist after directory removal:"
 echo "  • Docker volumes (Ollama models, database, etc.)"

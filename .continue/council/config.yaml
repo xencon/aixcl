@@ -7,7 +7,7 @@ models:
     provider: ollama
     model: AUTODETECT
 
-  - name: LLM-Council (Multi-Model)
+  - name: Council (Multi-Model)
     provider: openai
     model: council
     apiBase: http://localhost:8000/v1

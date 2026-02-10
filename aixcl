@@ -90,7 +90,7 @@ function ensure_databases() {
     if [ "$continue_exists" -eq 0 ]; then
         echo "Creating continue database: $continue_db"
         docker exec postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$continue_db\";" >/dev/null 2>&1 || true
-        echo "   Note: LLM-Council will automatically create the schema when it starts."
+        echo "   Note: Council will automatically create the schema when it starts."
     else
         echo "Continue database already exists: $continue_db"
     fi
@@ -335,8 +335,8 @@ function start() {
     echo "Pulling latest images..."
     run_compose pull
     
-    echo "Building LLM-Council service..."
-    run_compose build llm-council
+    echo "Building Council service..."
+    run_compose build council
     
     if [ "$profile" = "usr" ]; then
         echo "Note: Usr profile includes PostgreSQL for database persistence (minimal footprint)"
@@ -359,7 +359,7 @@ function start() {
             ollama_ready=true
         fi
         
-        # Check LLM-Council
+        # Check Council
         if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>/dev/null | grep -q "200"; then
             council_ready=true
         fi
@@ -423,7 +423,7 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
         echo "Services are not running."
         return 0
     fi
@@ -433,7 +433,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -540,13 +540,13 @@ function restart() {
             echo "" >&2
             echo "Usage: ./aixcl stack restart [--profile <profile>] [service1] [service2] ..." >&2
             echo "       ./aixcl stack restart -p <profile>" >&2
-            echo "       ./aixcl stack restart ollama llm-council" >&2
+            echo "       ./aixcl stack restart ollama council" >&2
             echo "" >&2
             echo "Note: You can set PROFILE=<profile> in .env file to use a default profile" >&2
             echo "" >&2
             echo "Examples:" >&2
             echo "  ./aixcl stack restart --profile sys          # Restart entire stack" >&2
-            echo "  ./aixcl stack restart ollama llm-council     # Restart specific services" >&2
+            echo "  ./aixcl stack restart ollama council     # Restart specific services" >&2
             echo "  ./aixcl stack restart -p dev                 # Restart entire stack with profile" >&2
             exit 1
         fi
@@ -598,7 +598,7 @@ function start_service() {
         echo "Usage: $0 service start <service-name>"
         echo ""
         echo "Runtime Core Services (always enabled):"
-        echo "  ollama, llm-council"
+        echo "  ollama, council"
         echo ""
         echo "Operational Services (profile-dependent):"
         echo "  ${ALL_SERVICES[*]}"
@@ -615,7 +615,7 @@ function start_service() {
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Runtime Core Services (always enabled): ollama, council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -704,7 +704,7 @@ function stop_service() {
         echo "Error: Service name is required"
         echo "Usage: $0 service stop <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Runtime Core Services (always enabled): ollama, council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -717,7 +717,7 @@ function stop_service() {
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Runtime Core Services (always enabled): ollama, council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -758,7 +758,7 @@ function needs_rebuild() {
     
     # Services that require builds (have build context in docker-compose.yml)
     case "$service" in
-        "llm-council")
+        "council")
             local build_context="${SCRIPT_DIR}/llm-council"
             local dockerfile="${build_context}/Dockerfile"
             
@@ -767,12 +767,12 @@ function needs_rebuild() {
             fi
             
             # Check if image exists
-            if ! docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null | grep -q "^llm-council:latest$"; then
+            if ! docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null | grep -q "^council:latest$"; then
                 return 0  # Image doesn't exist, needs build
             fi
             
             # Get image creation timestamp (Unix epoch)
-            local image_timestamp=$(docker inspect --format='{{.Created}}' llm-council:latest 2>/dev/null)
+            local image_timestamp=$(docker inspect --format='{{.Created}}' council:latest 2>/dev/null)
             if [ -z "$image_timestamp" ]; then
                 return 0  # Can't inspect image, rebuild to be safe
             fi
@@ -829,7 +829,7 @@ function service() {
         echo "Error: Service action and name are required"
         echo "Usage: $0 service {start|stop|restart} <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, llm-council"
+        echo "Runtime Core Services (always enabled): ollama, council"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "Note: Continue is a VS Code plugin, not a containerized service"
@@ -909,7 +909,7 @@ function logs() {
         echo ""
         
         # Check if any containers are running
-        local services=("ollama" "open-webui" "postgres" "pgadmin" "llm-council" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
+        local services=("ollama" "open-webui" "postgres" "pgadmin" "council" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
         local found_any=false
         local running_containers=()
         
@@ -963,7 +963,7 @@ function logs() {
         
         # Validate container name and find actual container (handle hash-prefixed names)
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|llm-council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
+            ollama|open-webui|postgres|pgadmin|council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
                 echo "Fetching logs for $container..."
                 # Try exact name first, then hash-prefixed name
                 local actual_container
@@ -984,7 +984,7 @@ function logs() {
             *)
                 echo "Error: Unknown container '$container'"
                 echo ""
-                echo "Runtime Core Services: ollama, llm-council"
+                echo "Runtime Core Services: ollama, council"
                 echo "Operational Services: open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
                 echo ""
                 echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -1048,7 +1048,7 @@ function status() {
     
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
-    if docker ps --format "{{.Names}}" | grep -qE "ollama|llm-council|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
+    if docker ps --format "{{.Names}}" | grep -qE "ollama|council|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
         overall_status="Running"
     fi
     
@@ -1064,7 +1064,7 @@ function status() {
         local profile_services
         profile_services=$(get_profile_services "$current_profile" 2>/dev/null) || true
         for s in $profile_services; do
-            [ "$s" = "ollama" ] || [ "$s" = "llm-council" ] && continue
+            [ "$s" = "ollama" ] || [ "$s" = "council" ] && continue
             profile_operational_list="${profile_operational_list} ${s}"
         done
         profile_operational_list="${profile_operational_list# }"
@@ -1219,13 +1219,13 @@ function status() {
     echo "Runtime Core (Strict - Always Enabled)"
     echo "---------------------------------------"
     check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
-    check_service_status "LLM-Council" "llm-council" "curl" "http://localhost:8000/health" "true" "true"
+    check_service_status "Council" "council" "curl" "http://localhost:8000/health" "true" "true"
     
     # Continue is a VS Code plugin, not a containerized service
-    # Check if LLM-Council API is accessible (which Continue connects to)
+    # Check if Council API is accessible (which Continue connects to)
     local continue_status="❌"
     local continue_state="Inactive"
-    local continue_note="(VS Code plugin - LLM-Council unavailable)"
+    local continue_note="(VS Code plugin - Council unavailable)"
     local continue_healthy=false
     if curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://localhost:8000/health" 2>/dev/null | grep -q "200"; then
         continue_status="✅"
@@ -1668,7 +1668,7 @@ function continue_config() {
     mkdir -p "$continue_dir"
 
     {
-        echo "# Continue CLI config for AIXCL: Ollama-only, agentic mode (no LLM-Council)."
+        echo "# Continue CLI config for AIXCL: Ollama-only, agentic mode (no Council)."
         echo "# Generated by: $0 continue config - includes all models currently in Ollama."
         echo "# Use: cn --config ${config_absolute}"
         echo ""
@@ -1739,13 +1739,13 @@ function help_menu() {
     echo "  stack clean                         - Clean Docker resources"
     echo ""
     echo "  Profiles (usr, dev, ops, sys):"
-    echo "    usr   - User-oriented runtime (Ollama, LLM-Council, PostgreSQL for persistence)"
+    echo "    usr   - User-oriented runtime (Ollama, Council, PostgreSQL for persistence)"
     echo "    dev   - Developer workstation (runtime core + UI + DB)"
     echo "    ops   - Observability-focused (runtime core + monitoring/logging)"
     echo "    sys   - System-oriented (complete stack with automation)"
     echo ""
     echo "Service: service <action> <name>"
-    echo "  Runtime Core (always enabled): ollama, llm-council"
+    echo "  Runtime Core (always enabled): ollama, council"
     echo "  Operational Services (profile-dependent): see docs/architecture/governance/02_profiles.md"
     echo ""
     echo "Models: models <action> [name]"
@@ -1899,7 +1899,7 @@ fi"
 # update_env_file() is provided by lib/council_utils.sh
 
 function status_council() {
-    echo "📋 LLM Council Status"
+    echo "📋 Council Status"
     echo "===================="
     echo ""
     
@@ -1907,7 +1907,7 @@ function status_council() {
     local llm_council_running=false
     local ollama_running=false
     
-    if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
+    if docker ps --format "{{.Names}}" | grep -q "council"; then
         llm_council_running=true
     fi
     
@@ -2086,9 +2086,9 @@ print(json.dumps(payload))
     
     # Service status
     if [[ "$llm_council_running" == "true" ]]; then
-        echo "✅ LLM-Council service is running"
+        echo "✅ Council service is running"
     else
-        echo "⚠️  LLM-Council service is not running"
+        echo "⚠️  Council service is not running"
     fi
     
     if [[ "$ollama_running" == "true" ]]; then
@@ -2100,13 +2100,13 @@ print(json.dumps(payload))
 }
 
 function test_council_operational() {
-    echo "🧪 Testing LLM Council Member Operational Status"
+    echo "🧪 Testing Council Member Operational Status"
     echo "=============================================="
     echo ""
     
-    # Check if LLM-Council service is running
-    if ! docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-        echo "❌ Error: LLM-Council service is not running."
+    # Check if Council service is running
+    if ! docker ps --format "{{.Names}}" | grep -q "council"; then
+        echo "❌ Error: Council service is not running."
         echo "   Please start the service first with: ./aixcl stack start"
         return 1
     fi
@@ -2337,7 +2337,7 @@ print(json.dumps(payload))
 }
 
 function configure_council() {
-    echo "🔧 Configuring LLM Council"
+    echo "🔧 Configuring Council"
     echo "=========================="
     echo ""
     echo "Note: This will ignore any existing .env configuration and create a new one."
@@ -2595,28 +2595,28 @@ function configure_council() {
     echo "✅ Council configuration updated successfully!"
     echo ""
     echo "Next steps:"
-    echo "  1. Restart the LLM-Council service to apply changes:"
+    echo "  1. Restart the Council service to apply changes:"
     echo "     ./aixcl stack restart"
     echo "  2. The configuration will be loaded automatically"
     echo ""
     
     # Ask if user wants to restart services
-    read -p "Restart LLM-Council service now? (yes/no): " restart_confirm || true
+    read -p "Restart Council service now? (yes/no): " restart_confirm || true
     if [[ "${restart_confirm:-}" == "yes" ]] || [[ "${restart_confirm:-}" == "y" ]]; then
         echo ""
-        echo "Restarting LLM-Council service to apply new configuration..."
+        echo "Restarting Council service to apply new configuration..."
         set_compose_cmd
         # Stop if running
-        if docker ps --format "{{.Names}}" | grep -q "llm-council"; then
-            run_compose stop llm-council 2>/dev/null || true
+        if docker ps --format "{{.Names}}" | grep -q "council"; then
+            run_compose stop council 2>/dev/null || true
         fi
         # Always remove the container to avoid docker-compose ContainerConfig KeyError
         # when using images from registry (older docker-compose versions have this bug)
         # This also handles the case where container exists but is stopped
-        run_compose rm -f llm-council 2>/dev/null || docker rm -f llm-council 2>/dev/null || true
-        run_compose build llm-council
-        run_compose up -d llm-council
-        echo "✅ LLM-Council service restarted with new configuration"
+        run_compose rm -f council 2>/dev/null || docker rm -f council 2>/dev/null || true
+        run_compose build council
+        run_compose up -d council
+        echo "✅ Council service restarted with new configuration"
     fi
     return 0
 }

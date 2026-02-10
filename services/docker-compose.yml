@@ -128,12 +128,12 @@ services:
     command: open-webui
     restart: always
 
-  llm-council:
+  council:
     build:
       context: ../llm-council
       dockerfile: Dockerfile
-    image: llm-council:latest
-    container_name: llm-council
+    image: council:latest
+    container_name: council
     environment:
       - BACKEND_MODE=ollama
       - OLLAMA_BASE_URL=http://localhost:11434
@@ -149,7 +149,7 @@ services:
       - ENABLE_DB_STORAGE=true
       - FORCE_STREAMING=${FORCE_STREAMING:-true}
     volumes:
-      - ../llm-council-data:/app/data
+      - ../council-data:/app/data
     network_mode: host
     depends_on:
       - ollama

@@ -95,9 +95,9 @@ docker exec postgres psql -U webui -d webui -c "SELECT COUNT(*) FROM chat WHERE 
    docker exec postgres psql -U webui -d webui -c "SELECT id, title, source, jsonb_array_length(chat->'messages') as message_count, created_at FROM chat WHERE source = 'continue' ORDER BY created_at DESC LIMIT 10;"
    ```
 
-3. **Check Logs**: View LLM-Council logs for database connection messages
+3. **Check Logs**: View Council logs for database connection messages
    ```bash
-   docker logs llm-council | grep -i "database\|postgres\|conversation"
+   docker logs council | grep -i "database\|postgres\|conversation"
    ```
 
 ## Expected Results
@@ -113,12 +113,12 @@ docker exec postgres psql -U webui -d webui -c "SELECT COUNT(*) FROM chat WHERE 
 
 ### Database Connection Failed
 - Check PostgreSQL is running: `docker ps | grep postgres`
-- Verify environment variables: `docker exec llm-council env | grep POSTGRES`
+- Verify environment variables: `docker exec council env | grep POSTGRES`
 - Check database logs: `docker logs postgres`
 
 ### Conversations Not Saving
 - Verify `ENABLE_DB_STORAGE=true` in environment
-- Check LLM-Council logs for errors: `docker logs llm-council`
+- Check Council logs for errors: `docker logs council`
 - Verify database permissions
 
 ### Schema Not Created

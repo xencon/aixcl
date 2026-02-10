@@ -1,7 +1,7 @@
 [project]
 name = "llm-council"
 version = "0.1.0"
-description = "Your LLM Council"
+description = "Council - multi-model orchestration"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

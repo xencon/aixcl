@@ -1,4 +1,4 @@
-"""Dynamic configuration manager for LLM Council."""
+"""Dynamic configuration manager for Council."""
 
 import os
 import json

@@ -9,7 +9,7 @@ Reference: [cli-docs-alignment-report.md](./cli-docs-alignment-report.md)
 ## High priority
 
 - [ ] **1. docs/user/setup.md (S1)** — Fix wrong command: `./aixcl logs` → `./aixcl stack logs`
-- [ ] **2. llm-council/TESTING.md (T1)** — Fix wrong command: `./aixcl start` → `./aixcl stack start`
+- [ ] **2. council/TESTING.md (T1)** — Fix wrong command: `./aixcl start` → `./aixcl stack start`
 - [ ] **3. docs/reference/manpage.txt (M7)** — FILES: document project-directory `.env`, not `~/.env`
 - [ ] **4. docs/reference/manpage.txt (M1)** — Add `continue` command section (`continue config`)
 - [ ] **5. docs/reference/manpage.txt (M3)** — Document `stack restart [--profile <p>] [service1] [service2] ...`
@@ -42,7 +42,7 @@ Reference: [cli-docs-alignment-report.md](./cli-docs-alignment-report.md)
 | PR | Issue | Scope | Checklist items |
 |----|--------|--------|------------------|
 | [#424](https://github.com/xencon/aixcl/pull/424) | #423 | docs/user/setup.md + alignment report & checklist | 1 |
-| [#426](https://github.com/xencon/aixcl/pull/426) | #425 | llm-council/TESTING.md | 2 |
+| [#426](https://github.com/xencon/aixcl/pull/426) | #425 | council/TESTING.md | 2 |
 | [#428](https://github.com/xencon/aixcl/pull/428) | #427 | docs/reference/manpage.txt | 3, 4, 5, 6, 7, 8, 9 |
 | [#430](https://github.com/xencon/aixcl/pull/430) | #429 | README.md | 10, 12, 13, 14 |
 | [#432](https://github.com/xencon/aixcl/pull/432) | #431 | docs/user/usage.md | 11, 15, 16 |

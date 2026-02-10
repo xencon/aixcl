@@ -33,7 +33,7 @@ The following are configured automatically:
 - [x] **Environment File**: `.env` is created from `.env.example` if it exists
 - [x] **Database Schema**: PostgreSQL schema is created automatically on first startup
 - [x] **pgAdmin Configuration**: Database server connection is auto-configured
-- [x] **Database Persistence**: LLM-Council conversations are automatically stored in PostgreSQL
+- [x] **Database Persistence**: Council conversations are automatically stored in PostgreSQL
 
 ### 4. Database Persistence Verification
 
@@ -62,8 +62,8 @@ Run the test script to verify everything works:
 # From project root
 python3 tests/database/test_db_connection.py
 
-# Or from llm-council directory with uv
-cd llm-council
+# Or from council directory with uv
+cd council
 uv run python ../tests/database/test_db_connection.py
 ```
 
@@ -103,7 +103,7 @@ Expected services:
 - [x] open-webui
 - [x] postgres
 - [x] pgadmin
-- [x] llm-council
+- [x] council
 - [x] prometheus
 - [x] grafana
 - [x] (and other monitoring services)
@@ -114,7 +114,7 @@ Expected services:
 
 If the schema wasn't created automatically:
 
-1. Check logs: `docker logs llm-council | grep -i database`
+1. Check logs: `docker logs council | grep -i database`
 2. Verify `ENABLE_DB_STORAGE=true` in `.env`
 3. Manually run migration:
    ```bash
@@ -124,7 +124,7 @@ If the schema wasn't created automatically:
 ### Database Connection Failed
 
 1. Verify PostgreSQL is running: `docker ps | grep postgres`
-2. Check environment variables: `docker exec llm-council env | grep POSTGRES`
+2. Check environment variables: `docker exec council env | grep POSTGRES`
 3. Test connection: `docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "SELECT 1;"`
 
 ### Services Not Starting
@@ -165,7 +165,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 
 AIXCL uses two PostgreSQL databases:
 - **webui**: For Open WebUI conversations and data
-- **continue**: For Continue plugin conversations (managed by LLM-Council)
+- **continue**: For Continue plugin conversations (managed by Council)
 
 Both databases are automatically created on startup. The webui database schema is initialized by Open WebUI when it starts.
 

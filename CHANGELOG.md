@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Changed
+
+- Renamed service/container from `llm-council` to `council` across codebase and documentation (Fixes #433). Directory `llm-council/` and volume path `council-data/`; display name "Council". Service contract file `llm-council.md` renamed to `council.md`; script `build_and_push_llm_council.sh` renamed to `build_and_push_council.sh`.
 
 ---
 

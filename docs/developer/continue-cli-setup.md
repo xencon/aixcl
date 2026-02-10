@@ -1,6 +1,6 @@
 # Continue CLI (cn) with Ollama - Agentic Setup
 
-Continue CLI provides a terminal-based agent (TUI and headless) that uses **Ollama only** (no LLM-Council). This setup targets agentic workflows with tool-capable models.
+Continue CLI provides a terminal-based agent (TUI and headless) that uses **Ollama only** (no Council). This setup targets agentic workflows with tool-capable models.
 
 ## Prerequisites
 

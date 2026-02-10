@@ -1,4 +1,4 @@
-"""FastAPI backend for LLM Council."""
+"""FastAPI backend for Council."""
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -137,10 +137,10 @@ def format_markdown_response(content: str) -> str:
     
     return formatted_content
 
-app = FastAPI(title="LLM Council API")
+app = FastAPI(title="Council API")
 
 # Log startup configuration
-logger.info("LLM Council API starting up")
+logger.info("Council API starting up")
 logger.info("BACKEND_MODE = %s", BACKEND_MODE)
 logger.info("OLLAMA_BASE_URL = %s", OLLAMA_BASE_URL)
 logger.info("ENABLE_DB_STORAGE = %s", ENABLE_DB_STORAGE)
@@ -331,13 +331,13 @@ def _build_token_usage(user_query: str, final_content: str, metadata: Dict[str, 
 @app.get("/")
 async def root():
     """Health check endpoint."""
-    return {"status": "ok", "service": "LLM Council API"}
+    return {"status": "ok", "service": "Council API"}
 
 
 @app.get("/health")
 async def health():
     """Health check endpoint for Docker."""
-    return {"status": "healthy", "service": "LLM Council API"}
+    return {"status": "healthy", "service": "Council API"}
 
 
 @app.get("/api/config")
@@ -460,7 +460,7 @@ async def list_models():
                 "id": "council",
                 "object": "model",
                 "created": int(time.time()),
-                "owned_by": "llm-council"
+                "owned_by": "council"
             }
         ]
     }

@@ -1,6 +1,6 @@
 # Challenge Prompt Template
 
-When submitting challenges to LLM Council, use this format to ensure models understand they need to write code:
+When submitting challenges to Council, use this format to ensure models understand they need to write code:
 
 ## Template
 
@@ -71,7 +71,7 @@ with open('llm-council/tests/challenge_01_simple_string_processing.md', 'r') as 
 # Format as coding challenge prompt
 prompt = format_challenge_prompt(challenge_content)
 
-# Send to LLM Council
+# Send to Council
 # ... use prompt in API call
 ```
 

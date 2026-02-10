@@ -27,7 +27,7 @@ COMMANDS
        stack restart [--profile|-p <profile>] [service1] [service2] ...
               Restart the entire stack or specific services. With no service names,
               uses PROFILE from .env file if set, otherwise --profile is required.
-              With service names (e.g. ollama llm-council), restarts only those
+              With service names (e.g. ollama council), restarts only those
               services; profile is not required.
 
        stack status
@@ -45,7 +45,7 @@ COMMANDS
               Control individual service
 
               Runtime Core Services (always enabled):
-              ollama, llm-council
+              ollama, council
 
               Operational Services (profile-dependent):
               open-webui, postgres, pgadmin, watchtower, prometheus, grafana,
@@ -102,7 +102,7 @@ EXAMPLES
               aixcl service restart postgres
 
        Restart specific stack services (no profile needed):
-              aixcl stack restart ollama llm-council
+              aixcl stack restart ollama council
 
        Add a new LLM model:
               aixcl models add phi3
@@ -154,7 +154,7 @@ ARCHITECTURE
        Runtime Core (Strict)
               Always enabled, required for AIXCL to function:
               - Ollama: LLM inference engine
-              - LLM-Council: Multi-model orchestration
+              - Council: Multi-model orchestration
               - Continue: VS Code plugin for IDE integration
 
        Operational Services (Guided)
