@@ -4,7 +4,7 @@ This guide explains how to test the PostgreSQL integration for Continue plugin c
 
 ## Prerequisites
 
-1. Services must be running: `./aixcl start`
+1. Services must be running: `./aixcl stack start`
 2. PostgreSQL must be accessible
 3. Environment variables must be set in `.env`:
    - `POSTGRES_USER`
@@ -20,7 +20,7 @@ Test the API endpoints directly:
 
 ```bash
 # 1. Start services
-./aixcl start
+./aixcl stack start
 
 # 2. Wait for services to be ready (about 30 seconds)
 sleep 30
@@ -36,7 +36,7 @@ Test the database connection and operations:
 
 ```bash
 # 1. Start services
-./aixcl start
+./aixcl stack start
 
 # 2. Wait for services to be ready
 sleep 30
