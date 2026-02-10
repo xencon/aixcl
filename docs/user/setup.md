@@ -130,7 +130,7 @@ If the schema wasn't created automatically:
 ### Services Not Starting
 
 1. Check Docker: `docker ps -a`
-2. View logs: `./aixcl logs`
+2. View logs: `./aixcl stack logs`
 3. Check disk space: `df -h`
 4. Verify ports are available: `netstat -tuln | grep -E '8000|8080|5432|5050'`
 
