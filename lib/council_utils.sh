@@ -9,7 +9,7 @@ source "${BASH_SOURCE%/*}/common.sh"
 source "${BASH_SOURCE%/*}/docker_utils.sh"
 source "${BASH_SOURCE%/*}/color.sh"
 
-# Get available models from Ollama
+# Get available models from Ollama (table parsing from ollama list)
 get_available_models() {
     # Find the actual Ollama container name (handle hash-prefixed containers)
     local ollama_container
@@ -22,6 +22,24 @@ get_available_models() {
     
     # Get models list, skip header line, extract model names
     docker exec "$ollama_container" ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -v "^$"
+}
+
+# Get complete list of Ollama model names via API (reliable); fall back to get_available_models if API fails.
+# Use this when a complete list is required (e.g. Continue CLI config). Output: one model name per line.
+get_ollama_models_complete() {
+    local json
+    json=$(curl -s --max-time 3 "http://localhost:11434/api/tags" 2>/dev/null) || true
+    if [[ -n "$json" ]] && echo "$json" | grep -q '"models"'; then
+        # Parse "name":"model:tag" from JSON (no jq required)
+        local parsed
+        parsed=$(echo "$json" | grep -oE '"name"[[:space:]]*:[[:space:]]*"[^"]+"' | sed -E 's/"name"[[:space:]]*:[[:space:]]*"([^"]+)"/\1/' | grep -v "^$")
+        if [[ -n "$parsed" ]]; then
+            echo "$parsed"
+            return
+        fi
+    fi
+    # Fall back to ollama list parsing (requires container)
+    get_available_models 2>/dev/null || true
 }
 
 # Update .env file with council configuration
