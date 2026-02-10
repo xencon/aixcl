@@ -1862,21 +1862,18 @@ function continue_config() {
 }
 
 function continue_cmd() {
-    if [[ $# -lt 1 ]]; then
-        echo "Usage: $0 continue {config}"
-        echo "  continue config   - Regenerate Continue CLI config (Ollama + Council/Autodetect from plugin)"
+    # "continue config" = regenerate config; "continue" or "continue -p ..." = run cn with repo config (no path needed)
+    if [[ "$1" == "config" ]]; then
+        continue_config
+        return
+    fi
+    local config_absolute
+    config_absolute="$(cd "$SCRIPT_DIR" && pwd)/.continue/cli-ollama.yaml"
+    if [[ ! -f "$config_absolute" ]]; then
+        echo "Config not found. Run: $0 continue config"
         return 1
     fi
-    case "$1" in
-        config)
-            continue_config
-            ;;
-        *)
-            echo "Error: Unknown continue action '$1'"
-            echo "Usage: $0 continue {config}"
-            return 1
-            ;;
-    esac
+    exec cn --config "$config_absolute" "$@"
 }
 
 function help_menu() {
@@ -1911,8 +1908,9 @@ function help_menu() {
     echo "  council configure                   - Configure council models and chairman"
     echo "  council status                      - Show council configuration and status"
     echo ""
-    echo "Continue CLI: continue <action>"
-    echo "  continue config                    - Regenerate Continue CLI config (Ollama + plugin alignment)"
+    echo "Continue CLI: continue [config] [cn options...]"
+    echo "  continue                            - Run Continue CLI with repo config (no path needed)"
+    echo "  continue config                     - Regenerate Continue CLI config (Ollama + plugin alignment)"
     echo ""
     echo "Dashboard: dashboard <name>"
     echo "  dashboard openwebui                 - Open Open WebUI"
