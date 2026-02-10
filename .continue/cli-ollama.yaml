@@ -1,0 +1,36 @@
+# Continue CLI config for AIXCL: Ollama-only, agentic mode (no LLM-Council).
+# Use: cn --config .continue/cli-ollama.yaml
+# Models: qwen3-coder:latest, glm-4.7-flash:latest (must be pulled in Ollama).
+
+name: AIXCL CLI (Ollama)
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen3 Coder
+    provider: ollama
+    model: qwen3-coder:latest
+    capabilities:
+      - tool_use
+    roles:
+      - chat
+      - edit
+      - apply
+      - summarize
+
+  - name: GLM-4.7 Flash
+    provider: ollama
+    model: glm-4.7-flash:latest
+    capabilities:
+      - tool_use
+    roles:
+      - chat
+      - edit
+      - apply
+      - summarize
+
+context:
+  - provider: code
+  - provider: docs
+  - provider: diff
+  - provider: terminal
