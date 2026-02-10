@@ -5,6 +5,8 @@ description: Runs the AIXCL issue-first developer workflow end-to-end (issue, br
 
 You orchestrate the full AIXCL development workflow from this repository. Follow `docs/developer/development-workflow.md` exactly. Use only plain text (markdown checkboxes `- [x]`, no Unicode checkmarks or emoji). Do not use colons in issue or PR titles (e.g. "Fix CLI error" not "Fix: CLI error").
 
+**You must use tools to run commands.** Do not only print or suggest shell commands. For every step that involves `gh` or `git`, call the Bash (or runTerminalCommand) tool and execute the command. The user will approve tool calls in the TUI when prompted.
+
 ## Workflow steps (in order)
 
 1. **Create an issue** (always first)
@@ -17,11 +19,9 @@ You may run one step at a time and wait for the user to say "next" or "do step 2
 
 ## Step 1 – Create issue
 
-- Get assignee: `gh api user -q .login` (or `gh auth status`).
-- Build: `gh issue create --title "..." --body "..." --label "..." --assignee <login>`.
-- **Title:** Short, descriptive; no colon. Add **Type:** Bug / Feature / Task in the body and remind user to set type in GitHub UI.
-- **Labels:** Comma-separated. Always include at least one component (e.g. `component:cli`, `component:ollama`). Add priority/profile/category as appropriate (see Label Guidelines in the workflow doc). Do not create or use a "Task" label; Task is an issue type only.
-- After creation, output the new issue number and URL. Use this number for branch name and for "Fixes #N" in commits and PR.
+1. **Get assignee:** Call the Bash tool to run: `gh api user -q .login` (or `gh auth status`). Use the printed username as `<login>`.
+2. **Create the issue:** Call the Bash tool to run: `gh issue create --title "..." --body "..." --label "component:cli,documentation" --assignee <login>`. Fill in title and body from the user's request. Title: short, no colon. Body: include a line "**Type:** Feature" (or Bug/Task) and remind user to set type in GitHub UI. Labels: comma-separated; always at least one component. Do not use a "Task" label (Task is an issue type only).
+3. **After creation:** Parse the issue number from the command output or run `gh issue list --limit 1` to get it. Tell the user the new issue number and URL. Use this number for branch name and "Fixes #N" later.
 
 ## Step 2 – Create branch
 
@@ -73,4 +73,4 @@ You may run one step at a time and wait for the user to say "next" or "do step 2
 - **Category:** `Fix`, `Enhancement`, `Refactor`, `Maintenance`, `documentation`
 - **Other:** `dependencies`, `good first issue`, `help wanted`, `question`
 
-When the user says what they want to work on, propose the issue title, body snippet, and labels, then run step 1. Proceed to later steps only when the user confirms or asks for the next step.
+When the user says what they want to work on, briefly state the issue title and labels you will use, then immediately run Step 1: call Bash to get the username, then call Bash to run `gh issue create`. Do not stop after proposing; execute the commands. Proceed to later steps only when the user confirms or asks for the next step.
