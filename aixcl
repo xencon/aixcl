@@ -1861,7 +1861,18 @@ function continue_config() {
 }
 
 function continue_cmd() {
-    # "continue config" = regenerate config; "continue" or "continue -p ..." = run cn with repo config (no path needed)
+    # Fallback: no args -> show usage (same as stack, council, etc.)
+    if [[ $# -lt 1 ]]; then
+        echo "Error: continue action or cn options required"
+        echo "Usage: $0 continue {config} [cn options...]"
+        echo "  $0 continue config       - Regenerate Continue CLI config (Ollama + plugin alignment)"
+        echo "  $0 continue --           - Run cn with repo config (interactive TUI)"
+        echo "  $0 continue -p \"prompt\" - Run cn headless with repo config"
+        echo "  $0 continue --auto      - Run cn with repo config (all tools allowed)"
+        echo ""
+        echo "Config file: .continue/cli-ollama.yaml (create with: $0 continue config)"
+        return 1
+    fi
     if [[ "$1" == "config" ]]; then
         continue_config
         return
@@ -1907,9 +1918,10 @@ function help_menu() {
     echo "  council configure                   - Configure council models and chairman"
     echo "  council status                      - Show council configuration and status"
     echo ""
-    echo "Continue CLI: continue [config] [cn options...]"
-    echo "  continue                            - Run Continue CLI with repo config (no path needed)"
+    echo "Continue CLI: continue {config} [cn options...]"
     echo "  continue config                     - Regenerate Continue CLI config (Ollama + plugin alignment)"
+    echo "  continue --                         - Run cn with repo config (interactive TUI)"
+    echo "  continue -p \"prompt\" / --auto      - Pass-through to cn (headless / all tools)"
     echo ""
     echo "Dashboard: dashboard <name>"
     echo "  dashboard openwebui                 - Open Open WebUI"
