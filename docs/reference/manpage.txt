@@ -17,22 +17,26 @@ DESCRIPTION
        docs/architecture/governance/ for architectural documentation.
 
 COMMANDS
-       stack start [--profile <profile>]
+       stack start [--profile|-p <profile>]
               Start all services. Uses PROFILE from .env file if set, otherwise
-              shows available profiles. Use --profile to specify a profile explicitly.
+              shows available profiles. Use --profile or -p to specify a profile explicitly.
 
        stack stop
               Stop all services
 
-       stack restart [--profile <profile>]
-              Restart the entire stack. Uses PROFILE from .env file if set,
-              otherwise --profile is required.
+       stack restart [--profile|-p <profile>] [service1] [service2] ...
+              Restart the entire stack or specific services. With no service names,
+              uses PROFILE from .env file if set, otherwise --profile is required.
+              With service names (e.g. ollama llm-council), restarts only those
+              services; profile is not required.
 
        stack status
               Show service status
 
        stack logs [svc] [n]
-              Show logs for all or one service, optional line count
+              Show logs for all services (last 100 lines then follow), or for one
+              service with optional line count n (default 50, range 1-10000),
+              then follow.
 
        stack clean
               Remove unused Docker resources
@@ -50,11 +54,11 @@ COMMANDS
 
               Note: Continue is a VS Code plugin, not a containerized service.
 
-       models <add|remove|list> [name]
+       models <add|remove|list> [name ...]
               Manage LLM models
 
-              add     Add a model
-              remove  Remove a model
+              add     Add one or more models (e.g. models add a b c)
+              remove  Remove one or more models
               list    List installed models
 
        council <configure|status>
@@ -70,11 +74,20 @@ COMMANDS
               openwebui  Open Open WebUI interface
               pgadmin    Open pgAdmin database administration
 
+       continue config
+              Regenerate Continue CLI config from current Ollama models.
+
        utils check-env
               Validate environment setup
 
        utils bash-completion
               Install bash completion support
+
+       check-env
+              Same as utils check-env (top-level alias)
+
+       bash-completion
+              Same as utils bash-completion (top-level alias)
 
        help
               Show help message
@@ -87,6 +100,9 @@ EXAMPLES
 
        Restart a single service:
               aixcl service restart postgres
+
+       Restart specific stack services (no profile needed):
+              aixcl stack restart ollama llm-council
 
        Add a new LLM model:
               aixcl models add phi3
@@ -121,13 +137,15 @@ ENVIRONMENT
               Model used as chairman (synthesizes final response)
 
 FILES
-       ~/.env
-              Main configuration file (automatically created)
+       .env (in project directory)
+              Main configuration file (automatically created in the same
+              directory as the aixcl script, typically the repository root).
+              Not ~/.env.
 
-       ~/.env.example
+       .env.example (in project directory)
               Template configuration file
 
-       ~/.env.local
+       .env.local (in project directory)
               Local overrides (optional, ignored by git)
 
 ARCHITECTURE
