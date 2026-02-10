@@ -40,6 +40,8 @@ From the AIXCL repo root you can use:
 cn --config "$(pwd)/.continue/cli-ollama.yaml"
 ```
 
+**Using aixcl:** `./aixcl continue` with no arguments shows usage (same fallback as `./aixcl stack` or `./aixcl council`). Use `./aixcl continue config` to regenerate config, `./aixcl continue --` for the interactive TUI, or pass-through options (e.g. `./aixcl continue -p "prompt"`, `./aixcl continue --auto`).
+
 ## Running in agentic mode
 
 - **TUI (interactive):** Tools that modify state (e.g. run commands, write files) prompt for approval. Approve when you want the agent to run `gh` or other commands.
