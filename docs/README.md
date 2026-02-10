@@ -13,6 +13,7 @@ Documentation for end users and operators:
 Documentation for contributors and developers:
 - [`contributing.md`](developer/contributing.md) - Contribution guidelines
 - [`development-workflow.md`](developer/development-workflow.md) - Development workflow and best practices
+- [`continue-cli-setup.md`](developer/continue-cli-setup.md) - Continue CLI (cn) with Ollama and agentic mode
 
 ### Operations Documentation (`operations/`)
 Documentation for operations and performance tuning:

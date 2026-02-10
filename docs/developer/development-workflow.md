@@ -236,6 +236,16 @@ gh issue view <number> --json labels
 
 **Example:** If automated PRs #351-355 are merged, create issue #356 documenting them.
 
+## Running the workflow with Continue CLI
+
+A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with Continue CLI and approve `gh`/`git` tool calls when prompted:
+
+```bash
+cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent .continue/agents/developer-workflow.md
+```
+
+See [continue-cli-setup.md](./continue-cli-setup.md) for install and config.
+
 ## AI Assistant Instructions
 
 When working with AI assistants (like Cursor, GitHub Copilot, etc.), include this prompt:
