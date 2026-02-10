@@ -1036,24 +1036,7 @@ function clean() {
     echo "Clean up complete."
 }
 
-# Report Ollama default model only (OLLAMA_MODEL in container env)
-report_ollama_default_model() {
-    local ollama_container
-    ollama_container=$(get_ollama_container 2>/dev/null) || true
-    if [ -z "$ollama_container" ]; then
-        echo "  Ollama:             Default: (Ollama not running)"
-        return
-    fi
-    local default_model
-    default_model=$(docker exec "$ollama_container" env 2>/dev/null | grep '^OLLAMA_MODEL=' | cut -d= -f2- | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//") || true
-    if [ -z "$default_model" ]; then
-        echo "  Ollama:             Default: (not set)"
-    else
-        echo "  Ollama:             Default: $default_model"
-    fi
-}
-
-# Report Council chairman and members from .env
+# Report Council chairman and members from .env; ✅ if configured, ❌ otherwise
 report_council_models() {
     local env_file="${SCRIPT_DIR}/.env"
     local chairman_model="" council_models=""
@@ -1072,7 +1055,9 @@ report_council_models() {
     fi
     if [ -z "$chairman_model" ]; then chairman_model="(not set)"; fi
     if [ -z "$council_models" ]; then council_models="(not set)"; fi
-    echo "  Council:            Chairman: $chairman_model; Members: $council_models"
+    local box="❌"
+    [[ -n "$chairman_model" && "$chairman_model" != "(not set)" && -n "$council_models" && "$council_models" != "(not set)" ]] && box="✅"
+    echo "  ${box} Council            Chairman: $chairman_model; Members: $council_models"
 }
 
 # Parse model names from a Continue YAML config (name: or model: under models)
@@ -1097,36 +1082,65 @@ _parse_continue_models() {
     done < "$file"
 }
 
-# Report Continue VS Code plugin models from .continue/council/config.yaml
+# Report Continue VS Code plugin models from .continue/council/config.yaml; ✅ if configured, ❌ otherwise
 report_continue_plugin_models() {
     local config_file="${SCRIPT_DIR}/.continue/council/config.yaml"
     if [ ! -f "$config_file" ]; then
-        echo "  Continue (VS Code): (no config found)"
+        echo "  ❌ Continue (VS Code) (no config found)"
         return
     fi
     local models
     models=$(_parse_continue_models "$config_file" | paste -sd, - 2>/dev/null) || true
     if [ -z "$models" ]; then
-        echo "  Continue (VS Code): (no models in config)"
+        echo "  ❌ Continue (VS Code) (no models in config)"
     else
-        echo "  Continue (VS Code): Models: $models"
+        echo "  ✅ Continue (VS Code) Models: $models"
     fi
 }
 
-# Report Continue CLI status: config path and models from .continue/cli-ollama.yaml
+# Get config name from Continue YAML (top-level name: field)
+_continue_config_name() {
+    local file="$1"
+    [ ! -f "$file" ] && return
+    grep -E '^name[[:space:]]*:' "$file" 2>/dev/null | head -1 | sed -E 's/^name[[:space:]]*:[[:space:]]*//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"' | tr -d "'"
+}
+
+# Report Continue CLI status in same format as cn: Config: <name>   Model: <model>; ✅ if configured, ❌ otherwise
+# Prefer output from cn -p "/info" when available; else parse .continue/cli-ollama.yaml
 report_continue_cli_status() {
     local config_file="${SCRIPT_DIR}/.continue/cli-ollama.yaml"
     if [ ! -f "$config_file" ]; then
-        echo "  Continue CLI:       Config: (not generated). Run: ./aixcl continue config"
+        echo "  ❌ Continue CLI       Config: (not generated). Run: ./aixcl continue config"
         return
     fi
-    local models
-    models=$(_parse_continue_models "$config_file" | paste -sd, - 2>/dev/null) || true
-    if [ -z "$models" ]; then
-        echo "  Continue CLI:       Config: .continue/cli-ollama.yaml; Models: (none)"
-    else
-        echo "  Continue CLI:       Config: .continue/cli-ollama.yaml; Models: $models"
+    local config_name="" model_line=""
+    local config_abs
+    config_abs="$(cd "$SCRIPT_DIR" && pwd)/.continue/cli-ollama.yaml"
+    # Prefer Continue CLI: run cn -p "/info" to get Config and Model (same as TUI)
+    if command -v cn >/dev/null 2>&1; then
+        local cn_out
+        cn_out=$(timeout 8 cn --config "$config_abs" -p "/info" 2>/dev/null) || true
+        if [ -n "$cn_out" ]; then
+            # Parse "  Using <name>" and "  Model: <name>" from /info output
+            config_name=$(echo "$cn_out" | grep -E 'Using .+' | head -1 | sed -E 's/^[[:space:]]*Using[[:space:]]+//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            model_line=$(echo "$cn_out" | grep -E 'Model: .+' | head -1 | sed -E 's/^[[:space:]]*Model:[[:space:]]+//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            # Strip ANSI codes if present
+            [ -n "$config_name" ] && config_name=$(echo "$config_name" | sed 's/\x1b\[[0-9;]*m//g')
+            [ -n "$model_line" ] && model_line=$(echo "$model_line" | sed 's/\x1b\[[0-9;]*m//g')
+        fi
     fi
+    # Fall back to config file: name from YAML, first model from models list
+    if [ -z "$config_name" ]; then
+        config_name=$(_continue_config_name "$config_file") || true
+        [ -z "$config_name" ] && config_name=".continue/cli-ollama.yaml"
+    fi
+    if [ -z "$model_line" ]; then
+        model_line=$(_parse_continue_models "$config_file" | head -1) || true
+        [ -z "$model_line" ] && model_line="(none)"
+    fi
+    local box="❌"
+    [[ -n "$model_line" && "$model_line" != "(none)" ]] && box="✅"
+    echo "  ${box} Continue CLI       Config: $config_name   Model: $model_line"
 }
 
 function status() {
@@ -1308,8 +1322,8 @@ function status() {
     echo "Status: $overall_status"
     echo ""
     
-    # Runtime Core (Strict - Always Enabled) per governance model
-    echo "Runtime Core (Strict - Always Enabled)"
+    # Runtime Core per governance model
+    echo "Runtime Core"
     echo "---------------------------------------"
     check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
     check_service_status "Council" "council" "curl" "http://localhost:8000/health" "true" "true"
@@ -1334,17 +1348,16 @@ function status() {
     echo "  ${continue_status} continue        ${continue_state}     ${continue_note}"
     echo ""
     
-    # Configured Models (Ollama default, Council, Continue plugin, Continue CLI)
+    # Configured Models (Council, Continue plugin, Continue CLI) - ✅ configured, ❌ not
     echo "Configured Models"
     echo "-----------------"
-    report_ollama_default_model
     report_council_models
     report_continue_plugin_models
     report_continue_cli_status
     echo ""
     
-    # Operational Services (Guided - Profile-Dependent) per governance model
-    echo "Operational Services (Guided - Profile-Dependent)"
+    # Operational Services (profile-dependent) per governance model
+    echo "Operational Services"
     echo "--------------------------------------------------"
     
     # UI Services
