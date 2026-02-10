@@ -85,6 +85,7 @@ cd aixcl
 ```bash
 ./aixcl utils check-env
 ```
+(You can also run `./aixcl check-env` without the `utils` prefix.)
 
 This verifies Docker installation, available resources, and system compatibility.
 
@@ -93,6 +94,7 @@ This verifies Docker installation, available resources, and system compatibility
 ```bash
 ./aixcl utils bash-completion
 ```
+(You can also run `./aixcl bash-completion` without the `utils` prefix.)
 
 Restart your terminal or source your bash profile to activate tab completion.
 
@@ -150,9 +152,11 @@ Manage all services as a unified stack:
 ./aixcl stack start [--profile sys]      # Start all services (uses PROFILE from .env if set)
 ./aixcl stack stop                       # Stop all services gracefully
 ./aixcl stack restart [--profile sys]    # Restart all services (uses PROFILE from .env if set)
+./aixcl stack restart ollama llm-council # Restart specific services only (no profile needed)
 ./aixcl stack status                     # Check service status
 ./aixcl stack logs                       # View logs for all services
 ./aixcl stack logs ollama                # View logs for specific service
+./aixcl stack logs ollama 100            # Last 100 lines for a service (default 50, then follow)
 ./aixcl stack clean                      # Remove unused Docker resources
 ```
 
@@ -172,8 +176,8 @@ Manage specific services independently:
 ### Model Management
 
 ```bash
-./aixcl models add llama3:latest     # Add a model
-./aixcl models remove llama3:latest  # Remove a model
+./aixcl models add llama3:latest     # Add a model (or multiple: models add a b c)
+./aixcl models remove llama3:latest  # Remove a model (or multiple: models remove a b)
 ./aixcl models list                  # List installed models
 ```
 
