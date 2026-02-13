@@ -37,15 +37,19 @@ if command -v jq >/dev/null 2>&1; then
     -H "Content-Type: application/json" \
     -d "${JSON_PAYLOAD}"
 else
-  # Fallback: use curl's --data-urlencode for safer parameter passing
-  # Note: This requires the API to accept form-encoded data, which may not work
-  # If jq is not available, consider installing it: apt-get install jq
-  echo "Warning: jq not found. Using basic JSON construction (may be unsafe with special characters)." >&2
-  curl \
-    -X POST "http://localhost:8080/api/v1/auths/signup" \
-    -H "accept: application/json" \
-    -H "Content-Type: application/json" \
-    -d "{ \"email\": \"${OPENWEBUI_EMAIL}\", \"password\": \"${OPENWEBUI_PASSWORD}\", \"name\": \"Admin\" }"
+  # Fallback: use python3 to securely generate JSON payload
+  # This prevents injection vulnerabilities from environment variables containing special characters
+  if command -v python3 >/dev/null 2>&1; then
+    JSON_PAYLOAD=$(python3 -c "import json, os; print(json.dumps({'email': os.environ.get('OPENWEBUI_EMAIL', ''), 'password': os.environ.get('OPENWEBUI_PASSWORD', ''), 'name': 'Admin'}))")
+    curl \
+      -X POST "http://localhost:8080/api/v1/auths/signup" \
+      -H "accept: application/json" \
+      -H "Content-Type: application/json" \
+      -d "${JSON_PAYLOAD}"
+  else
+    echo "Error: Neither jq nor python3 found. Cannot securely generate admin user payload." >&2
+    exit 1
+  fi
 fi
 echo "Shutting down webui..."
 kill $webui_pid
