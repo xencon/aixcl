@@ -40,7 +40,7 @@ else
   # Fallback: use python3 to securely generate JSON payload
   # This prevents injection vulnerabilities from environment variables containing special characters
   if command -v python3 >/dev/null 2>&1; then
-    JSON_PAYLOAD=$(python3 -c "import json, os; print(json.dumps({'email': os.environ.get('OPENWEBUI_EMAIL'), 'password': os.environ.get('OPENWEBUI_PASSWORD'), 'name': 'Admin'}))")
+    JSON_PAYLOAD=$(python3 -c "import json, os; print(json.dumps({'email': os.environ.get('OPENWEBUI_EMAIL', ''), 'password': os.environ.get('OPENWEBUI_PASSWORD', ''), 'name': 'Admin'}))")
     curl \
       -X POST "http://localhost:8080/api/v1/auths/signup" \
       -H "accept: application/json" \

@@ -23,11 +23,11 @@ echo "Simulating Python JSON generation fallback..."
 # This mocks the logic we will insert into openwebui.sh
 # Note: In the real script, this runs if jq is missing.
 generate_json_python() {
-    python3 -c "import json, os; print(json.dumps({'email': os.environ.get('OPENWEBUI_EMAIL'), 'password': os.environ.get('OPENWEBUI_PASSWORD'), 'name': 'Admin'}))"
+    python3 -c "import json, os; print(json.dumps({'email': os.environ.get('OPENWEBUI_EMAIL', ''), 'password': os.environ.get('OPENWEBUI_PASSWORD', ''), 'name': 'Admin'}))"
 }
 
 PAYLOAD=$(generate_json_python)
-echo "Generated Payload: $PAYLOAD"
+echo "Generated Payload (Escaping Test): $PAYLOAD"
 
 # Validate using python's json.loads ensure it's valid JSON
 if python3 -c "import json, sys; json.loads(sys.argv[1])" "$PAYLOAD" >/dev/null 2>&1; then
@@ -40,14 +40,9 @@ fi
 # Check if injection characters are escaped
 # The email 'admin@example.com"}' should be escaped as "admin@example.com\"}"
 if [[ "$PAYLOAD" == *"admin@example.com\\\"}"* ]] || [[ "$PAYLOAD" == *"admin@example.com\"}"* ]]; then
-    # Python json.dumps escapes quotes. 
-    # Exact expectation: "email": "admin@example.com\"}"
     if echo "$PAYLOAD" | grep -q 'admin@example.com\\"}'; then
        echo -e "${GREEN}PASS: Special characters escaped${NC}"
     elif echo "$PAYLOAD" | grep -q 'admin@example.com"}'; then
-        # This might mean it wasn't escaped if we just grep without care, 
-        # but json.loads passed, so it must be valid string.
-        # Let's inspect raw.
         echo -e "${GREEN}PASS: JSON is valid (implies escaping)${NC}"
     else
         echo -e "${RED}FAIL: Payload content mismatch${NC}"
@@ -57,4 +52,19 @@ else
      echo -e "${RED}FAIL: Special characters not properly handled${NC}"
      echo "Payload: $PAYLOAD"
      exit 1
+fi
+
+echo "Testing empty variables behavior (Issue: null vs empty string)..."
+unset OPENWEBUI_EMAIL
+unset OPENWEBUI_PASSWORD
+PAYLOAD_EMPTY=$(generate_json_python)
+echo "Generated Payload (Empty Test): $PAYLOAD_EMPTY"
+
+# Verify empty strings are used, not null
+if [[ "$PAYLOAD_EMPTY" == *'"email": ""'* ]] || [[ "$PAYLOAD_EMPTY" == *'"email":""'* ]]; then
+    echo -e "${GREEN}PASS: Unset variables serialize to empty string${NC}"
+else
+    echo -e "${RED}FAIL: Unset variables serialized incorrectly (likely null)${NC}"
+    echo "Payload: $PAYLOAD_EMPTY"
+    exit 1
 fi
