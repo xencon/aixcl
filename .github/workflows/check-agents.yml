@@ -1,0 +1,25 @@
+name: Check Agents and Skills
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - '.continue/agents/**'
+      - '.continue/skills/**'
+      - 'docs/reference/ai-report-*.md'
+      - 'docs/developer/agent-template.md'
+      - 'docs/developer/ai-file-naming.md'
+      - 'scripts/check-agents.sh'
+  workflow_dispatch: # manual trigger
+
+jobs:
+  check-agents:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run agent/skill/report checks
+        run: ./scripts/check-agents.sh
