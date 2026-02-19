@@ -66,13 +66,13 @@ cn --config "$(pwd)/.continue/cli-ollama.yaml"
 
 A single agent runs the full AIXCL issue-first workflow (create issue, create branch, commit, push, create PR, assign and label):
 
-- **Agent file:** `.continue/agents/developer-workflow.md`
+- **Agent file:** `.continue/agents/agent-developer-workflow.md`
 - **Use:** Run in TUI so you can approve `gh` and `git` tool calls at each step.
 
 From the AIXCL repo root:
 
 ```bash
-cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent .continue/agents/developer-workflow.md
+cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent .continue/agents/agent-developer-workflow.md
 ```
 
 Describe the work you want to do (e.g. "add docs for Continue CLI" or "fix the encoding bug"). The agent will propose an issue (title, body, labels), create it, then on your say-so create the branch, and later help with commit message, PR creation, and PR assign/labels. Approve each tool call when prompted. Set the issue type (Feature/Task/Bug) in the GitHub UI after the issue is created if needed.
