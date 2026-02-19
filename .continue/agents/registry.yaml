@@ -1,0 +1,11 @@
+agents:
+  - id: developer-workflow
+    file: .continue/agents/agent-developer-workflow.md
+    description: Runs the AIXCL issue-first developer workflow end-to-end.
+    default_model: Deepseek Coder
+    init_docs:
+      - docs/developer/development-workflow.md
+      - docs/architecture/governance/01_ai_guidance.md
+      - docs/developer/ai-file-naming.md
+      - docs/developer/agent-template.md
+
