@@ -115,7 +115,7 @@
 | `.env.example` | Comment "# Council Configuration" (was "LLM Council"). |
 | `.gitignore` | `llm-council-data/` → `council-data/`. |
 | `.continue/cli-ollama.yaml` | Comment "no Council" (was "no LLM-Council"). |
-| `.continue/agents/developer-workflow.md` | `component:llm-council` → `component:council`. |
+| `.continue/agents/agent-developer-workflow.md` | `component:llm-council` → `component:council`. |
 | `.continue/council/config.yaml` | "Council" in model name/title if present. |
 
 ### 3.8 GitHub

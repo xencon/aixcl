@@ -241,7 +241,7 @@ gh issue view <number> --json labels
 A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with Continue CLI and approve `gh`/`git` tool calls when prompted:
 
 ```bash
-cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent .continue/agents/developer-workflow.md
+cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent .continue/agents/agent-developer-workflow.md
 ```
 
 See [continue-cli-setup.md](./continue-cli-setup.md) for install and config.
