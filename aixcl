@@ -37,6 +37,43 @@ fi
 
 # check_env() is provided by lib/env_check.sh
 
+# Validate database name to prevent SQL injection
+# Returns 0 if valid, 1 if invalid
+# Valid names: alphanumeric + underscore, must start with letter or underscore
+validate_db_name() {
+    local name="$1"
+    local context="$2"
+    
+    # Check if empty
+    if [ -z "$name" ]; then
+        echo "Error: Database name for $context cannot be empty" >&2
+        return 1
+    fi
+    
+    # Check length (PostgreSQL limit is 63 bytes)
+    if [ "${#name}" -gt 63 ]; then
+        echo "Error: Database name '$name' exceeds 63 characters" >&2
+        return 1
+    fi
+    
+    # Validate against whitelist pattern: alphanumeric + underscore, must start with letter or underscore
+    if [[ ! "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        echo "Error: Database name '$name' contains invalid characters. Use only letters, numbers, and underscores. Must start with a letter or underscore." >&2
+        return 1
+    fi
+    
+    # Check for reserved PostgreSQL database names
+    local lower_name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+    case "$lower_name" in
+        postgres|template0|template1)
+            echo "Error: Database name '$name' is a reserved PostgreSQL database name" >&2
+            return 1
+            ;;
+    esac
+    
+    return 0
+}
+
 function ensure_databases() {
     # Ensure required databases exist (webui and continue)
     # This function is idempotent - it won't fail if databases already exist
@@ -52,6 +89,17 @@ function ensure_databases() {
     local pg_user="${POSTGRES_USER:-admin}"
     local webui_db="${POSTGRES_DATABASE:-webui}"
     local continue_db="${POSTGRES_CONTINUE_DATABASE:-continue}"
+    
+    # Validate database names to prevent SQL injection
+    if ! validate_db_name "$webui_db" "webui"; then
+        echo "⚠️  Invalid webui database name, skipping database creation"
+        return 1
+    fi
+    
+    if ! validate_db_name "$continue_db" "continue"; then
+        echo "⚠️  Invalid continue database name, skipping database creation"
+        return 1
+    fi
     
     # Check if postgres container is running
     if ! docker ps --format "{{.Names}}" | grep -q "^postgres$"; then
