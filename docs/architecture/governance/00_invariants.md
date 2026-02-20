@@ -110,7 +110,33 @@ The AIXCL CLI is a **control plane**, not a decision engine.
 
 ---
 
-## 7. Evolution and Enforcement
+## 7. Network Mode (Strict)
+
+AIXCL uses `network_mode: host` for all services.
+
+**Rationale:**
+- AIXCL is designed as a **local-first, single-node platform**
+- `host` networking simplifies service discovery and cross-service communication
+- No need for Docker DNS resolution, port mapping management, or network aliases
+- Provides the "clone and run" experience central to AIXCL's value proposition
+
+**Invariants:**
+- All services use `network_mode: host` by default
+- No custom Docker networks for internal service communication
+- Port configuration is managed at the service level, not via Docker port mappings
+- This is **intentional** and not considered a security vulnerability for AIXCL's target use case
+
+**Security Context:**
+- AIXCL targets developers running on localhost or trusted networks
+- Users have full control over their own infrastructure
+- The alternative (custom Docker networks) adds operational complexity without meaningful security benefit for single-node deployments
+
+**Not a Bug:**
+Issues suggesting to change from `network_mode: host` to custom Docker networks should be closed with reference to this invariant.
+
+---
+
+## 8. Evolution and Enforcement
 
 These invariants are:
 - **Strict for the runtime core**
@@ -118,7 +144,7 @@ These invariants are:
 
 ---
 
-## 8. AI Assistant Guidance (Normative)
+## 9. AI Assistant Guidance (Normative)
 
 AI assistants interacting with this repository must:
 

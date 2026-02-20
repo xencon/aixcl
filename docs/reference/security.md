@@ -57,3 +57,57 @@ We thank all security researchers and users who report vulnerabilities. If you w
 
 **Note:** This file is located in `docs/reference/security.md` and should be linked from the main README.
 
+
+## 7. Network Mode Design
+
+### 7.1  is Intentional
+
+AIXCL uses  for all Docker services. This is an **intentional architectural decision**, not a security vulnerability.
+
+### 7.2 Rationale
+
+| Aspect | Design Choice |
+|--------|---------------|
+| **Networking** |  |
+| **Purpose** | Simplified local development |
+| **Target** | Single-node, self-hosted deployments |
+
+**Benefits:**
+- No Docker DNS resolution complexity
+- No port mapping management
+- No network aliases needed
+- Direct localhost access for all services
+- Clone
+
+## 7. Network Mode Design
+
+### 7.1 network_mode: host is Intentional
+
+AIXCL uses network_mode: host for all Docker services. This is an **intentional architectural decision**, not a security vulnerability.
+
+### 7.2 Rationale
+
+| Aspect | Design Choice |
+|--------|---------------|
+| **Networking** | network_mode: host |
+| **Purpose** | Simplified local development |
+| **Target** | Single-node, self-hosted deployments |
+
+**Benefits:**
+- No Docker DNS resolution complexity
+- No port mapping management
+- No network aliases needed
+- Direct localhost access for all services
+- Clone and run simplicity
+
+### 7.3 Security Context
+
+**Not a vulnerability because:**
+- AIXCL is designed for **localhost/trusted network** deployments
+- Users have **full control** over their infrastructure
+- All services run on the **same host**
+- Alternative (custom networks) adds complexity without security benefit for single-node use
+
+### 7.4 Architecture Reference
+
+See docs/architecture/governance/00_invariants.md section 7 for the formal architectural invariant.
