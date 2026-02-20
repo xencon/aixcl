@@ -120,6 +120,9 @@ services:
         find /var/lib/pgadmin -type f -exec chmod 644 {} \;
         exec /entrypoint.sh
 
+  # SECURITY NOTE: watchtower requires Docker socket access for automatic updates.
+  # This is equivalent to root access on the host. See docs/reference/security.md
+  # section 6 for details and mitigation options.
   watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
@@ -271,6 +274,9 @@ services:
       timeout: 10s
       retries: 3
 
+  # SECURITY NOTE: promtail requires Docker socket access for container log discovery.
+  # This is equivalent to root access on the host. See docs/reference/security.md
+  # section 6 for details and mitigation options.
   promtail:
     image: grafana/promtail:3.3.0
     container_name: promtail
