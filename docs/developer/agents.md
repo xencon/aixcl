@@ -11,14 +11,14 @@ This document explains how AI agents are registered and initialized in this repo
 
 Agents are declared in a registry file so tools and scripts can discover them in a consistent way:
 
-- **Registry file:** `.continue/agents/registry.yaml`
+- **Registry file**: `/ai/orchestration/registry.yaml`
 
 Example entry:
 
 ```yaml
 agents:
   - id: developer-workflow
-    file: .continue/agents/agent-developer-workflow.md
+    file: /ai/orchestration/agent-developer-workflow.md
     description: Runs the AIXCL issue-first developer workflow end-to-end.
     default_model: Deepseek Coder
     init_docs:
@@ -38,7 +38,7 @@ agents:
 
 When running an agent, tools should:
 
-1. Look up the agent by `id` in `.continue/agents/registry.yaml`.
+1. Look up the agent by `id` in `/ai/orchestration/registry.yaml`.
 2. Load the agent markdown file from the `file` field.
 3. Include the `init_docs` files as high-priority context (for example via a docs provider or equivalent mechanism).
 
@@ -46,7 +46,7 @@ This ensures that all agents see the same workflow, governance, and naming guida
 
 ### Developer workflow agent
 
-The developer workflow agent is registered with id `developer-workflow` and file `.continue/agents/agent-developer-workflow.md`. It:
+The developer workflow agent is registered with id `developer-workflow` and file `/ai/orchestration/agent-developer-workflow.md`. It:
 
 - Encodes the AIXCL Issue-First development workflow.
 - References the governance and workflow docs directly in its markdown.

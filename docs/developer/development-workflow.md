@@ -136,8 +136,8 @@ Labels are organized into categories using prefixes:
 #### Component Labels (Select All That Apply)
 - `component:runtime-core` - Runtime core services (Ollama, Council, Continue)
 - `component:ollama` - Ollama LLM inference engine
-- `component:council` - LLM Council multi-model orchestration
-- `component:persistence` - Database and persistence services (PostgreSQL, pgAdmin)
+- `component:council` - Council multi-model orchestration
+- `component:persistence` - Database and persistence services
 - `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki, Promtail)
 - `component:ui` - User interface components (Open WebUI)
 - `component:cli` - Command-line interface and tooling
@@ -145,9 +145,9 @@ Labels are organized into categories using prefixes:
 - `component:testing` - Tests and test infrastructure
 
 #### Priority Labels (Optional - Select One)
-- `priority:high` - High priority issue requiring immediate attention
-- `priority:medium` - Medium priority issue
-- `priority:low` - Low priority issue
+- `P1` - High priority issue requiring immediate attention
+- `P2` - Medium priority issue
+- `P3` - Low priority issue
 
 #### Profile Labels (Select All That Apply)
 - `profile:usr` - Affects usr profile (minimal footprint)
@@ -175,7 +175,7 @@ Labels are organized into categories using prefixes:
 **When creating an issue:**
 ```bash
 # Add labels during creation (set issue type in GitHub UI)
-gh issue create --title "Title" --body "Description" --label "component:cli,priority:high"
+gh issue create --title "Title" --body "Description" --label "component:cli,P1"
 
 # Or add labels after creation
 gh issue edit <number> --add-label "component:cli"
@@ -198,7 +198,7 @@ gh issue edit <number> --add-label "component:cli"
 - Fix for database issue: Type: **Bug**, Labels: `Fix,component:persistence`
 - Task for infrastructure: Type: **Task**, Labels: `component:infrastructure`
 - Enhancement affecting all profiles: Type: **Feature**, Labels: `Enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
-- High priority bug: Type: **Bug**, Labels: `component:runtime-core,priority:high`
+- High priority bug: Type: **Bug**, Labels: `component:runtime-core,P1`
 - Dependency update: Type: **Task**, Labels: `dependencies,Maintenance`
 
 ### Checking Available Labels
@@ -241,7 +241,7 @@ gh issue view <number> --json labels
 A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with Continue CLI and approve `gh`/`git` tool calls when prompted:
 
 ```bash
-cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent .continue/agents/agent-developer-workflow.md
+cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent /ai/orchestration/agent-developer-workflow.md
 ```
 
 See [continue-cli-setup.md](./continue-cli-setup.md) for install and config.
@@ -268,7 +268,7 @@ Follow the development workflow documented in this document:
 ```bash
 # Create issue with labels and assignee (set issue type in GitHub UI)
 # Note: Both issue and PR titles should NOT include colon (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
-gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,priority:high" --assignee <your-github-username>
+gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,P1" --assignee <your-github-username>
 
 # Or add labels/assignee after creation
 gh issue edit <number> --add-label "component:cli" --add-assignee <your-github-username>
@@ -291,7 +291,7 @@ gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>
 - [x] Change 2"
 
 # Assign and label the PR (matching the issue labels)
-gh pr edit <number> --add-assignee <your-github-username> --add-label "component:cli,priority:high"
+gh pr edit <number> --add-assignee <your-github-username> --add-label "component:cli,P1"
 ```
 
 ## Why This Workflow?
@@ -304,7 +304,7 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying AI agent files (`.continue/agents/agent-*.md`), skill files (`.continue/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+When creating or modifying AI agent files (`/ai/orchestration/agent-*.md`), skill files (`/ai/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
 ./scripts/check-agents.sh
