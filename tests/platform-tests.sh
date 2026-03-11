@@ -36,7 +36,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/docker_utils.sh"
 source "${SCRIPT_DIR}/lib/color.sh"
-source "${SCRIPT_DIR}/lib/council_utils.sh"
 
 # Source profile library if available
 if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
@@ -53,7 +52,6 @@ CONTAINER_NAME="open-webui"
 POSTGRES_USER=${POSTGRES_USER:-webui}
 BACKEND_MODE=${BACKEND_MODE:-ollama}
 API_URL=${LLM_COUNCIL_API_URL:-http://localhost:8000}
-COUNCIL_DIR="${SCRIPT_DIR}/llm-council"
 
 # Test counters
 TESTS_PASSED=0
@@ -169,14 +167,6 @@ test_stack_status() {
     else
         print_error "Open WebUI"
         record_test "fail" "Open WebUI container is not running"
-    fi
-    
-    if is_container_running "council"; then
-        print_success "Council"
-        record_test "pass" "Council container is running"
-    else
-        print_error "Council"
-        record_test "fail" "Council container is not running"
     fi
     
     # Database Services
@@ -353,16 +343,6 @@ test_stack_status() {
         else
             record_test "fail" "Open WebUI container is not running"
         fi
-    fi
-    
-    # Council health check
-    COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${API_URL}/health 2>/dev/null || echo "000")
-    if [ "$COUNCIL_STATUS" = "200" ]; then
-        print_success "Council"
-        record_test "pass" "Council health check passed"
-    else
-        print_error "Council"
-        record_test "fail" "Council health check failed (HTTP $COUNCIL_STATUS)"
     fi
     
     # Database Services
@@ -549,110 +529,9 @@ test_llm_state() {
     
     echo ""
     
-    # Test 3: Council Configuration
-    echo "Council Participation Report"
-    echo "-----------------------------------"
-    
-    # Read council configuration from .env file
-    council_models=""
-    chairman_model=""
-    env_file="${SCRIPT_DIR}/.env"
-    
-    if [[ ! -f "$env_file" ]]; then
-        print_warning ".env file not found"
-        record_test "skip" "Council configuration check skipped (.env not found)"
-    else
-        # Read .env file
-        while IFS= read -r line || [ -n "$line" ]; do
-            [[ -z "$line" ]] && continue
-            [[ "${line#\#}" != "$line" ]] && continue
-            
-            if [[ "$line" =~ ^BACKEND_MODE[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-                BACKEND_MODE="${BASH_REMATCH[1]}"
-                BACKEND_MODE=$(echo "$BACKEND_MODE" | xargs | tr -d '"' | tr -d "'")
-            elif [[ "$line" =~ ^COUNCIL_MODELS[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-                council_models="${BASH_REMATCH[1]}"
-                council_models=$(echo "$council_models" | xargs | tr -d '"' | tr -d "'")
-            elif [[ "$line" =~ ^CHAIRMAN_MODEL[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-                chairman_model="${BASH_REMATCH[1]}"
-                chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
-            fi
-        done < "$env_file"
-        
-        if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
-            print_warning "Council is not configured"
-            record_test "skip" "Council configuration check skipped (not configured)"
-            echo "   Configure with: aixcl council configure"
-        else
-            print_success "Council is configured"
-            record_test "pass" "Council configuration found"
-            echo ""
-            
-            # Check chairman
-            if [[ -n "$chairman_model" ]]; then
-                echo "👑 Chairman Model: $chairman_model"
-                
-                # Check if chairman is available
-                if [[ ${#all_models_array[@]} -gt 0 ]]; then
-                    if printf '%s\n' "${all_models_array[@]}" | grep -q "^${chairman_model}$"; then
-                        echo "  ✅ Available in Ollama"
-                        record_test "pass" "Chairman model '$chairman_model' is available"
-                    else
-                        echo "  ❌ Not found in Ollama"
-                        record_test "fail" "Chairman model '$chairman_model' is not available"
-                    fi
-                else
-                    echo "  ⚠️  Cannot verify (no models in Ollama)"
-                    record_test "skip" "Chairman model availability check skipped"
-                fi
-                echo ""
-            fi
-            
-            # Check council members
-            if [[ -n "$council_models" ]]; then
-                echo "👥 Council Members:"
-                
-                IFS=',' read -ra MEMBERS <<< "$council_models"
-                member_count=0
-                available_count=0
-                
-                for member in "${MEMBERS[@]}"; do
-                    member=$(echo "$member" | xargs)
-                    if [[ -n "$member" ]]; then
-                        member_count=$((member_count + 1))
-                        echo "  [$member_count] $member"
-                        
-                        # Check if member is available
-                        if [[ ${#all_models_array[@]} -gt 0 ]]; then
-                            if printf '%s\n' "${all_models_array[@]}" | grep -q "^${member}$"; then
-                                echo "      ✅ Available in Ollama"
-                                available_count=$((available_count + 1))
-                                record_test "pass" "Council member '$member' is available"
-                            else
-                                echo "      ❌ Not found in Ollama"
-                                record_test "fail" "Council member '$member' is not available"
-                            fi
-                        else
-                            echo "      ⚠️  Cannot verify (no models in Ollama)"
-                            record_test "skip" "Council member '$member' availability check skipped"
-                        fi
-                        echo ""
-                    fi
-                done
-                
-                echo "Council Members Summary:"
-                echo "  Total Members: $member_count"
-                echo "  Available: $available_count"
-                
-                if [[ $available_count -eq $member_count ]]; then
-                    record_test "pass" "All $member_count council members are available"
-                else
-                    record_test "fail" "Only $available_count of $member_count council members are available"
-                fi
-            fi
-        fi
-    fi
-}
+    # LLM State section no longer checks council configuration (moved to xencon/llm-council)
+    print_success "LLM state section complete (council configuration is in xencon/llm-council repo)"
+    record_test "pass" "LLM state check complete"
 
 # ============================================================================
 # SECTION 3: DATABASE CONNECTION TESTS
@@ -679,10 +558,10 @@ test_database_connection() {
     echo "Running database connection tests..."
     echo ""
     
-    # Change to council component directory for proper Python path
-    cd "$COUNCIL_DIR" || {
-        print_error "Cannot change to council component directory"
-        record_test "fail" "Cannot change to council component directory"
+    # Change to script directory for proper Python path
+    cd "$SCRIPT_DIR" || {
+        print_error "Cannot change to script directory"
+        record_test "fail" "Cannot change to script directory for database tests"
         return
     }
     
@@ -742,12 +621,9 @@ test_conversation_storage() {
         return
     fi
     
-    if ! is_container_running "council"; then
-        print_error "Council container is not running"
-        record_test "fail" "Council container is not running"
-        echo "   Cannot test conversation storage without Council"
-        return
-    fi
+    print_warning "Conversation storage test skipped (council service extracted to xencon/llm-council)"
+    record_test "skip" "Conversation storage test skipped (council service is in standalone xencon/llm-council repo)"
+    return
     
     # Wait for API to be ready
     echo -n "Waiting for Council API to be ready..."

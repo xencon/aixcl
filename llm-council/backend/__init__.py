@@ -1,1 +1,0 @@
-"""Council backend package."""
