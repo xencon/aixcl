@@ -6,7 +6,7 @@ These conventions complement the development workflow in `docs/developer/develop
 
 ### Agents
 
-- **Location**: `.continue/agents/`
+- **Location**: `/ai/orchestration/` or `/ai/governance/`
 - **Filename pattern**: `agent-<domain>.md`
   - Examples:
     - `agent-developer-workflow.md`
@@ -21,7 +21,7 @@ Agent files:
 
 ### Skills
 
-- **Location**: `.continue/skills/`
+- **Location**: `/ai/skills/`
 - **Filename pattern**: `skill-<verb-noun>.md`
   - Examples:
     - `skill-normalize-issue-labels.md`
@@ -34,7 +34,7 @@ Skill files define narrowly scoped capabilities that agents can rely on, such as
 
 If MCP servers or tools are documented in markdown prompts or specs:
 
-- **Location**: `.continue/mcp/`
+- **Location**: `/ai/mcp/`
 - **Filename patterns**:
   - MCP servers: `mcp-server-<name>.md`
   - MCP tools: `mcp-tool-<name>.md`
