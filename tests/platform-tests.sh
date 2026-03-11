@@ -532,6 +532,7 @@ test_llm_state() {
     # LLM State section no longer checks council configuration (moved to xencon/llm-council)
     print_success "LLM state section complete (council configuration is in xencon/llm-council repo)"
     record_test "pass" "LLM state check complete"
+}
 
 # ============================================================================
 # SECTION 3: DATABASE CONNECTION TESTS
