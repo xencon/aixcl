@@ -24,7 +24,6 @@ AIXCL is built on a containerized architecture using Docker and Docker Compose, 
 These components define what AIXCL is and are always present in every deployment:
 
 - **Ollama**: LLM inference engine
-- **Council**: Multi-model orchestration and coordination system
 - **Continue**: VS Code plugin for AI-powered code assistance
 
 ### Operational Services (Profile-Dependent)
@@ -54,7 +53,6 @@ AIXCL serves different user types through profile-based deployments:
 ## Features
 
 - **Local LLM Execution**: Run models locally with automatic GPU detection and optimization
-- **Multi-Model Orchestration**: Coordinate multiple models using Council for consensus-based responses
 - **IDE Integration**: VS Code integration via Continue plugin for AI-powered code assistance
 - **Web Interface**: Interactive model interaction through Open WebUI (profile-dependent)
 - **Conversation Persistence**: Store dialogues and interactions in PostgreSQL for context preservation
@@ -124,21 +122,7 @@ The system automatically creates a `.env` file from `.env.example` if needed. Mo
 
 Examples: `deepseek-coder:1.3b`, `codegemma:2b`, `qwen2.5-coder:3b`. Model downloads may take several minutes depending on your connection.
 
-**6. Configure Council (optional)**
-
-```bash
-./aixcl council configure
-```
-
-Interactive wizard guides you through selecting council members and a chairman model.
-
-**Recommended default configuration:**
-- **Chairman**: `deepseek-coder:1.3b` (776MB)
-- **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
-
-This configuration provides excellent performance (~24s average) with low VRAM usage (~4.3GB). See [`docs/operations/model-recommendations.md`](docs/operations/model-recommendations.md) for details.
-
-**7. Access the web interface (if not using usr profile)**
+**6. Access the web interface (if not using usr profile)**
 
 Navigate to `http://localhost:8080` to use Open WebUI for model interaction.
 
@@ -183,14 +167,6 @@ Manage specific services independently:
 
 Models are downloaded from Ollama's registry.
 
-### Council Configuration
-
-Configure multi-model orchestration for consensus-based responses:
-
-```bash
-./aixcl council configure  # Interactive setup wizard
-./aixcl council status     # View current configuration
-```
 
 ### Web Dashboards
 
@@ -229,7 +205,7 @@ The test suite checks service health, API endpoints, database connectivity, and 
 
 AIXCL maintains strict architectural invariants to preserve platform integrity:
 
-- **Runtime Core**: Fixed, non-negotiable components (Ollama, Council, Continue) that define the product
+- **Runtime Core**: Fixed, non-negotiable components (Ollama, Continue) that define the product
 - **Operational Services**: Optional services that support, observe, or operate the runtime
 - **Service Contracts**: Dependency rules and boundaries for each service
 - **Profiles**: Declarative service compositions (see Target Audience section)
@@ -246,26 +222,21 @@ For detailed architectural documentation, see [`docs/architecture/governance/`](
   - See [`docs/operations/ollama-performance-tuning.md`](docs/operations/ollama-performance-tuning.md) for tuning guide
   - Optimized for parallel requests, model keep-alive, and GPU utilization
 
-- **Council**: Multi-model orchestration system for consensus-based responses
-  - Component docs: [`llm-council/README.md`](llm-council/README.md)
-  - Testing: [`llm-council/TESTING.md`](llm-council/TESTING.md)
-  - Performance optimizations: [`llm-council/PERFORMANCE_OPTIMIZATIONS.md`](llm-council/PERFORMANCE_OPTIMIZATIONS.md)
-
 - **Continue**: VS Code plugin integration for AI-powered code assistance
-  - Configured via `.continue/config.json` to use Council API endpoint
+  - Configured via `.continue/config.json` to use Ollama endpoint
 
 ### Performance Tuning
 
 AIXCL includes comprehensive performance optimizations for running multiple LLM models efficiently:
 
 **Ollama Optimizations:**
-- Parallel request handling (`OLLAMA_NUM_PARALLEL=8`) for concurrent council queries
+- Parallel request handling (`OLLAMA_NUM_PARALLEL=8`) for concurrent queries
 - Model keep-alive (`OLLAMA_KEEP_ALIVE=600`) to prevent reload delays
 - Maximum loaded models (`OLLAMA_MAX_LOADED_MODELS=3`) for GPU memory management
 - Explicit GPU configuration for optimal utilization
 
 **Model Recommendations:**
-- **Default Configuration** (8GB GPUs): `deepseek-coder:1.3b` (chairman), `codegemma:2b` + `qwen2.5-coder:3b` (council)
+- **Default Configuration** (8GB GPUs): `deepseek-coder:1.3b`
   - Performance: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
 - **Alternative Configurations**: Available for 12GB+ and 16GB+ GPUs with larger models
 - See [`docs/operations/model-recommendations.md`](docs/operations/model-recommendations.md) for complete details
