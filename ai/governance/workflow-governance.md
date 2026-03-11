@@ -44,7 +44,7 @@ Fixes #[Issue Number]
 - Fix pairs with Bug
 - Enhancement pairs with Feature
 - Refactor pairs with Task
-- Component labels required (e.g., `component:council`)
+- Component labels required (e.g., `component:runtime-core`, `component:api`)
 - Priority and Profile labels optional but recommended (e.g., `P1`, `P2`, `P3`)
 
 ## Automated PR Rule

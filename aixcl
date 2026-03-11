@@ -581,10 +581,17 @@ function restart() {
             echo "" >&2
             echo "Note: You can set PROFILE=<profile> in .env file to use a default profile" >&2
             echo "" >&2
+            echo "" >&2
             echo "Examples:" >&2
-            echo "  ./aixcl stack restart --profile sys          # Restart entire stack" >&2
-            echo "  ./aixcl stack restart ollama council     # Restart specific services" >&2
-            echo "  ./aixcl stack restart -p dev                 # Restart entire stack with profile" >&2
+            echo "  ./aixcl stack start                      # Start using .env profile" >&2
+            echo "  ./aixcl stack start --profile dev        # Start dev profile" >&2
+            echo "  ./aixcl stack logs ollama                # Show Ollama logs" >&2
+            echo "  ./aixcl stack restart ollama             # Restart Ollama" >&2
+            echo "  ./aixcl stack stop                       # Stop all services" >&2
+            echo "  ./aixcl stack start -p ops               # Start ops profile" >&2
+            echo "  ./aixcl stack status                     # Show all service status" >&2
+            echo "  ./aixcl stack logs -f ollama             # Follow logs" >&2
+            echo "  ./aixcl stack clean                      # Clean containers/volumes" >&2
             exit 1
         fi
     fi
@@ -635,7 +642,7 @@ function start_service() {
         echo "Usage: $0 service start <service-name>"
         echo ""
         echo "Runtime Core Services (always enabled):"
-        echo "  ollama, council"
+        echo "  ollama"
         echo ""
         echo "Operational Services (profile-dependent):"
         echo "  ${ALL_SERVICES[*]}"
@@ -652,7 +659,7 @@ function start_service() {
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, council"
+        echo "Runtime Core Services (always enabled): ollama"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -802,7 +809,7 @@ function service() {
         echo "Error: Service action and name are required"
         echo "Usage: $0 service {start|stop|restart} <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, council"
+        echo "Runtime Core Services (always enabled): ollama"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "Note: Continue is a VS Code plugin, not a containerized service"
@@ -882,7 +889,7 @@ function logs() {
         echo ""
         
         # Check if any containers are running
-        local services=("ollama" "open-webui" "postgres" "pgadmin" "council" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
+        local services=("ollama" "open-webui" "postgres" "pgadmin" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
         local found_any=false
         local running_containers=()
         
@@ -936,7 +943,7 @@ function logs() {
         
         # Validate container name and find actual container (handle hash-prefixed names)
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|council|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
+            ollama|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
                 echo "Fetching logs for $container..."
                 # Try exact name first, then hash-prefixed name
                 local actual_container
@@ -1105,7 +1112,7 @@ function status() {
     
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
-    if docker ps --format "{{.Names}}" | grep -qE "ollama|council|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
+    if docker ps --format "{{.Names}}" | grep -qE "ollama|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
         overall_status="Running"
     fi
     
@@ -1121,7 +1128,7 @@ function status() {
         local profile_services
         profile_services=$(get_profile_services "$current_profile" 2>/dev/null) || true
         for s in $profile_services; do
-            [ "$s" = "ollama" ] || [ "$s" = "council" ] && continue
+            [ "$s" = "ollama" ] && continue
             profile_operational_list="${profile_operational_list} ${s}"
         done
         profile_operational_list="${profile_operational_list# }"
@@ -1296,10 +1303,9 @@ function status() {
     echo "  ${continue_status} continue        ${continue_state}     ${continue_note}"
     echo ""
     
-    # Configured Models (Council, Continue plugin, Continue CLI) - ✅ configured, ❌ not
+    # Configured Models (Continue plugin, Continue CLI) - ✅ configured, ❌ not
     echo "Configured Models"
     echo "-----------------"
-    report_council_models
     report_continue_plugin_models
     report_continue_cli_status
     echo ""
@@ -1971,745 +1977,7 @@ function install_completion() {
     echo "Or restart your shell. It will be automatically loaded in new shell sessions."
     echo ""
     
-    # Add to .bashrc
-    local bashrc_entry="# Added by aixcl installer
-if [ -f \"$COMPLETION_DIR/aixcl\" ]; then
-    source \"$COMPLETION_DIR/aixcl\"
-fi"
-    
-    if ! grep -q "Added by aixcl installer" "$HOME/.bashrc" 2>/dev/null; then
-        echo "" >> "$HOME/.bashrc"
-        echo "$bashrc_entry" >> "$HOME/.bashrc"
-        echo "Added sourcing to ~/.bashrc for persistent completion"
-    else
-        echo "Completion script already referenced in ~/.bashrc"
     fi
-}
-
-# get_available_models() is provided by lib/council_utils.sh
-# update_env_file() is provided by lib/council_utils.sh
-
-function status_council() {
-    echo "📋 Council Status"
-    echo "===================="
-    echo ""
-    
-    # Check if services are running
-    local llm_council_running=false
-    local ollama_running=false
-    
-    if docker ps --format "{{.Names}}" | grep -q "council"; then
-        llm_council_running=true
-    fi
-    
-    if docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        ollama_running=true
-    fi
-    
-    # Read configuration from .env file
-    local council_models=""
-    local chairman_model=""
-    local backend_mode="ollama"
-    # Use SCRIPT_DIR to ensure we're looking in the correct location
-    local env_file="${SCRIPT_DIR}/.env"
-    
-    if [[ ! -f "$env_file" ]]; then
-        echo "❌ Error: .env file not found."
-        echo "   Please run './aixcl stack start' first to create it, then configure the council with './aixcl council configure'"
-        return 1
-    fi
-    
-    # Read .env file
-    while IFS= read -r line || [ -n "$line" ]; do
-        [[ -z "$line" ]] && continue
-        [[ "${line#\#}" != "$line" ]] && continue
-        
-        if [[ "$line" =~ ^BACKEND_MODE[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-            backend_mode="${BASH_REMATCH[1]}"
-            backend_mode=$(echo "$backend_mode" | xargs | tr -d '"' | tr -d "'")
-        elif [[ "$line" =~ ^COUNCIL_MODELS[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-            council_models="${BASH_REMATCH[1]}"
-            council_models=$(echo "$council_models" | xargs | tr -d '"' | tr -d "'")
-        elif [[ "$line" =~ ^CHAIRMAN_MODEL[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-            chairman_model="${BASH_REMATCH[1]}"
-            chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
-        fi
-    done < "$env_file"
-    
-    echo "Configuration:"
-    echo "  Backend Mode: ${backend_mode:-ollama}"
-    echo ""
-    echo "  Chairman: ${chairman_model:-<not set>}"
-    echo "  Council Members: ${council_models:-<not set>}"
-    echo ""
-    
-    # Check if council is configured
-    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
-        echo "⚠️  Council is not configured yet."
-        echo ""
-        echo "To configure the council, run:"
-        echo "  ./aixcl council configure"
-        return 0
-    fi
-    
-    # Clean up values
-    council_models=$(echo "$council_models" | xargs | tr -d '"' | tr -d "'")
-    chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
-    
-    # Build list of all models (avoid duplicates) - use the config we determined above
-    local all_models=()
-    local seen_models=()
-    
-    # Add council members
-    if [[ -n "$council_models" ]]; then
-        IFS=',' read -ra MEMBERS <<< "$council_models"
-        for member in "${MEMBERS[@]}"; do
-            member=$(echo "$member" | xargs | tr -d '"' | tr -d "'")
-            if [[ -n "$member" ]]; then
-                local already_added=false
-                for seen in "${seen_models[@]}"; do
-                    if [[ "$seen" == "$member" ]]; then
-                        already_added=true
-                        break
-                    fi
-                done
-                if [[ "$already_added" == "false" ]]; then
-                    all_models+=("$member")
-                    seen_models+=("$member")
-                fi
-            fi
-        done
-    fi
-    
-    # Add chairman if not already in the list
-    if [[ -n "$chairman_model" ]]; then
-        local already_added=false
-        for seen in "${seen_models[@]}"; do
-            if [[ "$seen" == "$chairman_model" ]]; then
-                already_added=true
-                break
-            fi
-        done
-        if [[ "$already_added" == "false" ]]; then
-            all_models+=("$chairman_model")
-        fi
-    fi
-    
-    if [[ ${#all_models[@]} -eq 0 ]]; then
-        echo "❌ No models configured"
-        return 1
-    fi
-    
-    # Test operational status for each model
-    echo "Operational Status:"
-    echo "-------------------"
-    echo ""
-    
-    local operational_count=0
-    local total_count=${#all_models[@]}
-    
-    for model in "${all_models[@]}"; do
-        local role="Council Member"
-        if [[ "$model" == "$chairman_model" ]]; then
-            role="Chairman"
-        fi
-        
-        echo -n "  $model ($role): "
-        
-        # Test if model is operational
-        local is_operational=false
-        local status_msg=""
-        
-        if [[ "$backend_mode" == "ollama" ]] && [[ "$ollama_running" == "true" ]]; then
-            # Test model by sending a simple query to Ollama
-            local test_payload
-            test_payload=$(python3 -c "
-import json
-import sys
-model = sys.argv[1]
-payload = {
-    'model': model,
-    'messages': [{'role': 'user', 'content': 'Say OK'}],
-    'stream': False
-}
-print(json.dumps(payload))
-" "$model" 2>/dev/null)
-            
-            if [[ -n "$test_payload" ]]; then
-                local response
-                local status_code
-                response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:11434/api/chat \
-                    -H "Content-Type: application/json" \
-                    -d "$test_payload" 2>/dev/null)
-                
-                status_code=$(echo "$response" | tail -n1)
-                response_body=$(echo "$response" | sed '$d')
-                
-                if [[ "$status_code" == "200" ]] && echo "$response_body" | grep -q "message"; then
-                    is_operational=true
-                    operational_count=$((operational_count + 1))
-                fi
-            fi
-        elif [[ "$backend_mode" != "ollama" ]]; then
-            # For OpenRouter, assume operational (can't test without API key)
-            is_operational=true
-            operational_count=$((operational_count + 1))
-            status_msg=" (OpenRouter - not tested)"
-        fi
-        
-        if [[ "$is_operational" == "true" ]]; then
-            echo "✅ Operational$status_msg"
-        else
-            if [[ "$ollama_running" == "false" ]]; then
-                echo "⚠️  Cannot test (Ollama not running)"
-            else
-                echo "❌ Not Operational"
-            fi
-        fi
-    done
-    
-    echo ""
-    echo "Summary:"
-    echo "  Total Models: $total_count"
-    echo "  Operational: $operational_count"
-    echo "  Not Operational: $((total_count - operational_count))"
-    echo ""
-    
-    # Service status
-    if [[ "$llm_council_running" == "true" ]]; then
-        echo "✅ Council service is running"
-    else
-        echo "⚠️  Council service is not running"
-    fi
-    
-    if [[ "$ollama_running" == "true" ]]; then
-        echo "✅ Ollama service is running"
-    else
-        echo "⚠️  Ollama service is not running"
-    fi
-    echo ""
-}
-
-function test_council_operational() {
-    echo "🧪 Testing Council Member Operational Status"
-    echo "=============================================="
-    echo ""
-    
-    # Check if Council service is running
-    if ! docker ps --format "{{.Names}}" | grep -q "council"; then
-        echo "❌ Error: Council service is not running."
-        echo "   Please start the service first with: ./aixcl stack start"
-        return 1
-    fi
-    
-    # Check if Ollama is running
-    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        echo "❌ Error: Ollama container is not running."
-        echo "   Please start the services first with: ./aixcl stack start"
-        return 1
-    fi
-    
-    # Get configuration from API
-    echo "1. Fetching council configuration from API..."
-    local config_response
-    config_response=$(curl -s http://localhost:8000/api/config 2>/dev/null)
-    
-    local council_models=""
-    local chairman_model=""
-    
-    # Try to parse JSON using Python (more reliable than bash regex)
-    if command -v python3 >/dev/null 2>&1 && [[ -n "$config_response" ]] && echo "$config_response" | grep -q "council_models"; then
-        # Use Python to parse JSON properly
-        council_models=$(echo "$config_response" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    models = data.get('council_models', [])
-    if isinstance(models, list):
-        print(','.join(models))
-    else:
-        print('')
-except:
-    print('')
-" 2>/dev/null)
-        
-        chairman_model=$(echo "$config_response" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('chairman_model', ''))
-except:
-    print('')
-" 2>/dev/null)
-    fi
-    
-    # Fallback to .env file if API parsing failed
-    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
-        echo "   ⚠️  Could not parse API response, reading from .env file..."
-        
-        local env_file=".env"
-        if [[ ! -f "$env_file" ]]; then
-            echo "   ❌ .env file not found"
-            return 1
-        fi
-        
-        while IFS= read -r line || [ -n "$line" ]; do
-            [[ -z "$line" ]] && continue
-            [[ "${line#\#}" != "$line" ]] && continue
-            
-            if [[ "$line" =~ ^COUNCIL_MODELS[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-                council_models="${BASH_REMATCH[1]}"
-                council_models=$(echo "$council_models" | xargs)
-                if [[ "$council_models" =~ ^\"(.*)\"$ ]]; then
-                    council_models="${BASH_REMATCH[1]}"
-                elif [[ "$council_models" =~ ^\'(.*)\'$ ]]; then
-                    council_models="${BASH_REMATCH[1]}"
-                fi
-            elif [[ "$line" =~ ^CHAIRMAN_MODEL[[:space:]]*=[[:space:]]*(.*)$ ]]; then
-                chairman_model="${BASH_REMATCH[1]}"
-                chairman_model=$(echo "$chairman_model" | xargs)
-                if [[ "$chairman_model" =~ ^\"(.*)\"$ ]]; then
-                    chairman_model="${BASH_REMATCH[1]}"
-                elif [[ "$chairman_model" =~ ^\'(.*)\'$ ]]; then
-                    chairman_model="${BASH_REMATCH[1]}"
-                fi
-            fi
-        done < "$env_file"
-    fi
-    
-    if [[ -z "$council_models" ]] && [[ -z "$chairman_model" ]]; then
-        echo "   ❌ No council configuration found"
-        echo "   Please configure the council first with: ./aixcl council configure"
-        return 1
-    fi
-    
-    # Clean up extracted values
-    council_models=$(echo "$council_models" | xargs)
-    chairman_model=$(echo "$chairman_model" | xargs)
-    
-    echo "   ✅ Configuration loaded"
-    echo "   Council Models: $council_models"
-    echo "   Chairman Model: $chairman_model"
-    echo ""
-    
-    # Build list of all models to test (avoid duplicates)
-    local all_models=()
-    local seen_models=()
-    
-    # Add council members
-    if [[ -n "$council_models" ]]; then
-        IFS=',' read -ra MEMBERS <<< "$council_models"
-        for member in "${MEMBERS[@]}"; do
-            member=$(echo "$member" | xargs | tr -d '"' | tr -d "'")
-            if [[ -n "$member" ]]; then
-                # Check if already added
-                local already_added=false
-                for seen in "${seen_models[@]}"; do
-                    if [[ "$seen" == "$member" ]]; then
-                        already_added=true
-                        break
-                    fi
-                done
-                if [[ "$already_added" == "false" ]]; then
-                    all_models+=("$member")
-                    seen_models+=("$member")
-                fi
-            fi
-        done
-    fi
-    
-    # Add chairman if not already in the list
-    if [[ -n "$chairman_model" ]]; then
-        chairman_model=$(echo "$chairman_model" | xargs | tr -d '"' | tr -d "'")
-        local already_added=false
-        for seen in "${seen_models[@]}"; do
-            if [[ "$seen" == "$chairman_model" ]]; then
-                already_added=true
-                break
-            fi
-        done
-        if [[ "$already_added" == "false" ]]; then
-            all_models+=("$chairman_model")
-        fi
-    fi
-    
-    if [[ ${#all_models[@]} -eq 0 ]]; then
-        echo "❌ No models configured to test"
-        return 1
-    fi
-    
-    if [[ ${#all_models[@]} -eq 0 ]]; then
-        echo "❌ No models configured to test"
-        return 1
-    fi
-    
-    echo "2. Testing ${#all_models[@]} model(s) with a simple query..."
-    echo "   Models to test: ${all_models[*]}"
-    echo ""
-    
-    local operational_count=0
-    local total_count=${#all_models[@]}
-    
-    for model in "${all_models[@]}"; do
-        local role="Council Member"
-        if [[ "$model" == "$chairman_model" ]]; then
-            role="Chairman"
-        fi
-        
-        echo -n "   Testing $role: $model... "
-        
-        # Test model by sending a simple query to Ollama
-        # Use Python to properly construct JSON payload to avoid escaping issues
-        local test_payload
-        test_payload=$(python3 -c "
-import json
-import sys
-model = sys.argv[1]
-payload = {
-    'model': model,
-    'messages': [{'role': 'user', 'content': 'Say OK'}],
-    'stream': False
-}
-print(json.dumps(payload))
-" "$model" 2>/dev/null)
-        
-        if [[ -z "$test_payload" ]]; then
-            echo "❌ Not Operational"
-            echo "      Error: Failed to create test payload"
-            continue
-        fi
-        
-        local response
-        local status_code
-        response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:11434/api/chat \
-            -H "Content-Type: application/json" \
-            -d "$test_payload" 2>/dev/null)
-        
-        status_code=$(echo "$response" | tail -n1)
-        response_body=$(echo "$response" | sed '$d')
-        
-        if [[ "$status_code" == "200" ]] && echo "$response_body" | grep -q "message"; then
-            echo "✅ Operational"
-            operational_count=$((operational_count + 1))
-        else
-            echo "❌ Not Operational"
-            if [[ "$status_code" != "200" ]]; then
-                echo "      HTTP Status: $status_code"
-            fi
-            if echo "$response_body" | grep -q "error"; then
-                local error_msg
-                error_msg=$(echo "$response_body" | grep -o '"error":"[^"]*"' | sed 's/"error":"\(.*\)"/\1/' | head -1)
-                [[ -n "$error_msg" ]] && echo "      Error: $error_msg"
-            fi
-        fi
-    done
-    
-    echo ""
-    echo "=" | awk '{printf "=%.0s", $1; for(i=1;i<=65;i++) printf "="; print ""}'
-    echo "Summary"
-    echo "=" | awk '{printf "=%.0s", $1; for(i=1;i<=65;i++) printf "="; print ""}'
-    echo "Total Models: $total_count"
-    echo "Operational: $operational_count"
-    echo "Not Operational: $((total_count - operational_count))"
-    echo ""
-    
-    if [[ $operational_count -eq $total_count ]]; then
-        echo "✅ All council members are operational!"
-        return 0
-    else
-        echo "❌ Some council members are not operational"
-        echo ""
-        echo "Please check:"
-        echo "  - Are all models installed in Ollama? (./aixcl models list)"
-        echo "  - Are models loaded and ready? (docker logs ollama)"
-        echo "  - Check model names match exactly (including tags)"
-        return 1
-    fi
-}
-
-function configure_council() {
-    echo "🔧 Configuring Council"
-    echo "=========================="
-    echo ""
-    echo "Note: This will ignore any existing .env configuration and create a new one."
-    echo ""
-    
-    # Check if Ollama is running
-    if ! docker ps --format "{{.Names}}" | grep -q "ollama"; then
-        echo "❌ Error: Ollama container is not running."
-        echo "   Please start the services first with: ./aixcl stack start"
-        return 1
-    fi
-    
-    # Get available models
-    echo "Fetching available models from Ollama..."
-    local available_models
-    available_models=$(get_available_models)
-    
-    if [[ -z "$available_models" ]]; then
-        echo "❌ Error: No models found in Ollama."
-        echo "   Please add models first with: ./aixcl models add <model-name>"
-        return 1
-    fi
-    
-    # Convert to array for easier handling
-    local models_array=()
-    while IFS= read -r line; do
-        [[ -n "$line" ]] && models_array+=("$line")
-    done <<< "$available_models"
-    
-    local model_count=${#models_array[@]}
-    
-    if [[ $model_count -lt 2 ]]; then
-        echo "❌ Error: At least 2 models are required for the council (1 chairman + 1 member)."
-        echo "   You currently have $model_count model(s)."
-        echo "   Please add more models first with: ./aixcl models add <model-name>"
-        return 1
-    fi
-    
-    # Display available models
-    echo ""
-    echo "Available models:"
-    echo "-----------------"
-    local index=1
-    for model in "${models_array[@]}"; do
-        echo "  [$index] $model"
-        ((index++))
-    done
-    echo ""
-    
-    # Select chairman
-    local chairman_index
-    local chairman_model
-    while true; do
-        read -p "Select chairman model (1-$model_count): " chairman_index || true
-        if [[ -z "${chairman_index:-}" ]]; then
-            echo ""
-            echo "Input cancelled."
-            return 1
-        fi
-        if [[ "$chairman_index" =~ ^[0-9]+$ ]] && [[ "$chairman_index" -ge 1 ]] && [[ "$chairman_index" -le $model_count ]]; then
-            chairman_model="${models_array[$((chairman_index - 1))]}"
-            echo "✅ Selected chairman: $chairman_model"
-            break
-        else
-            echo "❌ Invalid selection. Please enter a number between 1 and $model_count."
-        fi
-    done
-    
-    # Select council members (up to 4 more, for a total of 5)
-    local council_members=()
-    local max_members=4
-    local current_count=0
-    local min_members_required=1  # At least 1 member required (plus chairman = 2 total)
-    
-    echo ""
-    echo "Select council members (at least 1 member required, up to $max_members more models):"
-    echo "Note: Chairman is already included. Total council size will be 1 + number of members selected."
-    echo ""
-    
-    # Disable exit on error for the interactive loop (we handle errors manually)
-    set +e
-    
-    # Ensure we enter the loop
-    while true; do
-        local remaining=$((max_members - current_count))
-        local total_selected=$((${#council_members[@]} + 1))  # +1 for chairman
-        
-        if [[ $total_selected -ge 5 ]]; then
-            echo ""
-            echo "✅ Maximum of 5 models reached (1 chairman + ${#council_members[@]} members)."
-            break
-        fi
-        
-        echo ""
-        echo "Currently selected:"
-        echo "  Chairman: $chairman_model"
-        if [[ ${#council_members[@]} -gt 0 ]]; then
-            echo "  Members:"
-            for member in "${council_members[@]}"; do
-                echo "    - $member"
-            done
-        else
-            echo "  Members: (none yet - at least 1 required)"
-        fi
-        echo ""
-        echo "Available models:"
-        local available_count=0
-        local index=1
-        for model in "${models_array[@]}"; do
-            local is_selected=0
-            local marker=""
-            if [[ "$model" == "$chairman_model" ]]; then
-                marker=" (chairman)"
-                is_selected=1
-            fi
-            for member in "${council_members[@]}"; do
-                if [[ "$model" == "$member" ]]; then
-                    marker=" (selected)"
-                    is_selected=1
-                    break
-                fi
-            done
-            if [[ $is_selected -eq 0 ]]; then
-                marker=""
-                ((available_count++))
-            fi
-            echo "  [$index] $model$marker"
-            ((index++))
-        done
-        
-        if [[ $available_count -eq 0 ]]; then
-            echo ""
-            echo "  (no more models available)"
-            break
-        fi
-        
-        # Build prompt message
-        local prompt_msg="Select model (1-$model_count)"
-        if [[ ${#council_members[@]} -ge $min_members_required ]]; then
-            prompt_msg="$prompt_msg, or 'done' to finish"
-            if [[ $remaining -gt 0 ]]; then
-                prompt_msg="$prompt_msg [$remaining remaining]"
-            fi
-        else
-            local needed=$((min_members_required - ${#council_members[@]}))
-            prompt_msg="$prompt_msg (at least $needed more required)"
-        fi
-        prompt_msg="$prompt_msg: "
-        
-        echo ""
-        read -p "$prompt_msg" selection || true
-        if [[ -z "${selection:-}" ]]; then
-            echo ""
-            echo "Input cancelled."
-            return 1
-        fi
-        
-        # Handle 'done' option - only allow if minimum members are selected
-        if [[ "$selection" == "done" ]] || [[ "$selection" == "d" ]]; then
-            if [[ ${#council_members[@]} -lt $min_members_required ]]; then
-                local needed=$((min_members_required - ${#council_members[@]}))
-                echo "❌ At least $needed more member(s) required. Please select more models."
-                continue
-            else
-                echo "✅ Finished selecting council members."
-                break
-            fi
-        fi
-        
-        # Validate numeric selection
-        if [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 1 ]] && [[ "$selection" -le $model_count ]]; then
-            local selected_model="${models_array[$((selection - 1))]}"
-            
-            # Check if already selected
-            local already_selected=0
-            if [[ "$selected_model" == "$chairman_model" ]]; then
-                already_selected=1
-            fi
-            for member in "${council_members[@]}"; do
-                if [[ "$selected_model" == "$member" ]]; then
-                    already_selected=1
-                    break
-                fi
-            done
-            
-            if [[ $already_selected -eq 1 ]]; then
-                echo "❌ Model '$selected_model' is already selected. Please choose a different model."
-            else
-                council_members+=("$selected_model")
-                echo "✅ Added '$selected_model' to council members"
-                ((current_count++))
-            fi
-        else
-            echo "❌ Invalid selection. Please enter a number between 1 and $model_count"
-            if [[ ${#council_members[@]} -ge $min_members_required ]]; then
-                echo "   or type 'done' to finish."
-            fi
-        fi
-    done
-    
-    # Re-enable exit on error
-    set -e
-    
-    # Validate we have at least 2 models (chairman + at least 1 member)
-    local total_models=$((${#council_members[@]} + 1))
-    if [[ $total_models -lt 2 ]]; then
-        echo ""
-        echo "❌ Error: Council must have at least 2 models (1 chairman + 1 member)."
-        echo "   You selected only the chairman."
-        return 1
-    fi
-    
-    # Build council models string (comma-separated, excluding chairman)
-    local council_models_str=""
-    for member in "${council_members[@]}"; do
-        if [[ -z "$council_models_str" ]]; then
-            council_models_str="$member"
-        else
-            council_models_str="$council_models_str,$member"
-        fi
-    done
-    
-    # Show summary
-    echo ""
-    echo "=========================="
-    echo "Council Configuration Summary"
-    echo "=========================="
-    echo "Chairman: $chairman_model"
-    echo "Council Members (${#council_members[@]}):"
-    for member in "${council_members[@]}"; do
-        echo "  - $member"
-    done
-    echo "Total models: $total_models"
-    echo ""
-    echo "This will update .env file with:"
-    echo "  - CHAIRMAN_MODEL: $chairman_model"
-    echo "  - COUNCIL_MODELS: $council_models_str"
-    echo ""
-    echo "⚠️  Note: Any existing council configuration in .env will be replaced."
-    echo ""
-    
-    # Ask for confirmation
-    read -p "Apply this configuration? (yes/no): " confirm || true
-    if [[ "${confirm:-}" != "yes" ]] && [[ "${confirm:-}" != "y" ]]; then
-        echo "Configuration cancelled."
-        return 0
-    fi
-    
-    # Update .env file for persistence (this will overwrite existing values)
-    if ! update_env_file "$council_models_str" "$chairman_model"; then
-        return 1
-    fi
-    
-    echo ""
-    echo "✅ Council configuration updated successfully!"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Restart the Council service to apply changes:"
-    echo "     ./aixcl stack restart"
-    echo "  2. The configuration will be loaded automatically"
-    echo ""
-    
-    # Ask if user wants to restart services
-    read -p "Restart Council service now? (yes/no): " restart_confirm || true
-    if [[ "${restart_confirm:-}" == "yes" ]] || [[ "${restart_confirm:-}" == "y" ]]; then
-        echo ""
-        echo "Restarting Council service to apply new configuration..."
-        set_compose_cmd
-        # Stop if running
-        if docker ps --format "{{.Names}}" | grep -q "council"; then
-            run_compose stop council 2>/dev/null || true
-        fi
-        # Always remove the container to avoid docker-compose ContainerConfig KeyError
-        # when using images from registry (older docker-compose versions have this bug)
-        # This also handles the case where container exists but is stopped
-        run_compose rm -f council 2>/dev/null || docker rm -f council 2>/dev/null || true
-        run_compose build council
-        run_compose up -d council
-        echo "✅ Council service restarted with new configuration"
-    fi
-    return 0
 }
 
 function utils_cmd() {

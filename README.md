@@ -136,7 +136,7 @@ Manage all services as a unified stack:
 ./aixcl stack start [--profile sys]      # Start all services (uses PROFILE from .env if set)
 ./aixcl stack stop                       # Stop all services gracefully
 ./aixcl stack restart [--profile sys]    # Restart all services (uses PROFILE from .env if set)
-./aixcl stack restart ollama llm-council # Restart specific services only (no profile needed)
+./aixcl stack restart ollama             # Restart specific services only (no profile needed)
 ./aixcl stack status                     # Check service status
 ./aixcl stack logs                       # View logs for all services
 ./aixcl stack logs ollama                # View logs for specific service
