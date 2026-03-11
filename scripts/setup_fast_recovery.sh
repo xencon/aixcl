@@ -157,10 +157,6 @@ else
     echo ""
     
     for img in $images; do
-        # Skip council (handled separately)
-        if [ "$img" = "council:latest" ]; then
-            continue
-        fi
         
         local_img="$LOCAL_REGISTRY/${img//\//_}"
         
@@ -199,55 +195,6 @@ fi
 echo ""
 info "Pre-built images: $cached_count cached, $failed_count failed"
 
-# Step 4: Build and cache council
-step "Step 4: Building and caching council..."
-
-# Check if already cached
-cached_tags=$(curl -s "http://${LOCAL_REGISTRY}/v2/council/tags/list" 2>/dev/null | jq -r '.tags[]' 2>/dev/null || echo "")
-  if [ -n "$cached_tags" ]; then
-    success "council already cached in registry"
-    info "Skipping build (use --force to rebuild)"
-    if [ "$1" != "--force" ]; then
-        skip_build=true
-    fi
-fi
-
-if [ "$skip_build" != "true" ]; then
-    # Set up compose command (check for GPU/ARM overrides)
-    COMPOSE_CMD="docker-compose -f docker-compose.yml"
-    
-    # Check for GPU override
-    if [ -f "docker-compose.gpu.yml" ] && command -v nvidia-smi >/dev/null 2>&1; then
-        COMPOSE_CMD="${COMPOSE_CMD} -f docker-compose.gpu.yml"
-        info "Detected GPU, using GPU compose override"
-    fi
-    
-    # Check for ARM override
-    if [ -f "docker-compose.arm.yml" ] && [ "$(uname -m)" = "aarch64" ]; then
-        COMPOSE_CMD="${COMPOSE_CMD} -f docker-compose.arm.yml"
-        info "Detected ARM64, using ARM compose override"
-    fi
-    
-    info "Building council image (this may take a few minutes)..."
-    if $COMPOSE_CMD build council >/dev/null 2>&1; then
-        success "council built successfully"
-        
-        # Tag and push to local registry
-        LOCAL_IMAGE="${LOCAL_REGISTRY}/council:latest"
-        if docker tag "council:latest" "$LOCAL_IMAGE" 2>/dev/null; then
-            if docker push "$LOCAL_IMAGE" >/dev/null 2>&1; then
-                success "council cached in local registry"
-            else
-                warning "Failed to push council (may already exist)"
-            fi
-        else
-            warning "Failed to tag council"
-        fi
-    else
-        error "Failed to build council"
-        exit 1
-    fi
-fi
 
 echo ""
 
@@ -271,7 +218,6 @@ success "Fast recovery is now configured"
 echo ""
 info "What was cached:"
 echo "  • $cached_count pre-built images"
-echo "  • council (built and cached)"
 echo ""
 info "What will persist after directory removal:"
 echo "  • Docker volumes (Ollama models, database, etc.)"

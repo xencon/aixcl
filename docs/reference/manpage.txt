@@ -7,10 +7,9 @@ SYNOPSIS
        aixcl <command> <subcommand> [options]
 
 DESCRIPTION
-       AIXCL is a unified command-line tool for managing AI services, monitoring
-       stack, dashboards, and models. It provides a Docker-native workflow for
-       running LLMs locally, managing model configurations, and orchestrating
-       multiple AI services.
+       aixcl is a unified command-line tool for managing AI services, monitoring
+       stack, and models. It provides a Docker-native workflow for
+       running LLMs locally and orchestrating AI services.
 
        AIXCL follows a governance model that separates Runtime Core (always
        enabled) from Operational Services (profile-dependent). See
@@ -27,7 +26,7 @@ COMMANDS
        stack restart [--profile|-p <profile>] [service1] [service2] ...
               Restart the entire stack or specific services. With no service names,
               uses PROFILE from .env file if set, otherwise --profile is required.
-              With service names (e.g. ollama council), restarts only those
+              With service names (e.g. ollama), restarts only those
               services; profile is not required.
 
        stack status
@@ -45,7 +44,7 @@ COMMANDS
               Control individual service
 
               Runtime Core Services (always enabled):
-              ollama, council
+              ollama
 
               Operational Services (profile-dependent):
               open-webui, postgres, pgadmin, watchtower, prometheus, grafana,
@@ -60,22 +59,6 @@ COMMANDS
               add     Add one or more models (e.g. models add a b c)
               remove  Remove one or more models
               list    List installed models
-
-       council <configure|status>
-              Configure LLM Council behavior and members
-
-              configure  Configure council behavior and members
-              status     Show council configuration and operational status
-
-       dashboard <grafana|openwebui|pgadmin>
-              Launch dashboard in default browser
-
-              grafana    Open Grafana dashboard
-              openwebui  Open Open WebUI interface
-              pgadmin    Open pgAdmin database administration
-
-       continue config
-              Regenerate Continue CLI config from current Ollama models.
 
        utils check-env
               Validate environment setup
@@ -102,13 +85,11 @@ EXAMPLES
               aixcl service restart postgres
 
        Restart specific stack services (no profile needed):
-              aixcl stack restart ollama council
+              aixcl stack restart ollama
 
        Add a new LLM model:
               aixcl models add phi3
 
-       Open Grafana:
-              aixcl dashboard grafana
 
        Check environment requirements:
               aixcl utils check-env
@@ -130,11 +111,6 @@ ENVIRONMENT
        POSTGRES_DATABASE
               PostgreSQL database name
 
-       COUNCIL_MODELS
-              Comma-separated list of council member models
-
-       CHAIRMAN_MODEL
-              Model used as chairman (synthesizes final response)
 
 FILES
        .env (in project directory)
@@ -154,7 +130,6 @@ ARCHITECTURE
        Runtime Core (Strict)
               Always enabled, required for AIXCL to function:
               - Ollama: LLM inference engine
-              - Council: Multi-model orchestration
               - Continue: VS Code plugin for IDE integration
 
        Operational Services (Guided)

@@ -35,7 +35,6 @@ Reference materials and specifications:
 ## Component-Specific Documentation
 
 Component-specific documentation remains with their respective components:
-- **Council**: `llm-council/README.md`, `llm-council/TESTING.md`, etc.
 - **Tests**: `tests/README.md` and component-specific test docs
 - **Scripts**: `scripts/*/README.md` files
 

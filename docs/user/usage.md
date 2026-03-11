@@ -7,7 +7,7 @@ AIXCL follows a governance model that separates **Runtime Core** from **Operatio
 ### Runtime Core (Strict - Always Enabled)
 These services define what AIXCL is and are always present:
 - **Ollama**: LLM inference engine
-- **Council**: Multi-model orchestration and coordination
+- **Ollama**: LLM inference engine
 - **Continue**: VS Code plugin for AI-powered code assistance
 
 Runtime core services are non-negotiable and must be running for AIXCL to function.
@@ -74,24 +74,7 @@ This will:
 ./aixcl models add qwen2.5-coder:3b
 ```
 
-### 4. Configure Council
-
-```bash
-./aixcl council configure
-```
-
-Interactive setup to select:
-- Chairman model (synthesizes final response) - Recommended: `deepseek-coder:1.3b`
-- Council members (provide initial opinions) - Recommended: `codegemma:2b`, `qwen2.5-coder:3b`
-
-**Recommended Default Configuration:**
-- **Chairman**: `deepseek-coder:1.3b` (776MB) - Best keep-alive performance
-- **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
-- **Performance**: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
-
-See [`docs/operations/model-recommendations.md`](../operations/model-recommendations.md) for alternative configurations.
-
-### 5. Check Status
+### 4. Check Status
 
 ```bash
 ./aixcl stack status
@@ -113,10 +96,6 @@ Shows:
 
 # Check everything is running
 ./aixcl stack status
-
-# Open dashboards
-./aixcl dashboard openwebui
-./aixcl dashboard grafana
 ```
 
 ### Adding New Models
@@ -134,10 +113,6 @@ Shows:
 ./aixcl models add qwen2.5-coder:7b        # Medium-sized model
 ./aixcl models add ministral-3:3b           # Balanced option
 
-# Update council configuration
-./aixcl council configure
-```
-
 You can add or remove multiple models in one command: `./aixcl models add a b c`, `./aixcl models remove a b`.
 
 **Recommended Models by Use Case:**
@@ -152,7 +127,6 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ```bash
 # Check service logs
 ./aixcl stack logs ollama 50
-./aixcl stack logs council 100
 
 # Restart a specific service
 ./aixcl service restart postgres
@@ -161,47 +135,13 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl stack restart [--profile sys]
 
 # Restart specific services only (no profile needed)
-./aixcl stack restart ollama council
+./aixcl stack restart ollama
 
 # Clean up and start fresh
 ./aixcl stack clean
 ./aixcl stack start [--profile sys]
 ```
 
-### Continue Plugin Setup
-
-1. **Start services:**
-   ```bash
-   # First time: specify profile
-   ./aixcl stack start --profile sys
-   # Subsequent times: uses PROFILE from .env
-   ./aixcl stack start
-   ```
-
-2. **Verify Council is running:**
-   ```bash
-   ./aixcl stack status
-   ```
-
-3. **Configure Continue plugin** (in `.continue/config.json`):
-   ```json
-   {
-     "models": [
-       {
-         "model": "council",
-         "title": "Council (Multi-Model)",
-         "provider": "openai",
-         "apiBase": "http://localhost:8000/v1",
-         "apiKey": "local"
-       }
-     ]
-   }
-   ```
-
-4. **Test integration:**
-   ```bash
-   python3 tests/api/test_continue_integration.py
-   ```
 
 ## Service Management
 
@@ -231,48 +171,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl stack logs postgres 100
 ```
 
-## Council Management
 
-### Interactive Configuration
-
-```bash
-./aixcl council configure
-```
-
-This interactive wizard:
-1. Lists available models from Ollama
-2. Prompts for chairman selection
-3. Prompts for council members (1-4 additional models)
-4. Shows configuration summary
-5. Updates `.env` file
-6. Optionally restarts Council service
-
-### Check Council Status
-
-```bash
-./aixcl council status
-```
-
-Shows:
-- Current configuration (chairman, members)
-- Operational status of each model
-- Service status (Council, Ollama)
-- Summary statistics
-
-## Monitoring
-
-### View Dashboards
-
-```bash
-# Grafana (metrics and monitoring)
-./aixcl dashboard grafana
-
-# Open WebUI (chat interface)
-./aixcl dashboard openwebui
-
-# pgAdmin (database administration)
-./aixcl dashboard pgadmin
-```
 
 ### Check Service Health
 
@@ -287,7 +186,7 @@ This comprehensive status check shows:
 - **Runtime vs Operational:** Status output distinguishes between runtime core (critical) and operational services (informational)
 - **Health Summary:** Counts of healthy services by category
 
-Note: Runtime core services (ollama, council) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
+Note: Runtime core services (ollama) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
 
 ## Maintenance
 
