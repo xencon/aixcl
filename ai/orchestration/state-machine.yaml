@@ -1,0 +1,34 @@
+
+version: 1
+states:
+  - name: no_issue
+  - name: issue_created
+  - name: branch_created
+  - name: committed
+  - name: pr_created
+  - name: merged
+
+transitions:
+  - from: no_issue
+    to: issue_created
+    action: create_issue
+
+  - from: issue_created
+    to: branch_created
+    action: create_branch
+
+  - from: branch_created
+    to: committed
+    action: commit
+
+  - from: committed
+    to: pr_created
+    action: create_pr
+
+  - from: pr_created
+    to: merged
+    action: merge_pr
+
+exceptions:
+  automated_pr:
+    action: create_retroactive_issue

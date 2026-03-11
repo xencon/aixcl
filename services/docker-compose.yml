@@ -8,8 +8,8 @@ services:
       - OLLAMA_NUM_PARALLEL=8          # Handle concurrent council queries (Stage 1, 2, 3)
       - OLLAMA_MAX_LOADED_MODELS=3     # Keep council + chairman loaded in GPU memory
       - OLLAMA_KEEP_ALIVE=1800         # 30 min keep-alive to prevent model unloading between council stages
-      - OLLAMA_NUM_GPU=1                # Explicit single GPU usage
-      - OLLAMA_NUM_THREAD=8             # Match CPU cores (adjust based on your CPU)
+      - OLLAMA_NUM_GPU=1               # Explicit single GPU usage
+      - OLLAMA_NUM_THREAD=8            # Match CPU cores (adjust based on your CPU)
     ports:
       - "11434:11434"
     container_name: ollama
@@ -27,7 +27,7 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.8.0
+    image: ghcr.io/open-webui/open-webui:v0.8.3
     container_name: open-webui
     pull_policy: always
     volumes:
