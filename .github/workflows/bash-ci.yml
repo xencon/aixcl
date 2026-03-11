@@ -50,4 +50,4 @@ jobs:
 
       # 6️⃣ Run your script with the 'check-env' argument
       - name: Run aixcl check-env
-        run: ./aixcl check-env
+        run: ./aixcl utils check-env
