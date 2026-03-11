@@ -839,326 +839,6 @@ except:
     print_success "Conversation storage test completed"
 }
 
-# ============================================================================
-# SECTION 4: API ENDPOINT TESTS
-# ============================================================================
-test_api_endpoints() {
-    start_section "API Endpoints - Council API"
-    
-    # Wait for service to be ready
-    echo -n "Waiting for API to be ready..."
-    API_READY=false
-    for i in {1..30}; do
-        if curl -s -f --max-time 5 "${API_URL}/health" > /dev/null 2>&1; then
-            echo " ✅"
-            API_READY=true
-            break
-        fi
-        echo -n "."
-        # Flush output buffer (helps with VSCode terminal buffering)
-        [ -t 1 ] && printf "" || true
-        sleep 1
-    done
-    
-    if [ "$API_READY" = "false" ]; then
-        echo " ❌ API not ready"
-        record_test "fail" "Council API not ready after 30 seconds"
-        return
-    fi
-    
-    record_test "pass" "Council API is ready"
-    
-    # Test 1: Health check
-    echo -e "\n1. Testing health endpoint..."
-    HEALTH=$(curl -s "${API_URL}/health" 2>/dev/null)
-    if [ -n "$HEALTH" ]; then
-        echo "   Response: $HEALTH"
-        record_test "pass" "Health endpoint responded"
-    else
-        record_test "fail" "Health endpoint failed"
-    fi
-    
-    # Test 2: Send a test chat completion
-    echo -e "\n2. Testing chat completion (Continue conversation)..."
-    RESPONSE=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "model": "council",
-            "messages": [
-                {"role": "user", "content": "Hello, this is a test message from Continue plugin"}
-            ],
-            "stream": false
-        }' 2>/dev/null)
-    
-    if [ -n "$RESPONSE" ]; then
-        echo "   Response received (length: ${#RESPONSE})"
-        
-        # Try multiple methods to extract the ID
-        # Method 1: Standard JSON format "id":"value"
-        CONV_ID=$(echo "$RESPONSE" | grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
-        
-        # Method 2: If Method 1 failed, try with Python (more reliable for JSON)
-        if [ -z "$CONV_ID" ] && command -v python3 >/dev/null 2>&1; then
-            CONV_ID=$(echo "$RESPONSE" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(data.get('id', ''))
-except:
-    pass
-" 2>/dev/null || echo "")
-        fi
-        
-        # Method 3: Fallback to simple grep
-        if [ -z "$CONV_ID" ]; then
-            CONV_ID=$(echo "$RESPONSE" | grep -oP '"id"\s*:\s*"\K[^"]+' | head -1 || echo "")
-        fi
-        
-        if [ -n "$CONV_ID" ]; then
-            echo "   ✅ Got response ID: $CONV_ID"
-            record_test "pass" "Chat completion endpoint responded with conversation ID"
-        else
-            echo "   ⚠️  No response ID found"
-            echo "   Response preview (first 200 chars): ${RESPONSE:0:200}"
-            # Check if response is valid JSON
-            if command -v python3 >/dev/null 2>&1; then
-                if echo "$RESPONSE" | python3 -m json.tool >/dev/null 2>&1; then
-                    echo "   Response is valid JSON, but 'id' field not found"
-                    # Show what fields are present
-                    echo "$RESPONSE" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    print(f'   Available fields: {list(data.keys())}')
-except:
-    pass
-" 2>/dev/null || true
-                else
-                    echo "   Response may not be valid JSON"
-                fi
-            fi
-            record_test "fail" "Chat completion response missing conversation ID"
-        fi
-    else
-        record_test "fail" "Chat completion endpoint failed"
-    fi
-    
-    # Test 3: Test conversation continuity
-    echo -e "\n3. Testing conversation continuity (second message)..."
-    RESPONSE2=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "model": "council",
-            "messages": [
-                {"role": "user", "content": "Hello, this is a test message from Continue plugin"},
-                {"role": "assistant", "content": "Previous response"},
-                {"role": "user", "content": "This is a follow-up question"}
-            ],
-            "stream": false
-        }' 2>/dev/null)
-    
-    if [ -n "$RESPONSE2" ]; then
-        echo "   Response received (length: ${#RESPONSE2})"
-        echo "   ✅ Second message processed"
-        record_test "pass" "Conversation continuity test passed"
-    else
-        record_test "fail" "Conversation continuity test failed"
-    fi
-    
-    # Test 4: Test deletion endpoint
-    # Note: The response ID (chatcmpl-...) is different from conversation ID
-    # We need to generate the conversation ID from the messages to delete it
-    echo -e "\n4. Testing conversation deletion..."
-    # Generate conversation ID from test messages (same way API does using UUID v5)
-    if command -v python3 >/dev/null 2>&1; then
-        TEST_CONV_ID=$(python3 -c "
-import sys, uuid
-# Generate conversation ID the same way the API does (UUID v5)
-first_user_msg = 'Hello, this is a test message from Continue plugin'
-# Use the same namespace UUID as the API (from conversation_tracker.py)
-CONTINUE_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
-name = f'continue:{first_user_msg}'
-conv_id = str(uuid.uuid5(CONTINUE_NAMESPACE, name))
-print(conv_id)
-" 2>/dev/null || echo "")
-        
-        if [ -n "$TEST_CONV_ID" ]; then
-            DELETE_RESPONSE=$(curl -s --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$TEST_CONV_ID" 2>/dev/null)
-            DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$TEST_CONV_ID" 2>/dev/null)
-            
-            if [ "$DELETE_STATUS" = "200" ] && echo "$DELETE_RESPONSE" | grep -q "success"; then
-                echo "   ✅ Conversation deleted successfully"
-                record_test "pass" "Conversation deletion endpoint worked"
-            elif [ "$DELETE_STATUS" = "404" ] || echo "$DELETE_RESPONSE" | grep -q "not found"; then
-                echo "   ⚠️  Conversation not found (may have been deleted already or never created)"
-                echo "   Response: $DELETE_RESPONSE"
-                record_test "skip" "Conversation deletion test skipped (conversation not found)"
-            else
-                echo "   ⚠️  Deletion response: $DELETE_RESPONSE (status: $DELETE_STATUS)"
-                record_test "fail" "Conversation deletion endpoint failed"
-            fi
-        else
-            echo "   ⚠️  Could not generate conversation ID for deletion test"
-            record_test "skip" "Conversation deletion test skipped (could not generate conversation ID)"
-        fi
-    else
-        echo "   ⚠️  Python3 not available, skipping conversation deletion test"
-        record_test "skip" "Conversation deletion test skipped (python3 not available)"
-    fi
-}
-
-# ============================================================================
-# SECTION 5: CONTINUE INTEGRATION TESTS
-# ============================================================================
-test_continue_integration() {
-    start_section "Continue Integration - Full Flow"
-    
-    # Check if Council container is running
-    if ! is_container_running "council"; then
-        print_error "Council container is not running"
-        record_test "fail" "Council container is not running"
-        echo "   Cannot run Continue integration tests without Council"
-        return
-    fi
-    
-    # Check if Python test script exists
-    CONTINUE_TEST_SCRIPT="${SCRIPT_DIR}/tests/api/test_continue_integration.py"
-    if [ ! -f "$CONTINUE_TEST_SCRIPT" ]; then
-        print_error "Continue integration test script not found: $CONTINUE_TEST_SCRIPT"
-        record_test "fail" "Continue integration test script not found"
-        return
-    fi
-    
-    echo "Running Continue integration tests..."
-    echo ""
-    
-    # Change to council component directory for proper Python path
-    cd "$COUNCIL_DIR" || {
-        print_error "Cannot change to council component directory"
-        record_test "fail" "Cannot change to council component directory"
-        return
-    }
-    
-    # Check if uv is available (preferred method)
-    if command -v uv &> /dev/null; then
-        echo "Using uv to run Continue integration tests..."
-        if uv run python ../tests/api/test_continue_integration.py; then
-            print_success "Continue integration tests passed"
-            record_test "pass" "Continue integration tests passed"
-        else
-            print_error "Continue integration tests failed"
-            record_test "fail" "Continue integration tests failed"
-        fi
-    elif command -v python3 &> /dev/null; then
-        echo "Using python3 to run Continue integration tests..."
-        # Check if httpx is installed
-        if ! python3 -c "import httpx" 2>/dev/null; then
-            echo "⚠️  httpx not found. Attempting to install..."
-            # Try uv first, then pip
-            if command -v uv &> /dev/null; then
-                uv pip install httpx 2>/dev/null || {
-                    print_error "httpx not installed. Install with: uv pip install httpx"
-                    record_test "fail" "httpx not available for Continue integration tests"
-                    cd "$SCRIPT_DIR" || true
-                    return
-                }
-            else
-                python3 -m pip install --user httpx 2>/dev/null || {
-                    print_error "httpx not installed. Install with: pip install httpx"
-                    record_test "fail" "httpx not available for Continue integration tests"
-                    cd "$SCRIPT_DIR" || true
-                    return
-                }
-            fi
-        fi
-        if python3 ../tests/api/test_continue_integration.py; then
-            print_success "Continue integration tests passed"
-            record_test "pass" "Continue integration tests passed"
-        else
-            print_error "Continue integration tests failed"
-            record_test "fail" "Continue integration tests failed"
-        fi
-    else
-        print_error "Neither uv nor python3 found"
-        record_test "fail" "Python not available for Continue integration tests"
-    fi
-    
-    # Return to original directory
-    cd "$SCRIPT_DIR" || true
-}
-
-# ============================================================================
-# SECTION 6: COUNCIL MEMBERS TESTS
-# ============================================================================
-test_council_members() {
-    start_section "Council Members - Operational Status"
-    
-    # Check if Council container is running
-    if ! is_container_running "council"; then
-        print_error "Council container is not running"
-        record_test "fail" "Council container is not running"
-        echo "   Cannot run council members tests without Council"
-        return
-    fi
-    
-    # Check if Python test script exists
-    COUNCIL_TEST_SCRIPT="${SCRIPT_DIR}/tests/runtime-core/test_council_members.py"
-    if [ ! -f "$COUNCIL_TEST_SCRIPT" ]; then
-        print_warning "Council members test script not found: $COUNCIL_TEST_SCRIPT"
-        record_test "skip" "Council members test script not found"
-        return
-    fi
-    
-    echo "Running council members operational tests..."
-    echo ""
-    
-    # Change to project root for proper Python path
-    cd "$SCRIPT_DIR" || {
-        print_error "Cannot change to project root directory"
-        record_test "fail" "Cannot change to project root directory"
-        return
-    }
-    
-    # Check if uv is available (preferred method)
-    if command -v uv &> /dev/null; then
-        echo "Using uv to run council members tests..."
-        # Change to council for uv context
-        cd "$COUNCIL_DIR" || {
-            print_error "Cannot change to council component directory"
-            record_test "fail" "Cannot change to council component directory"
-            return
-        }
-        if uv run python ../tests/runtime-core/test_council_members.py; then
-            print_success "Council members tests passed"
-            record_test "pass" "Council members tests passed"
-        else
-            print_error "Council members tests failed"
-            record_test "fail" "Council members tests failed"
-        fi
-    elif command -v python3 &> /dev/null; then
-        echo "Using python3 to run council members tests..."
-        # Check if httpx is installed
-        if ! python3 -c "import httpx" 2>/dev/null; then
-            print_warning "httpx not installed. Skipping council members tests."
-            record_test "skip" "httpx not available for council members tests"
-            cd "$SCRIPT_DIR" || true
-            return
-        fi
-        if python3 tests/runtime-core/test_council_members.py; then
-            print_success "Council members tests passed"
-            record_test "pass" "Council members tests passed"
-        else
-            print_error "Council members tests failed"
-            record_test "fail" "Council members tests failed"
-        fi
-    else
-        print_error "Neither uv nor python3 found"
-        record_test "fail" "Python not available for council members tests"
-    fi
-    
-    # Return to original directory
-    cd "$SCRIPT_DIR" || true
-}
 
 # ============================================================================
 # COMPONENT-BASED TEST FUNCTIONS
@@ -1182,23 +862,6 @@ test_component_runtime_core() {
     else
         print_error "Ollama container is not running"
         record_test "fail" "Ollama container is not running"
-    fi
-    
-    # Council
-    if is_container_running "council"; then
-        print_success "Council container is running"
-        record_test "pass" "Council container is running"
-        COUNCIL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${API_URL}/health 2>/dev/null || echo "000")
-        if [ "$COUNCIL_STATUS" = "200" ]; then
-            print_success "Council health check passed"
-            record_test "pass" "Council health check passed"
-        else
-            print_error "Council health check failed (HTTP $COUNCIL_STATUS)"
-            record_test "fail" "Council health check failed (HTTP $COUNCIL_STATUS)"
-        fi
-    else
-        print_error "Council container is not running"
-        record_test "fail" "Council container is not running"
     fi
 }
 
@@ -1413,8 +1076,6 @@ test_profile_usr() {
     test_llm_state
     test_database_connection
     test_conversation_storage
-    test_api_endpoints
-    test_council_members
 }
 
 # Test dev profile (runtime core + database + UI)
@@ -1430,9 +1091,6 @@ test_profile_dev() {
     test_llm_state
     test_database_connection
     test_conversation_storage
-    test_api_endpoints
-    test_continue_integration
-    test_council_members
 }
 
 # Test ops profile (runtime core + database + monitoring + logging)
@@ -1449,8 +1107,6 @@ test_profile_ops() {
     test_llm_state
     test_database_connection
     test_conversation_storage
-    test_api_endpoints
-    test_council_members
 }
 
 # Test sys profile (all services)
@@ -1464,9 +1120,6 @@ test_profile_sys() {
     test_llm_state
     test_database_connection
     test_conversation_storage
-    test_api_endpoints
-    test_continue_integration
-    test_council_members
 }
 
 # ============================================================================
@@ -1520,13 +1173,12 @@ main() {
                 echo "  sys   - All services"
                 echo ""
                 echo "Components:"
-                echo "  runtime-core  - Ollama and Council"
+                echo "  runtime-core  - Ollama"
                 echo "  database      - PostgreSQL and pgAdmin"
                 echo "  monitoring    - Prometheus, Grafana, exporters"
                 echo "  logging       - Loki and Promtail"
                 echo "  ui            - Open WebUI"
                 echo "  automation    - Watchtower"
-                echo "  api           - Council API endpoints"
                 exit 0
                 ;;
             *)
@@ -1549,13 +1201,12 @@ main() {
         echo "  sys   - All services"
         echo ""
         echo "Components:"
-        echo "  runtime-core  - Ollama and Council"
+        echo "  runtime-core  - Ollama"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
         echo "  ui            - Open WebUI"
         echo "  automation    - Watchtower"
-        echo "  api           - Council API endpoints"
         exit 0
     fi
     
@@ -1571,19 +1222,18 @@ main() {
         echo "  $0 --help                    # Show detailed help"
         echo ""
         echo "Profiles:"
-        echo "  usr   - Runtime core services + database (ollama, council, postgres)"
+        echo "  usr   - Runtime core services + database (ollama, postgres)"
         echo "  dev   - Runtime core + database + UI (for development)"
         echo "  ops   - Runtime core + database + monitoring + logging (for operations)"
         echo "  sys   - All services (complete stack)"
         echo ""
         echo "Components:"
-        echo "  runtime-core  - Ollama and Council"
+        echo "  runtime-core  - Ollama"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
         echo "  ui            - Open WebUI"
         echo "  automation    - Watchtower"
-        echo "  api           - Council API endpoints"
         echo ""
         echo "Examples:"
         echo "  $0 --profile usr                # Test usr profile"
@@ -1632,8 +1282,6 @@ main() {
             runtime-core)
                 test_component_runtime_core
                 test_llm_state
-                test_api_endpoints
-                test_council_members
                 ;;
             database)
                 test_component_database
@@ -1652,12 +1300,9 @@ main() {
             automation)
                 test_component_automation
                 ;;
-            api)
-                test_api_endpoints
-                ;;
             *)
                 echo "Error: Unknown component: $test_component" >&2
-                echo "Valid components: runtime-core, database, monitoring, logging, ui, automation, api" >&2
+                echo "Valid components: runtime-core, database, monitoring, logging, ui, automation" >&2
                 exit 1
                 ;;
         esac
