@@ -87,7 +87,6 @@ function ensure_databases() {
     # Set defaults
     local pg_user="${POSTGRES_USER:-admin}"
     local webui_db="${POSTGRES_DATABASE:-webui}"
-    local continue_db="${POSTGRES_CONTINUE_DATABASE:-continue}"
     
     # Validate database names to prevent SQL injection
     if ! validate_db_name "$webui_db" "webui"; then
@@ -95,10 +94,6 @@ function ensure_databases() {
         return 1
     fi
     
-    if ! validate_db_name "$continue_db" "continue"; then
-        echo "⚠️  Invalid continue database name, skipping database creation"
-        return 1
-    fi
     
     # Check if postgres container is running
     if ! docker ps --format "{{.Names}}" | grep -q "^postgres$"; then
@@ -131,19 +126,10 @@ function ensure_databases() {
         echo "WebUI database already exists: $webui_db"
     fi
     
-    # Create continue database if it doesn't exist
-    local continue_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "$continue_db" | wc -l)
-    continue_exists=${continue_exists:-0}
-    if [ "$continue_exists" -eq 0 ]; then
-        echo "Creating continue database: $continue_db"
-        docker exec postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$continue_db\";" >/dev/null 2>&1 || true
-    else
-        echo "Continue database already exists: $continue_db"
-    fi
     
     # Remove unwanted "admin" database if it exists and is not the intended database
     # PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
-    if [ "$webui_db" != "admin" ] && [ "$continue_db" != "admin" ]; then
+    if [ "$webui_db" != "admin" ]; then
         local admin_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "admin" | wc -l)
         admin_exists=${admin_exists:-0}
         if [ "$admin_exists" -eq 1 ]; then
@@ -577,7 +563,7 @@ function restart() {
             echo "" >&2
             echo "Usage: ./aixcl stack restart [--profile <profile>] [service1] [service2] ..." >&2
             echo "       ./aixcl stack restart -p <profile>" >&2
-            echo "       ./aixcl stack restart ollama council" >&2
+            echo "       ./aixcl stack restart ollama" >&2
             echo "" >&2
             echo "Note: You can set PROFILE=<profile> in .env file to use a default profile" >&2
             echo "" >&2
@@ -748,7 +734,7 @@ function stop_service() {
         echo "Error: Service name is required"
         echo "Usage: $0 service stop <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, council"
+        echo "Runtime Core Services (always enabled): ollama"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -761,7 +747,7 @@ function stop_service() {
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama, council"
+        echo "Runtime Core Services (always enabled): ollama"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -800,7 +786,6 @@ function stop_service() {
 function needs_rebuild() {
     local service="$1"
     # Currently no local-build services remain in the stack.
-    # Council has been extracted to xencon/llm-council.
     return 1
 }
 
@@ -1551,109 +1536,6 @@ function open_url_in_browser() {
     fi
 }
 
-function dashboard_grafana() {
-    echo "Opening Grafana monitoring dashboard..."
-
-    if ! docker ps --format "{{.Names}}" | grep -q "grafana"; then
-        echo "❌ Grafana container is not running. Please start the services first."
-        return 1
-    fi
-
-    # Check if Grafana is responding
-    if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null | grep -q "200"; then
-        echo "❌ Grafana is not responding yet. Please wait for it to start."
-        return 1
-    fi
-
-    local url="http://localhost:3000"
-    echo "Grafana is available at: $url"
-    echo "Default credentials: admin / admin (change on first login)"
-    echo "Opening in default browser..."
-    open_url_in_browser "$url"
-}
-
-function dashboard_openwebui() {
-    echo "Opening Open WebUI dashboard..."
-
-    if ! docker ps --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
-        echo "❌ Open WebUI container is not running. Please start the services first."
-        return 1
-    fi
-
-    local health_status
-    health_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health 2>/dev/null || echo "000")
-
-    if [ "$health_status" != "200" ]; then
-        echo "❌ Open WebUI is not responding yet (HTTP $health_status). Please wait for it to start."
-        return 1
-    fi
-
-    local url="http://localhost:8080"
-    echo "Open WebUI is available at: $url"
-    echo "Opening in default browser..."
-    open_url_in_browser "$url"
-}
-
-function dashboard_pgadmin() {
-    echo "Opening pgAdmin dashboard..."
-
-    if ! docker ps --format "{{.Names}}" | grep -q "pgadmin"; then
-        echo "❌ pgAdmin container is not running. Please start the services first."
-        return 1
-    fi
-
-    local pgadmin_status
-    pgadmin_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
-
-    case "$pgadmin_status" in
-        200|302)
-            ;;
-        *)
-            echo "❌ pgAdmin is not responding yet (HTTP $pgadmin_status). Please wait for it to start."
-            return 1
-            ;;
-    esac
-
-    local url="http://localhost:5050"
-    echo "pgAdmin is available at: $url"
-    echo "Opening in default browser..."
-    open_url_in_browser "$url"
-}
-
-function dashboard() {
-    if [[ $# -lt 1 ]]; then
-        echo "Error: Missing dashboard target."
-        echo "Usage: $0 dashboard {openwebui|grafana|pgadmin}"
-        return 1
-    fi
-
-    local target="$1"
-    shift
-
-    # Check for extra arguments
-    if [ $# -gt 0 ]; then
-        echo "Error: Unknown argument '$1'"
-        echo "Usage: $0 dashboard {openwebui|grafana|pgadmin}"
-        return 1
-    fi
-
-    case "$target" in
-        grafana)
-            dashboard_grafana
-            ;;
-        openwebui|open-webui|open_webui)
-            dashboard_openwebui
-            ;;
-        pgadmin)
-            dashboard_pgadmin
-            ;;
-        *)
-            echo "Error: Unknown dashboard target '$target'"
-            echo "Usage: $0 dashboard {openwebui|grafana|pgadmin}"
-            return 1
-            ;;
-    esac
-}
 
 function help_menu() {
     echo "Usage: ./aixcl <cmd> [options]"
@@ -1906,44 +1788,6 @@ function stack_cmd() {
     esac
 }
 
-function council_cmd() {
-    # Require an action - show usage if none provided
-    if [[ $# -lt 1 ]]; then
-        echo "Error: Council action is required"
-        echo "Usage: $0 council [configure|status]"
-        echo "Examples:"
-        echo "  $0 council status     - Show council configuration and operational status"
-        echo "  $0 council configure  - Configure council models and chairman"
-        return 1
-    fi
-
-    local action="$1"
-    shift
-
-    # Check for extra arguments
-    if [ $# -gt 0 ]; then
-        echo "Error: Unknown argument '$1'"
-        echo "Usage: $0 council [configure|status]"
-        return 1
-    fi
-
-    case "$action" in
-        configure)
-            configure_council
-            ;;
-        status)
-            status_council
-            ;;
-        *)
-            echo "Error: Unknown council action '$action'"
-            echo "Usage: $0 council [configure|status]"
-            echo "Examples:"
-            echo "  $0 council status     - Show council configuration and operational status"
-            echo "  $0 council configure  - Configure council models and chairman"
-            return 1
-            ;;
-    esac
-}
 
 function main() {
     if [[ $# -lt 1 ]]; then
@@ -1971,10 +1815,6 @@ function main() {
         stack)
             shift
             stack_cmd "$@"
-            ;;
-        council)
-            shift
-            council_cmd "$@"
             ;;
 
         *)
