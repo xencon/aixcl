@@ -20,7 +20,7 @@ services:
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -138,6 +138,7 @@ services:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ../prometheus/alerts.yml:/etc/prometheus/alerts.yml
       - prometheus-data:/prometheus
+    user: root
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -168,6 +169,7 @@ services:
       - prometheus
       - loki
     restart: unless-stopped
+    user: root
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -232,6 +234,7 @@ services:
     volumes:
       - ../loki/loki-config.yml:/etc/loki/loki-config.yml
       - loki-data:/loki
+    user: root
     command: -config.file=/etc/loki/loki-config.yml
     network_mode: host
     restart: unless-stopped
