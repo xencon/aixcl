@@ -40,7 +40,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands
-    local commands="stack service models dashboard utils council continue help bash-completion check-env"
+    local commands="stack service models utils cli help"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -124,11 +124,7 @@ _aixcl_complete() {
             COMPREPLY=( $(compgen -W "$profiles" -- "$cur") )
             return 0
             ;;
-        'dashboard')
-            local dashboards="openwebui grafana pgadmin"
-            COMPREPLY=( $(compgen -W "$dashboards" -- "$cur") )
-            return 0
-            ;;
+
         'models')
             local model_actions="add remove list"
             COMPREPLY=( $(compgen -W "$model_actions" -- "$cur") )
@@ -139,14 +135,10 @@ _aixcl_complete() {
             COMPREPLY=( $(compgen -W "$utils_actions" -- "$cur") )
             return 0
             ;;
-        'council')
-            local council_actions="configure status"
-            COMPREPLY=( $(compgen -W "$council_actions" -- "$cur") )
-            return 0
-            ;;
-        'continue')
-            local continue_actions="config"
-            COMPREPLY=( $(compgen -W "$continue_actions" -- "$cur") )
+
+        'cli')
+            local cli_actions="config"
+            COMPREPLY=( $(compgen -W "$cli_actions" -- "$cur") )
             return 0
             ;;
         'add'|'remove')

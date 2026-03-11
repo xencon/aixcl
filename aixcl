@@ -2146,12 +2146,7 @@ function main() {
         help)
             help_menu
             ;;
-        bash-completion)
-            install_completion
-            ;;
-        check-env)
-            check_env
-            ;;
+
         utils)
             shift
             utils_cmd "$@"
