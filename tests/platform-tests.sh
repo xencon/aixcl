@@ -7,9 +7,7 @@
 # 1. Stack Status - Container status and health checks
 # 2. LLM State - Model availability and operational status
 # 3. Database Connection - PostgreSQL connection and schema verification
-# 4. API Endpoints - Council API functionality
-# 5. Continue Integration - Full Continue plugin → Council → Database flow
-# 6. Council Members - Council model availability and operational status
+# 4. API Endpoints - Core API functionality
 #
 # Usage:
 #   ./tests/platform-tests.sh                    # Run all tests (backward compatible)
@@ -22,7 +20,6 @@
 #   ./tests/platform-tests.sh --component monitoring    # Test monitoring components
 #   ./tests/platform-tests.sh --component logging      # Test logging components
 #   ./tests/platform-tests.sh --component ui           # Test UI components
-#   ./tests/platform-tests.sh --component api          # Test API endpoints
 #   ./tests/platform-tests.sh --list                   # List available targets
 #
 # Exit Codes:
@@ -51,7 +48,7 @@ fi
 CONTAINER_NAME="open-webui"
 POSTGRES_USER=${POSTGRES_USER:-webui}
 BACKEND_MODE=${BACKEND_MODE:-ollama}
-API_URL=${LLM_COUNCIL_API_URL:-http://localhost:8000}
+
 
 # Test counters
 TESTS_PASSED=0
@@ -529,8 +526,6 @@ test_llm_state() {
     
     echo ""
     
-    # LLM State section no longer checks council configuration (moved to xencon/llm-council)
-    print_success "LLM state section complete (council configuration is in xencon/llm-council repo)"
     record_test "pass" "LLM state check complete"
 }
 
@@ -622,29 +617,6 @@ test_conversation_storage() {
         return
     fi
     
-    print_warning "Conversation storage test skipped (council service extracted to xencon/llm-council)"
-    record_test "skip" "Conversation storage test skipped (council service is in standalone xencon/llm-council repo)"
-    return
-    
-    # Wait for API to be ready
-    echo -n "Waiting for Council API to be ready..."
-    API_READY=false
-    for i in {1..30}; do
-        if curl -s -f "${API_URL}/health" > /dev/null 2>&1; then
-            echo " ✅"
-            API_READY=true
-            break
-        fi
-        echo -n "."
-        sleep 1
-    done
-    
-    if [ "$API_READY" = "false" ]; then
-        echo " ❌ API not ready"
-        record_test "fail" "Council API not ready after 30 seconds"
-        return
-    fi
-    
     echo ""
     echo "Testing conversation storage flow..."
     echo ""
@@ -685,7 +657,7 @@ print(conv_id)
     RESPONSE=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
         -H "Content-Type: application/json" \
         -d "{
-            \"model\": \"council\",
+            \"model\": \"ollama\",
             \"messages\": [
                 {\"role\": \"user\", \"content\": \"$TEST_MESSAGE\"}
             ],
@@ -844,9 +816,9 @@ except:
 # COMPONENT-BASED TEST FUNCTIONS
 # ============================================================================
 
-# Test runtime core services (ollama, council)
+# Test runtime core services (ollama)
 test_component_runtime_core() {
-    start_section "Runtime Core - Ollama & Council"
+    start_section "Runtime Core - Ollama"
     
     # Ollama
     if is_container_running "ollama"; then
