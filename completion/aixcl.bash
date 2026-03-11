@@ -40,7 +40,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands
-    local commands="stack service models utils cli help"
+    local commands="stack service models utils help"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -136,11 +136,7 @@ _aixcl_complete() {
             return 0
             ;;
 
-        'cli')
-            local cli_actions="config"
-            COMPREPLY=( $(compgen -W "$cli_actions" -- "$cur") )
-            return 0
-            ;;
+
         'add'|'remove')
             # If previous word was 'models', complete with available models
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
