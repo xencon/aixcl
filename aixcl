@@ -1976,8 +1976,6 @@ function install_completion() {
     echo ""
     echo "Or restart your shell. It will be automatically loaded in new shell sessions."
     echo ""
-    
-    fi
 }
 
 function utils_cmd() {
