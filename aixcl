@@ -1116,11 +1116,9 @@ function status() {
         overall_status="Running"
     fi
     
-    # Health counters (not local so nested function can modify them)
-    runtime_core_total=0
-    runtime_core_healthy=0
-    operational_total=0
-    operational_healthy=0
+    # Health counters
+    total_services=0
+    healthy_services=0
     
     # Build list of operational service names for current profile (exclude runtime core)
     local profile_operational_list=""
@@ -1236,17 +1234,10 @@ function status() {
             health_status=""
         fi
         
-        # Update counters (use || true to prevent set -e from exiting on arithmetic)
-        if [ "$is_runtime_core" = "true" ]; then
-            ((runtime_core_total++)) || true
-            if [ "$is_healthy" = "true" ]; then
-                ((runtime_core_healthy++)) || true
-            fi
-        else
-            ((operational_total++)) || true
-            if [ "$is_healthy" = "true" ]; then
-                ((operational_healthy++)) || true
-            fi
+        # Update counters
+        ((total_services++)) || true
+        if [ "$is_healthy" = "true" ]; then
+            ((healthy_services++)) || true
         fi
         
         echo "  ${container_status} ${service_name}${health_status}"
@@ -1279,40 +1270,12 @@ function status() {
     echo "Status: $overall_status"
     echo ""
     
-    # Runtime Core per governance model
-    echo "Runtime Core"
-    echo "---------------------------------------"
-    check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
-    
-    # Continue is a VS Code plugin, not a containerized service
-    local continue_status="❌"
-    local continue_state="Inactive"
-    local continue_note="(VS Code plugin)"
-    local continue_healthy=false
-    if curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://localhost:8000/health" 2>/dev/null | grep -q "200"; then
-        continue_status="✅"
-        continue_state="Active"
-        continue_note="Connected (VS Code plugin)"
-        continue_healthy=true
-        ((runtime_core_total++)) || true
-        ((runtime_core_healthy++)) || true
-    else
-        continue_state="Inactive"
-        ((runtime_core_total++)) || true
-    fi
-    echo "  ${continue_status} continue        ${continue_state}     ${continue_note}"
-    echo ""
-    
-    # Configured Models (Continue plugin, Continue CLI) - ✅ configured, ❌ not
-    echo "Configured Models"
-    echo "-----------------"
-    report_continue_plugin_models
-    report_continue_cli_status
-    echo ""
-    
-    # Operational Services (profile-dependent) per governance model
-    echo "Operational Services"
+    # Services section
+    echo "Services"
     echo "--------------------------------------------------"
+    
+    # Runtime Core
+    check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
     
     # UI Services
     check_operational_service "Open WebUI" "$CONTAINER_NAME" "open-webui" "curl" "http://localhost:8080/health"
@@ -1350,7 +1313,7 @@ function status() {
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
         else
             echo "  ❌ NVIDIA GPU Exporter"
-            ((operational_total++)) || true
+            ((total_services++)) || true
         fi
     else
         echo "  SKIP  NVIDIA GPU Exporter  (not in '${current_profile:-unknown}' profile)"
@@ -1362,19 +1325,19 @@ function status() {
             LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
             if [ "$LOKI_STATUS" = "200" ]; then
                 echo "  ✅ Loki"
-                ((operational_total++)) || true
-                ((operational_healthy++)) || true
+                ((total_services++)) || true
+                ((healthy_services++)) || true
             elif [ "$LOKI_STATUS" = "503" ]; then
                 echo "  ⚠️  Loki (starting up)"
-                ((operational_total++)) || true
+                ((total_services++)) || true
             else
                 echo "  ❌ Loki"
                 timeout 2 docker logs loki --tail 3 2>/dev/null || true
-                ((operational_total++)) || true
+                ((total_services++)) || true
             fi
         else
             echo "  ❌ Loki"
-            ((operational_total++)) || true
+            ((total_services++)) || true
         fi
     else
         echo "  SKIP  Loki    (not in '${current_profile:-unknown}' profile)"
@@ -1385,15 +1348,15 @@ function status() {
         if docker ps --format "{{.Names}}" | grep -q "^promtail$"; then
             if docker exec promtail wget --no-verbose --tries=1 --spider http://localhost:9080/ready 2>/dev/null; then
                 echo "  ✅ Promtail"
-                ((operational_total++)) || true
-                ((operational_healthy++)) || true
+                ((total_services++)) || true
+                ((healthy_services++)) || true
             else
                 echo "  ❌ Promtail"
-                ((operational_total++)) || true
+                ((total_services++)) || true
             fi
         else
             echo "  ❌ Promtail"
-            ((operational_total++)) || true
+            ((total_services++)) || true
         fi
     else
         echo "  SKIP  Promtail    (not in '${current_profile:-unknown}' profile)"
@@ -1403,11 +1366,11 @@ function status() {
     if is_operational_in_profile "watchtower"; then
         if docker ps --format "{{.Names}}" | grep -q "^watchtower$"; then
             echo "  ✅ Watchtower"
-            ((operational_total++)) || true
-            ((operational_healthy++)) || true
+            ((total_services++)) || true
+            ((healthy_services++)) || true
         else
             echo "  ❌ Watchtower"
-            ((operational_total++)) || true
+            ((total_services++)) || true
         fi
     else
         echo "  SKIP  Watchtower    (not in '${current_profile:-unknown}' profile)"
@@ -1415,38 +1378,16 @@ function status() {
     
     # Health Summary section
     echo ""
-    echo "Health Summary"
-    echo "--------------"
-    
-    # Runtime Core summary
-    if [ $runtime_core_total -gt 0 ]; then
-        echo "Runtime Core: $runtime_core_healthy/$runtime_core_total healthy"
-    else
-        echo "Runtime Core: 0/0 healthy"
-    fi
-    
-    # Operational summary (per 03_stack_status.md: "of N enabled" when profile is set)
-    if [ $operational_total -gt 0 ]; then
-        if [ "${operational_enabled_count:-0}" -gt 0 ]; then
-            echo "Operational:  $operational_healthy/$operational_total healthy (of $operational_enabled_count enabled)"
+    # Health Summary
+    if [ $total_services -gt 0 ]; then
+        echo "Services: $healthy_services/$total_services healthy"
+        if [ $healthy_services -eq $total_services ]; then
+            echo "Overall:  ✅ All services healthy"
         else
-            echo "Operational:  $operational_healthy/$operational_total healthy"
+            echo "Overall:  ❌ Some services unhealthy"
         fi
     else
-        if [ "${operational_enabled_count:-0}" -gt 0 ]; then
-            echo "Operational:  0/$operational_enabled_count healthy (of $operational_enabled_count enabled)"
-        else
-            echo "Operational:  0/0 (no operational services enabled)"
-        fi
-    fi
-    
-    # Overall status
-    if [ $runtime_core_healthy -eq $runtime_core_total ] && [ $runtime_core_total -gt 0 ]; then
-        echo "Overall:      ✅ All critical services healthy"
-    elif [ $runtime_core_total -eq 0 ]; then
-        echo "Overall:      ⚠️  No services running"
-    else
-        echo "Overall:      ❌ Critical services unhealthy"
+        echo "Overall:  ⚠️  No services running"
     fi
     echo ""
 }
