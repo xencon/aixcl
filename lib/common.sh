@@ -60,6 +60,8 @@ load_env_file() {
 # Define all services from docker-compose.yml
 ALL_SERVICES=(
     "ollama"
+    "vllm"
+    "llamacpp"
     "open-webui"
     "postgres"
     "pgadmin"
