@@ -380,14 +380,15 @@ function start() {
     local all_ready=false
     
     while [ $attempt -le $max_attempts ]; do
-        local ollama_ready=false
+        local engine_ready=false
         
-        # Check Ollama
-        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
-            ollama_ready=true
+        # Check Inference Engine (Ollama or OpenAI compatible API)
+        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" || \
+           curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/v1/models 2>/dev/null | grep -q "200"; then
+            engine_ready=true
         fi
         
-        if [ "$ollama_ready" = true ]; then
+        if [ "$engine_ready" = true ]; then
             all_ready=true
             break
         fi
@@ -446,7 +447,7 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|vllm|llamacpp|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail"; then
         echo "Services are not running."
         return 0
     fi
@@ -456,7 +457,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|vllm|llamacpp|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -874,7 +875,7 @@ function logs() {
         echo ""
         
         # Check if any containers are running
-        local services=("ollama" "open-webui" "postgres" "pgadmin" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
+        local services=("ollama" "vllm" "llamacpp" "open-webui" "postgres" "pgadmin" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
         local found_any=false
         local running_containers=()
         
@@ -928,7 +929,7 @@ function logs() {
         
         # Validate container name and find actual container (handle hash-prefixed names)
         case "$container" in
-            ollama|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
+            ollama|vllm|llamacpp|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
                 echo "Fetching logs for $container..."
                 # Try exact name first, then hash-prefixed name
                 local actual_container
@@ -949,7 +950,7 @@ function logs() {
             *)
                 echo "Error: Unknown container '$container'"
                 echo ""
-                echo "Runtime Core Services: ollama"
+                echo "Runtime Core Services: \${INFERENCE_ENGINE:-ollama}"
                 echo "Operational Services: open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
                 echo ""
                 echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -1097,7 +1098,7 @@ function status() {
     
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
-    if docker ps --format "{{.Names}}" | grep -qE "ollama|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
+    if docker ps --format "{{.Names}}" | grep -qE "ollama|vllm|llamacpp|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
         overall_status="Running"
     fi
     
@@ -1111,7 +1112,9 @@ function status() {
         local profile_services
         profile_services=$(get_profile_services "$current_profile" 2>/dev/null) || true
         for s in $profile_services; do
-            [ "$s" = "ollama" ] && continue
+            for core in "\${RUNTIME_CORE_SERVICES[@]}"; do
+                [ "$s" = "$core" ] && continue 2
+            done
             profile_operational_list="${profile_operational_list} ${s}"
         done
         profile_operational_list="${profile_operational_list# }"
@@ -1243,7 +1246,17 @@ function status() {
     echo "--------------------------------------------------"
     
     # Runtime Core
-    check_service_status "Ollama" "ollama" "curl" "http://localhost:11434/api/version" "true" "true"
+    local engine="\${INFERENCE_ENGINE:-ollama}"
+    local engine_name="Ollama"
+    local engine_url="http://localhost:11434/api/version"
+    if [ "$engine" = "vllm" ]; then
+        engine_name="vLLM"
+        engine_url="http://localhost:11434/v1/models"
+    elif [ "$engine" = "llamacpp" ]; then
+        engine_name="llama.cpp"
+        engine_url="http://localhost:11434/v1/models"
+    fi
+    check_service_status "$engine_name" "$engine" "curl" "$engine_url" "true" "true"
     
     # UI Services
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://localhost:8080/health"
@@ -1472,6 +1485,76 @@ function open_url_in_browser() {
     fi
 }
 
+function config_cmd() {
+    local action="${1:-}"
+    case "$action" in
+        engine)
+            shift
+            local subaction="${1:-}"
+            if [ "$subaction" = "set" ]; then
+                local engine="${2:-}"
+                if [[ "$engine" != "ollama" && "$engine" != "vllm" && "$engine" != "llamacpp" ]]; then
+                    echo "❌ Error: Invalid engine '$engine'"
+                    echo "Valid options: ollama, vllm, llamacpp"
+                    return 1
+                fi
+                
+                # Check if .env exists, if not use .env.example
+                if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
+                    cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
+                fi
+                
+                if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                    sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=$engine/" "${SCRIPT_DIR}/.env"
+                else
+                    echo "INFERENCE_ENGINE=$engine" >> "${SCRIPT_DIR}/.env"
+                fi
+                echo "✅ Inference engine set to: $engine"
+                echo "Note: Stop and start the stack for the change to take effect."
+            elif [ "$subaction" = "auto" ]; then
+                # Check if .env exists, if not use .env.example
+                if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
+                    cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
+                fi
+                
+                if has_nvidia; then
+                    echo "NVIDIA GPU detected. Setting engine to vLLM for optimized performance."
+                    if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                        sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=vllm/" "${SCRIPT_DIR}/.env"
+                    else
+                        echo "INFERENCE_ENGINE=vllm" >> "${SCRIPT_DIR}/.env"
+                    fi
+                elif is_arm64; then
+                    echo "Apple Silicon / ARM64 detected. Setting engine to llama.cpp for optimized performance."
+                    if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                        sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=llamacpp/" "${SCRIPT_DIR}/.env"
+                    else
+                        echo "INFERENCE_ENGINE=llamacpp" >> "${SCRIPT_DIR}/.env"
+                    fi
+                else
+                    echo "No dedicated GPU detected. Setting engine to Ollama."
+                    if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                        sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=ollama/" "${SCRIPT_DIR}/.env"
+                    else
+                        echo "INFERENCE_ENGINE=ollama" >> "${SCRIPT_DIR}/.env"
+                    fi
+                fi
+                echo "Note: Stop and start the stack for the change to take effect."
+            else
+                echo "Usage: ./aixcl config engine {set <engine>|auto}"
+                echo "  set   - Manually set engine (ollama, vllm, llamacpp)"
+                echo "  auto  - Auto-detect optimal engine based on hardware"
+                return 1
+            fi
+            ;;
+        *)
+            echo "Error: Unknown config action '$action'"
+            echo "Usage: ./aixcl config {engine}"
+            return 1
+            ;;
+    esac
+}
+
 
 function help_menu() {
     echo "Usage: ./aixcl <cmd> [options]"
@@ -1492,11 +1575,15 @@ function help_menu() {
     echo "    ops   - Observability-focused (runtime core + monitoring/logging)"
     echo "    sys   - System-oriented (complete stack with automation)"
     echo ""
+    echo "Config: config <action> [options]"
+    echo "  config engine set <engine>          - Set the inference engine (ollama, vllm, llamacpp)"
+    echo "  config engine auto                  - Auto-detect optimal engine based on hardware"
+    echo ""
     echo "Service: service <action> <name>"
-    echo "  Runtime Core (always enabled): ollama"
+    echo "  Runtime Core (always enabled): \${INFERENCE_ENGINE:-ollama}"
     echo ""
     echo "Models: models <action> [name]"
-    echo "  models add <name>                   - Add model(s) to Ollama"
+    echo "  models add <name>                   - Add model(s) to Ollama/vLLM/llama.cpp"
     echo "  models remove <name>                - Remove model(s) from Ollama"
     echo "  models list                         - List installed models"
     echo ""
@@ -1744,6 +1831,10 @@ function main() {
             help_menu
             ;;
 
+        config)
+            shift
+            config_cmd "$@"
+            ;;
         utils)
             shift
             utils_cmd "$@"

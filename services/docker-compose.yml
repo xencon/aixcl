@@ -26,6 +26,42 @@ services:
       retries: 5
       start_period: 30s
 
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+    volumes:
+      - vllm-data:/root/.cache/huggingface
+    ports:
+      - "11434:8000"
+    pull_policy: if_not_present
+    tty: true
+    restart: unless-stopped
+    command: ["--model", "facebook/opt-125m"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/v1/models || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  llamacpp:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    container_name: llamacpp
+    volumes:
+      - llamacpp-data:/models
+    ports:
+      - "11434:8080"
+    pull_policy: if_not_present
+    tty: true
+    restart: unless-stopped
+    command: ["-m", "/models/placeholder.gguf", "--host", "0.0.0.0", "--port", "8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/v1/models || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.8.10
     container_name: open-webui
@@ -39,6 +75,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DATABASE}
       - WEBUI_NAME=AIXCL
       - OLLAMA_BASE_URL=http://localhost:11434
+      - OPENAI_API_BASE_URL=http://localhost:11434/v1
+      - OPENAI_API_KEY=dummy
       - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
     extra_hosts:
@@ -263,6 +301,8 @@ services:
 
 volumes:
   ollama:
+  vllm-data:
+  llamacpp-data:
   open-webui:
   open-webui-data:
   postgres-data:
