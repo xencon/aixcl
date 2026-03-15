@@ -1340,7 +1340,6 @@ function status() {
     
     # Health Summary section
     echo ""
-    # Health Summary
     if [ $total_services -gt 0 ]; then
         echo "Services: $healthy_services/$total_services healthy"
         if [ $healthy_services -eq $total_services ]; then
@@ -1358,16 +1357,14 @@ function add() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
         echo "Usage: $0 models add <model-name> [<model-name> ...]"
-        echo "Example: $0 models add starcoder2:latest"
-        echo "Example: $0 models add starcoder2:latest nomic-embed-text:latest"
         return 1
     fi
 
-    # Validate model name format
-    if [[ ! "$1" =~ ^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$ ]]; then
-        echo "❌ Invalid model name format: '$1'"
-        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes"
-        echo "   Optional tag format: model:tag (e.g., starcoder2:latest)"
+    # Validate model name format (allowing slashes for HF models)
+    if [[ ! "$1" =~ ^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?$ ]]; then
+        echo -e "\xe2\x9d\x8c Invalid model name format: '$1'"
+        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes, and slashes"
+        echo "   Optional tag format: model:tag (e.g., Qwen/Qwen2.5-0.5B-Instruct)"
         return 1
     fi
 
@@ -1377,6 +1374,27 @@ function add() {
     local container
     container=$(get_engine_container "$engine")
     
+    # Check if we should update compose file (vLLM and llama.cpp set model at startup)
+    if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
+        local compose_file="services/docker-compose.yml"
+        if [ ! -f "$compose_file" ]; then
+             echo "❌ Error: $compose_file not found."
+             return 1
+        fi
+        
+        echo "🔄 Updating $engine configuration in $compose_file to use model: $1"
+        if [[ "$engine" == "vllm" ]]; then
+            # Update vllm model in command array
+            sed -i "/vllm:/,/healthcheck:/s|command:.*|command: [\"--model\", \"$1\", \"--gpu-memory-utilization\", \"0.8\"]|" "$compose_file"
+        elif [[ "$engine" == "llamacpp" ]]; then
+            # Update llamacpp model path. Assuming models are in /models/ internally
+            sed -i "/llamacpp:/,/healthcheck:/s|command:.*|command: [\"-m\", \"/models/$1\", \"--host\", \"0.0.0.0\", \"--port\", \"8080\"]|" "$compose_file"
+        fi
+        echo "✅ Configuration updated. Please restart the stack to apply changes: $0 stack restart"
+        return 0
+    fi
+
+    # Standard pull for Ollama
     if [ -z "$container" ]; then
         echo "Error: $engine container is not running. Please start the services first."
         return 1
@@ -1387,12 +1405,10 @@ function add() {
             echo "✅ Successfully added model: $1"
         else
             echo "❌ Failed to add model: $1"
-            echo "Debug: Check if the model name is correct and the Ollama container is running."
             return 1
         fi
     else
-        echo "⚠️  Model management for $engine is handled via its internal API or configuration."
-        echo "   Please refer to $engine documentation for adding models dynamically."
+        echo "⚠️  Model management for $engine is not fully automated yet."
     fi
 }
 
@@ -1400,16 +1416,12 @@ function remove() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
         echo "Usage: $0 models remove <model-name> [<model-name> ...]"
-        echo "Example: $0 models remove starcoder2:latest"
-        echo "Example: $0 models remove starcoder2:latest nomic-embed-text:latest"
         return 1
     fi
 
     # Validate model name format
-    if [[ ! "$1" =~ ^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$ ]]; then
-        echo "❌ Invalid model name format: '$1'"
-        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes"
-        echo "   Optional tag format: model:tag (e.g., starcoder2:latest)"
+    if [[ ! "$1" =~ ^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?$ ]]; then
+        echo -e "\xe2\x9d\x8c Invalid model name format: '$1'"
         return 1
     fi
 
@@ -1419,24 +1431,24 @@ function remove() {
     local container
     container=$(get_engine_container "$engine")
     
-    if [ -z "$container" ]; then
-        echo "Error: $engine container is not running. Please start the services first."
-        return 1
-    fi
-
     if [ "$engine" = "ollama" ]; then
+        if [ -z "$container" ]; then
+            echo "Error: $engine container is not running. Please start the services first."
+            return 1
+        fi
         if docker exec "$container" ollama rm "$1"; then
             echo "✅ Successfully removed model: $1"
         else
             echo "❌ Failed to remove model: $1"
-            echo "Debug: Check if the model name is correct and the Ollama container is running."
             return 1
         fi
+    elif [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
+        echo "ℹ️  Model removal for $engine must be handled manually by removing files from volumes."
+        echo "   vLLM/llama.cpp do not support a 'pull-style' removal command via CLI."
     else
-        echo "⚠️  Model management for $engine is handled via its internal API or configuration."
+        echo "⚠️  Model management for $engine is not fully automated yet."
     fi
 }
-
 function models() {
     if [[ $# -lt 1 ]]; then
         echo "Error: Models action is required"
@@ -1466,7 +1478,11 @@ function models() {
                 fi
             done
             # Refresh Continue CLI config so new models are available in cn
-            continue_config || true
+            if command -v continue_config >/dev/null 2>&1; then
+                continue_config || true
+            else
+                echo "ℹ️  Continue CLI 'continue_config' not found, skipping sync."
+            fi
             ;;
         remove)
             if [[ $# -lt 1 ]]; then
