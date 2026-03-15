@@ -8,6 +8,24 @@ services:
               count: all
               capabilities: [gpu]
   
+  vllm:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  llamacpp:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   nvidia-gpu-exporter:
     deploy:
       resources:

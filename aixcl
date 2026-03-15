@@ -447,7 +447,9 @@ function stop() {
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|vllm|llamacpp|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail"; then
+    # Join ALL_SERVICES with | for grep
+    local all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
+    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         echo "Services are not running."
         return 0
     fi
@@ -457,7 +459,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|ollama|vllm|llamacpp|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail"; then
+        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -564,7 +566,8 @@ function restart() {
             echo "" >&2
             echo "Usage: ./aixcl stack restart [--profile <profile>] [service1] [service2] ..." >&2
             echo "       ./aixcl stack restart -p <profile>" >&2
-            echo "       ./aixcl stack restart ollama" >&2
+            local engine="${INFERENCE_ENGINE:-ollama}"
+            echo "       ./aixcl stack restart ${engine}" >&2
             echo "" >&2
             echo "Note: You can set PROFILE=<profile> in .env file to use a default profile" >&2
             echo "" >&2
@@ -572,12 +575,12 @@ function restart() {
             echo "Examples:" >&2
             echo "  ./aixcl stack start                      # Start using .env profile" >&2
             echo "  ./aixcl stack start --profile dev        # Start dev profile" >&2
-            echo "  ./aixcl stack logs ollama                # Show Ollama logs" >&2
-            echo "  ./aixcl stack restart ollama             # Restart Ollama" >&2
+            echo "  ./aixcl stack logs ${engine}                # Show ${engine} logs" >&2
+            echo "  ./aixcl stack restart ${engine}             # Restart ${engine}" >&2
             echo "  ./aixcl stack stop                       # Stop all services" >&2
             echo "  ./aixcl stack start -p ops               # Start ops profile" >&2
             echo "  ./aixcl stack status                     # Show all service status" >&2
-            echo "  ./aixcl stack logs -f ollama             # Follow logs" >&2
+            echo "  ./aixcl stack logs -f ${engine}             # Follow logs" >&2
             echo "  ./aixcl stack clean                      # Clean containers/volumes" >&2
             exit 1
         fi
@@ -629,7 +632,7 @@ function start_service() {
         echo "Usage: $0 service start <service-name>"
         echo ""
         echo "Runtime Core Services (always enabled):"
-        echo "  ollama"
+        echo "  ${INFERENCE_ENGINE:-ollama}"
         echo ""
         echo "Operational Services (profile-dependent):"
         echo "  ${ALL_SERVICES[*]}"
@@ -646,7 +649,7 @@ function start_service() {
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama"
+        echo "Runtime Core Services (always enabled): ${INFERENCE_ENGINE:-ollama}"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -875,11 +878,10 @@ function logs() {
         echo ""
         
         # Check if any containers are running
-        local services=("ollama" "vllm" "llamacpp" "open-webui" "postgres" "pgadmin" "watchtower" "prometheus" "grafana" "cadvisor" "node-exporter" "postgres-exporter" "nvidia-gpu-exporter" "loki" "promtail")
         local found_any=false
         local running_containers=()
         
-        for service in "${services[@]}"; do
+        for service in "${ALL_SERVICES[@]}"; do
             # Check for exact match or hash-prefixed match
             if docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$"; then
                 found_any=true
@@ -928,35 +930,41 @@ function logs() {
         fi
         
         # Validate container name and find actual container (handle hash-prefixed names)
-        case "$container" in
-            ollama|vllm|llamacpp|open-webui|postgres|pgadmin|watchtower|prometheus|grafana|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|loki|promtail)
-                echo "Fetching logs for $container..."
-                # Try exact name first, then hash-prefixed name
-                local actual_container
-                actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
+        # Check against ALL_SERVICES
+        local is_valid=false
+        for s in "${ALL_SERVICES[@]}"; do
+            if [ "$container" = "$s" ]; then
+                is_valid=true
+                break
+            fi
+        done
+
+        if [ "$is_valid" = true ]; then
+            echo "Fetching logs for $container..."
+            # Try exact name first, then hash-prefixed name
+            local actual_container
+            actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
+            if [ -n "$actual_container" ]; then
+                docker logs "$actual_container" --tail="$tail_count" --follow
+            else
+                # Try stopped containers too
+                actual_container=$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
                 if [ -n "$actual_container" ]; then
                     docker logs "$actual_container" --tail="$tail_count" --follow
                 else
-                    # Try stopped containers too
-                    actual_container=$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
-                    if [ -n "$actual_container" ]; then
-                        docker logs "$actual_container" --tail="$tail_count" --follow
-                    else
-                        echo "Error: Container '$container' not found (checked for exact name and hash-prefixed variants)"
-                        return 1
-                    fi
+                    echo "Error: Container '$container' not found (checked for exact name and hash-prefixed variants)"
+                    return 1
                 fi
-                ;;
-            *)
-                echo "Error: Unknown container '$container'"
-                echo ""
-                echo "Runtime Core Services: ${INFERENCE_ENGINE:-ollama}"
-                echo "Operational Services: open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
-                echo ""
-                echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
-                return 1
-                ;;
-        esac
+            fi
+        else
+            echo "Error: Unknown container '$container'"
+            echo ""
+            echo "Runtime Core Services: ${INFERENCE_ENGINE:-ollama}"
+            echo "Operational Services: ${ALL_SERVICES[*]}"
+            echo ""
+            echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
+            return 1
+        fi
     fi
 }
 
@@ -1098,7 +1106,9 @@ function status() {
     
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
-    if docker ps --format "{{.Names}}" | grep -qE "ollama|vllm|llamacpp|postgres|open-webui|pgadmin|prometheus|grafana|loki|promtail|cadvisor|node-exporter|postgres-exporter|nvidia-gpu-exporter|watchtower"; then
+    # Join ALL_SERVICES with | for grep
+    local all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
+    if docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         overall_status="Running"
     fi
     
@@ -1248,17 +1258,29 @@ function status() {
 
     # Runtime Core
     echo "Runtime Core"
-    local engine="${INFERENCE_ENGINE:-ollama}"
-    local engine_name="Ollama"
-    local engine_url="http://localhost:11434/api/version"
-    if [ "$engine" = "vllm" ]; then
-        engine_name="vLLM"
-        engine_url="http://localhost:11434/v1/models"
-    elif [ "$engine" = "llamacpp" ]; then
-        engine_name="llama.cpp"
-        engine_url="http://localhost:11434/v1/models"
-    fi
-    check_service_status "$engine_name (Inference Engine)" "$engine" "curl" "$engine_url" "true" "true"
+    local active_engine="${INFERENCE_ENGINE:-ollama}"
+    
+    # Define engines and their health check URLs
+    local engines=("ollama" "vllm" "llamacpp")
+    local names=("Ollama" "vLLM" "llama.cpp")
+    local urls=(
+        "http://localhost:11434/api/version"
+        "http://localhost:11434/v1/models"
+        "http://localhost:11434/v1/models"
+    )
+
+    for i in "${!engines[@]}"; do
+        local engine="${engines[$i]}"
+        local name="${names[$i]}"
+        local url="${urls[$i]}"
+        local suffix=""
+        
+        if [ "$engine" = "$active_engine" ]; then
+            suffix=" (Active Engine)"
+        fi
+        
+        check_service_status "$name$suffix" "$engine" "curl" "$url" "true" "true"
+    done
     echo ""
 
     # Operational Services
@@ -1351,20 +1373,26 @@ function add() {
 
     echo "Adding model: $1"
     
-    local ollama_container
-    ollama_container=$(get_ollama_container)
+    local engine="${INFERENCE_ENGINE:-ollama}"
+    local container
+    container=$(get_engine_container "$engine")
     
-    if [ -z "$ollama_container" ]; then
-        echo "Error: Ollama container is not running. Please start the services first."
+    if [ -z "$container" ]; then
+        echo "Error: $engine container is not running. Please start the services first."
         return 1
     fi
 
-    if docker exec "$ollama_container" ollama pull "$1"; then
-        echo "✅ Successfully added model: $1"
+    if [ "$engine" = "ollama" ]; then
+        if docker exec "$container" ollama pull "$1"; then
+            echo "✅ Successfully added model: $1"
+        else
+            echo "❌ Failed to add model: $1"
+            echo "Debug: Check if the model name is correct and the Ollama container is running."
+            return 1
+        fi
     else
-        echo "❌ Failed to add model: $1"
-        echo "Debug: Check if the model name is correct and the Ollama container is running."
-        return 1
+        echo "⚠️  Model management for $engine is handled via its internal API or configuration."
+        echo "   Please refer to $engine documentation for adding models dynamically."
     fi
 }
 
@@ -1387,20 +1415,25 @@ function remove() {
 
     echo "Removing model: $1"
     
-    local ollama_container
-    ollama_container=$(get_ollama_container)
+    local engine="${INFERENCE_ENGINE:-ollama}"
+    local container
+    container=$(get_engine_container "$engine")
     
-    if [ -z "$ollama_container" ]; then
-        echo "Error: Ollama container is not running. Please start the services first."
+    if [ -z "$container" ]; then
+        echo "Error: $engine container is not running. Please start the services first."
         return 1
     fi
 
-    if docker exec "$ollama_container" ollama rm "$1"; then
-        echo "✅ Successfully removed model: $1"
+    if [ "$engine" = "ollama" ]; then
+        if docker exec "$container" ollama rm "$1"; then
+            echo "✅ Successfully removed model: $1"
+        else
+            echo "❌ Failed to remove model: $1"
+            echo "Debug: Check if the model name is correct and the Ollama container is running."
+            return 1
+        fi
     else
-        echo "❌ Failed to remove model: $1"
-        echo "Debug: Check if the model name is correct and the Ollama container is running."
-        return 1
+        echo "⚠️  Model management for $engine is handled via its internal API or configuration."
     fi
 }
 
@@ -1466,17 +1499,29 @@ function models() {
 }
 
 function list() {
-    echo "Listing installed models..."
+    local engine="${INFERENCE_ENGINE:-ollama}"
+    echo "Listing installed models for $engine..."
     
-    local ollama_container
-    ollama_container=$(get_ollama_container)
+    local container
+    container=$(get_engine_container "$engine")
     
-    if [ -z "$ollama_container" ]; then
-        echo "Error: Ollama container is not running. Please start the services first."
+    if [ -z "$container" ]; then
+        echo "Error: $engine container is not running. Please start the services first."
         return 1
     fi
 
-    docker exec "$ollama_container" ollama list
+    if [ "$engine" = "ollama" ]; then
+        docker exec "$container" ollama list
+    else
+        # For vLLM and llama.cpp, try to use the OpenAI compatible API
+        local url="http://localhost:11434/v1/models"
+        if command -v curl >/dev/null 2>&1; then
+            echo "API Models:"
+            curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve models via API. Is the service ready?"
+        else
+            echo "⚠️  Curl not found. Cannot retrieve model list from API."
+        fi
+    fi
 }
 
 function open_url_in_browser() {
@@ -1576,7 +1621,7 @@ function help_menu() {
     echo "  stack clean                         - Clean Docker resources"
     echo ""
     echo "  Profiles (usr, dev, ops, sys):"
-    echo "    usr   - User-oriented runtime (Ollama, PostgreSQL for persistence)"
+    echo "    usr   - User-oriented runtime (runtime core, PostgreSQL for persistence)"
     echo "    dev   - Developer workstation (runtime core + UI + DB)"
     echo "    ops   - Observability-focused (runtime core + monitoring/logging)"
     echo "    sys   - System-oriented (complete stack with automation)"
@@ -1590,7 +1635,7 @@ function help_menu() {
     echo ""
     echo "Models: models <action> [name]"
     echo "  models add <name>                   - Add model(s) to Ollama/vLLM/llama.cpp"
-    echo "  models remove <name>                - Remove model(s) from Ollama"
+    echo "  models remove <name>                - Remove model(s) from active engine"
     echo "  models list                         - List installed models"
     echo ""
     echo "Utils: utils <action>"
@@ -1598,7 +1643,7 @@ function help_menu() {
     echo "  utils bash-completion               - Install bash completion"
     echo ""
     echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
-    exit 1
+    exit 0
 }
 
 function install_completion() {

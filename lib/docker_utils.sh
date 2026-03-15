@@ -72,9 +72,16 @@ is_container_running() {
     docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"
 }
 
+# Get the actual engine container name (handles hash-prefixed containers)
+get_engine_container() {
+    local engine="$1"
+    docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" | head -1
+}
+
 # Get the actual Ollama container name (handles hash-prefixed containers)
+# Kept for backward compatibility
 get_ollama_container() {
-    docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^ollama$|_[0-9a-f]+_ollama$|^[0-9a-f]+_ollama$" | head -1
+    get_engine_container "ollama"
 }
 
 # Check if any service containers are running

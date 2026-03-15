@@ -36,7 +36,7 @@ services:
     pull_policy: if_not_present
     tty: true
     restart: unless-stopped
-    command: ["--model", "facebook/opt-125m"]
+    command: ["--model", "facebook/opt-125m", "--gpu-memory-utilization", "0.8"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/v1/models || exit 1"]
       interval: 10s
@@ -45,7 +45,7 @@ services:
       start_period: 30s
 
   llamacpp:
-    image: ghcr.io/ggerganov/llama.cpp:server
+    image: ghcr.io/ggerganov/llama.cpp:light-cuda-b4719
     container_name: llamacpp
     volumes:
       - llamacpp-data:/models
@@ -83,7 +83,6 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
-      - ollama
     network_mode: host
     restart: always
     command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
