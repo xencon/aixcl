@@ -375,7 +375,7 @@ function start() {
     run_compose up -d "${profile_services[@]}"
     
     echo "Waiting for runtime core services to be ready..."
-    local max_attempts=30
+    local max_attempts=150
     local attempt=1
     local all_ready=false
     
