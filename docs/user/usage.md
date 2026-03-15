@@ -6,8 +6,8 @@ AIXCL follows a governance model that separates **Runtime Core** from **Operatio
 
 ### Runtime Core (Strict - Always Enabled)
 These services define what AIXCL is and are always present:
-- **Ollama**: LLM inference engine
-- **Ollama**: LLM inference engine
+- **Inference Engine** (Ollama, vLLM, llama.cpp): LLM inference engine
+- **Council**: Multi-model orchestration
 - **Continue**: VS Code plugin for AI-powered code assistance
 
 Runtime core services are non-negotiable and must be running for AIXCL to function.
@@ -65,7 +65,17 @@ This will:
 
 **Note:** After the first run, you can set `PROFILE=<profile>` in `.env` file to use a default profile. Then `./aixcl stack start` will use that profile automatically.
 
-### 3. Add Models
+### 3. Configure the Engine
+
+```bash
+# Auto-detect optimal engine based on hardware (vLLM for GPU, llama.cpp for ARM, Ollama for general)
+./aixcl config engine auto
+
+# Manually assign an inference engine
+./aixcl config engine set vllm
+```
+
+### 4. Add Models
 
 ```bash
 # Recommended default models (optimized for performance)
@@ -74,7 +84,7 @@ This will:
 ./aixcl models add qwen2.5-coder:3b
 ```
 
-### 4. Check Status
+### 5. Check Status
 
 ```bash
 ./aixcl stack status
@@ -186,7 +196,7 @@ This comprehensive status check shows:
 - **Runtime vs Operational:** Status output distinguishes between runtime core (critical) and operational services (informational)
 - **Health Summary:** Counts of healthy services by category
 
-Note: Runtime core services (ollama) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
+Note: Runtime core services (Inference Engine) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
 
 ## Maintenance
 
