@@ -950,7 +950,7 @@ function logs() {
             *)
                 echo "Error: Unknown container '$container'"
                 echo ""
-                echo "Runtime Core Services: \${INFERENCE_ENGINE:-ollama}"
+                echo "Runtime Core Services: ${INFERENCE_ENGINE:-ollama}"
                 echo "Operational Services: open-webui, postgres, pgadmin, watchtower, prometheus, grafana, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, loki, promtail"
                 echo ""
                 echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -1244,9 +1244,11 @@ function status() {
     # Services section
     echo "Services"
     echo "--------------------------------------------------"
-    
+    echo ""
+
     # Runtime Core
-    local engine="\${INFERENCE_ENGINE:-ollama}"
+    echo "Runtime Core"
+    local engine="${INFERENCE_ENGINE:-ollama}"
     local engine_name="Ollama"
     local engine_url="http://localhost:11434/api/version"
     if [ "$engine" = "vllm" ]; then
@@ -1256,12 +1258,16 @@ function status() {
         engine_name="llama.cpp"
         engine_url="http://localhost:11434/v1/models"
     fi
-    check_service_status "$engine_name" "$engine" "curl" "$engine_url" "true" "true"
+    check_service_status "$engine_name (Inference Engine)" "$engine" "curl" "$engine_url" "true" "true"
+    echo ""
+
+    # Operational Services
+    echo "Operational Services"
     
-    # UI Services
+    # UI
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://localhost:8080/health"
 
-    # Persistence Services
+    # Persistence
     local postgres_user="${POSTGRES_USER:-webui}"
     if [[ ! "$postgres_user" =~ ^[A-Za-z0-9_-]+$ ]]; then
         postgres_user="webui"
@@ -1269,28 +1275,28 @@ function status() {
     fi
     check_operational_service "PostgreSQL" "postgres" "postgres" "pg_isready" "$postgres_user"
 
-    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+    PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
     check_operational_service "pgAdmin" "pgadmin" "pgadmin" "status_var" "PGADMIN_STATUS"
 
-    # Observability Services
-    PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
+    # Observability
+    PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
     check_operational_service "Prometheus" "prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS"
 
-    GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
+    GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
     check_operational_service "Grafana" "grafana" "grafana" "status_var" "GRAFANA_STATUS"
 
-    CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
+    CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
     check_operational_service "cAdvisor" "cadvisor" "cadvisor" "status_var" "CADVISOR_STATUS"
 
-    NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
+    NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
     check_operational_service "Node Exporter" "node-exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS"
 
-    POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
+    POSTGRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
     check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTGRES_EXPORTER_STATUS"
 
     if is_operational_in_profile "nvidia-gpu-exporter"; then
         if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
-            NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
         else
             echo "  ❌ NVIDIA GPU Exporter"
@@ -1301,7 +1307,7 @@ function status() {
     fi
 
     # Loki
-    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+    LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
     # Promtail
@@ -1580,7 +1586,7 @@ function help_menu() {
     echo "  config engine auto                  - Auto-detect optimal engine based on hardware"
     echo ""
     echo "Service: service <action> <name>"
-    echo "  Runtime Core (always enabled): \${INFERENCE_ENGINE:-ollama}"
+    echo "  Runtime Core (always enabled): ${INFERENCE_ENGINE:-ollama}"
     echo ""
     echo "Models: models <action> [name]"
     echo "  models add <name>                   - Add model(s) to Ollama/vLLM/llama.cpp"
