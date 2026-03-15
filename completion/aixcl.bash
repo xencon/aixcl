@@ -40,7 +40,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands
-    local commands="stack service models utils help"
+    local commands="stack service models config utils help"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -129,6 +129,25 @@ _aixcl_complete() {
             local model_actions="add remove list"
             COMPREPLY=( $(compgen -W "$model_actions" -- "$cur") )
             return 0
+            ;;
+        'config')
+            local config_actions="engine"
+            COMPREPLY=( $(compgen -W "$config_actions" -- "$cur") )
+            return 0
+            ;;
+        'engine')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "config" ]]; then
+                local engine_actions="set auto"
+                COMPREPLY=( $(compgen -W "$engine_actions" -- "$cur") )
+                return 0
+            fi
+            ;;
+        'set')
+            if (( cword >= 3 )) && [[ "${words[cword-3]}" == "config" ]] && [[ "${words[cword-2]}" == "engine" ]]; then
+                local engines="ollama vllm llamacpp"
+                COMPREPLY=( $(compgen -W "$engines" -- "$cur") )
+                return 0
+            fi
             ;;
         'utils')
             local utils_actions="check-env bash-completion"
