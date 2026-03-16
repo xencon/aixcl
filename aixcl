@@ -575,12 +575,12 @@ function restart() {
             echo "Examples:" >&2
             echo "  ./aixcl stack start                      # Start using .env profile" >&2
             echo "  ./aixcl stack start --profile dev        # Start dev profile" >&2
-            echo "  ./aixcl stack logs ${engine}                # Show ${engine} logs" >&2
-            echo "  ./aixcl stack restart ${engine}             # Restart ${engine}" >&2
-            echo "  ./aixcl stack stop                       # Stop all services" >&2
-            echo "  ./aixcl stack start -p ops               # Start ops profile" >&2
-            echo "  ./aixcl stack status                     # Show all service status" >&2
-            echo "  ./aixcl stack logs -f ${engine}             # Follow logs" >&2
+            echo "  ./aixcl stack logs engine                   # Show logs for active engine" >&2
+            echo "  ./aixcl stack restart engine                # Restart active engine" >&2
+            echo "  ./aixcl stack stop                          # Stop all services" >&2
+            echo "  ./aixcl stack start -p ops                  # Start ops profile" >&2
+            echo "  ./aixcl stack status                        # Show all service status" >&2
+            echo "  ./aixcl stack logs -f engine                # Follow logs for active engine" >&2
             echo "  ./aixcl stack clean                      # Clean containers/volumes" >&2
             exit 1
         fi
@@ -738,8 +738,8 @@ function stop_service() {
         echo "Error: Service name is required"
         echo "Usage: $0 service stop <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama"
-        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo "Runtime Core Services (always enabled): \${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
+        echo "Operational Services (profile-dependent): \${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
@@ -751,8 +751,8 @@ function stop_service() {
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama"
-        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo "Runtime Core Services (always enabled): \${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
+        echo "Operational Services (profile-dependent): \${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
@@ -798,8 +798,8 @@ function service() {
         echo "Error: Service action and name are required"
         echo "Usage: $0 service {start|stop|restart} <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): ollama"
-        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
+        echo "Runtime Core Services (always enabled): \${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
+        echo "Operational Services (profile-dependent): \${ALL_SERVICES[*]}"
         echo ""
         echo "Note: Continue is a VS Code plugin, not a containerized service"
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -882,10 +882,13 @@ function logs() {
         local running_containers=()
         
         for service in "${ALL_SERVICES[@]}"; do
-            # Check for exact match or hash-prefixed match
-            if docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$"; then
+            # Find the actual container name (exact or hash-prefixed)
+            local actual_container
+            actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1)
+            
+            if [ -n "$actual_container" ]; then
                 found_any=true
-                running_containers+=("$service")
+                running_containers+=("$actual_container")
             fi
         done
         
@@ -923,6 +926,11 @@ function logs() {
         local container="$1"
         local tail_count="${2:-50}"  # Default to 50 lines if not specified
         
+        # Resolve 'engine' alias to active INFERENCE_ENGINE (managed by profile.sh)
+        if [ "$container" = "engine" ]; then
+            container="${INFERENCE_ENGINE:-ollama}"
+        fi
+
         # Validate tail_count
         if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
             echo "❌ tail count must be a number between 1 and 10000"
@@ -959,8 +967,11 @@ function logs() {
         else
             echo "Error: Unknown container '$container'"
             echo ""
-            echo "Runtime Core Services: ${INFERENCE_ENGINE:-ollama}"
-            echo "Operational Services: ${ALL_SERVICES[*]}"
+            echo "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
+            echo "  ollama, vllm, llamacpp"
+            echo ""
+            echo "Operational Services:"
+            echo "  ${ALL_SERVICES[*]}"
             echo ""
             echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
             return 1
@@ -1822,8 +1833,9 @@ function stack_cmd() {
         echo "  $0 stack restart [--profile <profile>] [service1] [service2] ... - Restart stack or specific services"
         echo "  $0 stack status               - Show service status (runtime core vs operational)"
         echo "  $0 stack logs                 - Show logs for all services"
-        echo "  $0 stack logs ollama          - Show logs for a specific service"
-        echo "  $0 stack logs ollama 100      - Show last 100 lines for a service"
+        echo "  $0 stack logs engine          - Show logs for the active inference engine"
+        echo "  $0 stack logs engine 100      - Show last 100 lines for the active engine"
+        echo "  $0 stack logs open-webui      - Show logs for a specific service"
         echo "  $0 stack clean                - Remove unused Docker resources"
         echo ""
         echo "Valid profiles: usr, dev, ops, sys (default: sys)"
