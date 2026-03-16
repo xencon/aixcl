@@ -2,7 +2,7 @@
 # Docker and Docker Compose utility functions
 
 # Source common functions
-# shellcheck source=lib/common.sh
+# shellcheck source=common.sh
 source "${BASH_SOURCE%/*}/common.sh"
 
 # Get script directory

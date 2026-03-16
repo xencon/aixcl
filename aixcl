@@ -11,6 +11,7 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 # Order matters: color.sh and common.sh first (no dependencies), then modules
 # that depend on them. load_env_file must run before docker_utils.sh so that
 # COMPOSE_FILE from .env is picked up during validation.
+# Source shared libraries
 # shellcheck source=lib/color.sh
 source "${SCRIPT_DIR}/lib/color.sh"
 # shellcheck source=lib/common.sh
@@ -36,8 +37,8 @@ CONTAINER_NAME="open-webui"
 
 # Source the autocomplete script if it exists (with security validation)
 COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
-# shellcheck disable=SC1090
 if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
+    # shellcheck disable=SC1090
     source "$COMPLETION_SCRIPT"
 fi
 
@@ -48,8 +49,10 @@ fi
 # Returns 0 if valid, 1 if invalid
 # Valid names: alphanumeric + underscore, must start with letter or underscore
 validate_db_name() {
-    local name="$1"
-    local context="$2"
+    local name
+    name="$1"
+    local context
+    context="$2"
     
     # Check if empty
     if [ -z "$name" ]; then
@@ -94,8 +97,10 @@ function ensure_databases() {
     fi
     
     # Set defaults
-    local pg_user="${POSTGRES_USER:-admin}"
-    local webui_db="${POSTGRES_DATABASE:-webui}"
+    local pg_user
+    pg_user="${POSTGRES_USER:-admin}"
+    local webui_db
+    webui_db="${POSTGRES_DATABASE:-webui}"
     
     # Validate database names to prevent SQL injection
     if ! validate_db_name "$webui_db" "webui"; then
@@ -111,7 +116,8 @@ function ensure_databases() {
     fi
     
     # Wait for PostgreSQL to be ready
-    local pg_ready=false
+    local pg_ready
+    pg_ready=false
     for i in {1..10}; do
         if timeout 2 docker exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
             pg_ready=true
@@ -154,8 +160,10 @@ function ensure_databases() {
 # generate_pgadmin_config() is provided by lib/pgadmin_utils.sh
 
 function start() {
-    local profile=""
-    local profile_specified=false
+    local profile
+    profile=""
+    local profile_specified
+    profile_specified=false
     
     # Profile library is sourced at script startup (cli/lib/profile.sh)
     
@@ -393,12 +401,16 @@ function start() {
     run_compose up -d "${profile_services[@]}"
     
     echo "Waiting for runtime core services to be ready..."
-    local max_attempts=150
-    local attempt=1
-    local all_ready=false
+    local max_attempts
+    max_attempts=150
+    local attempt
+    attempt=1
+    local all_ready
+    all_ready=false
     
     while [ $attempt -le $max_attempts ]; do
-        local engine_ready=false
+        local engine_ready
+        engine_ready=false
         
         # Check Inference Engine (Ollama or OpenAI compatible API)
         if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" || \
@@ -500,8 +512,10 @@ function stop() {
 }
 
 function restart() {
-    local profile=""
-    local profile_specified=false
+    local profile
+    profile=""
+    local profile_specified
+    profile_specified=false
     
     # Profile library is sourced at script startup (cli/lib/profile.sh)
     
@@ -562,7 +576,8 @@ function restart() {
     
     # If no profile specified via command line, try to get from .env file
     if [ "$profile_specified" = false ]; then
-        local env_file="${SCRIPT_DIR}/.env"
+        local env_file
+        env_file="${SCRIPT_DIR}/.env"
         
         # Load .env file to check for PROFILE variable
         if [ -f "$env_file" ]; then
@@ -1302,7 +1317,8 @@ function status() {
 
     # Runtime Core
     echo "Runtime Core"
-    local active_engine="${INFERENCE_ENGINE:-ollama}"
+    local active_engine
+    active_engine="${INFERENCE_ENGINE:-ollama}"
     
     # Define engines and their health check URLs
     local engines=("ollama" "vllm" "llamacpp")
@@ -1314,9 +1330,12 @@ function status() {
     )
 
     for i in "${!engines[@]}"; do
-        local engine="${engines[$i]}"
-        local name="${names[$i]}"
-        local url="${urls[$i]}"
+        local engine
+        engine="${engines[$i]}"
+        local name
+        name="${names[$i]}"
+        local url
+        url="${urls[$i]}"
         local suffix=""
         
         if [ "$engine" = "$active_engine" ]; then
@@ -1334,7 +1353,8 @@ function status() {
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://localhost:8080/health"
 
     # Persistence
-    local postgres_user="${POSTGRES_USER:-webui}"
+    local postgres_user
+    postgres_user="${POSTGRES_USER:-webui}"
     if [[ ! "$postgres_user" =~ ^[A-Za-z0-9_-]+$ ]]; then
         postgres_user="webui"
         echo "⚠️  Warning: Invalid POSTGRES_USER value, using default 'webui'" >&2
