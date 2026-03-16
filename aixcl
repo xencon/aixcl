@@ -11,17 +11,24 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 # Order matters: color.sh and common.sh first (no dependencies), then modules
 # that depend on them. load_env_file must run before docker_utils.sh so that
 # COMPOSE_FILE from .env is picked up during validation.
+# shellcheck source=lib/color.sh
 source "${SCRIPT_DIR}/lib/color.sh"
+# shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 
 # Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
 load_env_file ".env"
 
 # docker_utils.sh validates COMPOSE_FILE and sets default COMPOSE_CMD/COMPOSE_WORKDIR
+# shellcheck source=lib/docker_utils.sh
 source "${SCRIPT_DIR}/lib/docker_utils.sh"
+# shellcheck source=lib/logging.sh
 source "${SCRIPT_DIR}/lib/logging.sh"
+# shellcheck source=lib/env_check.sh
 source "${SCRIPT_DIR}/lib/env_check.sh"
+# shellcheck source=lib/pgadmin_utils.sh
 source "${SCRIPT_DIR}/lib/pgadmin_utils.sh"
+# shellcheck source=cli/lib/profile.sh
 source "${SCRIPT_DIR}/cli/lib/profile.sh"
 
 # ── AIXCL-specific constants ─────────────────────────────────────────────────
@@ -29,6 +36,7 @@ CONTAINER_NAME="open-webui"
 
 # Source the autocomplete script if it exists (with security validation)
 COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
+# shellcheck disable=SC1090
 if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
     source "$COMPLETION_SCRIPT"
 fi
@@ -525,6 +533,7 @@ function restart() {
     # If they are valid service names, treat them as services to restart
     if [ ${#remaining_args[@]} -gt 0 ]; then
         # Source common library for service validation
+        # shellcheck source=lib/common.sh
         source "${SCRIPT_DIR}/lib/common.sh"
         
         # Check if any remaining args are valid service names
@@ -558,7 +567,8 @@ function restart() {
         # Load .env file to check for PROFILE variable
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
-            local env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            local env_profile
+            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
             
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
@@ -857,7 +867,8 @@ function service() {
                 # Force remove any existing containers (including hash-prefixed ones)
                 echo "Removing existing containers for clean rebuild..."
                 run_compose rm -f "$service" 2>/dev/null || true
-                local container_name=$(get_container_name "$service")
+                local container_name
+                container_name=$(get_container_name "$service")
                 docker rm -f "$container_name" 2>/dev/null || true
                 # Remove any hash-prefixed containers
                 docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
@@ -1104,8 +1115,11 @@ report_continue_cli_status() {
             config_name=$(echo "$cn_out" | grep -E 'Using .+' | head -1 | sed -E 's/^[[:space:]]*Using[[:space:]]+//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             model_line=$(echo "$cn_out" | grep -E 'Model: .+' | head -1 | sed -E 's/^[[:space:]]*Model:[[:space:]]+//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             # Strip ANSI codes if present
-            [ -n "$config_name" ] && config_name=$(echo "$config_name" | sed 's/\x1b\[[0-9;]*m//g')
-            [ -n "$model_line" ] && model_line=$(echo "$model_line" | sed 's/\x1b\[[0-9;]*m//g')
+                # Using sed for robustness with escape characters in BSD/GNU sed
+                # shellcheck disable=SC2001
+                [ -n "$config_name" ] && config_name=$(echo "$config_name" | sed 's/\x1b\[[0-9;]*m//g')
+                # shellcheck disable=SC2001
+                [ -n "$model_line" ] && model_line=$(echo "$model_line" | sed 's/\x1b\[[0-9;]*m//g')
         fi
     fi
     # Fall back to config file: name from YAML, first model from models list
@@ -1135,7 +1149,8 @@ function status() {
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
     # Join ALL_SERVICES with | for grep
-    local all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
+    local all_services_pattern
+    all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
     if docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         overall_status="Running"
     fi
@@ -1197,7 +1212,8 @@ function status() {
                     if [ "$health_result" = "404" ] || [ "$health_result" = "000" ]; then
                         local base_url="${health_check_arg%/health}"
                         base_url="${base_url%/}"
-                        local root_result=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$base_url/" 2>/dev/null || echo "000")
+                        local root_result
+                        root_result=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$base_url/" 2>/dev/null || echo "000")
                         if [ "$root_result" = "200" ] || [ "$root_result" = "302" ] || [ "$root_result" = "307" ]; then
                             health_result="$root_result"
                         fi
@@ -1726,7 +1742,8 @@ function install_completion() {
     # Clean up .bashrc - remove any old aixcl completion references
     if [[ -f "$HOME/.bashrc" ]]; then
         echo "Cleaning up .bashrc..."
-        local temp_bashrc="$(mktemp)"
+        local temp_bashrc
+        temp_bashrc="$(mktemp)"
         # Remove the entire completion block using sed
         # Pattern: from "Added by aixcl installer" through the next standalone "fi"
         sed '/Added by aixcl installer/,/^[[:space:]]*fi[[:space:]]*$/d' "$HOME/.bashrc" > "$temp_bashrc" || cp "$HOME/.bashrc" "$temp_bashrc"

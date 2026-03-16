@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Test script for Open WebUI JSON generation security (Issue #448)
 
-SCRIPT_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
+
 
 # Colors
 GREEN='\033[0;32m'
