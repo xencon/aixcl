@@ -12,24 +12,24 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 # that depend on them. load_env_file must run before docker_utils.sh so that
 # COMPOSE_FILE from .env is picked up during validation.
 # Source shared libraries
-# shellcheck source=lib/color.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/color.sh"
-# shellcheck source=lib/common.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/common.sh"
 
 # Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
 load_env_file ".env"
 
 # docker_utils.sh validates COMPOSE_FILE and sets default COMPOSE_CMD/COMPOSE_WORKDIR
-# shellcheck source=lib/docker_utils.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/docker_utils.sh"
-# shellcheck source=lib/logging.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/logging.sh"
-# shellcheck source=lib/env_check.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/env_check.sh"
-# shellcheck source=lib/pgadmin_utils.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/pgadmin_utils.sh"
-# shellcheck source=cli/lib/profile.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/cli/lib/profile.sh"
 
 # ── AIXCL-specific constants ─────────────────────────────────────────────────
@@ -547,7 +547,7 @@ function restart() {
     # If they are valid service names, treat them as services to restart
     if [ ${#remaining_args[@]} -gt 0 ]; then
         # Source common library for service validation
-        # shellcheck source=lib/common.sh
+        # shellcheck disable=SC1091
         source "${SCRIPT_DIR}/lib/common.sh"
         
         # Check if any remaining args are valid service names
