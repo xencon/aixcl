@@ -49,8 +49,10 @@ fi
 # Returns 0 if valid, 1 if invalid
 # Valid names: alphanumeric + underscore, must start with letter or underscore
 validate_db_name() {
-    local name="$1"
-    local context="$2"
+    local name
+    name="$1"
+    local context
+    context="$2"
     
     # Check if empty
     if [ -z "$name" ]; then
@@ -95,8 +97,10 @@ function ensure_databases() {
     fi
     
     # Set defaults
-    local pg_user="${POSTGRES_USER:-admin}"
-    local webui_db="${POSTGRES_DATABASE:-webui}"
+    local pg_user
+    pg_user="${POSTGRES_USER:-admin}"
+    local webui_db
+    webui_db="${POSTGRES_DATABASE:-webui}"
     
     # Validate database names to prevent SQL injection
     if ! validate_db_name "$webui_db" "webui"; then
@@ -112,7 +116,8 @@ function ensure_databases() {
     fi
     
     # Wait for PostgreSQL to be ready
-    local pg_ready=false
+    local pg_ready
+    pg_ready=false
     for i in {1..10}; do
         if timeout 2 docker exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
             pg_ready=true
@@ -155,8 +160,10 @@ function ensure_databases() {
 # generate_pgadmin_config() is provided by lib/pgadmin_utils.sh
 
 function start() {
-    local profile=""
-    local profile_specified=false
+    local profile
+    profile=""
+    local profile_specified
+    profile_specified=false
     
     # Profile library is sourced at script startup (cli/lib/profile.sh)
     
@@ -394,12 +401,16 @@ function start() {
     run_compose up -d "${profile_services[@]}"
     
     echo "Waiting for runtime core services to be ready..."
-    local max_attempts=150
-    local attempt=1
-    local all_ready=false
+    local max_attempts
+    max_attempts=150
+    local attempt
+    attempt=1
+    local all_ready
+    all_ready=false
     
     while [ $attempt -le $max_attempts ]; do
-        local engine_ready=false
+        local engine_ready
+        engine_ready=false
         
         # Check Inference Engine (Ollama or OpenAI compatible API)
         if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" || \
@@ -501,8 +512,10 @@ function stop() {
 }
 
 function restart() {
-    local profile=""
-    local profile_specified=false
+    local profile
+    profile=""
+    local profile_specified
+    profile_specified=false
     
     # Profile library is sourced at script startup (cli/lib/profile.sh)
     
