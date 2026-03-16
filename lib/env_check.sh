@@ -2,7 +2,9 @@
 # Environment validation functions
 
 # Source dependencies
+# shellcheck source=./common.sh
 source "${BASH_SOURCE%/*}/common.sh"
+# shellcheck source=./color.sh
 source "${BASH_SOURCE%/*}/color.sh"
 
 check_env() {
@@ -147,7 +149,8 @@ check_env() {
     # Check available disk space
     echo -e "\nChecking system resources..."
     local required_space=10 # GB
-    local available_space=$(df -BG "$(pwd)" | awk 'NR==2 {print $4}' | sed 's/G//')
+    local available_space
+    available_space=$(df -BG "$(pwd)" | awk 'NR==2 {print $4}' | sed 's/G//')
     
     if [ "$available_space" -lt "$required_space" ]; then
         print_error "Insufficient disk space. Required: ${required_space}GB, Available: ${available_space}GB"
@@ -157,7 +160,8 @@ check_env() {
     fi
 
     # Check memory
-    local total_mem=$(free -g | awk '/^Mem:/{print $2}')
+    local total_mem
+    total_mem=$(free -g | awk '/^Mem:/{print $2}')
     if [ "$total_mem" -lt 8 ]; then
         print_warning "Low memory detected (${total_mem}GB). Recommended: 8GB+"
     else

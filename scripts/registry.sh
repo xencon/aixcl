@@ -40,7 +40,7 @@ list_images() {
 
 cache_images() {
     # Find all docker-compose*.yml files except local ones
-    for COMPOSE_FILE in $(find "$REPO_ROOT" -maxdepth 1 -type f -name "docker-compose*.yml" ! -name "*.local.yml"); do
+    find "$REPO_ROOT" -maxdepth 1 -type f -name "docker-compose*.yml" ! -name "*.local.yml" -print0 | while IFS= read -r -d '' COMPOSE_FILE; do
         LOCAL_COMPOSE="${COMPOSE_FILE%.yml}.local.yml"
         cp "$COMPOSE_FILE" "$LOCAL_COMPOSE"
         echo "Processing compose: $COMPOSE_FILE → $LOCAL_COMPOSE"

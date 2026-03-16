@@ -65,7 +65,7 @@ fi
 
 # Check existing images
 if [ -f "$SERVICES_DIR/docker-compose.yml" ]; then
-    image_count=$(grep -E "^[[:space:]]*image:" "$SERVICES_DIR/docker-compose.yml" | wc -l)
+    image_count=$(grep -Ec "^[[:space:]]*image:" "$SERVICES_DIR/docker-compose.yml")
     info "Found $image_count image references in docker-compose.yml"
 fi
 
@@ -80,12 +80,10 @@ if [ -f "${SCRIPT_DIR}/.env" ]; then
     fi
     
     # Backup .env to volume using a temporary container
-    docker run --rm \
+    if docker run --rm \
         -v "${SCRIPT_DIR}/.env:/source/.env:ro" \
         -v "${ENV_BACKUP_VOLUME}:/backup" \
-        alpine sh -c "cp /source/.env /backup/.env && chmod 600 /backup/.env" >/dev/null 2>&1
-    
-    if [ $? -eq 0 ]; then
+        alpine sh -c "cp /source/.env /backup/.env && chmod 600 /backup/.env" >/dev/null 2>&1; then
         success ".env file backed up to Docker volume: $ENV_BACKUP_VOLUME"
     else
         warning "Failed to backup .env file (will need manual restoration)"
@@ -126,7 +124,7 @@ for i in {1..10}; do
         success "Registry is ready"
         break
     fi
-    if [ $i -eq 10 ]; then
+    if [ "$i" -eq 10 ]; then
         warning "Registry may not be fully ready, but continuing..."
     else
         sleep 1

@@ -117,7 +117,7 @@ print_profile_info() {
     echo ""
     echo "Services included:"
     local services
-    services=($(get_profile_services "$profile"))
+    read -r -a services <<< "$(get_profile_services "$profile")"
     for service in "${services[@]}"; do
         # Check if it's a runtime core service
         local is_core=false

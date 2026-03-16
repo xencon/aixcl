@@ -2,6 +2,7 @@
 # Logging utility functions
 
 # Source color functions
+# shellcheck source=./color.sh
 source "${BASH_SOURCE%/*}/color.sh"
 
 # Log levels
@@ -15,28 +16,28 @@ LOG_LEVEL=${LOG_LEVEL:-$LOG_INFO}
 
 # Log a debug message
 log_debug() {
-    if [ $LOG_LEVEL -le $LOG_DEBUG ]; then
+    if [ "$LOG_LEVEL" -le "$LOG_DEBUG" ]; then
         echo "[DEBUG] $*" >&2
     fi
 }
 
 # Log an info message
 log_info() {
-    if [ $LOG_LEVEL -le $LOG_INFO ]; then
+    if [ "$LOG_LEVEL" -le "$LOG_INFO" ]; then
         print_info "$*"
     fi
 }
 
 # Log a warning message
 log_warning() {
-    if [ $LOG_LEVEL -le $LOG_WARNING ]; then
+    if [ "$LOG_LEVEL" -le "$LOG_WARNING" ]; then
         print_warning "$*"
     fi
 }
 
 # Log an error message
 log_error() {
-    if [ $LOG_LEVEL -le $LOG_ERROR ]; then
+    if [ "$LOG_LEVEL" -le "$LOG_ERROR" ]; then
         print_error "$*"
     fi
 }

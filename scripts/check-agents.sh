@@ -45,7 +45,8 @@ check_agents() {
     fi
 
     for agent_file in "${agent_files[@]}"; do
-        local basename=$(basename "$agent_file")
+        local basename
+        basename=$(basename "$agent_file")
         info "Checking agent: $basename"
 
         # Check naming convention
@@ -58,7 +59,8 @@ check_agents() {
             error "$basename: Missing YAML frontmatter (no --- delimiter)"
         else
             # Extract frontmatter
-            local frontmatter=$(awk '/^---$/{flag=1; next} /^---$/{flag=0} flag' "$agent_file")
+            local frontmatter
+            frontmatter=$(awk '/^---$/{flag=1; next} /^---$/{flag=0} flag' "$agent_file")
 
             # Check required fields
             if ! echo "$frontmatter" | grep -q "^name:"; then
@@ -73,7 +75,8 @@ check_agents() {
         fi
 
         # Check required sections
-        local content=$(awk '/^---$/{flag=1} /^---$/{flag=0; next} !flag' "$agent_file")
+        local content
+        content=$(awk '/^---$/{flag=1} /^---$/{flag=0; next} !flag' "$agent_file")
         
         local required_sections=(
             "Purpose"
@@ -113,7 +116,8 @@ check_skills() {
     fi
 
     for skill_file in "${skill_files[@]}"; do
-        local basename=$(basename "$skill_file")
+        local basename
+        basename=$(basename "$skill_file")
         info "Checking skill: $basename"
 
         if [[ ! "$basename" =~ ^skill-.*\.md$ ]]; then
@@ -135,7 +139,8 @@ check_reports() {
     fi
 
     for report_file in "${report_files[@]}"; do
-        local basename=$(basename "$report_file")
+        local basename
+        basename=$(basename "$report_file")
         info "Checking AI report: $basename"
 
         if [[ ! "$basename" =~ ^ai-report-.*\.md$ ]]; then
