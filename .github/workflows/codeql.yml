@@ -28,7 +28,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: actions, javascript  # Add your languages
+          languages: actions  # Projects with multiple languages can add them here as a comma-separated list.
           queries: security-and-quality
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
