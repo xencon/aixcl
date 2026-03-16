@@ -2,7 +2,7 @@
 # Logging utility functions
 
 # Source color functions
-# shellcheck source=./color.sh
+# shellcheck source=lib/color.sh
 source "${BASH_SOURCE%/*}/color.sh"
 
 # Log levels
