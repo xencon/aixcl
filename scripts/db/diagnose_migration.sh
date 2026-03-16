@@ -8,6 +8,7 @@ set -e
 if [ -f .env ]; then
     set -a
     # shellcheck disable=SC1091
+    # shellcheck source=/dev/null
     source .env
     set +a
 fi
