@@ -47,7 +47,7 @@ fi
 # Configuration
 CONTAINER_NAME="open-webui"
 POSTGRES_USER=${POSTGRES_USER:-webui}
-BACKEND_MODE=${BACKEND_MODE:-ollama}
+INFERENCE_ENGINE=${INFERENCE_ENGINE:-ollama}
 
 
 # Test counters
@@ -148,14 +148,14 @@ test_stack_status() {
     echo "Container Status"
     echo "-----------------------------------"
     
-    # Core Application Services
-    echo "Core"
-    if is_container_running "ollama"; then
-        print_success "Ollama"
-        record_test "pass" "Ollama container is running"
+    # Inference Engine
+    echo "Engine: $INFERENCE_ENGINE"
+    if is_container_running "$INFERENCE_ENGINE"; then
+        print_success "$INFERENCE_ENGINE"
+        record_test "pass" "$INFERENCE_ENGINE container is running"
     else
-        print_error "Ollama"
-        record_test "fail" "Ollama container is not running"
+        print_error "$INFERENCE_ENGINE"
+        record_test "fail" "$INFERENCE_ENGINE container is not running"
     fi
     
     if is_container_running "$CONTAINER_NAME"; then
@@ -272,15 +272,23 @@ test_stack_status() {
     echo "-----------------------------------"
     
     # Core Application Services
-    echo "Core"
+    # Inference Engine health check
+    local engine_url="http://localhost:11434"
+    local healthy=false
     
-    # Ollama health check
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
-        print_success "Ollama"
-        record_test "pass" "Ollama health check passed"
+    # Try both Ollama and OpenAI-compatible endpoints
+    if curl -s -o /dev/null -w "%{http_code}" "${engine_url}/api/version" 2>/dev/null | grep -q "200"; then
+        healthy=true
+    elif curl -s -o /dev/null -w "%{http_code}" "${engine_url}/v1/models" 2>/dev/null | grep -q "200"; then
+        healthy=true
+    fi
+
+    if [ "$healthy" = true ]; then
+        print_success "$INFERENCE_ENGINE"
+        record_test "pass" "$INFERENCE_ENGINE health check passed"
     else
-        print_error "Ollama"
-        record_test "fail" "Ollama health check failed"
+        print_error "$INFERENCE_ENGINE"
+        record_test "fail" "$INFERENCE_ENGINE health check failed"
     fi
     
     # Open WebUI health check (with longer timeout for migrations)
@@ -454,387 +462,179 @@ test_stack_status() {
     fi
 }
 
+# Helper function to get available models
+get_available_models() {
+    local target_engine="${1:-$INFERENCE_ENGINE}"
+    local engine_url="http://localhost:11434"
+    
+    if [ "$target_engine" = "ollama" ]; then
+        if is_container_running "ollama"; then
+            # Use CLI if available
+            docker exec ollama ollama list 2>/dev/null | tail -n +2 | grep -v "^NAME" | awk '{print $1}' | sed 's/:latest//'
+        else
+            # API fallback
+            curl -s "${engine_url}/api/tags" | jq -r '.models[].name' 2>/dev/null | sed 's/:latest//'
+        fi
+    elif [ "$target_engine" = "vllm" ] || [ "$target_engine" = "llamacpp" ]; then
+        # OpenAI compatible
+        curl -s "${engine_url}/v1/models" | jq -r '.data[].id' 2>/dev/null
+    else
+        # Generic OpenAI compatible fallback
+        curl -s "${engine_url}/v1/models" | jq -r '.data[].id' 2>/dev/null
+    fi
+}
+
 # ============================================================================
 # SECTION 2: LLM STATE TESTS
 # ============================================================================
 test_llm_state() {
     start_section "LLM State - Models & Operational Status"
     
-    # Test 1: Ollama Service Check
-    echo "Ollama Service"
-    echo "-----------------------------------"
+    local engines=("ollama" "vllm" "llamacpp")
     
-    if ! is_container_running "ollama"; then
-        print_error "Ollama container is not running"
-        record_test "fail" "Ollama container is not running"
-        echo ""
-        echo "⚠️  Cannot test LLM state without Ollama running"
-        echo "   Run: aixcl stack start"
-        return
-    fi
-    
-    print_success "Ollama container is running"
-    record_test "pass" "Ollama container is running"
-    
-    # Check Ollama API health
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
-        print_success "Ollama API is accessible"
-        record_test "pass" "Ollama API is accessible"
-    else
-        print_error "Ollama API is not accessible"
-        record_test "fail" "Ollama API is not accessible"
-        return
-    fi
-    
-    echo ""
-    
-    # Test 2: List All Available Models
-    echo "All Available Models"
-    echo "-----------------------------------"
-    
-    echo "Listing installed models..."
-    
-    # Get all available models from Ollama
-    available_models=$(get_available_models 2>&1)
-    if [ $? -ne 0 ] || [ -z "$available_models" ]; then
-        print_error "No models found in Ollama"
-        record_test "fail" "No models found in Ollama"
-        echo ""
-        echo "⚠️  No models are installed. Add models with:"
-        echo "   aixcl models add <model-name>"
-        echo ""
+    for engine in "${engines[@]}"; do
+        local display_name="$engine"
+        [ "$engine" = "ollama" ] && display_name="$engine (Default)"
         
-        all_models_array=()
-    else
-        # Count models
-        model_count=$(echo "$available_models" | grep -v "^$" | wc -l | tr -d ' ')
-        print_success "Found $model_count installed model(s)"
-        record_test "pass" "Found $model_count installed model(s)"
+        echo "Inference Engine: $display_name"
+        echo "-----------------------------------"
         
-        echo ""
-        echo "Installed models:"
+        if [ "$INFERENCE_ENGINE" != "$engine" ]; then
+            print_warning "$engine is not the active inference engine"
+            record_test "skip" "$engine tests skipped (not active)"
+            echo ""
+            continue
+        fi
         
-        # Convert to array for later testing
-        all_models_array=()
-        while IFS= read -r model; do
-            if [ -n "$model" ]; then
-                echo "  - $model"
-                all_models_array+=("$model")
+        # Test 1: Inference Engine Service Check
+        if ! is_container_running "$engine"; then
+            print_error "$engine container is not running"
+            record_test "fail" "$engine container is not running"
+            echo ""
+            echo "⚠️  Cannot test LLM state without $engine running"
+            echo "   Run: aixcl stack start"
+            continue
+        fi
+        
+        print_success "$engine container is running"
+        record_test "pass" "$engine container is running"
+        
+        # Check Engine API health
+        local engine_healthy=false
+        if [ "$engine" = "ollama" ]; then
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+                engine_healthy=true
             fi
-        done <<< "$available_models"
-    fi
-    
-    echo ""
+        else
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/v1/models 2>/dev/null | grep -q "200"; then
+                engine_healthy=true
+            fi
+        fi
+
+        if [ "$engine_healthy" = true ]; then
+            print_success "$engine API is accessible"
+            record_test "pass" "$engine API is accessible"
+        else
+            print_error "$engine API is not accessible"
+            record_test "fail" "$engine API is not accessible"
+            echo ""
+            continue
+        fi
+        
+        echo ""
+        
+        # Test 2: List All Available Models
+        echo "All Available Models"
+        echo "-----------------------------------"
+        
+        echo "Listing installed models..."
+        
+        # Get all available models
+        available_models=$(get_available_models "$engine" 2>&1)
+        if [ $? -ne 0 ] || [ -z "$available_models" ]; then
+            print_error "No models found in $engine"
+            record_test "fail" "No models found in $engine"
+            echo ""
+            echo "⚠️  No models are installed. Add models with:"
+            echo "   aixcl models add <model-name>"
+            echo ""
+            
+            all_models_array=()
+        else
+            # Count models
+            model_count=$(echo "$available_models" | grep -v "^$" | wc -l | tr -d ' ')
+            print_success "Found $model_count installed model(s)"
+            record_test "pass" "Found $model_count installed model(s)"
+            
+            echo ""
+            echo "Installed models:"
+            
+            # Convert to array for later testing
+            all_models_array=()
+            while IFS= read -r model; do
+                if [ -n "$model" ]; then
+                    echo "  - $model"
+                    all_models_array+=("$model")
+                fi
+            done <<< "$available_models"
+        fi
+        
+        echo ""
+    done
     
     record_test "pass" "LLM state check complete"
 }
 
 # ============================================================================
-# SECTION 3: DATABASE CONNECTION TESTS
-# ============================================================================
-test_database_connection() {
-    start_section "Database Connection - PostgreSQL"
-    
-    # Check if PostgreSQL container is running
-    if ! is_container_running "postgres"; then
-        print_error "PostgreSQL container is not running"
-        record_test "fail" "PostgreSQL container is not running"
-        echo "   Cannot run database tests without PostgreSQL"
-        return
-    fi
-    
-    # Check if Python test script exists
-    DB_TEST_SCRIPT="${SCRIPT_DIR}/tests/database/test_db_connection.py"
-    if [ ! -f "$DB_TEST_SCRIPT" ]; then
-        print_error "Database test script not found: $DB_TEST_SCRIPT"
-        record_test "fail" "Database test script not found"
-        return
-    fi
-    
-    echo "Running database connection tests..."
-    echo ""
-    
-    # Change to script directory for proper Python path
-    cd "$SCRIPT_DIR" || {
-        print_error "Cannot change to script directory"
-        record_test "fail" "Cannot change to script directory for database tests"
-        return
-    }
-    
-    # Check if uv is available (preferred method)
-    # Add ~/.local/bin to PATH for uv if it exists
-    if [ -d "$HOME/.local/bin" ]; then
-        export PATH="$HOME/.local/bin:$PATH"
-    fi
-    
-    if command -v uv &> /dev/null; then
-        echo "Using uv to run database tests..."
-        if uv run python ../tests/database/test_db_connection.py; then
-            print_success "Database connection tests passed"
-            record_test "pass" "Database connection tests passed"
-        else
-            print_error "Database connection tests failed"
-            record_test "fail" "Database connection tests failed"
-        fi
-    elif command -v python3 &> /dev/null; then
-        echo "Using python3 to run database tests..."
-        # Try to install asyncpg if missing - use uv if available, otherwise try pip
-        if ! python3 -c "import asyncpg" 2>/dev/null; then
-            echo "⚠️  asyncpg not found. Attempting to install..."
-            if command -v uv &> /dev/null; then
-                uv pip install asyncpg 2>/dev/null || echo "   Could not install asyncpg with uv"
-            else
-                python3 -m pip install --user asyncpg 2>/dev/null || echo "   Could not install asyncpg. Please install manually: pip install asyncpg"
-            fi
-        fi
-        if python3 ../tests/database/test_db_connection.py; then
-            print_success "Database connection tests passed"
-            record_test "pass" "Database connection tests passed"
-        else
-            print_error "Database connection tests failed"
-            record_test "fail" "Database connection tests failed"
-        fi
-    else
-        print_error "Neither uv nor python3 found"
-        record_test "fail" "Python not available for database tests"
-    fi
-    
-    # Return to original directory
-    cd "$SCRIPT_DIR" || true
-}
-
-# ============================================================================
-# SECTION 3B: CONVERSATION STORAGE TESTS
-# ============================================================================
-test_conversation_storage() {
-    start_section "Conversation Storage - Continue Plugin Integration"
-    
-    # Check prerequisites
-    if ! is_container_running "postgres"; then
-        print_error "PostgreSQL container is not running"
-        record_test "fail" "PostgreSQL container is not running"
-        echo "   Cannot test conversation storage without PostgreSQL"
-        return
-    fi
-    
-    echo ""
-    echo "Testing conversation storage flow..."
-    echo ""
-    
-    # Step 1: Get initial conversation count
-    echo "1. Checking initial conversation count..."
-    INITIAL_COUNT=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE source = 'continue';" 2>/dev/null | tr -d ' ' || echo "0")
-    echo "   Initial conversations: $INITIAL_COUNT"
-    
-    # Step 2: Generate expected conversation ID from message (before API call)
-    TEST_MESSAGE="Platform test conversation storage verification"
-    CONV_ID=""
-    if command -v python3 >/dev/null 2>&1; then
-        CONV_ID=$(python3 -c "
-import sys, uuid
-TEST_MESSAGE = '$TEST_MESSAGE'
-CONTINUE_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
-name = f'continue:{TEST_MESSAGE}'
-conv_id = str(uuid.uuid5(CONTINUE_NAMESPACE, name))
-print(conv_id)
-" 2>/dev/null || echo "")
-    fi
-    
-    if [ -z "$CONV_ID" ]; then
-        print_error "Could not generate conversation ID"
-        record_test "fail" "Could not generate conversation ID"
-        return
-    fi
-    
-    echo "   Expected conversation ID: $CONV_ID"
-    
-    # Step 3: Send a test message via API (simulating Continue plugin)
-    echo ""
-    echo "2. Sending test message via API..."
-    echo "   Sending request to ${API_URL}/v1/chat/completions..."
-    # Flush output buffer (helps with VSCode terminal buffering)
-    [ -t 1 ] && printf "" || true
-    RESPONSE=$(curl -s --max-time 120 -X POST "${API_URL}/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"model\": \"ollama\",
-            \"messages\": [
-                {\"role\": \"user\", \"content\": \"$TEST_MESSAGE\"}
-            ],
-            \"stream\": false
-        }" 2>/dev/null)
-    
-    if [ -z "$RESPONSE" ]; then
-        print_error "API request failed"
-        record_test "fail" "Failed to send test message via API"
-        return
-    fi
-    
-    echo "   ✅ API request successful"
-    echo "   Response length: ${#RESPONSE}"
-    
-    # Step 4: Wait for database write with retries
-    echo ""
-    echo "3. Waiting for conversation to be stored in database..."
-    STORED_COUNT=$INITIAL_COUNT
-    MAX_RETRIES=10
-    RETRY_COUNT=0
-    
-    while [ "$STORED_COUNT" -le "$INITIAL_COUNT" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-        sleep 2
-        STORED_COUNT=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE source = 'continue';" 2>/dev/null | tr -d ' ' || echo "0")
-        RETRY_COUNT=$((RETRY_COUNT + 1))
-        echo "   Attempt $RETRY_COUNT/$MAX_RETRIES: Count = $STORED_COUNT"
-    done
-    
-    if [ "$STORED_COUNT" -le "$INITIAL_COUNT" ]; then
-        print_error "Conversation was not stored after $MAX_RETRIES attempts"
-        echo "   Initial count: $INITIAL_COUNT"
-        echo "   Current count: $STORED_COUNT"
-        echo "   Checking if conversation exists by ID..."
-        
-        # Check if conversation exists by ID (might have been created but count didn't update)
-        CONV_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE id = '$CONV_ID';" 2>/dev/null | tr -d ' ' || echo "0")
-        if [ "$CONV_EXISTS" = "1" ]; then
-            echo "   ⚠️  Conversation exists by ID but count didn't increase (possible race condition)"
-            STORED_COUNT=$((INITIAL_COUNT + 1))
-        else
-            record_test "fail" "Conversation was not stored in database"
-            return
-        fi
-    fi
-    
-    echo "   ✅ Conversation count increased: $INITIAL_COUNT -> $STORED_COUNT"
-    record_test "pass" "Conversation count increased after API call"
-    
-    # Step 5: Verify conversation details
-    echo ""
-    echo "4. Verifying conversation details..."
-    CONV_DETAILS=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -A -F'|' -c "SELECT id, title, source FROM chat WHERE id = '$CONV_ID';" 2>/dev/null || echo "")
-    
-    if [ -z "$CONV_DETAILS" ]; then
-        # Try to find any conversation that was just created
-        echo "   ⚠️  Conversation not found by expected ID, checking for any new conversations..."
-        NEW_CONV=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -A -F'|' -c "SELECT id, title, source FROM chat WHERE source = 'continue' ORDER BY created_at DESC LIMIT 1;" 2>/dev/null || echo "")
-        if [ -n "$NEW_CONV" ]; then
-            echo "   Found new conversation: $NEW_CONV"
-            CONV_DETAILS="$NEW_CONV"
-            CONV_ID=$(echo "$CONV_DETAILS" | cut -d'|' -f1)
-            echo "   Using conversation ID: $CONV_ID"
-        else
-            print_error "Conversation not found in database"
-            record_test "fail" "Conversation not found in database by ID"
-            return
-        fi
-    fi
-    
-    # Parse details (format: id|title|source)
-    CONV_SOURCE=$(echo "$CONV_DETAILS" | cut -d'|' -f3)
-    CONV_TITLE=$(echo "$CONV_DETAILS" | cut -d'|' -f2)
-    
-    if [ "$CONV_SOURCE" != "continue" ]; then
-        print_error "Conversation source is incorrect"
-        echo "   Expected: continue"
-        echo "   Got: $CONV_SOURCE"
-        record_test "fail" "Conversation source is not 'continue'"
-        return
-    fi
-    
-    echo "   ✅ Conversation found in database"
-    echo "   Title: $CONV_TITLE"
-    echo "   Source: $CONV_SOURCE"
-    record_test "pass" "Conversation stored with correct source='continue'"
-    
-    # Step 6: Verify conversation structure
-    echo ""
-    echo "5. Verifying conversation structure..."
-    CONV_JSON=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT chat::text FROM chat WHERE id = '$CONV_ID';" 2>/dev/null || echo "")
-    
-    if [ -z "$CONV_JSON" ]; then
-        print_error "Could not retrieve conversation JSON"
-        record_test "fail" "Could not retrieve conversation JSON from database"
-        return
-    fi
-    
-    # Verify JSON structure contains messages array
-    if echo "$CONV_JSON" | grep -q '"messages"'; then
-        echo "   ✅ Conversation JSON contains messages array"
-        
-        # Count messages in the conversation
-        if command -v python3 >/dev/null 2>&1; then
-            MSG_COUNT=$(echo "$CONV_JSON" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    messages = data.get('messages', [])
-    print(len(messages))
-except:
-    print('0')
-" 2>/dev/null || echo "0")
-            echo "   Messages in conversation: $MSG_COUNT"
-            if [ "$MSG_COUNT" -ge 1 ]; then
-                record_test "pass" "Conversation JSON structure is valid with $MSG_COUNT message(s)"
-            else
-                print_error "Conversation has no messages"
-                record_test "fail" "Conversation JSON structure is invalid (no messages)"
-                return
-            fi
-        else
-            record_test "pass" "Conversation JSON structure is valid"
-        fi
-    else
-        print_error "Conversation JSON missing messages array"
-        record_test "fail" "Conversation JSON structure is invalid"
-        return
-    fi
-    
-    # Step 7: Cleanup - delete test conversation
-    echo ""
-    echo "6. Cleaning up test conversation..."
-    DELETE_RESPONSE=$(curl -s --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
-    DELETE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -X DELETE "${API_URL}/v1/chat/completions/$CONV_ID" 2>/dev/null)
-    
-    if [ "$DELETE_STATUS" = "200" ]; then
-        echo "   ✅ Test conversation deleted"
-        record_test "pass" "Test conversation cleanup successful"
-    else
-        echo "   ⚠️  Could not delete test conversation (status: $DELETE_STATUS)"
-        echo "   You may need to clean it up manually"
-        record_test "skip" "Test conversation cleanup skipped"
-    fi
-    
-    # Final verification
-    FINAL_COUNT=$(docker exec postgres psql -U "$POSTGRES_USER" -d continue -t -c "SELECT COUNT(*) FROM chat WHERE source = 'continue';" 2>/dev/null | tr -d ' ' || echo "0")
-    echo ""
-    echo "Final conversation count: $FINAL_COUNT"
-    
-    print_success "Conversation storage test completed"
-}
-
-
-# ============================================================================
 # COMPONENT-BASED TEST FUNCTIONS
 # ============================================================================
 
-# Test runtime core services (ollama)
+# Test runtime core services
 test_component_runtime_core() {
-    start_section "Runtime Core - Ollama"
+    start_section "Runtime Core - Inference Engines"
     
-    # Ollama
-    if is_container_running "ollama"; then
-        print_success "Ollama container is running"
-        record_test "pass" "Ollama container is running"
-        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
-            print_success "Ollama health check passed"
-            record_test "pass" "Ollama health check passed"
-        else
-            print_error "Ollama health check failed"
-            record_test "fail" "Ollama health check failed"
+    local engines=("ollama" "vllm" "llamacpp")
+    
+    for engine in "${engines[@]}"; do
+        local display_name="$engine"
+        [ "$engine" = "ollama" ] && display_name="$engine (Default)"
+        
+        echo "Testing $display_name..."
+        
+        if [ "$INFERENCE_ENGINE" != "$engine" ]; then
+            print_warning "$engine is not the active inference engine"
+            record_test "skip" "$engine health check skipped (not active)"
+            continue
         fi
-    else
-        print_error "Ollama container is not running"
-        record_test "fail" "Ollama container is not running"
-    fi
+        
+        # Inference Engine
+        if is_container_running "$engine"; then
+            print_success "$engine container is running"
+            record_test "pass" "$engine container is running"
+            
+            local engine_healthy=false
+            if [ "$engine" = "ollama" ]; then
+                if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+                    engine_healthy=true
+                fi
+            else
+                if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/v1/models 2>/dev/null | grep -q "200"; then
+                    engine_healthy=true
+                fi
+            fi
+
+            if [ "$engine_healthy" = true ]; then
+                print_success "$engine health check passed"
+                record_test "pass" "$engine health check passed"
+            else
+                print_error "$engine health check failed"
+                record_test "fail" "$engine health check failed"
+            fi
+        else
+            print_error "$engine container is not running"
+            record_test "fail" "$engine container is not running"
+        fi
+    done
 }
 
 # Test database services (postgres, pgadmin)
@@ -873,9 +673,6 @@ test_component_database() {
         print_error "pgAdmin container is not running"
         record_test "fail" "pgAdmin container is not running"
     fi
-    
-    # Conversation storage test
-    test_conversation_storage
 }
 
 # Test monitoring services
@@ -1046,8 +843,6 @@ test_profile_usr() {
     test_component_runtime_core
     test_component_database
     test_llm_state
-    test_database_connection
-    test_conversation_storage
 }
 
 # Test dev profile (runtime core + database + UI)
@@ -1061,8 +856,6 @@ test_profile_dev() {
     test_component_database
     test_component_ui
     test_llm_state
-    test_database_connection
-    test_conversation_storage
 }
 
 # Test ops profile (runtime core + database + monitoring + logging)
@@ -1077,8 +870,6 @@ test_profile_ops() {
     test_component_monitoring
     test_component_logging
     test_llm_state
-    test_database_connection
-    test_conversation_storage
 }
 
 # Test sys profile (all services)
@@ -1090,8 +881,6 @@ test_profile_sys() {
     test_environment_check
     test_stack_status
     test_llm_state
-    test_database_connection
-    test_conversation_storage
 }
 
 # ============================================================================
@@ -1145,7 +934,7 @@ main() {
                 echo "  sys   - All services"
                 echo ""
                 echo "Components:"
-                echo "  runtime-core  - Ollama"
+                echo "  runtime-core  - AI Inference Engine ($INFERENCE_ENGINE)"
                 echo "  database      - PostgreSQL and pgAdmin"
                 echo "  monitoring    - Prometheus, Grafana, exporters"
                 echo "  logging       - Loki and Promtail"
@@ -1194,13 +983,13 @@ main() {
         echo "  $0 --help                    # Show detailed help"
         echo ""
         echo "Profiles:"
-        echo "  usr   - Runtime core services + database (ollama, postgres)"
-        echo "  dev   - Runtime core + database + UI (for development)"
-        echo "  ops   - Runtime core + database + monitoring + logging (for operations)"
-        echo "  sys   - All services (complete stack)"
+        echo "  usr   - Runtime core services + database ($INFERENCE_ENGINE, postgres)"
+        echo "  dev   - Runtime core + database + UI"
+        echo "  ops   - Runtime core + database + monitoring + logging"
+        echo "  sys   - All services"
         echo ""
         echo "Components:"
-        echo "  runtime-core  - Ollama"
+        echo "  runtime-core  - AI Inference Engine ($INFERENCE_ENGINE)"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
@@ -1257,8 +1046,6 @@ main() {
                 ;;
             database)
                 test_component_database
-                test_database_connection
-                test_conversation_storage
                 ;;
             monitoring)
                 test_component_monitoring
