@@ -2,9 +2,9 @@
 # Environment validation functions
 
 # Source dependencies
-# shellcheck source=lib/common.sh
+# shellcheck source=common.sh
 source "${BASH_SOURCE%/*}/common.sh"
-# shellcheck source=lib/color.sh
+# shellcheck source=color.sh
 source "${BASH_SOURCE%/*}/color.sh"
 
 check_env() {

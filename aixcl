@@ -11,6 +11,7 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 # Order matters: color.sh and common.sh first (no dependencies), then modules
 # that depend on them. load_env_file must run before docker_utils.sh so that
 # COMPOSE_FILE from .env is picked up during validation.
+# Source shared libraries
 # shellcheck source=lib/color.sh
 source "${SCRIPT_DIR}/lib/color.sh"
 # shellcheck source=lib/common.sh
@@ -36,8 +37,8 @@ CONTAINER_NAME="open-webui"
 
 # Source the autocomplete script if it exists (with security validation)
 COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
-# shellcheck disable=SC1090
 if [ -f "$COMPLETION_SCRIPT" ] && [[ "$COMPLETION_SCRIPT" =~ ^/ ]] && [ -r "$COMPLETION_SCRIPT" ]; then
+    # shellcheck disable=SC1090
     source "$COMPLETION_SCRIPT"
 fi
 
@@ -562,7 +563,8 @@ function restart() {
     
     # If no profile specified via command line, try to get from .env file
     if [ "$profile_specified" = false ]; then
-        local env_file="${SCRIPT_DIR}/.env"
+        local env_file
+        env_file="${SCRIPT_DIR}/.env"
         
         # Load .env file to check for PROFILE variable
         if [ -f "$env_file" ]; then
@@ -1302,7 +1304,8 @@ function status() {
 
     # Runtime Core
     echo "Runtime Core"
-    local active_engine="${INFERENCE_ENGINE:-ollama}"
+    local active_engine
+    active_engine="${INFERENCE_ENGINE:-ollama}"
     
     # Define engines and their health check URLs
     local engines=("ollama" "vllm" "llamacpp")
@@ -1314,9 +1317,12 @@ function status() {
     )
 
     for i in "${!engines[@]}"; do
-        local engine="${engines[$i]}"
-        local name="${names[$i]}"
-        local url="${urls[$i]}"
+        local engine
+        engine="${engines[$i]}"
+        local name
+        name="${names[$i]}"
+        local url
+        url="${urls[$i]}"
         local suffix=""
         
         if [ "$engine" = "$active_engine" ]; then
@@ -1334,7 +1340,8 @@ function status() {
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://localhost:8080/health"
 
     # Persistence
-    local postgres_user="${POSTGRES_USER:-webui}"
+    local postgres_user
+    postgres_user="${POSTGRES_USER:-webui}"
     if [[ ! "$postgres_user" =~ ^[A-Za-z0-9_-]+$ ]]; then
         postgres_user="webui"
         echo "⚠️  Warning: Invalid POSTGRES_USER value, using default 'webui'" >&2
