@@ -35,7 +35,8 @@ COMMANDS
        stack logs [svc] [n]
               Show logs for all services (last 100 lines then follow), or for one
               service with optional line count n (default 50, range 1-10000),
-              then follow.
+              then follow. Use 'engine' as svc to see logs for the active
+              inference engine (ollama, vllm, or llamacpp).
 
        stack clean
               Remove unused Docker resources
