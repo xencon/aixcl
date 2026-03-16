@@ -2,9 +2,9 @@
 # Environment validation functions
 
 # Source dependencies
-# shellcheck source=common.sh
+# shellcheck disable=SC1091
 source "${BASH_SOURCE%/*}/common.sh"
-# shellcheck source=color.sh
+# shellcheck disable=SC1091
 source "${BASH_SOURCE%/*}/color.sh"
 
 check_env() {

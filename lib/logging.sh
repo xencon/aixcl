@@ -2,7 +2,7 @@
 # Logging utility functions
 
 # Source color functions
-# shellcheck source=color.sh
+# shellcheck disable=SC1091
 source "${BASH_SOURCE%/*}/color.sh"
 
 # Log levels

@@ -30,15 +30,15 @@ set -u
 
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# shellcheck source=../lib/common.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/common.sh"
-# shellcheck source=../lib/docker_utils.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/docker_utils.sh"
-# shellcheck source=../lib/color.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/color.sh"
 
 # Source profile library if available
-# shellcheck source=../cli/lib/profile.sh
+# shellcheck disable=SC1091
 if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
     source "${SCRIPT_DIR}/cli/lib/profile.sh"
 fi
