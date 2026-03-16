@@ -44,7 +44,7 @@ COMMANDS
               Control individual service
 
               Runtime Core Services (always enabled):
-              ollama
+              $INFERENCE_ENGINE (e.g., ollama, vllm, llamacpp)
 
               Operational Services (profile-dependent):
               open-webui, postgres, pgadmin, watchtower, prometheus, grafana,
@@ -59,6 +59,12 @@ COMMANDS
               add     Add one or more models (e.g. models add a b c)
               remove  Remove one or more models
               list    List installed models
+
+       config engine <set|auto> [engine]
+              Configure the active inference engine.
+
+              set     Manually assign an engine (ollama, vllm, llamacpp)
+              auto    Auto-detect optimal engine based on hardware
 
        utils check-env
               Validate environment setup
@@ -102,6 +108,10 @@ ENVIRONMENT
               Default profile for stack commands (usr, dev, ops, sys).
               Set this to avoid specifying --profile on every command.
 
+       INFERENCE_ENGINE
+              The core backend running inference. Default: ollama.
+              Supported options: ollama, vllm, llamacpp.
+
        POSTGRES_USER
               PostgreSQL username
 
@@ -129,7 +139,7 @@ ARCHITECTURE
 
        Runtime Core (Strict)
               Always enabled, required for AIXCL to function:
-              - Ollama: LLM inference engine
+              - Inference Engine: LLM inference engine (Ollama, vLLM, llama.cpp)
               - Continue: VS Code plugin for IDE integration
 
        Operational Services (Guided)

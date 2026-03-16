@@ -5,10 +5,16 @@
 # Valid profiles array
 VALID_PROFILES=(usr dev ops sys)
 
+# Engine detection
+INFERENCE_ENGINE=${INFERENCE_ENGINE:-ollama}
+if [[ "$INFERENCE_ENGINE" != "ollama" && "$INFERENCE_ENGINE" != "vllm" && "$INFERENCE_ENGINE" != "llamacpp" ]]; then
+    INFERENCE_ENGINE="ollama"
+fi
+
 # Runtime core services managed by Docker Compose (always present in all profiles).
 # Note: Continue is also part of the architectural runtime core (see 00_invariants.md)
 # but is a VS Code plugin, not a Docker-managed service, so it is not listed here.
-RUNTIME_CORE_SERVICES=(ollama)
+RUNTIME_CORE_SERVICES=("$INFERENCE_ENGINE")
 
 # Profile descriptions
 declare -A PROFILE_DESCRIPTIONS=(
@@ -23,10 +29,10 @@ declare -A PROFILE_DESCRIPTIONS=(
 # Continue (VS Code plugin) is part of the runtime core architecture but is
 # not managed by Docker Compose and therefore not listed in these mappings.
 declare -A PROFILE_SERVICES=(
-    [usr]="ollama postgres"
-    [dev]="ollama open-webui postgres pgadmin"
-    [ops]="ollama postgres prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="ollama open-webui postgres pgadmin prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter watchtower"
+    [usr]="$INFERENCE_ENGINE postgres"
+    [dev]="$INFERENCE_ENGINE open-webui postgres pgadmin"
+    [ops]="$INFERENCE_ENGINE postgres prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [sys]="$INFERENCE_ENGINE open-webui postgres pgadmin prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter watchtower"
 )
 
 # Profile database storage settings

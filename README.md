@@ -23,7 +23,7 @@ AIXCL is built on a containerized architecture using Docker and Docker Compose, 
 
 These components define what AIXCL is and are always present in every deployment:
 
-- **Ollama**: LLM inference engine
+- **Inference Engine** (Ollama, vLLM, llama.cpp): LLM inference engine
 
 ### Operational Services (Profile-Dependent)
 
@@ -137,8 +137,8 @@ Manage all services as a unified stack:
 ./aixcl stack restart [--profile sys]    # Restart all services (uses PROFILE from .env if set)
 ./aixcl stack status                     # Check service status
 ./aixcl stack logs                       # View logs for all services
-./aixcl stack logs ollama                # View logs for specific service
-./aixcl stack logs ollama 100            # Last 100 lines for a service (default 50, then follow)
+./aixcl stack logs <service>             # View logs for specific service
+./aixcl stack logs <service> 100         # Last 100 lines for a service (default 50, then follow)
 ./aixcl stack clean                      # Remove unused Docker resources
 ```
 
@@ -151,7 +151,7 @@ Manage specific services independently:
 
 ```bash
 ./aixcl service start postgres    # Start a specific service
-./aixcl service restart ollama    # Restart a service
+./aixcl service restart <service>  # Restart a service
 ./aixcl service stop grafana      # Stop a service
 ```
 
@@ -163,7 +163,7 @@ Manage specific services independently:
 ./aixcl models list                  # List installed models
 ```
 
-Models are downloaded from Ollama's registry.
+Models are deployed through the active inference engine.
 
 
 
@@ -194,7 +194,7 @@ The test suite checks service health, API endpoints, database connectivity, and 
 
 AIXCL maintains strict architectural invariants to preserve platform integrity:
 
-- **Runtime Core**: Fixed, non-negotiable components (Ollama) that define the product
+- **Runtime Core**: Fixed, non-negotiable components (Inference Engine) that define the product
 - **Operational Services**: Optional services that support, observe, or operate the runtime
 - **Service Contracts**: Dependency rules and boundaries for each service
 - **Profiles**: Declarative service compositions (see Target Audience section)
@@ -210,7 +210,7 @@ For detailed architectural documentation, see [`docs/architecture/governance/`](
 
 AIXCL includes comprehensive performance optimizations for running multiple LLM models efficiently:
 
-**Ollama Optimizations:**
+**Inference Engine Optimizations (e.g., Ollama):**
 - Parallel request handling (`OLLAMA_NUM_PARALLEL=8`) for concurrent queries
 - Model keep-alive (`OLLAMA_KEEP_ALIVE=600`) to prevent reload delays
 - Maximum loaded models (`OLLAMA_MAX_LOADED_MODELS=3`) for GPU memory management
