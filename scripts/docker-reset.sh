@@ -2,7 +2,7 @@
 
 # ⚠️  DESTRUCTIVE SCRIPT WARNING ⚠️
 # This script will DELETE ALL Docker containers, images, networks, and volumes.
-# This includes Ollama models stored in volumes!
+# This includes inference models (Ollama, vLLM, etc.) stored in volumes!
 # Use with extreme caution!
 #
 # Usage: ./scripts/docker-reset.sh
@@ -30,11 +30,11 @@ print_message "This script will DELETE:" "yellow"
 echo "  - ALL Docker containers (including running ones)"
 echo "  - ALL Docker images"
 echo "  - ALL Docker networks"
-echo "  - ALL Docker volumes (including Ollama models!)"
+echo "  - ALL Docker volumes (including inference models!)"
 echo ""
 print_message "This action CANNOT be undone!" "red"
 echo ""
-print_message "Your Ollama models will be permanently deleted!" "red"
+print_message "Your inference models (Ollama, vLLM, etc.) will be permanently deleted!" "red"
 echo ""
 read -p "Type 'DELETE EVERYTHING' to confirm: " confirm
 

@@ -8,6 +8,7 @@ Fixes #504
 - Improved the `logs()` function to correctly resolve actual container names (handling potential hash prefixes) when fetching logs for all services.
 - Updated all help messages and documentation (manpage) to be engine-agnostic and show support for all LLM engines.
 - Modernized help messages in `service stop`, `service restart`, and `stack logs` to use the active engine name dynamically.
+- Updated `scripts/docker-reset.sh` to use more inclusive terminology (`inference models` instead of `Ollama models`) when warning about data deletion.
 
 ### Change Checklist
 - [x] Issue referenced in title and description
