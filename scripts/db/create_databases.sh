@@ -7,7 +7,10 @@ set -e
 # Load environment variables if .env exists
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -f "${SCRIPT_DIR}/.env" ]; then
-    export $(grep -v '^#' "${SCRIPT_DIR}/.env" | xargs)
+    set -a
+    # shellcheck disable=SC1091
+    source "${SCRIPT_DIR}/.env"
+    set +a
 fi
 
 # Default values if not set
@@ -30,7 +33,7 @@ fi
 
 # Create webui database if it doesn't exist
 echo "=== Creating WebUI Database ==="
-WEBUI_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "$WEBUI_DATABASE" | wc -l || echo "0")
+WEBUI_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "$WEBUI_DATABASE" || echo "0")
 
 if [ "$WEBUI_EXISTS" -eq "1" ]; then
     echo "✅ WebUI database already exists: $WEBUI_DATABASE"
@@ -43,7 +46,7 @@ fi
 # Create continue database if it doesn't exist
 echo ""
 echo "=== Creating Continue Database ==="
-CONTINUE_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "$CONTINUE_DATABASE" | wc -l || echo "0")
+CONTINUE_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "$CONTINUE_DATABASE" || echo "0")
 
 if [ "$CONTINUE_EXISTS" -eq "1" ]; then
     echo "✅ Continue database already exists: $CONTINUE_DATABASE"
@@ -59,7 +62,7 @@ fi
 if [ "$WEBUI_DATABASE" != "admin" ] && [ "$CONTINUE_DATABASE" != "admin" ]; then
     echo ""
     echo "=== Cleaning Up Unwanted Databases ==="
-    ADMIN_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "admin" | wc -l || echo "0")
+    ADMIN_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "admin" || echo "0")
     if [ "$ADMIN_EXISTS" -eq "1" ]; then
         echo "Removing unwanted admin database..."
         docker exec postgres psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" 2>/dev/null || true

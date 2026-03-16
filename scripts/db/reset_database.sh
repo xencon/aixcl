@@ -4,7 +4,10 @@
 
 # Load environment variables if .env exists
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
 fi
 
 # Default values if not set
@@ -17,7 +20,7 @@ echo "User: $POSTGRES_USER"
 echo ""
 
 # Confirm this will delete all data
-read -p "This will DELETE ALL DATA. Are you sure? (yes/no): " confirm
+read -r -p "This will DELETE ALL DATA. Are you sure? (yes/no): " confirm
 if [ "$confirm" != "yes" ]; then
     echo "Aborted."
     exit 1

@@ -30,11 +30,15 @@ set -u
 
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
+# shellcheck source=../lib/docker_utils.sh
 source "${SCRIPT_DIR}/lib/docker_utils.sh"
+# shellcheck source=../lib/color.sh
 source "${SCRIPT_DIR}/lib/color.sh"
 
 # Source profile library if available
+# shellcheck source=../cli/lib/profile.sh
 if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
     source "${SCRIPT_DIR}/cli/lib/profile.sh"
 fi
@@ -314,7 +318,7 @@ test_stack_status() {
         fi
         
         # On first few attempts, wait longer to allow migrations
-        if [ $i -le 8 ]; then
+        if [ "$i" -le 8 ]; then
             sleep 3
         else
             sleep 2
@@ -550,8 +554,7 @@ test_llm_state() {
         echo "Listing installed models..."
         
         # Get all available models
-        available_models=$(get_available_models "$engine" 2>&1)
-        if [ $? -ne 0 ] || [ -z "$available_models" ]; then
+        if ! available_models=$(get_available_models "$engine" 2>&1) || [ -z "$available_models" ]; then
             print_error "No models found in $engine"
             record_test "fail" "No models found in $engine"
             echo ""
@@ -562,7 +565,7 @@ test_llm_state() {
             all_models_array=()
         else
             # Count models
-            model_count=$(echo "$available_models" | grep -v "^$" | wc -l | tr -d ' ')
+            model_count=$(echo "$available_models" | grep -cv "^$")
             print_success "Found $model_count installed model(s)"
             record_test "pass" "Found $model_count installed model(s)"
             
@@ -796,7 +799,7 @@ test_component_ui() {
                     break
                 fi
             fi
-            if [ $i -le 8 ]; then
+            if [ "$i" -le 8 ]; then
                 sleep 3
             else
                 sleep 2

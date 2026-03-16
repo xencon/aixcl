@@ -2,7 +2,6 @@
 # Test script for Open WebUI JSON generation security (Issue #448)
 
 SCRIPT_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
-TARGET_SCRIPT="${SCRIPT_DIR}/../scripts/openwebui.sh"
 
 # Colors
 GREEN='\033[0;32m'
@@ -13,9 +12,13 @@ echo "Testing security of JSON generation fallback..."
 
 # Mock variables with special characters that would break simple string interpolation
 # or cause injection if not properly escaped.
+# shellcheck disable=SC2089
 OPENWEBUI_EMAIL='admin@example.com"}'
+# shellcheck disable=SC2089
 OPENWEBUI_PASSWORD='password" --payload "injection'
+# shellcheck disable=SC2090
 export OPENWEBUI_EMAIL
+# shellcheck disable=SC2090
 export OPENWEBUI_PASSWORD
 
 echo "Simulating Python JSON generation fallback..."

@@ -21,7 +21,8 @@ _get_ollama_models() {
     # Check if Ollama container is running
     if docker ps --format "{{.Names}}" | grep -q "ollama" 2>/dev/null; then
         # Get list of models from Ollama
-        local models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}')
+        local models
+        models=$(docker exec ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}')
         echo "$models"
     fi
 }
@@ -63,7 +64,7 @@ _aixcl_complete() {
     
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then
-        COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
+        mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
         return 0
     fi
     
@@ -71,17 +72,17 @@ _aixcl_complete() {
     case "$prev" in
         'stack')
             local stack_actions="start stop restart status logs clean"
-            COMPREPLY=( $(compgen -W "$stack_actions" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$stack_actions" -- "$cur")
             return 0
             ;;
         'logs')
             # Complete with all services (runtime core + operational)
-            COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$services" -- "$cur")
             return 0
             ;;
         'service')
             local service_actions="start stop restart"
-            COMPREPLY=( $(compgen -W "$service_actions" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$service_actions" -- "$cur")
             return 0
             ;;
         'start')
@@ -89,69 +90,69 @@ _aixcl_complete() {
             # Note: Runtime core services should always be running
             # Operational services are profile-dependent
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
-                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "$services" -- "$cur")
                 return 0
             fi
             # If previous word was 'stack', complete with profile options (optional)
             # Profile can come from .env file, but --profile/-p is still available
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
-                COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "--profile -p" -- "$cur")
                 return 0
             fi
             ;;
         'restart')
             # If previous word was 'service', complete with service names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
-                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "$services" -- "$cur")
                 return 0
             fi
             # If previous word was 'stack', complete with profile options (optional)
             # Profile can come from .env file, but --profile/-p is still available
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "stack" ]]; then
-                COMPREPLY=( $(compgen -W "--profile -p" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "--profile -p" -- "$cur")
                 return 0
             fi
             ;;
         'stop')
             # If previous word was 'service', complete with service names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
-                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "$services" -- "$cur")
                 return 0
             fi
             ;;
         '--profile'|'-p')
             # Complete with valid profiles when --profile or -p is used
-            COMPREPLY=( $(compgen -W "$profiles" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$profiles" -- "$cur")
             return 0
             ;;
 
         'models')
             local model_actions="add remove list"
-            COMPREPLY=( $(compgen -W "$model_actions" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$model_actions" -- "$cur")
             return 0
             ;;
         'config')
             local config_actions="engine"
-            COMPREPLY=( $(compgen -W "$config_actions" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$config_actions" -- "$cur")
             return 0
             ;;
         'engine')
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "config" ]]; then
                 local engine_actions="set auto"
-                COMPREPLY=( $(compgen -W "$engine_actions" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "$engine_actions" -- "$cur")
                 return 0
             fi
             ;;
         'set')
             if (( cword >= 3 )) && [[ "${words[cword-3]}" == "config" ]] && [[ "${words[cword-2]}" == "engine" ]]; then
                 local engines="ollama vllm llamacpp"
-                COMPREPLY=( $(compgen -W "$engines" -- "$cur") )
+                mapfile -t COMPREPLY < <(compgen -W "$engines" -- "$cur")
                 return 0
             fi
             ;;
         'utils')
             local utils_actions="check-env bash-completion"
-            COMPREPLY=( $(compgen -W "$utils_actions" -- "$cur") )
+            mapfile -t COMPREPLY < <(compgen -W "$utils_actions" -- "$cur")
             return 0
             ;;
 
@@ -159,9 +160,10 @@ _aixcl_complete() {
         'add'|'remove')
             # If previous word was 'models', complete with available models
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
-                local available_models=$(_get_ollama_models)
+                local available_models
+                available_models=$(_get_ollama_models)
                 if [ -n "$available_models" ]; then
-                    COMPREPLY=( $(compgen -W "$available_models" -- "$cur") )
+                    mapfile -t COMPREPLY < <(compgen -W "$available_models" -- "$cur")
                 fi
                 return 0
             fi

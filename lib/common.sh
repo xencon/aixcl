@@ -122,7 +122,8 @@ has_nvidia() {
 
 # Detect if running on ARM64 architecture
 is_arm64() {
-    local arch=$(uname -m)
+    local arch
+    arch=$(uname -m)
     case "$arch" in
         arm64|aarch64)
             return 0

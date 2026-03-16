@@ -62,7 +62,8 @@ validate_db_name() {
     fi
     
     # Check for reserved PostgreSQL database names
-    local lower_name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+    local lower_name
+    lower_name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
     case "$lower_name" in
         postgres|template0|template1)
             echo "Error: Database name '$name' is a reserved PostgreSQL database name" >&2
@@ -117,7 +118,8 @@ function ensure_databases() {
     fi
     
     # Create webui database if it doesn't exist
-    local webui_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "$webui_db" | wc -l)
+    local webui_exists
+    webui_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "$webui_db")
     webui_exists=${webui_exists:-0}
     if [ "$webui_exists" -eq 0 ]; then
         echo "Creating webui database: $webui_db"
@@ -130,7 +132,8 @@ function ensure_databases() {
     # Remove unwanted "admin" database if it exists and is not the intended database
     # PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
     if [ "$webui_db" != "admin" ]; then
-        local admin_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -w "admin" | wc -l)
+        local admin_exists
+        admin_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "admin")
         admin_exists=${admin_exists:-0}
         if [ "$admin_exists" -eq 1 ]; then
             echo "Removing unwanted admin database..."
@@ -179,7 +182,8 @@ function start() {
         # Load .env file to check for PROFILE variable
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
-            local env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            local env_profile
+            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
             
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
@@ -235,7 +239,8 @@ function start() {
     if [ "$profile_specified" = true ]; then
         local env_file="${SCRIPT_DIR}/.env"
         if [ -f "$env_file" ]; then
-            local current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            local current_env_profile
+            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
             if [ "$current_env_profile" != "$profile" ]; then
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -247,9 +252,11 @@ function start() {
                     fi
                 else
                     # Add PROFILE line at the end
-                    echo "" >> "$env_file"
-                    echo "# Default profile for stack commands" >> "$env_file"
-                    echo "PROFILE=$profile" >> "$env_file"
+                    {
+                        echo ""
+                        echo "# Default profile for stack commands"
+                        echo "PROFILE=$profile"
+                    } >> "$env_file"
                 fi
                 echo "ℹ️  Saved profile to .env file: $profile"
             fi
@@ -275,8 +282,10 @@ function start() {
             echo "⚠️  .env file not found. Attempting to restore from backup..."
             # Restore .env from backup volume using a temporary container
             # Use current user's UID/GID to ensure proper ownership
-            local current_uid=$(id -u)
-            local current_gid=$(id -g)
+            local current_uid
+            current_uid=$(id -u)
+            local current_gid
+            current_gid=$(id -g)
             if docker run --rm \
                 --user "${current_uid}:${current_gid}" \
                 -v "${env_backup_volume}:/backup:ro" \
@@ -326,7 +335,7 @@ function start() {
     
     # Get services for this profile
     local profile_services
-    profile_services=($(get_profile_services "$profile"))
+    read -r -a profile_services <<< "$(get_profile_services "$profile")"
     
     # Generate pgAdmin configuration if pgadmin is in the profile
     local has_pgadmin=false
@@ -361,7 +370,8 @@ function start() {
     # Set profile-specific environment variables (per contract) BEFORE any docker-compose commands
     # All profiles use database storage (ENABLE_DB_STORAGE=true) for persistence
     # Export early to ensure it's available to all docker-compose commands (pull, build, up)
-    export ENABLE_DB_STORAGE=$(get_profile_db_storage_enabled "$profile")
+    ENABLE_DB_STORAGE=$(get_profile_db_storage_enabled "$profile")
+    export ENABLE_DB_STORAGE
     echo "Setting ENABLE_DB_STORAGE=${ENABLE_DB_STORAGE} for profile: $profile"
     
     echo "Pulling latest images..."
@@ -448,7 +458,8 @@ function stop() {
     set_compose_cmd
     
     # Join ALL_SERVICES with | for grep
-    local all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
+    local all_services_pattern
+    all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
     if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         echo "Services are not running."
         return 0
@@ -599,7 +610,8 @@ function restart() {
     if [ "$profile_specified" = true ]; then
         local env_file="${SCRIPT_DIR}/.env"
         if [ -f "$env_file" ]; then
-            local current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+            local current_env_profile
+            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
             if [ "$current_env_profile" != "$profile" ]; then
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -611,9 +623,11 @@ function restart() {
                     fi
                 else
                     # Add PROFILE line at the end
-                    echo "" >> "$env_file"
-                    echo "# Default profile for stack commands" >> "$env_file"
-                    echo "PROFILE=$profile" >> "$env_file"
+                    {
+                        echo ""
+                        echo "# Default profile for stack commands"
+                        echo "PROFILE=$profile"
+                    } >> "$env_file"
                 fi
                 echo "ℹ️  Saved profile to .env file: $profile"
             fi
@@ -656,7 +670,8 @@ function start_service() {
         return 1
     fi
     
-    local container_name=$(get_container_name "$service")
+    local container_name
+    container_name=$(get_container_name "$service")
     
     # Set up compose command with GPU detection
     set_compose_cmd
@@ -673,7 +688,8 @@ function start_service() {
     run_compose rm -f "$service" 2>/dev/null || true
     
     # Also remove hash-prefixed containers directly via docker (handles edge cases)
-    local hash_prefixed=$(docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}')
+    local hash_prefixed
+    hash_prefixed=$(docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}')
     if [ -n "$hash_prefixed" ]; then
         echo "Removing hash-prefixed containers to avoid docker-compose issues..."
         echo "$hash_prefixed" | while read -r container_id; do
@@ -758,7 +774,8 @@ function stop_service() {
         return 1
     fi
     
-    local container_name=$(get_container_name "$service")
+    local container_name
+    container_name=$(get_container_name "$service")
     
     # Check if service is running
     if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
@@ -1133,7 +1150,7 @@ function status() {
         local profile_services
         profile_services=$(get_profile_services "$current_profile" 2>/dev/null) || true
         for s in $profile_services; do
-            for core in "\${RUNTIME_CORE_SERVICES[@]}"; do
+            for core in "${RUNTIME_CORE_SERVICES[@]}"; do
                 [ "$s" = "$core" ] && continue 2
             done
             profile_operational_list="${profile_operational_list} ${s}"
@@ -1161,8 +1178,8 @@ function status() {
         local container_name="$2"
         local health_check_type="$3"
         local health_check_arg="$4"
-        local is_critical="${5:-false}"
-        local is_runtime_core="${6:-false}"
+        # Parameters 5 (is_critical) and 6 (is_runtime_core) are accepted but not currently utilized in this function
+
         
         # Check container status
         local container_running=false
@@ -1308,27 +1325,34 @@ function status() {
     fi
     check_operational_service "PostgreSQL" "postgres" "postgres" "pg_isready" "$postgres_user"
 
+    # shellcheck disable=SC2034
     PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
     check_operational_service "pgAdmin" "pgadmin" "pgadmin" "status_var" "PGADMIN_STATUS"
 
     # Observability
+    # shellcheck disable=SC2034
     PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
     check_operational_service "Prometheus" "prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS"
 
+    # shellcheck disable=SC2034
     GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
     check_operational_service "Grafana" "grafana" "grafana" "status_var" "GRAFANA_STATUS"
 
+    # shellcheck disable=SC2034
     CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
     check_operational_service "cAdvisor" "cadvisor" "cadvisor" "status_var" "CADVISOR_STATUS"
 
+    # shellcheck disable=SC2034
     NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
     check_operational_service "Node Exporter" "node-exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS"
 
-    POSTGRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
-    check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTGRES_EXPORTER_STATUS"
+    # shellcheck disable=SC2034
+    POSTSRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
+    check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTSRES_EXPORTER_STATUS"
 
     if is_operational_in_profile "nvidia-gpu-exporter"; then
         if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
+            # shellcheck disable=SC2034
             NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
         else
@@ -1340,6 +1364,7 @@ function status() {
     fi
 
     # Loki
+    # shellcheck disable=SC2034
     LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 

@@ -11,7 +11,7 @@ if test "$WEBUI_SECRET_KEY $WEBUI_JWT_SECRET_KEY" = " "; then
   if ! [ -e "$KEY_FILE" ]; then
     echo "Generating WEBUI_SECRET_KEY"
     # Generate a random value to use as a WEBUI_SECRET_KEY in case the user didn't provide one.
-    echo $(head -c 12 /dev/random | base64) > "$KEY_FILE"
+    head -c 12 /dev/random | base64 > "$KEY_FILE"
   fi
 
   echo "Loading WEBUI_SECRET_KEY from $KEY_FILE"
