@@ -1,4 +1,4 @@
-name: "CodeQL Security Analysis"
+name: Security Analysis
 
 on:
   push:
@@ -6,42 +6,72 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    # Run weekly on Mondays at 3:00 UTC
+    # Weekly scan Monday 03:00 UTC
     - cron: '0 3 * * 1'
 
-jobs:
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'python' ]
+jobs:
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
-      with:
-        languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # queries: security-extended,security-and-quality
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: actions
 
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v4
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
-      with:
-        category: "/language:${{matrix.language}}"
+
+  shellcheck:
+    name: Shell Script Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@v2
+        with:
+          scandir: '.'
+
+
+  trivy:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          ignore-unfixed: true
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+
+  gitleaks:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
