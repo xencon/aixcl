@@ -63,11 +63,3 @@ jobs:
           format: table
           severity: CRITICAL,HIGH
           exit-code: 1
-
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
