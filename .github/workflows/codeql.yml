@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    # Weekly scan Monday 03:00 UTC
     - cron: '0 3 * * 1'
 
 permissions:
@@ -14,52 +13,66 @@ permissions:
   security-events: write
   actions: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: actions
-
+          languages: actions, javascript  # Add your languages
+          queries: security-and-quality
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
-
 
   shellcheck:
     name: Shell Script Linting
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@v1
+        uses: ludeeus/action-shellcheck@2.0.0
         with:
           scandir: '.'
-
 
   trivy:
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@0.20.0
         with:
           scan-type: fs
           ignore-unfixed: true
-          format: table
+          format: sarif
+          output: trivy-results.sarif
           severity: CRITICAL,HIGH
           exit-code: 1
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
