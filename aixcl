@@ -552,8 +552,14 @@ function restart() {
         
         # Check if any remaining args are valid service names
         for arg in "${remaining_args[@]}"; do
-            if is_valid_service "$arg"; then
-                service_names+=("$arg")
+            # Resolve 'engine' alias to active INFERENCE_ENGINE
+            local service_to_check="$arg"
+            if [[ "$arg" == "engine" ]]; then
+                service_to_check="${INFERENCE_ENGINE:-ollama}"
+            fi
+
+            if is_valid_service "$service_to_check"; then
+                service_names+=("$service_to_check")
             else
                 echo "⚠️  Warning: '$arg' is not a valid service name, ignoring" >&2
             fi
@@ -683,12 +689,18 @@ function start_service() {
     
     local service="$1"
     local force_recreate="${2:-false}"  # Optional second parameter to force recreate
+
+    # Resolve 'engine' alias
+    local actual_service="$service"
+    if [[ "$service" == "engine" ]]; then
+        actual_service=$(get_container_name "engine")
+    fi
     
     # Validate service name
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): ${INFERENCE_ENGINE:-ollama}"
+        echo "Runtime Core Services (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -709,8 +721,8 @@ function start_service() {
     
     # Remove any existing containers (running or stopped) to avoid ContainerConfig errors
     # This is especially important after rebuilds when docker-compose tries to recreate containers
-    echo "Cleaning up any existing containers for $service..."
-    run_compose rm -f "$service" 2>/dev/null || true
+    echo "Cleaning up any existing containers for $actual_service..."
+    run_compose rm -f "$actual_service" 2>/dev/null || true
     
     # Also remove hash-prefixed containers directly via docker (handles edge cases)
     local hash_prefixed
@@ -747,14 +759,14 @@ function start_service() {
     # Start the specific service
     # Use --force-recreate if explicitly requested (e.g., after a rebuild)
     if [ "$force_recreate" = "true" ]; then
-        if run_compose up -d --force-recreate --no-deps "$service"; then
+        if run_compose up -d --force-recreate --no-deps "$actual_service"; then
             echo "✅ Successfully started service: $service (recreated)"
         else
             echo "❌ Failed to start service: $service"
             return 1
         fi
     else
-        if run_compose up -d "$service"; then
+        if run_compose up -d "$actual_service"; then
             echo "✅ Successfully started service: $service"
         else
             echo "❌ Failed to start service: $service"
@@ -787,13 +799,19 @@ function stop_service() {
     fi
     
     local service="$1"
+
+    # Resolve 'engine' alias
+    local actual_service="$service"
+    if [[ "$service" == "engine" ]]; then
+        actual_service=$(get_container_name "engine")
+    fi
     
     # Validate service name
     if ! is_valid_service "$service"; then
         echo "❌ Error: Unknown service '$service'"
         echo ""
-        echo "Runtime Core Services (always enabled): \${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
-        echo "Operational Services (profile-dependent): \${ALL_SERVICES[*]}"
+        echo "Runtime Core Services (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
+        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
@@ -814,7 +832,7 @@ function stop_service() {
     echo "Stopping service: $service..."
     
     # Stop the specific service
-    if run_compose stop "$service"; then
+    if run_compose stop "$actual_service"; then
         echo "✅ Successfully stopped service: $service"
         
         # Clean up pgAdmin configuration if stopping pgadmin
@@ -840,8 +858,8 @@ function service() {
         echo "Error: Service action and name are required"
         echo "Usage: $0 service {start|stop|restart} <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): \${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
-        echo "Operational Services (profile-dependent): \${ALL_SERVICES[*]}"
+        echo "Runtime Core Services (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
+        echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         echo "Note: Continue is a VS Code plugin, not a containerized service"
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -1011,7 +1029,7 @@ function logs() {
             echo "Error: Unknown container '$container'"
             echo ""
             echo "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
-            echo "  ollama, vllm, llamacpp"
+            echo "  engine (ollama, vllm, llamacpp)"
             echo ""
             echo "Operational Services:"
             echo "  ${ALL_SERVICES[*]}"
@@ -1718,8 +1736,10 @@ function help_menu() {
     echo "  config engine set <engine>          - Set the inference engine (ollama, vllm, llamacpp)"
     echo "  config engine auto                  - Auto-detect optimal engine based on hardware"
     echo ""
+    echo "Restart: restart [service]             - Short form for 'stack restart'"
+    echo ""
     echo "Service: service <action> <name>"
-    echo "  Runtime Core (always enabled): ${INFERENCE_ENGINE:-ollama}"
+    echo "  Runtime Core (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
     echo ""
     echo "Models: models <action> [name]"
     echo "  models add <name>                   - Add model(s) to Ollama/vLLM/llama.cpp"
@@ -1983,6 +2003,10 @@ function main() {
         stack)
             shift
             stack_cmd "$@"
+            ;;
+        restart)
+            shift
+            restart "$@"
             ;;
 
         *)

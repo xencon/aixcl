@@ -59,6 +59,7 @@ load_env_file() {
 
 # Define all services from docker-compose.yml
 ALL_SERVICES=(
+    "engine"
     "ollama"
     "vllm"
     "llamacpp"
@@ -91,6 +92,9 @@ is_valid_service() {
 get_container_name() {
     local service="$1"
     case "$service" in
+        "engine")
+            echo "${INFERENCE_ENGINE:-ollama}"
+            ;;
         "open-webui")
             echo "open-webui"
             ;;
