@@ -135,8 +135,11 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ### Troubleshooting
 
 ```bash
-# Check service logs
-./aixcl stack logs ollama 50
+# Check service logs for the engine
+./aixcl stack logs engine 50
+
+# Restart the engine
+./aixcl restart engine
 
 # Restart a specific service
 ./aixcl service restart postgres
@@ -145,7 +148,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl stack restart [--profile sys]
 
 # Restart specific services only (no profile needed)
-./aixcl stack restart ollama
+./aixcl stack restart engine
 
 # Clean up and start fresh
 ./aixcl stack clean
@@ -165,7 +168,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl service stop prometheus
 
 # Restart a service
-./aixcl service restart ollama
+./aixcl service restart engine
 ```
 
 ### Viewing Logs
@@ -175,7 +178,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl stack logs
 
 # Specific service, last 50 lines (default; n in range 1-10000), then follow
-./aixcl stack logs ollama 50
+./aixcl stack logs engine 50
 
 # Specific service, last 100 lines, follow
 ./aixcl stack logs postgres 100
@@ -234,7 +237,7 @@ docker-compose pull
 
 2. **Use logs for debugging:**
    ```bash
-   ./aixcl stack logs <service> 100
+   ./aixcl stack logs engine 100
    ```
 
 3. **Test Continue integration:**

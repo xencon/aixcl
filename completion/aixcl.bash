@@ -46,7 +46,7 @@ _aixcl_complete() {
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
     # Note: Continue is a VS Code plugin, not a containerized service
-    local runtime_core_services="ollama"
+    local runtime_core_services="ollama vllm llamacpp"
     
     # Operational Services (Guided): Profile-dependent, support/observe runtime
     # - Persistence: postgres, pgadmin
@@ -56,8 +56,8 @@ _aixcl_complete() {
     local operational_services="open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
     
     # Combined list of all services (for backward compatibility and general completion)
-    # Must match ALL_SERVICES in lib/common.sh
-    local services="$runtime_core_services $operational_services"
+    # Includes 'engine' alias for convenience
+    local services="$runtime_core_services $operational_services engine"
     
     # Valid profiles (must match VALID_PROFILES in cli/lib/profile.sh)
     local profiles="usr dev ops sys"

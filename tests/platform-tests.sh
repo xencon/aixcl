@@ -589,8 +589,47 @@ test_llm_state() {
 }
 
 # ============================================================================
-# COMPONENT-BASED TEST FUNCTIONS
+# SECTION 5: CLI ALIAS TESTS
 # ============================================================================
+test_cli_aliases() {
+    start_section "CLI - Alias Resolution"
+    
+    echo "Testing 'engine' alias resolution..."
+    
+    # Test logs alias
+    echo "1. Testing: ./aixcl stack logs engine --tail 1"
+    if ./aixcl stack logs engine 1 2>&1 | grep -q "Fetching logs for ${INFERENCE_ENGINE:-ollama}"; then
+        print_success "Logs alias resolved correctly to ${INFERENCE_ENGINE:-ollama}"
+        record_test "pass" "CLI 'engine' alias resolved for logs"
+    else
+        print_error "Logs alias resolution failed"
+        record_test "fail" "CLI 'engine' alias failed for logs"
+    fi
+    
+    # Test status alias (if applicable, though status is usually global)
+    # Testing get_container_name logic via service status check internally
+    echo "2. Testing: ./aixcl service status engine"
+    # Note: 'service status' isn't a command, but 'stack status' shows it.
+    # We can test if 'is_valid_service engine' returns 0 by running start with it (dry run-ish)
+    if is_valid_service "engine"; then
+        print_success "is_valid_service identifies 'engine' as valid"
+        record_test "pass" "Common library recognizes 'engine' as a valid service"
+    else
+        print_error "is_valid_service failed to recognize 'engine'"
+        record_test "fail" "Common library failed to recognize 'engine'"
+    fi
+
+    # Test get_container_name resolution
+    local resolved_name
+    resolved_name=$(get_container_name "engine")
+    if [ "$resolved_name" = "${INFERENCE_ENGINE:-ollama}" ]; then
+        print_success "get_container_name 'engine' -> $resolved_name"
+        record_test "pass" "Container name resolution for 'engine' works"
+    else
+        print_error "get_container_name 'engine' -> $resolved_name (expected ${INFERENCE_ENGINE:-ollama})"
+        record_test "fail" "Container name resolution for 'engine' failed"
+    fi
+}
 
 # Test runtime core services
 test_component_runtime_core() {
@@ -846,6 +885,7 @@ test_profile_usr() {
     test_component_runtime_core
     test_component_database
     test_llm_state
+    test_cli_aliases
 }
 
 # Test dev profile (runtime core + database + UI)
@@ -859,6 +899,7 @@ test_profile_dev() {
     test_component_database
     test_component_ui
     test_llm_state
+    test_cli_aliases
 }
 
 # Test ops profile (runtime core + database + monitoring + logging)
@@ -873,17 +914,18 @@ test_profile_ops() {
     test_component_monitoring
     test_component_logging
     test_llm_state
+    test_cli_aliases
 }
 
 # Test sys profile (all services)
 test_profile_sys() {
     echo "Running tests for profile: sys"
     echo "Profile includes: all services"
-    echo ""
-    
+    # Run tests for each section
     test_environment_check
     test_stack_status
     test_llm_state
+    test_cli_aliases
 }
 
 # ============================================================================

@@ -137,8 +137,8 @@ Manage all services as a unified stack:
 ./aixcl stack restart [--profile sys]    # Restart all services (uses PROFILE from .env if set)
 ./aixcl stack status                     # Check service status
 ./aixcl stack logs                       # View logs for all services
-./aixcl stack logs <service>             # View logs for specific service
-./aixcl stack logs <service> 100         # Last 100 lines for a service (default 50, then follow)
+./aixcl stack logs engine                # View logs for the active inference engine
+./aixcl stack logs engine 100            # Last 100 lines for the active engine (default 50, then follow)
 ./aixcl stack clean                      # Remove unused Docker resources
 ```
 
@@ -150,9 +150,10 @@ Manage all services as a unified stack:
 Manage specific services independently:
 
 ```bash
-./aixcl service start postgres    # Start a specific service
-./aixcl service restart <service>  # Restart a service
-./aixcl service stop grafana      # Stop a service
+./aixcl service start engine    # Start the inference engine (active in .env)
+./aixcl restart engine          # Shortcut to restart the active engine
+./aixcl service stop engine     # Stop the inference engine
+./aixcl service start postgres  # Start a specific service
 ```
 
 ### Model Management
