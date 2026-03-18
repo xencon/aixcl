@@ -277,7 +277,7 @@ test_stack_status() {
     
     # Core Application Services
     # Inference Engine health check
-    local engine_url="http://localhost:11434"
+    local engine_url="http://127.0.0.1:11434"
     local healthy=false
     
     # Try both Ollama and OpenAI-compatible endpoints
@@ -301,7 +301,7 @@ test_stack_status() {
     # Try multiple endpoints - /health might not exist in all versions, try root and /api/config as fallbacks
     for i in {1..15}; do
         # Try /health endpoint first (preferred)
-        WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/health 2>/dev/null || echo "000")
+        WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/health 2>/dev/null || echo "000")
         if [ "$WEBUI_STATUS" = "200" ]; then
             WEBUI_READY=true
             break
@@ -309,7 +309,7 @@ test_stack_status() {
         
         # If /health doesn't work, try root endpoint (some versions use this)
         if [ "$WEBUI_STATUS" = "000" ] || [ "$WEBUI_STATUS" = "404" ]; then
-            ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/ 2>/dev/null || echo "000")
+            ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/ 2>/dev/null || echo "000")
             if [ "$ROOT_STATUS" = "200" ] || [ "$ROOT_STATUS" = "302" ] || [ "$ROOT_STATUS" = "307" ]; then
                 WEBUI_STATUS="$ROOT_STATUS"
                 WEBUI_READY=true
@@ -368,7 +368,7 @@ test_stack_status() {
     fi
     
     # pgAdmin health check
-    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+    PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5050 2>/dev/null || echo "000")
     if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
         print_success "pgAdmin"
         record_test "pass" "pgAdmin health check passed"
@@ -382,7 +382,7 @@ test_stack_status() {
     echo "Monitoring"
     
     # Prometheus health check
-    PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
+    PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "000")
     if [ "$PROMETHEUS_STATUS" = "200" ]; then
         print_success "Prometheus"
         record_test "pass" "Prometheus health check passed"
@@ -392,7 +392,7 @@ test_stack_status() {
     fi
     
     # Grafana health check
-    GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
+    GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || echo "000")
     if [ "$GRAFANA_STATUS" = "200" ]; then
         print_success "Grafana"
         record_test "pass" "Grafana health check passed"
@@ -402,7 +402,7 @@ test_stack_status() {
     fi
     
     # cAdvisor health check
-    CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
+    CADVISOR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8081/metrics 2>/dev/null || echo "000")
     if [ "$CADVISOR_STATUS" = "200" ]; then
         print_success "cAdvisor"
         record_test "pass" "cAdvisor health check passed"
@@ -412,7 +412,7 @@ test_stack_status() {
     fi
     
     # Node Exporter health check
-    NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
+    NODE_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9100/metrics 2>/dev/null || echo "000")
     if [ "$NODE_EXPORTER_STATUS" = "200" ]; then
         print_success "Node Exporter"
         record_test "pass" "Node Exporter health check passed"
@@ -422,7 +422,7 @@ test_stack_status() {
     fi
     
     # Postgres Exporter health check
-    POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
+    POSTGRES_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9187/metrics 2>/dev/null || echo "000")
     if [ "$POSTGRES_EXPORTER_STATUS" = "200" ]; then
         print_success "Postgres Exporter"
         record_test "pass" "Postgres Exporter health check passed"
@@ -433,7 +433,7 @@ test_stack_status() {
     
     # NVIDIA GPU Exporter (optional)
     if is_container_running "nvidia-gpu-exporter"; then
-        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
         if [ "$NVIDIA_GPU_EXPORTER_STATUS" = "200" ]; then
             print_success "NVIDIA GPU Exporter"
             record_test "pass" "NVIDIA GPU Exporter health check passed"
@@ -447,7 +447,7 @@ test_stack_status() {
     fi
     
     # Loki health check
-    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
     if [ "$LOKI_STATUS" = "200" ]; then
         print_success "Loki"
         record_test "pass" "Loki health check passed"
@@ -469,7 +469,7 @@ test_stack_status() {
 # Helper function to get available models
 get_available_models() {
     local target_engine="${1:-$INFERENCE_ENGINE}"
-    local engine_url="http://localhost:11434"
+    local engine_url="http://127.0.0.1:11434"
     
     if [ "$target_engine" = "ollama" ]; then
         if is_container_running "ollama"; then
@@ -526,11 +526,11 @@ test_llm_state() {
         # Check Engine API health
         local engine_healthy=false
         if [ "$engine" = "ollama" ]; then
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/api/version 2>/dev/null | grep -q "200"; then
                 engine_healthy=true
             fi
         else
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/v1/models 2>/dev/null | grep -q "200"; then
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null | grep -q "200"; then
                 engine_healthy=true
             fi
         fi
@@ -656,11 +656,11 @@ test_component_runtime_core() {
             
             local engine_healthy=false
             if [ "$engine" = "ollama" ]; then
-                if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200"; then
+                if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/api/version 2>/dev/null | grep -q "200"; then
                     engine_healthy=true
                 fi
             else
-                if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/v1/models 2>/dev/null | grep -q "200"; then
+                if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null | grep -q "200"; then
                     engine_healthy=true
                 fi
             fi
@@ -703,7 +703,7 @@ test_component_database() {
     if is_container_running "pgadmin"; then
         print_success "pgAdmin container is running"
         record_test "pass" "pgAdmin container is running"
-        PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+        PGADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5050 2>/dev/null || echo "000")
         if [ "$PGADMIN_STATUS" = "200" ] || [ "$PGADMIN_STATUS" = "302" ]; then
             print_success "pgAdmin health check passed"
             record_test "pass" "pgAdmin health check passed"
@@ -725,7 +725,7 @@ test_component_monitoring() {
     if is_container_running "prometheus"; then
         print_success "Prometheus container is running"
         record_test "pass" "Prometheus container is running"
-        PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
+        PROMETHEUS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "000")
         if [ "$PROMETHEUS_STATUS" = "200" ]; then
             print_success "Prometheus health check passed"
             record_test "pass" "Prometheus health check passed"
@@ -742,7 +742,7 @@ test_component_monitoring() {
     if is_container_running "grafana"; then
         print_success "Grafana container is running"
         record_test "pass" "Grafana container is running"
-        GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
+        GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || echo "000")
         if [ "$GRAFANA_STATUS" = "200" ]; then
             print_success "Grafana health check passed"
             record_test "pass" "Grafana health check passed"
@@ -768,7 +768,7 @@ test_component_monitoring() {
     
     # NVIDIA GPU Exporter (optional)
     if is_container_running "nvidia-gpu-exporter"; then
-        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+        NVIDIA_GPU_EXPORTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
         if [ "$NVIDIA_GPU_EXPORTER_STATUS" = "200" ]; then
             print_success "NVIDIA GPU Exporter health check passed"
             record_test "pass" "NVIDIA GPU Exporter health check passed"
@@ -790,7 +790,7 @@ test_component_logging() {
     if is_container_running "loki"; then
         print_success "Loki container is running"
         record_test "pass" "Loki container is running"
-        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
         if [ "$LOKI_STATUS" = "200" ]; then
             print_success "Loki health check passed"
             record_test "pass" "Loki health check passed"
@@ -825,13 +825,13 @@ test_component_ui() {
         WEBUI_STATUS="000"
         WEBUI_READY=false
         for i in {1..15}; do
-            WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/health 2>/dev/null || echo "000")
+            WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/health 2>/dev/null || echo "000")
             if [ "$WEBUI_STATUS" = "200" ]; then
                 WEBUI_READY=true
                 break
             fi
             if [ "$WEBUI_STATUS" = "000" ] || [ "$WEBUI_STATUS" = "404" ]; then
-                ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/ 2>/dev/null || echo "000")
+                ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/ 2>/dev/null || echo "000")
                 if [ "$ROOT_STATUS" = "200" ] || [ "$ROOT_STATUS" = "302" ] || [ "$ROOT_STATUS" = "307" ]; then
                     WEBUI_STATUS="$ROOT_STATUS"
                     WEBUI_READY=true
@@ -886,28 +886,30 @@ test_profile_usr() {
     test_component_database
     test_llm_state
     test_cli_aliases
-}
+    test_security_validation
+    }
 
-# Test dev profile (runtime core + database + UI)
-test_profile_dev() {
+    # Test dev profile (runtime core + database + UI)
+    test_profile_dev() {
     echo "Running tests for profile: dev"
     echo "Profile includes: runtime core, database, UI"
     echo ""
-    
+
     test_environment_check
     test_component_runtime_core
     test_component_database
     test_component_ui
     test_llm_state
     test_cli_aliases
-}
+    test_security_validation
+    }
 
-# Test ops profile (runtime core + database + monitoring + logging)
-test_profile_ops() {
+    # Test ops profile (runtime core + database + monitoring + logging)
+    test_profile_ops() {
     echo "Running tests for profile: ops"
     echo "Profile includes: runtime core, database, monitoring, logging"
     echo ""
-    
+
     test_environment_check
     test_component_runtime_core
     test_component_database
@@ -915,10 +917,11 @@ test_profile_ops() {
     test_component_logging
     test_llm_state
     test_cli_aliases
-}
+    test_security_validation
+    }
 
-# Test sys profile (all services)
-test_profile_sys() {
+    # Test sys profile (all services)
+    test_profile_sys() {
     echo "Running tests for profile: sys"
     echo "Profile includes: all services"
     # Run tests for each section
@@ -926,6 +929,79 @@ test_profile_sys() {
     test_stack_status
     test_llm_state
     test_cli_aliases
+    test_security_validation
+    }
+# ============================================================================
+# SECTION 5: NEGATIVE TESTS & RECOVERY
+# ============================================================================
+test_negative_scenarios() {
+    start_section "Negative Tests - Error Handling & Recovery"
+    
+    echo "Database Authentication (Invalid Password)"
+    echo "-----------------------------------"
+    if is_container_running "postgres"; then
+        # Try to connect with a definitely wrong password
+        if docker exec -e PGPASSWORD="wrong_password_123" postgres psql -U "$POSTGRES_USER" -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
+            print_error "Database connection succeeded with WRONG password!"
+            record_test "fail" "Negative test: Database should have rejected wrong password"
+        else
+            print_success "Database correctly rejected invalid password"
+            record_test "pass" "Negative test: Database rejected invalid password"
+        fi
+    else
+        print_warning "PostgreSQL not running, skipping auth test"
+        record_test "skip" "Negative test: Database auth (PostgreSQL not running)"
+    fi
+
+    echo ""
+    echo "Environment Validation (Missing .env)"
+    echo "-----------------------------------"
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
+        # Temporarily move .env to test error handling
+        mv "${SCRIPT_DIR}/.env" "${SCRIPT_DIR}/.env.tmp"
+        
+        # Run a command that requires .env (e.g., status or check-env should warn)
+        # Note: some commands might auto-create it, so we check for the specific warning/behavior
+        if ./aixcl stack status 2>&1 | grep -q "Warning: .env file not found"; then
+            print_success "CLI correctly warned about missing .env file"
+            record_test "pass" "Negative test: CLI reported missing .env"
+        else
+            # If it didn't warn, check if it auto-created it
+            if [ -f "${SCRIPT_DIR}/.env" ]; then
+                print_success "CLI auto-created .env file as expected"
+                record_test "pass" "Negative test: CLI auto-created missing .env"
+                rm "${SCRIPT_DIR}/.env"
+            else
+                print_warning "CLI behavior on missing .env was silent"
+                record_test "skip" "Negative test: CLI behavior on missing .env (no warning)"
+            fi
+        fi
+        
+        # Restore .env
+        mv "${SCRIPT_DIR}/.env.tmp" "${SCRIPT_DIR}/.env"
+    else
+        print_warning ".env file not found, skipping environment test"
+        record_test "skip" "Negative test: Missing .env (already missing)"
+    fi
+}
+
+# ============================================================================
+# SECTION 6: SECURITY VALIDATION
+# ============================================================================
+test_security_validation() {
+    start_section "Security - Network Bindings & Access Control"
+    
+    # Run the dedicated network binding test script
+    if [ -f "${SCRIPT_DIR}/tests/security/test_network_bindings.sh" ]; then
+        if bash "${SCRIPT_DIR}/tests/security/test_network_bindings.sh"; then
+            record_test "pass" "Security: Network bindings are properly secured"
+        else
+            record_test "fail" "Security: Network binding violation detected"
+        fi
+    else
+        print_error "Security test script not found"
+        record_test "fail" "Security test script missing"
+    fi
 }
 
 # ============================================================================
@@ -985,6 +1061,8 @@ main() {
                 echo "  logging       - Loki and Promtail"
                 echo "  ui            - Open WebUI"
                 echo "  automation    - Watchtower"
+                echo "  negative      - Error handling and recovery scenarios"
+                echo "  security      - Network binding and access control validation"
                 exit 0
                 ;;
             *)
@@ -1104,9 +1182,15 @@ main() {
             automation)
                 test_component_automation
                 ;;
+            negative)
+                test_negative_scenarios
+                ;;
+            security)
+                test_security_validation
+                ;;
             *)
                 echo "Error: Unknown component: $test_component" >&2
-                echo "Valid components: runtime-core, database, monitoring, logging, ui, automation" >&2
+                echo "Valid components: runtime-core, database, monitoring, logging, ui, automation, negative, security" >&2
                 exit 1
                 ;;
         esac
