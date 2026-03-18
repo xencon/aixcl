@@ -4,8 +4,10 @@
 # Safe function to load environment variables from .env file
 load_env_file() {
     local env_file="$1"
-    if [ -f "$env_file" ]; then
-        # Use a safer method to parse .env files
+    if [ ! -f "$env_file" ]; then
+        return 1
+    fi
+    # Use a safer method to parse .env files
         while IFS= read -r line || [ -n "$line" ]; do
             # Skip empty lines and comments
             [ -z "$line" ] && continue
@@ -54,7 +56,6 @@ load_env_file() {
                 fi
             fi
         done < "$env_file"
-    fi
 }
 
 # Define all services from docker-compose.yml

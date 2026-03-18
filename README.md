@@ -82,7 +82,6 @@ cd aixcl
 ```bash
 ./aixcl utils check-env
 ```
-(You can also run `./aixcl check-env` without the `utils` prefix.)
 
 This verifies Docker installation, available resources, and system compatibility.
 
@@ -91,7 +90,6 @@ This verifies Docker installation, available resources, and system compatibility
 ```bash
 ./aixcl utils bash-completion
 ```
-(You can also run `./aixcl bash-completion` without the `utils` prefix.)
 
 Restart your terminal or source your bash profile to activate tab completion.
 
