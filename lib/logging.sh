@@ -41,3 +41,9 @@ log_error() {
         print_error "$*"
     fi
 }
+# Log a success message
+log_success() {
+    if [ "$LOG_LEVEL" -le "$LOG_INFO" ]; then
+        print_success "$*"
+    fi
+}
