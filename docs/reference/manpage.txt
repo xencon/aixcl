@@ -73,12 +73,6 @@ COMMANDS
        utils bash-completion
               Install bash completion support
 
-       check-env
-              Same as utils check-env (top-level alias)
-
-       bash-completion
-              Same as utils bash-completion (top-level alias)
-
        help
               Show help message
 

@@ -18,7 +18,13 @@ source "${SCRIPT_DIR}/lib/color.sh"
 source "${SCRIPT_DIR}/lib/common.sh"
 
 # Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
-load_env_file ".env"
+if ! load_env_file ".env"; then
+    if [ "$1" != "stack" ] || [ "$2" != "start" ]; then
+        echo "⚠️  Warning: .env file not found. AIXCL will use default values."
+        echo "   Run './aixcl stack start' to initialize the environment."
+        echo ""
+    fi
+fi
 
 # docker_utils.sh validates COMPOSE_FILE and sets default COMPOSE_CMD/COMPOSE_WORKDIR
 # shellcheck disable=SC1091
@@ -407,8 +413,8 @@ function start() {
         engine_ready=false
         
         # Check Inference Engine (Ollama or OpenAI compatible API)
-        if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q "200" || \
-           curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/v1/models 2>/dev/null | grep -q "200"; then
+        if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/api/version 2>/dev/null | grep -q "200" || \
+           curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null | grep -q "200"; then
             engine_ready=true
         fi
         
@@ -1335,9 +1341,9 @@ function status() {
     local engines=("ollama" "vllm" "llamacpp")
     local names=("Ollama" "vLLM" "llama.cpp")
     local urls=(
-        "http://localhost:11434/api/version"
-        "http://localhost:11434/v1/models"
-        "http://localhost:11434/v1/models"
+        "http://127.0.0.1:11434/api/version"
+        "http://127.0.0.1:11434/v1/models"
+        "http://127.0.0.1:11434/v1/models"
     )
 
     for i in "${!engines[@]}"; do
@@ -1361,7 +1367,7 @@ function status() {
     echo "Operational Services"
     
     # UI
-    check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://localhost:8080/health"
+    check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://127.0.0.1:8080/health"
 
     # Persistence
     local postgres_user
@@ -1373,34 +1379,34 @@ function status() {
     check_operational_service "PostgreSQL" "postgres" "postgres" "pg_isready" "$postgres_user"
 
     # shellcheck disable=SC2034
-    PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:5050 2>/dev/null || echo "000")
+    PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5050 2>/dev/null || echo "000")
     check_operational_service "pgAdmin" "pgadmin" "pgadmin" "status_var" "PGADMIN_STATUS"
 
     # Observability
     # shellcheck disable=SC2034
-    PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9090/-/healthy 2>/dev/null || echo "000")
+    PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "000")
     check_operational_service "Prometheus" "prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS"
 
     # shellcheck disable=SC2034
-    GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
+    GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || echo "000")
     check_operational_service "Grafana" "grafana" "grafana" "status_var" "GRAFANA_STATUS"
 
     # shellcheck disable=SC2034
-    CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:8081/metrics 2>/dev/null || echo "000")
+    CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8081/metrics 2>/dev/null || echo "000")
     check_operational_service "cAdvisor" "cadvisor" "cadvisor" "status_var" "CADVISOR_STATUS"
 
     # shellcheck disable=SC2034
-    NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9100/metrics 2>/dev/null || echo "000")
+    NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9100/metrics 2>/dev/null || echo "000")
     check_operational_service "Node Exporter" "node-exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS"
 
     # shellcheck disable=SC2034
-    POSTSRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9187/metrics 2>/dev/null || echo "000")
+    POSTSRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9187/metrics 2>/dev/null || echo "000")
     check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTSRES_EXPORTER_STATUS"
 
     if is_operational_in_profile "nvidia-gpu-exporter"; then
         if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
             # shellcheck disable=SC2034
-            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:9400/metrics 2>/dev/null || echo "000")
+            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
         else
             echo "  ❌ NVIDIA GPU Exporter"
@@ -1412,7 +1418,7 @@ function status() {
 
     # Loki
     # shellcheck disable=SC2034
-    LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://localhost:3100/ready 2>/dev/null || echo "000")
+    LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
     # Promtail
@@ -1683,7 +1689,7 @@ function list() {
         docker exec "$container" ollama list
     else
         # For vLLM and llama.cpp, try to use the OpenAI compatible API
-        local url="http://localhost:11434/v1/models"
+        local url="http://127.0.0.1:11434/v1/models"
         if command -v curl >/dev/null 2>&1; then
             echo "API Models:"
             curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve models via API. Is the service ready?"
