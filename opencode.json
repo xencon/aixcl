@@ -8,13 +8,13 @@
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {
-        "Qwen/Qwen2.5-1.5B-Instruct": {
-          "name": "Qwen 2.5 1.5B Instruct",
-          "maxTokens": 16000
+        "qwen2.5-coder:7b-instruct-q5_K_M": {
+          "name": "Qwen 2.5 7B Instruct",
+          "maxTokens": 30000
         },
         "modelperm-aef8b1a41087193c": {
           "name": "ModelPerm (custom)",
-          "maxTokens": 16000
+          "maxTokens": 30000
         }
       }
     }
