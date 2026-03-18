@@ -16,6 +16,7 @@ fi
 
 # Default values if not set
 POSTGRES_USER=${POSTGRES_USER:-admin}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
 WEBUI_DATABASE=${POSTGRES_DATABASE:-webui}
 CONTINUE_DATABASE=${POSTGRES_CONTINUE_DATABASE:-continue}
 
@@ -32,28 +33,29 @@ if ! docker ps --format "{{.Names}}" | grep -q "^postgres$"; then
     exit 1
 fi
 
+# Function to execute psql inside the postgres container
+run_psql() {
+    docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" postgres psql -U "$POSTGRES_USER" "$@"
+}
+
 # Create webui database if it doesn't exist
 echo "=== Creating WebUI Database ==="
-WEBUI_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "$WEBUI_DATABASE" || echo "0")
-
-if [ "$WEBUI_EXISTS" -eq "1" ]; then
+if run_psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$WEBUI_DATABASE"; then
     echo "✅ WebUI database already exists: $WEBUI_DATABASE"
 else
     echo "Creating webui database..."
-    docker exec postgres psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$WEBUI_DATABASE\";" 2>/dev/null
+    run_psql -d postgres -c "CREATE DATABASE \"$WEBUI_DATABASE\";" >/dev/null 2>&1
     echo "✅ WebUI database created: $WEBUI_DATABASE"
 fi
 
 # Create continue database if it doesn't exist
 echo ""
 echo "=== Creating Continue Database ==="
-CONTINUE_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "$CONTINUE_DATABASE" || echo "0")
-
-if [ "$CONTINUE_EXISTS" -eq "1" ]; then
+if run_psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$CONTINUE_DATABASE"; then
     echo "✅ Continue database already exists: $CONTINUE_DATABASE"
 else
     echo "Creating continue database..."
-    docker exec postgres psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$CONTINUE_DATABASE\";" 2>/dev/null
+    run_psql -d postgres -c "CREATE DATABASE \"$CONTINUE_DATABASE\";" >/dev/null 2>&1
     echo "✅ Continue database created: $CONTINUE_DATABASE"
     echo "   Note: The Council service will automatically create the schema when it starts."
 fi
@@ -63,10 +65,9 @@ fi
 if [ "$WEBUI_DATABASE" != "admin" ] && [ "$CONTINUE_DATABASE" != "admin" ]; then
     echo ""
     echo "=== Cleaning Up Unwanted Databases ==="
-    ADMIN_EXISTS=$(docker exec postgres psql -U "$POSTGRES_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "admin" || echo "0")
-    if [ "$ADMIN_EXISTS" -eq "1" ]; then
+    if run_psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "admin"; then
         echo "Removing unwanted admin database..."
-        docker exec postgres psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" 2>/dev/null || true
+        run_psql -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
         echo "✅ Admin database removed (only webui and continue databases should exist)"
     else
         echo "✅ No unwanted admin database found"
@@ -76,14 +77,14 @@ fi
 # Verify databases
 echo ""
 echo "=== Verification ==="
-if docker exec postgres psql -U "$POSTGRES_USER" -d "$WEBUI_DATABASE" -c "SELECT 1;" >/dev/null 2>&1; then
+if run_psql -d "$WEBUI_DATABASE" -c "SELECT 1;" >/dev/null 2>&1; then
     echo "✅ WebUI database is accessible"
 else
     echo "❌ Failed to access webui database"
     exit 1
 fi
 
-if docker exec postgres psql -U "$POSTGRES_USER" -d "$CONTINUE_DATABASE" -c "SELECT 1;" >/dev/null 2>&1; then
+if run_psql -d "$CONTINUE_DATABASE" -c "SELECT 1;" >/dev/null 2>&1; then
     echo "✅ Continue database is accessible"
 else
     echo "❌ Failed to access continue database"
@@ -92,8 +93,3 @@ fi
 
 echo ""
 echo "✅ All databases created successfully!"
-echo ""
-echo "Next steps:"
-echo "1. Ensure your .env file has: POSTGRES_DATABASE=webui"
-echo "2. Restart services: ./aixcl stack restart"
-echo "3. Run tests: ./tests/platform-tests.sh --component database"

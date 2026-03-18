@@ -132,26 +132,20 @@ function ensure_databases() {
     fi
     
     # Create webui database if it doesn't exist
-    local webui_exists
-    webui_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "$webui_db")
-    webui_exists=${webui_exists:-0}
-    if [ "$webui_exists" -eq 0 ]; then
-        echo "Creating webui database: $webui_db"
-        docker exec postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$webui_db\";" >/dev/null 2>&1 || true
-    else
+    if docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$webui_db"; then
         echo "WebUI database already exists: $webui_db"
+    else
+        echo "Creating webui database: $webui_db"
+        docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$webui_db\";" >/dev/null 2>&1 || true
     fi
     
     
     # Remove unwanted "admin" database if it exists and is not the intended database
     # PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
     if [ "$webui_db" != "admin" ]; then
-        local admin_exists
-        admin_exists=$(docker exec postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -wc "admin")
-        admin_exists=${admin_exists:-0}
-        if [ "$admin_exists" -eq 1 ]; then
+        if docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "admin"; then
             echo "Removing unwanted admin database..."
-            docker exec postgres psql -U "$pg_user" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
+            docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
             echo "   Admin database removed (only webui and continue databases should exist)"
         fi
     fi
