@@ -402,7 +402,7 @@ function start() {
     
     echo "Waiting for runtime core services to be ready..."
     local max_attempts
-    max_attempts=150
+    max_attempts=600  # 20 minutes (large models take time to load)
     local attempt
     attempt=1
     local all_ready
@@ -444,7 +444,7 @@ function start() {
             echo "Waiting for PostgreSQL to be ready..."
             local pg_attempt=1
             local pg_ready=false
-            while [ $pg_attempt -le 15 ]; do
+            while [ $pg_attempt -le 30 ]; do  # 60 seconds
                 if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
                     echo "PostgreSQL is ready!"
                     pg_ready=true
@@ -673,17 +673,17 @@ function restart() {
 
 function start_service() {
     if [ -z "$1" ]; then
-        echo "Error: Service name is required"
-        echo "Usage: $0 service start <service-name>"
+        log_error "Service name is required"
+        log_info "Usage: $0 service start <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled):"
-        echo "  ${INFERENCE_ENGINE:-ollama}"
+        log_info "Runtime Core Services (always enabled):"
+        log_info "  ${INFERENCE_ENGINE:-ollama}"
         echo ""
-        echo "Operational Services (profile-dependent):"
-        echo "  ${ALL_SERVICES[*]}"
+        log_info "Operational Services (profile-dependent):"
+        log_info "  ${ALL_SERVICES[*]}"
         echo ""
-        echo "Note: Continue is a VS Code plugin, not a containerized service"
-        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
+        log_info "Note: Continue is a VS Code plugin, not a containerized service"
+        log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -715,13 +715,13 @@ function start_service() {
     
     # Check if service is already running (handle both exact name and hash-prefixed names)
     if docker ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
-        echo "Service '$service' is already running."
+        log_info "Service '$service' is already running."
         return 0
     fi
     
     # Remove any existing containers (running or stopped) to avoid ContainerConfig errors
     # This is especially important after rebuilds when docker-compose tries to recreate containers
-    echo "Cleaning up any existing containers for $actual_service..."
+    log_info "Cleaning up any existing containers for $actual_service..."
     run_compose rm -f "$actual_service" 2>/dev/null || true
     
     # Also remove hash-prefixed containers directly via docker (handles edge cases)
@@ -737,16 +737,16 @@ function start_service() {
     # Remove container by exact name if it exists
     docker rm -f "$container_name" 2>/dev/null || true
     
-    echo "Starting service: $service..."
+    log_info "Starting service: $service..."
     
     # Check for .env file if needed (for services that require it)
     if [ ! -f .env ] && [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; then
         if [ -f .env.example ]; then
-            echo "⚠️  .env file not found. Copying from .env.example..."
+            log_warning ".env file not found. Copying from .env.example..."
             cp .env.example .env
             load_env_file ".env"
         else
-            echo "❌ Error: .env file required for service '$service'"
+            log_error ".env file required for service '$service'"
             return 1
         fi
     fi
@@ -760,16 +760,16 @@ function start_service() {
     # Use --force-recreate if explicitly requested (e.g., after a rebuild)
     if [ "$force_recreate" = "true" ]; then
         if run_compose up -d --force-recreate --no-deps "$actual_service"; then
-            echo "✅ Successfully started service: $service (recreated)"
+            log_success "Successfully started service: $service (recreated)"
         else
-            echo "❌ Failed to start service: $service"
+            log_error "Failed to start service: $service"
             return 1
         fi
     else
         if run_compose up -d "$actual_service"; then
-            echo "✅ Successfully started service: $service"
+            log_success "Successfully started service: $service"
         else
-            echo "❌ Failed to start service: $service"
+            log_error "Failed to start service: $service"
             return 1
         fi
     fi
@@ -779,22 +779,22 @@ function start_service() {
     
     # Check if the container is actually running (handle both exact name and hash-prefixed names)
     if docker ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
-        echo "Service '$service' is now running."
+        log_info "Service '$service' is now running."
     else
-        echo "⚠️  Service '$service' may not have started correctly. Check logs with: $0 logs $service"
+        log_warning "Service '$service' may not have started correctly. Check logs with: $0 logs $service"
     fi
     return 0
 }
 
 function stop_service() {
     if [ -z "$1" ]; then
-        echo "Error: Service name is required"
-        echo "Usage: $0 service stop <service-name>"
+        log_error "Service name is required"
+        log_info "Usage: $0 service stop <service-name>"
         echo ""
-        echo "Runtime Core Services (always enabled): \${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
-        echo "Operational Services (profile-dependent): \${ALL_SERVICES[*]}"
+        log_info "Runtime Core Services (always enabled): ${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
+        log_info "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
-        echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
+        log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
     
@@ -822,27 +822,27 @@ function stop_service() {
     
     # Check if service is running
     if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
-        echo "Service '$service' is not running."
+        log_info "Service '$service' is not running."
         return 0
     fi
     
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    echo "Stopping service: $service..."
+    log_info "Stopping service: $service..."
     
     # Stop the specific service
     if run_compose stop "$actual_service"; then
-        echo "✅ Successfully stopped service: $service"
+        log_success "Successfully stopped service: $service"
         
         # Clean up pgAdmin configuration if stopping pgadmin
         if [ "$service" = "pgadmin" ] && [ -f "pgadmin-servers.json" ]; then
             rm -f pgadmin-servers.json
-            echo "🧹 Cleaned up pgAdmin configuration file"
+            log_info "Cleaned up pgAdmin configuration file"
         fi
         return 0
     else
-        echo "❌ Failed to stop service: $service"
+        log_error "Failed to stop service: $service"
         return 1
     fi
 }
@@ -934,8 +934,8 @@ function service() {
 
 function logs() {
     if [ $# -eq 0 ]; then
-        echo "Fetching logs for all services (following)..."
-        echo "Press Ctrl+C to stop"
+        log_info "Fetching logs for all services (following)..."
+        log_info "Press Ctrl+C to stop"
         echo ""
         
         # Check if any containers are running
@@ -943,9 +943,12 @@ function logs() {
         local running_containers=()
         
         for service in "${ALL_SERVICES[@]}"; do
+            # Skip the 'engine' alias itself in the loop, as it's not a real container name
+            [ "$service" = "engine" ] && continue
+            
             # Find the actual container name (exact or hash-prefixed)
             local actual_container
-            actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1)
+            actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1 || true)
             
             if [ -n "$actual_container" ]; then
                 found_any=true
@@ -954,99 +957,95 @@ function logs() {
         done
         
         if [ "$found_any" = false ]; then
-            echo "⚠️  No services are currently running."
-            echo "   Start services with: ./aixcl stack start"
+            log_warning "No services are currently running."
+            log_info "   Start services with: ./aixcl stack start"
             return 0
         fi
         
         # Use docker logs directly for each running container
-        # Show last 100 lines then follow for each container
+        # Show last 100 lines for each container as summary
         for service in "${running_containers[@]}"; do
             echo "=== $service ==="
             docker logs "$service" --tail=100 2>/dev/null || echo "  (no logs available)"
             echo ""
         done
         
-        echo "Following new logs (Press Ctrl+C to stop)..."
+        log_info "Following new logs (Press Ctrl+C to stop)..."
         echo ""
         
         # Follow logs from all containers in parallel using background processes
         local pids=()
+        
+        # Set up trap to kill background processes on exit (Ctrl+C)
+        # Using a more robust trap that handles function return and signals
+        trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
+        
         for service in "${running_containers[@]}"; do
-            (
-                docker logs "$service" --follow 2>/dev/null | while IFS= read -r line; do
-                    echo "[$service] $line"
-                done
-            ) &
+            # Use sed to prefix each line with the service name
+            # Appending || true to subshell to prevent it from failing the main script
+            ( docker logs "$service" --follow 2>/dev/null | sed "s/^/[$service] /" || true ) &
             pids+=($!)
         done
         
         # Wait for all background processes
-        wait "${pids[@]}"
+        if [ ${#pids[@]} -gt 0 ]; then
+            wait "${pids[@]}" 2>/dev/null || true
+        fi
+        
+        # Clear trap after wait
+        trap - EXIT INT TERM
     else
-        local container="$1"
+        local service_name="$1"
         local tail_count="${2:-50}"  # Default to 50 lines if not specified
         
-        # Resolve 'engine' alias to active INFERENCE_ENGINE (managed by profile.sh)
-        if [ "$container" = "engine" ]; then
-            container="${INFERENCE_ENGINE:-ollama}"
+        # Resolve 'engine' alias
+        local actual_service="$service_name"
+        if [ "$service_name" = "engine" ]; then
+            actual_service=$(get_container_name "engine")
         fi
 
         # Validate tail_count
         if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
-            echo "❌ tail count must be a number between 1 and 10000"
+            log_error "tail count must be a number between 1 and 10000"
             return 1
         fi
         
-        # Validate container name and find actual container (handle hash-prefixed names)
-        # Check against ALL_SERVICES
-        local is_valid=false
-        for s in "${ALL_SERVICES[@]}"; do
-            if [ "$container" = "$s" ]; then
-                is_valid=true
-                break
-            fi
-        done
+        # Validate service name
+        if ! is_valid_service "$service_name"; then
+            log_error "Unknown container '$service_name'"
+            echo ""
+            log_info "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
+            log_info "  engine (ollama, vllm, llamacpp)"
+            echo ""
+            log_info "Operational Services:"
+            log_info "  ${ALL_SERVICES[*]}"
+            echo ""
+            log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
+            return 1
+        fi
 
-        if [ "$is_valid" = true ]; then
-            echo "Fetching logs for $container..."
-            # Try exact name first, then hash-prefixed name
-            local actual_container
-            actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
-            if [ -n "$actual_container" ]; then
-                docker logs "$actual_container" --tail="$tail_count" --follow
-            else
-                # Try stopped containers too
-                actual_container=$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${container}$|_[0-9a-f]+_${container}$|^[0-9a-f]+_${container}$" | head -1)
-                if [ -n "$actual_container" ]; then
-                    docker logs "$actual_container" --tail="$tail_count" --follow
-                else
-                    echo "Error: Container '$container' not found (checked for exact name and hash-prefixed variants)"
-                    return 1
-                fi
-            fi
+        log_info "Fetching logs for $actual_service..."
+        
+        # Try exact name first, then hash-prefixed name (running or stopped)
+        local actual_container
+        actual_container=$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
+        
+        if [ -n "$actual_container" ]; then
+            docker logs "$actual_container" --tail="$tail_count" --follow
         else
-            echo "Error: Unknown container '$container'"
-            echo ""
-            echo "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
-            echo "  engine (ollama, vllm, llamacpp)"
-            echo ""
-            echo "Operational Services:"
-            echo "  ${ALL_SERVICES[*]}"
-            echo ""
-            echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
+            log_error "Container for service '$actual_service' not found"
             return 1
         fi
     fi
 }
 
 function clean() {
-    echo "Cleaning up Docker resources..."
+    log_info "Cleaning up Docker resources..."
     
     # Set up compose command with GPU detection
     set_compose_cmd
     
-    echo "Stopping all containers..."
+    log_info "Stopping all containers..."
     run_compose down
     
     # Remove postgres container and associated volumes specifically
@@ -1056,30 +1055,30 @@ function clean() {
     fi
     
     # Remove postgres-related volumes
-    echo "Removing PostgreSQL volumes..."
+    log_info "Removing PostgreSQL volumes..."
     docker volume ls --format "{{.Name}}" | grep -i postgres | while read -r volume; do
         if [ -n "$volume" ]; then
-            echo "  Removing volume: $volume"
+            log_info "  Removing volume: $volume"
             docker volume rm "$volume" 2>/dev/null || true
         fi
     done
     
-    echo "Removing stopped containers..."
+    log_info "Removing stopped containers..."
     docker container prune -f
     
-    echo "Removing unused images..."
+    log_info "Removing unused images..."
     docker image prune -a -f
     
-    echo "Removing unused volumes..."
+    log_info "Removing unused volumes..."
     docker volume prune -f
     
     # Clean up pgAdmin configuration file for security
     if [ -f "pgadmin-servers.json" ]; then
         rm -f pgadmin-servers.json
-        echo "🧹 Cleaned up pgAdmin configuration file"
+        log_success "Cleaned up pgAdmin configuration file"
     fi
     
-    echo "Clean up complete."
+    log_success "Clean up complete."
 }
 
 
@@ -1443,6 +1442,36 @@ function status() {
     echo ""
 }
 
+# Check if a model is already installed/downloaded for the current engine
+is_model_installed() {
+    local model="$1"
+    local engine="$2"
+    local container="$3"
+
+    case "$engine" in
+        ollama)
+            # Ollama list shows models. We need to match the name exactly, or with :latest if missing tag
+            local model_with_tag="$model"
+            [[ ! "$model" =~ : ]] && model_with_tag="${model}:latest"
+            docker exec "$container" ollama list 2>/dev/null | awk '{print $1}' | grep -qE "^${model_with_tag}$"
+            return $?
+            ;;
+        vllm)
+            # vLLM uses HF cache. Check for models--org--repo directory
+            local hf_path
+            hf_path="models--$(echo "$model" | sed 's/\//--/g')"
+            docker exec "$container" ls "/root/.cache/huggingface/hub/$hf_path" >/dev/null 2>&1
+            return $?
+            ;;
+        llamacpp)
+            # llama.cpp uses a flat models directory. Check if file exists
+            docker exec "$container" ls "/models/$model" >/dev/null 2>&1
+            return $?
+            ;;
+    esac
+    return 1
+}
+
 function add() {
     if [ -z "$1" ]; then
         echo "Error: Model name is required"
@@ -1458,48 +1487,88 @@ function add() {
         return 1
     fi
 
-    echo "Adding model: $1"
-    
+    local model="$1"
     local engine="${INFERENCE_ENGINE:-ollama}"
     local container
     container=$(get_engine_container "$engine")
-    
-    # Check if we should update compose file (vLLM and llama.cpp set model at startup)
-    if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
-        local compose_file="services/docker-compose.yml"
-        if [ ! -f "$compose_file" ]; then
-             echo "❌ Error: $compose_file not found."
-             return 1
-        fi
-        
-        echo "🔄 Updating $engine configuration in $compose_file to use model: $1"
-        if [[ "$engine" == "vllm" ]]; then
-            # Update vllm model in command array
-            sed -i "/vllm:/,/healthcheck:/s|command:.*|command: [\"--model\", \"$1\", \"--gpu-memory-utilization\", \"0.8\"]|" "$compose_file"
-        elif [[ "$engine" == "llamacpp" ]]; then
-            # Update llamacpp model path. Assuming models are in /models/ internally
-            sed -i "/llamacpp:/,/healthcheck:/s|command:.*|command: [\"-m\", \"/models/$1\", \"--host\", \"0.0.0.0\", \"--port\", \"8080\"]|" "$compose_file"
-        fi
-        echo "✅ Configuration updated. Please restart the stack to apply changes: $0 stack restart"
-        return 0
-    fi
 
-    # Standard pull for Ollama
     if [ -z "$container" ]; then
         echo "Error: $engine container is not running. Please start the services first."
         return 1
     fi
 
-    if [ "$engine" = "ollama" ]; then
-        if docker exec "$container" ollama pull "$1"; then
-            echo "✅ Successfully added model: $1"
+    # Check if model already exists
+    if is_model_installed "$model" "$engine" "$container"; then
+        echo "✓ Model '$model' is already installed for $engine."
+        
+        # Still update config for vLLM/llama.cpp as they are single-model engines
+        if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
+            echo "ℹ️  Updating configuration to use existing model..."
         else
-            echo "❌ Failed to add model: $1"
-            return 1
+            return 0
         fi
     else
-        echo "⚠️  Model management for $engine is not fully automated yet."
+        echo "Adding model: $model"
+        
+        # Download logic based on engine
+        if [ "$engine" = "ollama" ]; then
+            if docker exec "$container" ollama pull "$model"; then
+                echo "✅ Successfully added model: $model"
+            else
+                echo "❌ Failed to add model: $model"
+                return 1
+            fi
+        elif [ "$engine" = "vllm" ]; then
+            echo "📥 Downloading model from Hugging Face..."
+            if docker exec "$container" huggingface-cli download "$model"; then
+                echo "✅ Successfully downloaded model: $model"
+            else
+                echo "❌ Failed to download model: $model"
+                return 1
+            fi
+        elif [ "$engine" = "llamacpp" ]; then
+            # For llama.cpp, we assume the user provides a Hugging Face path for a GGUF
+            # Format: org/repo/model.gguf
+            if [[ "$model" =~ ^([^/]+/[^/]+)/(.+\.gguf)$ ]]; then
+                local repo="${BASH_REMATCH[1]}"
+                local filename="${BASH_REMATCH[2]}"
+                echo "📥 Downloading $filename from $repo..."
+                if docker exec "$container" huggingface-cli download "$repo" "$filename" --local-dir /models --local-dir-use-symlinks False; then
+                    echo "✅ Successfully downloaded model: $model"
+                else
+                    echo "❌ Failed to download model: $model"
+                    return 1
+                fi
+            else
+                echo "⚠️  For llama.cpp, please provide a Hugging Face path to a GGUF file (e.g., org/repo/model.gguf)"
+                echo "   If the model already exists in the volume, make sure the name matches the filename."
+                return 1
+            fi
+        fi
     fi
+
+    # Update configuration for vLLM and llama.cpp
+    if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
+        local compose_file="${SERVICES_DIR:-services}/docker-compose.yml"
+        if [ ! -f "$compose_file" ]; then
+             echo "❌ Error: $compose_file not found."
+             return 1
+        fi
+        
+        echo "🔄 Updating $engine configuration in $compose_file to use model: $model"
+        if [[ "$engine" == "vllm" ]]; then
+            # Update vllm model and cleanup potential multi-line command
+            sed -i "/vllm:/,/healthcheck:/{ /command:/s|command:.*|command: [\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\"]|; /command:/!{ /^[[:space:]]\{6,\}/d; /^[[:space:]]*\]/d } }" "$compose_file"
+        elif [[ "$engine" == "llamacpp" ]]; then
+            # Update llamacpp model and cleanup potential multi-line command
+            local model_filename="$model"
+            [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
+            sed -i "/llamacpp:/,/healthcheck:/{ /command:/s|command:.*|command: [\"-m\", \"/models/$model_filename\", \"--host\", \"0.0.0.0\", \"--port\", \"8080\"]|; /command:/!{ /^[[:space:]]\{6,\}/d; /^[[:space:]]*\]/d } }" "$compose_file"
+        fi
+        echo "✅ Configuration updated. Please restart the stack to apply changes: $0 stack restart"
+    fi
+
+    return 0
 }
 
 function remove() {
