@@ -74,6 +74,8 @@ services:
       - OPENAI_API_KEY=dummy
       - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=nomic-embed-text
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

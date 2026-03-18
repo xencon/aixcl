@@ -15,7 +15,7 @@ fi
 
 # Default values if not set
 POSTGRES_USER=${POSTGRES_USER:-admin}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
 CONTINUE_DATABASE=${POSTGRES_CONTINUE_DATABASE:-continue}
 
-docker exec postgres psql -U "$POSTGRES_USER" -d "$CONTINUE_DATABASE" -c "SELECT id, title, source FROM chat ORDER BY created_at DESC LIMIT 3;"
-
+docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" postgres psql -U "$POSTGRES_USER" -d "$CONTINUE_DATABASE" -c "SELECT id, title, source FROM chat ORDER BY created_at DESC LIMIT 3;"
