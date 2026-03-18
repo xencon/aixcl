@@ -1,54 +1,44 @@
-# CLI Documentation Alignment Checklist
+# CLI Documentation Alignment Checklist (March 2026)
 
-Ordered by priority. Work through one PR at a time; verify and test before merging.
+This checklist tracks the alignment between the **aixcl** CLI implementation and its documentation.
 
-Reference: [cli-docs-alignment-report.md](./cli-docs-alignment-report.md)
-
----
-
-## High priority
-
-- [ ] **1. docs/user/setup.md (S1)** — Fix wrong command: `./aixcl logs` → `./aixcl stack logs`
-- [ ] **2. council/TESTING.md (T1)** — Fix wrong command: `./aixcl start` → `./aixcl stack start`
-- [ ] **3. docs/reference/manpage.txt (M7)** — FILES: document project-directory `.env`, not `~/.env`
-- [ ] **4. docs/reference/manpage.txt (M1)** — Add `continue` command section (`continue config`)
-- [ ] **5. docs/reference/manpage.txt (M3)** — Document `stack restart [--profile <p>] [service1] [service2] ...`
+Reference: [Consistency Gap Report (2026)](./consistency-gap-report-2026.md)
 
 ---
 
-## Medium priority
+## 1. High Priority: Foundational Alignment
 
-- [ ] **6. docs/reference/manpage.txt (M2)** — Document short option `-p` for `--profile`
-- [ ] **7. docs/reference/manpage.txt (M4)** — `stack logs`: document default 50, range 1–10000, follow behavior
-- [ ] **8. docs/reference/manpage.txt (M5)** — `models`: document multiple names for add/remove
-- [ ] **9. docs/reference/manpage.txt (M6)** — Document top-level `check-env` and `bash-completion`
-- [ ] **10. README.md (R1)** — Document `stack restart` with optional service list
-- [ ] **11. docs/user/usage.md (U1)** — Document `stack restart` with optional service list
+- [ ] **Archive Deprecated Commands** — Ensure all documentation (Usage, Manpage, README) has removed references to `continue`, `council`, and `dashboard` as top-level CLI commands.
+- [ ] **Sync stack start/restart** — Verify that `stack start` and `stack restart` documentation correctly reflects the `--profile` (`-p`) behavior and the optional service list for restart.
+- [ ] **Engine Configuration** — Ensure `config engine <set|auto>` is fully documented in the manpage and usage guide.
+- [ ] **Models multiple args** — Verify that `models add` and `models remove` are documented as accepting one or more model names.
 
 ---
 
-## Low priority
+## 2. Medium Priority: Detailed Usage
 
-- [ ] **12. README.md (R2)** — Mention optional line count for `stack logs <service> [n]`
-- [ ] **13. README.md (R3)** — Mention multiple models for `models add`/`remove`
-- [ ] **14. README.md (R4)** — Note top-level `check-env` and `bash-completion`
-- [ ] **15. docs/user/usage.md (U2)** — State default 50 and range 1–10000 for `stack logs`
-- [ ] **16. docs/user/usage.md (U3)** — State multiple names allowed for `models add`/`remove`
+- [ ] **stack logs detail** — Document default (50), range (1-10000), and the `engine` alias in all relevant files.
+- [ ] **service {start|stop|restart}** — Ensure all three actions for individual services are documented consistently.
+- [ ] **utils check-env/bash-completion** — Verify these are correctly documented as subcommands of `utils` (not top-level aliases).
 
 ---
 
-## PR grouping (for implementation)
+## 3. Low Priority: Polish & Aliases
 
-| PR | Issue | Scope | Checklist items |
-|----|--------|--------|------------------|
-| [#424](https://github.com/xencon/aixcl/pull/424) | #423 | docs/user/setup.md + alignment report & checklist | 1 |
-| [#426](https://github.com/xencon/aixcl/pull/426) | #425 | council/TESTING.md | 2 |
-| [#428](https://github.com/xencon/aixcl/pull/428) | #427 | docs/reference/manpage.txt | 3, 4, 5, 6, 7, 8, 9 |
-| [#430](https://github.com/xencon/aixcl/pull/430) | #429 | README.md | 10, 12, 13, 14 |
-| [#432](https://github.com/xencon/aixcl/pull/432) | #431 | docs/user/usage.md | 11, 15, 16 |
-
-**Suggested merge order:** 424 (adds checklist and report), then 426, 428, 430, 432. Verify and test each before merging.
+- [ ] **Top-level restart alias** — Ensure the `restart` command is mentioned as a shorthand for `stack restart`.
+- [ ] **Manpage SYNOPSIS** — Ensure the SYNOPSIS reflects the current command structure accurately.
+- [ ] **Manpage FILES** — Verify that `.env` location is correctly documented as the project root.
 
 ---
 
-*After merging each PR, check off the corresponding items above.*
+## Target Files for Review
+
+| File | Status | Notes |
+|------|--------|-------|
+| `docs/reference/manpage.txt` | [ ] | Primary reference |
+| `docs/user/usage.md` | [ ] | User-facing guide |
+| `README.md` | [ ] | Quick start reference |
+| `docs/user/setup.md` | [ ] | Installation & initialization |
+
+---
+*Generated based on the ./aixcl help output in March 2026.*
