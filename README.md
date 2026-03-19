@@ -2,243 +2,99 @@
   <img src="AIXCL.png" alt="AIXCL" width="800" height=500/>
 </a>
 
-## Run this project in GitHub Codespaces
-
-[Open in GitHub Codespaces](https://github.com/codespaces/new?repo=xencon/aixcl)
-
-
 # AIXCL
 
-**A self-hosted AI stack for running and integrating LLMs locally.**
+**A self-hosted, local-first AI stack for running and integrating LLMs.**
 
-## About AIXCL
+AIXCL is a privacy-focused platform for individuals and teams who want full control over their models. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
 
-AIXCL is a privacy focused, local-first AI development platform for individuals and teams who want full control over their models and tooling. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate large language models directly into your workflow.
+## Prerequisites
 
-## Technology Stack
+- **Docker & Docker Compose** installed.
+- **16 GB RAM** (minimum recommended).
+- **128 GB Disk Space** (for models and images).
 
-AIXCL is built on a containerized architecture using Docker and Docker Compose, with a strict separation between core runtime and operational services:
+## Get Started in 3 Steps
 
-### Runtime Core (Always Enabled)
-
-These components define what AIXCL is and are always present in every deployment:
-
-- **Inference Engine** (Ollama, vLLM, llama.cpp): LLM inference engine
-
-### Operational Services (Profile-Dependent)
-
-Optional services that support, observe, or operate the runtime:
-
-- **Persistence**: PostgreSQL (database) and pgAdmin (database administration)
-- **Observability**: Prometheus (metrics), Grafana (dashboards), Loki (logs), Promtail (log shipping), cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
-- **UI**: Open WebUI (web interface for model interaction)
-- **Automation**: Watchtower (automatic container updates)
-
-### Infrastructure
-
-- **Docker & Docker Compose**: Container orchestration and service management
-- **Bash CLI**: Unified command-line interface for platform control
-- **Profile System**: Declarative service composition (usr, dev, ops, sys)
-
-## Target Audience
-
-AIXCL serves different user types through profile-based deployments:
-
-- **End Users** (`usr` profile): Minimal footprint deployments with database persistence for personal use
-- **Developers** (`dev` profile): Local development workstations with UI and database tools
-- **Operators** (`ops` profile): Production servers requiring observability and monitoring
-- **System** (`sys` profile): Complete deployments with full feature set and automation
-
-## Features
-
-- **Local LLM Execution**: Run models locally with automatic GPU detection and optimization
-- **IDE Integration**: VS Code integration via OpenCode for AI-powered code assistance
-- **Web Interface**: Interactive model interaction through Open WebUI (profile-dependent)
-- **Conversation Persistence**: Store dialogues and interactions in PostgreSQL for context preservation
-- **Observability**: Monitor system metrics, GPU usage, and container performance with Prometheus and Grafana
-- **Profile-Based Deployment**: Choose service composition for your use case (usr, dev, ops, sys)
-- **CLI Management**: Unified command-line interface for services, models, and configurations
-- **Automatic Updates**: Keep containers up-to-date with Watchtower (profile-dependent)
-
-## System Requirements
-
-- **Minimum 16 GB RAM** - Required for running LLM models efficiently
-- **Minimum 128 GB free disk space** - Needed for models and container images
-- **Docker & Docker Compose** - Required for container orchestration
-
-## Quick Start
-
-Get AIXCL up and running in minutes:
-
-**1. Clone the repository**
-
+**1. Clone and Verify**
 ```bash
-git clone https://github.com/xencon/aixcl.git
-cd aixcl
-```
-
-**2. Verify your environment**
-
-```bash
+git clone https://github.com/xencon/aixcl.git && cd aixcl
 ./aixcl utils check-env
 ```
 
-This verifies Docker installation, available resources, and system compatibility.
+**2. Start the Stack**
+```bash
+# Choose a profile: usr (minimal), dev (UI+DB), ops (Observability), sys (Full)
+./aixcl stack start --profile dev
+```
 
-**3. Install CLI completion (optional)**
+**3. Add your first model**
+```bash
+./aixcl models add qwen2.5-coder:7b
+```
+*Navigate to `http://localhost:8080` to start chatting!*
+
+---
+
+## 🛠 Management Examples
+
+### 1. Engine Management
+AIXCL supports multiple backends. You can switch them instantly:
 
 ```bash
-./aixcl utils bash-completion
+# Auto-detect optimal engine based on your hardware
+./aixcl config engine auto
+
+# Manually switch to vLLM (Great for high-end GPUs)
+./aixcl config engine set vllm
+
+# Manually switch to llama.cpp (Great for CPU/Apple Silicon)
+./aixcl config engine set llamacpp
+
+# Restart to apply changes
+./aixcl stack restart engine
 ```
 
-Restart your terminal or source your bash profile to activate tab completion.
-
-**4. Start the services**
+### 2. Model Management
+Manage your local library across any active engine:
 
 ```bash
-# First time: specify profile (saves to .env for future use)
-./aixcl stack start --profile usr
+# Add from Ollama Registry
+./aixcl models add llama3.2:3b
 
-# Subsequent times: uses PROFILE from .env automatically
-./aixcl stack start
+# Add directly from Hugging Face (GGUF)
+./aixcl models add hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M
+
+# List all local models
+./aixcl models list
+
+# Remove a model
+./aixcl models remove llama3.2:3b
 ```
 
-Available profiles:
-- `usr` - User-oriented runtime (minimal footprint with database persistence)
-- `dev` - Developer workstation (runtime core + UI + DB)
-- `ops` - Observability-focused (runtime core + monitoring/logging)
-- `sys` - System-oriented (complete stack with automation)
+### 3. OpenCode IDE Integration
+AIXCL is designed to power your editor. OpenCode (IDE) connects to your stack for local chat, autocomplete, and agentic workflows.
 
-The system automatically creates a `.env` file from `.env.example` if needed. Monitor service status with `./aixcl stack status`.
+- **Endpoint:** `http://localhost:11434/v1`
+- **Setup:** See [OpenCode Setup Guide](docs/developer/opencode-setup.md) for IDE configuration.
 
-**5. Add your first model**
+---
 
-```bash
-./aixcl models add deepseek-coder:1.3b
-```
+## 🚀 Common Commands
 
-Examples: `deepseek-coder:1.3b`, `codegemma:2b`, `qwen2.5-coder:3b`. Model downloads may take several minutes depending on your connection.
+| Command | Description |
+| :--- | :--- |
+| `./aixcl stack status` | Check service health and OpenCode connectivity |
+| `./aixcl stack logs engine` | View real-time inference logs |
+| `./aixcl stack stop` | Stop all services gracefully |
+| `./aixcl stack clean` | Wipe unused containers and volumes (Fresh start) |
 
-**6. Access the web interface (if not using usr profile)**
+---
 
-Navigate to `http://localhost:8080` to use Open WebUI for model interaction.
-
-## Platform Management
-
-### Service Stack Control
-
-Manage all services as a unified stack:
-
-```bash
-./aixcl stack start [--profile sys]      # Start all services (uses PROFILE from .env if set)
-./aixcl stack stop                       # Stop all services gracefully
-./aixcl stack restart [--profile sys]    # Restart all services (uses PROFILE from .env if set)
-./aixcl stack status                     # Check service status
-./aixcl stack logs                       # View logs for all services
-./aixcl stack logs engine                # View logs for the active inference engine
-./aixcl stack logs engine 100            # Last 100 lines for the active engine (default 50, then follow)
-./aixcl stack clean                      # Remove unused Docker resources
-```
-
-**Note:** Set `PROFILE=<profile>` in `.env` file to use a default profile. Then `stack start` and `stack restart` will use that profile automatically without needing the `--profile` flag.
-```
-
-### Individual Service Control
-
-Manage specific services independently:
-
-```bash
-./aixcl service start engine    # Start the inference engine (active in .env)
-./aixcl restart engine          # Shortcut to restart the active engine
-./aixcl service stop engine     # Stop the inference engine
-./aixcl service start postgres  # Start a specific service
-```
-
-### Model Management
-
-```bash
-./aixcl models add llama3:latest     # Add a model (or multiple: models add a b c)
-./aixcl models remove llama3:latest  # Remove a model (or multiple: models remove a b)
-./aixcl models list                  # List installed models
-```
-
-Models are deployed through the active inference engine.
-
-
-
-### Verification
-
-Run the platform test suite to verify your installation:
-
-```bash
-# List available test targets
-./tests/platform-tests.sh --list
-
-# Test by profile (recommended)
-./tests/platform-tests.sh --profile usr     # Runtime core + PostgreSQL
-./tests/platform-tests.sh --profile dev     # Core + database + UI
-./tests/platform-tests.sh --profile ops     # Core + monitoring + logging
-./tests/platform-tests.sh --profile sys     # All services
-
-# Test by component (targeted testing)
-./tests/platform-tests.sh --component runtime-core
-./tests/platform-tests.sh --component database
-./tests/platform-tests.sh --component ui
-./tests/platform-tests.sh --component api
-```
-
-The test suite checks service health, API endpoints, database connectivity, and integration points.
-
-## Architecture
-
-AIXCL maintains strict architectural invariants to preserve platform integrity:
-
-- **Runtime Core**: Fixed, non-negotiable components (Inference Engine) that define the product
-- **Operational Services**: Optional services that support, observe, or operate the runtime
-- **Service Contracts**: Dependency rules and boundaries for each service
-- **Profiles**: Declarative service compositions (see Target Audience section)
-
-The runtime core must be runnable without any operational services, and operational services may depend on the runtime core but never vice versa.
-
-For detailed architectural documentation, see [`docs/architecture/governance/`](./docs/architecture/governance/).
-
-## Component Documentation
-
-
-### Performance Tuning
-
-AIXCL includes comprehensive performance optimizations for running multiple LLM models efficiently:
-
-**Inference Engine Optimizations (e.g., Ollama):**
-- Parallel request handling (`OLLAMA_NUM_PARALLEL=8`) for concurrent queries
-- Model keep-alive (`OLLAMA_KEEP_ALIVE=600`) to prevent reload delays
-- Maximum loaded models (`OLLAMA_MAX_LOADED_MODELS=3`) for GPU memory management
-- Explicit GPU configuration for optimal utilization
-
-**Model Recommendations:**
-- **Default Configuration** (8GB GPUs): `deepseek-coder:1.3b`
-  - Performance: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
-- **Alternative Configurations**: Available for 12GB+ and 16GB+ GPUs with larger models
-- See [`docs/operations/model-recommendations.md`](docs/operations/model-recommendations.md) for complete details
-
-**Performance Test Results:**
-- Experimental testing of model configurations and optimization impact
-- See [`docs/operations/performance-test-results.md`](docs/operations/performance-test-results.md) for detailed analysis
-
-For complete performance tuning documentation, see [`docs/operations/`](docs/operations/).
-
-## Documentation
-
-Comprehensive documentation is organized in the [`docs/`](./docs/) directory:
-
-- **User Guides** ([`docs/user/`](./docs/user/)): Setup and usage guides
-- **Developer Guides** ([`docs/developer/`](./docs/developer/)): Contributing and development workflow
-- **Operations** ([`docs/operations/`](./docs/operations/)): Performance tuning and operations guides
-- **Architecture** ([`docs/architecture/`](./docs/architecture/)): Governance, profiles, and service contracts
-- **Reference** ([`docs/reference/`](./docs/reference/)): Command reference and security policy
-
-See [`docs/README.md`](./docs/README.md) for the complete documentation index.
+## 📚 Documentation
+- [User Guide](docs/user/usage.md) - Detailed workflows and tips.
+- [Architecture](docs/architecture/governance/) - Profiles and service contracts.
+- [Security](docs/operations/security.md) - Rootless Podman/Docker operations.
 
 ## License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
+Apache License 2.0 - See [LICENSE](./LICENSE).
