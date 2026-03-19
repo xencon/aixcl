@@ -18,30 +18,65 @@ check_env() {
         print_info "Windows Subsystem for Linux detected. GPU checks rely on nvidia-smi/docker instead of lspci."
     fi
 
-    # Check Docker
-    if ! command -v docker &> /dev/null; then
-        print_error "Docker is not installed"
-        echo "   Install from: https://docs.docker.com/get-docker/"
-        missing_deps=1
-    else
+    # Check Docker / Podman
+    local engine_found=0
+    local engine_name=""
+    
+    if command -v podman &> /dev/null; then
+        print_success "Podman is installed"
+        engine_found=1
+        engine_name="podman"
+        if ! podman info &> /dev/null; then
+            print_error "Podman service is not running or accessible"
+            missing_deps=1
+        else
+            print_success "Podman service is running"
+        fi
+    elif command -v docker &> /dev/null; then
         print_success "Docker is installed"
-        # Check if Docker daemon is running
-        if ! docker info &> /dev/null; then
+        engine_found=1
+        engine_name="docker"
+        if ! ${DOCKER_BIN:-docker} info &> /dev/null; then
             print_error "Docker daemon is not running"
             echo "   Start with: sudo systemctl start docker"
             missing_deps=1
         else
             print_success "Docker daemon is running"
         fi
+    else
+        print_error "Neither Docker nor Podman is installed"
+        echo "   Install Docker from: https://docs.docker.com/get-docker/"
+        echo "   Or Podman from: https://podman.io/getting-started/installation"
+        missing_deps=1
     fi
 
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose is not installed"
+    # Check for rootless mode
+    if [ $engine_found -eq 1 ]; then
+        if is_rootless; then
+            print_success "Rootless container engine detected (Enhanced Security)"
+        else
+            # Get current profile if possible (it might not be loaded yet in utils check-env)
+            local profile="${PROFILE:-}"
+            if [[ "$profile" == "ops" || "$profile" == "sys" ]]; then
+                print_warning "Root container engine detected in production profile ($profile)."
+                echo "   Consider migrating to rootless Podman/Docker for better security isolation."
+            else
+                print_info "Running in rootful mode (standard for local development)"
+            fi
+        fi
+    fi
+
+    # Check Docker Compose / podman-compose
+    if command -v docker-compose &> /dev/null; then
+        print_success "Docker Compose is installed"
+    elif docker compose version &> /dev/null; then
+        print_success "Docker Compose (V2 plugin) is available"
+    elif command -v podman-compose &> /dev/null; then
+        print_success "podman-compose is installed"
+    else
+        print_error "No Docker Compose compatible tool found"
         echo "   Install from: https://docs.docker.com/compose/install/"
         missing_deps=1
-    else
-        print_success "Docker Compose is installed"
     fi
 
     # Check Bash shell

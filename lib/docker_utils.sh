@@ -23,6 +23,7 @@ if [[ ! "$COMPOSE_FILE" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$COMPOSE_FILE" =~ \.\. ]
 fi
 
 # Default compose command (before set_compose_cmd detects GPU/ARM overrides)
+# Initialize with a basic command that will be updated by set_compose_cmd
 COMPOSE_CMD=(docker-compose -f "${SERVICES_DIR}/${COMPOSE_FILE}")
 COMPOSE_WORKDIR="${SERVICES_DIR}"
 
@@ -44,8 +45,44 @@ set_compose_cmd() {
         echo "No NVIDIA GPU detected. Running without GPU overrides."
     fi
     
-    COMPOSE_CMD=(docker-compose "${files[@]}")
+    # Detect appropriate compose command
+    local cmd=()
+    local bin="docker"
+    
+    if command -v podman &> /dev/null; then
+        # Check if we should prefer Podman
+        if ! command -v docker &> /dev/null || podman info &> /dev/null; then
+             bin="podman"
+             if command -v podman-compose &> /dev/null; then
+                 cmd=(podman-compose)
+             fi
+        fi
+    fi
+    
+    # Export DOCKER_BIN for use in other scripts
+    export DOCKER_BIN="$bin"
+    echo "Using container engine: $DOCKER_BIN"
+
+    if [ ${#cmd[@]} -eq 0 ]; then
+        if docker compose version &> /dev/null; then
+            cmd=(docker compose)
+        elif command -v docker-compose &> /dev/null; then
+            cmd=(docker-compose)
+        elif command -v podman-compose &> /dev/null; then
+            cmd=(podman-compose)
+        else
+            echo "❌ Error: No Docker Compose compatible tool found (docker compose, docker-compose, or podman-compose)" >&2
+            exit 1
+        fi
+    fi
+
+    COMPOSE_CMD=("${cmd[@]}" "${files[@]}")
     COMPOSE_WORKDIR="${SERVICES_DIR}"
+    
+    # Set and export DOCKER_SOCK for use in docker-compose files
+    DOCKER_SOCK=$(get_docker_sock)
+    export DOCKER_SOCK
+    echo "Using Docker socket: $DOCKER_SOCK"
 }
 
 # Helper function to run docker-compose commands from the services directory
@@ -70,13 +107,13 @@ run_compose() {
 is_container_running() {
     local container_name="$1"
     # Check for exact match or hash-prefixed match (e.g., "a9f302029b81_ollama")
-    docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"
+    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"
 }
 
 # Get the actual engine container name (handles hash-prefixed containers)
 get_engine_container() {
     local engine="$1"
-    docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" | head -1
+    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" | head -1
 }
 
 # Get the actual Ollama container name (handles hash-prefixed containers)
@@ -88,5 +125,5 @@ get_ollama_container() {
 # Check if any service containers are running
 are_services_running() {
     local pattern="$1"
-    docker ps --format "{{.Names}}" 2>/dev/null | grep -qE "$pattern"
+    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -qE "$pattern"
 }

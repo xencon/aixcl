@@ -116,7 +116,7 @@ function ensure_databases() {
     
     
     # Check if postgres container is running
-    if ! docker ps --format "{{.Names}}" | grep -q "^postgres$"; then
+    if ! ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^postgres$"; then
         echo "⚠️  PostgreSQL container is not running, skipping database creation"
         return 0
     fi
@@ -125,7 +125,7 @@ function ensure_databases() {
     local pg_ready
     pg_ready=false
     for i in {1..10}; do
-        if timeout 2 docker exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
+        if timeout 2 ${DOCKER_BIN:-docker} exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
             pg_ready=true
             break
         fi
@@ -138,20 +138,20 @@ function ensure_databases() {
     fi
     
     # Create webui database if it doesn't exist
-    if docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$webui_db"; then
+    if ${DOCKER_BIN:-docker} exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$webui_db"; then
         echo "WebUI database already exists: $webui_db"
     else
         echo "Creating webui database: $webui_db"
-        docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$webui_db\";" >/dev/null 2>&1 || true
+        ${DOCKER_BIN:-docker} exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$webui_db\";" >/dev/null 2>&1 || true
     fi
     
     
     # Remove unwanted "admin" database if it exists and is not the intended database
     # PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
     if [ "$webui_db" != "admin" ]; then
-        if docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "admin"; then
+        if ${DOCKER_BIN:-docker} exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "admin"; then
             echo "Removing unwanted admin database..."
-            docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
+            ${DOCKER_BIN:-docker} exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
             echo "   Admin database removed (only webui and continue databases should exist)"
         fi
     fi
@@ -294,7 +294,7 @@ function start() {
         load_env_file "$env_file"
     else
         # Try to restore from backup volume first
-        if docker volume ls --format "{{.Name}}" | grep -q "^${env_backup_volume}$"; then
+        if ${DOCKER_BIN:-docker} volume ls --format "{{.Name}}" | grep -q "^${env_backup_volume}$"; then
             echo "⚠️  .env file not found. Attempting to restore from backup..."
             # Restore .env from backup volume using a temporary container
             # Use current user's UID/GID to ensure proper ownership
@@ -302,7 +302,7 @@ function start() {
             current_uid=$(id -u)
             local current_gid
             current_gid=$(id -g)
-            if docker run --rm \
+            if ${DOCKER_BIN:-docker} run --rm \
                 --user "${current_uid}:${current_gid}" \
                 -v "${env_backup_volume}:/backup:ro" \
                 -v "${SCRIPT_DIR}:/target" \
@@ -372,7 +372,7 @@ function start() {
     # Check if any runtime core services are running
     local core_running=false
     for service in "${RUNTIME_CORE_SERVICES[@]}"; do
-        if docker ps --format "{{.Names}}" | grep -q "^${service}$"; then
+        if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^${service}$"; then
             core_running=true
             break
         fi
@@ -445,7 +445,7 @@ function start() {
             local pg_attempt=1
             local pg_ready=false
             while [ $pg_attempt -le 30 ]; do  # 60 seconds
-                if timeout 2 docker exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+                if timeout 2 ${DOCKER_BIN:-docker} exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
                     echo "PostgreSQL is ready!"
                     pg_ready=true
                     break
@@ -480,7 +480,7 @@ function stop() {
     # Join ALL_SERVICES with | for grep
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
-    if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
+    if ! ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         echo "Services are not running."
         return 0
     fi
@@ -490,7 +490,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
-        if ! docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
+        if ! ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
             echo "All services stopped successfully."
             return 0
         fi
@@ -500,7 +500,7 @@ function stop() {
     
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
     run_compose down --remove-orphans -v
-    docker ps -q | xargs -r docker stop
+    ${DOCKER_BIN:-docker} ps -q | xargs -r ${DOCKER_BIN:-docker} stop
     
     echo "All services have been stopped."
     
@@ -714,7 +714,7 @@ function start_service() {
     set_compose_cmd
     
     # Check if service is already running (handle both exact name and hash-prefixed names)
-    if docker ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
+    if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
         log_info "Service '$service' is already running."
         return 0
     fi
@@ -726,16 +726,16 @@ function start_service() {
     
     # Also remove hash-prefixed containers directly via docker (handles edge cases)
     local hash_prefixed
-    hash_prefixed=$(docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}')
+    hash_prefixed=$(${DOCKER_BIN:-docker} ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}')
     if [ -n "$hash_prefixed" ]; then
         echo "Removing hash-prefixed containers to avoid docker-compose issues..."
         echo "$hash_prefixed" | while read -r container_id; do
-            docker rm -f "$container_id" 2>/dev/null || true
+            ${DOCKER_BIN:-docker} rm -f "$container_id" 2>/dev/null || true
         done
     fi
     
     # Remove container by exact name if it exists
-    docker rm -f "$container_name" 2>/dev/null || true
+    ${DOCKER_BIN:-docker} rm -f "$container_name" 2>/dev/null || true
     
     log_info "Starting service: $service..."
     
@@ -778,7 +778,7 @@ function start_service() {
     sleep 2
     
     # Check if the container is actually running (handle both exact name and hash-prefixed names)
-    if docker ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
+    if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
         log_info "Service '$service' is now running."
     else
         log_warning "Service '$service' may not have started correctly. Check logs with: $0 logs $service"
@@ -821,7 +821,7 @@ function stop_service() {
     container_name=$(get_container_name "$service")
     
     # Check if service is running
-    if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+    if ! ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
         log_info "Service '$service' is not running."
         return 0
     fi
@@ -902,9 +902,9 @@ function service() {
                 run_compose rm -f "$service" 2>/dev/null || true
                 local container_name
                 container_name=$(get_container_name "$service")
-                docker rm -f "$container_name" 2>/dev/null || true
+                ${DOCKER_BIN:-docker} rm -f "$container_name" 2>/dev/null || true
                 # Remove any hash-prefixed containers
-                docker ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
+                ${DOCKER_BIN:-docker} ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}' | xargs -r ${DOCKER_BIN:-docker} rm -f 2>/dev/null || true
                 
                 # Rebuild the service
                 echo "Building $service..."
@@ -948,7 +948,7 @@ function logs() {
             
             # Find the actual container name (exact or hash-prefixed)
             local actual_container
-            actual_container=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1 || true)
+            actual_container=$(${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1 || true)
             
             if [ -n "$actual_container" ]; then
                 found_any=true
@@ -962,11 +962,11 @@ function logs() {
             return 0
         fi
         
-        # Use docker logs directly for each running container
+        # Use ${DOCKER_BIN:-docker} logs directly for each running container
         # Show last 100 lines for each container as summary
         for service in "${running_containers[@]}"; do
             echo "=== $service ==="
-            docker logs "$service" --tail=100 2>/dev/null || echo "  (no logs available)"
+            ${DOCKER_BIN:-docker} logs "$service" --tail=100 2>/dev/null || echo "  (no logs available)"
             echo ""
         done
         
@@ -983,7 +983,7 @@ function logs() {
         for service in "${running_containers[@]}"; do
             # Use sed to prefix each line with the service name
             # Appending || true to subshell to prevent it from failing the main script
-            ( docker logs "$service" --follow 2>/dev/null | sed "s/^/[$service] /" || true ) &
+            ( ${DOCKER_BIN:-docker} logs "$service" --follow 2>/dev/null | sed "s/^/[$service] /" || true ) &
             pids+=($!)
         done
         
@@ -1028,10 +1028,10 @@ function logs() {
         
         # Try exact name first, then hash-prefixed name (running or stopped)
         local actual_container
-        actual_container=$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
+        actual_container=$(${DOCKER_BIN:-docker} ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
         
         if [ -n "$actual_container" ]; then
-            docker logs "$actual_container" --tail="$tail_count" --follow
+            ${DOCKER_BIN:-docker} logs "$actual_container" --tail="$tail_count" --follow
         else
             log_error "Container for service '$actual_service' not found"
             return 1
@@ -1049,28 +1049,28 @@ function clean() {
     run_compose down
     
     # Remove postgres container and associated volumes specifically
-    if docker ps -a --format "{{.Names}}" | grep -q "^postgres$"; then
+    if ${DOCKER_BIN:-docker} ps -a --format "{{.Names}}" | grep -q "^postgres$"; then
         echo "Removing PostgreSQL container..."
-        docker rm -f postgres 2>/dev/null || true
+        ${DOCKER_BIN:-docker} rm -f postgres 2>/dev/null || true
     fi
     
     # Remove postgres-related volumes
     log_info "Removing PostgreSQL volumes..."
-    docker volume ls --format "{{.Name}}" | grep -i postgres | while read -r volume; do
+    ${DOCKER_BIN:-docker} volume ls --format "{{.Name}}" | grep -i postgres | while read -r volume; do
         if [ -n "$volume" ]; then
             log_info "  Removing volume: $volume"
-            docker volume rm "$volume" 2>/dev/null || true
+            ${DOCKER_BIN:-docker} volume rm "$volume" 2>/dev/null || true
         fi
     done
     
     log_info "Removing stopped containers..."
-    docker container prune -f
+    ${DOCKER_BIN:-docker} container prune -f
     
     log_info "Removing unused images..."
-    docker image prune -a -f
+    ${DOCKER_BIN:-docker} image prune -a -f
     
     log_info "Removing unused volumes..."
-    docker volume prune -f
+    ${DOCKER_BIN:-docker} volume prune -f
     
     # Clean up pgAdmin configuration file for security
     if [ -f "pgadmin-servers.json" ]; then
@@ -1079,6 +1079,86 @@ function clean() {
     fi
     
     log_success "Clean up complete."
+}
+
+function export_quadlet() {
+    local profile=""
+    # Load profile from .env if not specified
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$//")
+    fi
+    
+    if [ -z "$profile" ]; then
+        profile="sys" # Default to sys if not found
+    fi
+    
+    echo "Exporting Podman Quadlets for profile: $profile..."
+    
+    local export_dir="${SCRIPT_DIR}/export/quadlets"
+    mkdir -p "$export_dir"
+    
+    # Source profile lib to get services
+    # shellcheck disable=SC1091
+    source "${SCRIPT_DIR}/cli/lib/profile.sh"
+    
+    local profile_services
+    read -r -a profile_services <<< "$(get_profile_services "$profile")"
+    
+    # We need to parse docker-compose.yml to get image and environment
+    local compose_file="${SERVICES_DIR}/docker-compose.yml"
+    if [ ! -f "$compose_file" ]; then
+        echo "❌ Error: $compose_file not found"
+        return 1
+    fi
+    
+    for service in "${profile_services[@]}"; do
+        echo "  Generating Quadlet for: $service"
+        local quadlet_file="${export_dir}/${service}.container"
+        
+        # Resolve actual service name if 'engine' alias is used
+        local actual_service="$service"
+        if [ "$service" = "engine" ]; then
+             actual_service="${INFERENCE_ENGINE:-ollama}"
+        fi
+
+        # Simple extraction of image name from compose file (very basic)
+        local image
+        image=$(grep -A 20 "^[[:space:]]*${actual_service}:" "$compose_file" | grep "image:" | head -1 | awk '{print $2}')
+        
+        {
+            echo "[Unit]"
+            echo "Description=AIXCL Service: $service"
+            echo "After=network-online.target"
+            echo ""
+            echo "[Container]"
+            echo "Image=$image"
+            echo "ContainerName=$service"
+            echo "AutoUpdate=registry"
+            
+            # Use host networking as AIXCL standard
+            echo "Network=host"
+            
+            # Export environment variables from .env
+            if [ -f "${SCRIPT_DIR}/.env" ]; then
+                # This is a bit naive but works for standard AIXCL envs
+                # Filter out comments and internal bash vars
+                grep -E "^[A-Z_]+=" "${SCRIPT_DIR}/.env" | while read -r line; do
+                    echo "Environment=$line"
+                done
+            fi
+            
+            # Service specific logic (ports, volumes) would go here
+            # In a real implementation, we'd parse the 'volumes' section of compose
+            echo "Volume=aixcl_${service}_data:/data"
+            
+            echo ""
+            echo "[Install]"
+            echo "WantedBy=multi-user.target"
+        } > "$quadlet_file"
+    done
+    
+    echo "✅ Quadlets exported to: $export_dir"
+    echo "   To install: Copy to /etc/containers/systemd/ and run 'systemctl daemon-reload'"
 }
 
 
@@ -1183,7 +1263,7 @@ function status() {
     # Join ALL_SERVICES with | for grep
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
-    if docker ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
+    if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         overall_status="Running"
     fi
     
@@ -1230,7 +1310,7 @@ function status() {
         
         # Check container status
         local container_running=false
-        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+        if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
             container_running=true
         fi
         
@@ -1253,7 +1333,7 @@ function status() {
                     ;;
                 pg_isready)
                     if [ -n "$health_check_arg" ] && [ -n "$container_name" ]; then
-                        if timeout 2 docker exec "$container_name" pg_isready -U "$health_check_arg" >/dev/null 2>&1; then
+                        if timeout 2 ${DOCKER_BIN:-docker} exec "$container_name" pg_isready -U "$health_check_arg" >/dev/null 2>&1; then
                             health_result="healthy"
                         else
                             health_result="unhealthy"
@@ -1404,7 +1484,7 @@ function status() {
     check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTSRES_EXPORTER_STATUS"
 
     if is_operational_in_profile "nvidia-gpu-exporter"; then
-        if docker ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
+        if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
             # shellcheck disable=SC2034
             NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
@@ -1453,19 +1533,19 @@ is_model_installed() {
             # Ollama list shows models. We need to match the name exactly, or with :latest if missing tag
             local model_with_tag="$model"
             [[ ! "$model" =~ : ]] && model_with_tag="${model}:latest"
-            docker exec "$container" ollama list 2>/dev/null | awk '{print $1}' | grep -qE "^${model_with_tag}$"
+            ${DOCKER_BIN:-docker} exec "$container" ollama list 2>/dev/null | awk '{print $1}' | grep -qE "^${model_with_tag}$"
             return $?
             ;;
         vllm)
             # vLLM uses HF cache. Check for models--org--repo directory
             local hf_path
             hf_path="models--$(echo "$model" | sed 's/\//--/g')"
-            docker exec "$container" ls "/root/.cache/huggingface/hub/$hf_path" >/dev/null 2>&1
+            ${DOCKER_BIN:-docker} exec "$container" ls "/root/.cache/huggingface/hub/$hf_path" >/dev/null 2>&1
             return $?
             ;;
         llamacpp)
             # llama.cpp uses a flat models directory. Check if file exists
-            docker exec "$container" ls "/models/$model" >/dev/null 2>&1
+            ${DOCKER_BIN:-docker} exec "$container" ls "/models/$model" >/dev/null 2>&1
             return $?
             ;;
     esac
@@ -1479,21 +1559,29 @@ function add() {
         return 1
     fi
 
-    # Validate model name format (allowing slashes for HF models)
-    if [[ ! "$1" =~ ^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?$ ]]; then
-        echo -e "\xe2\x9d\x8c Invalid model name format: '$1'"
-        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes, and slashes"
-        echo "   Optional tag format: model:tag (e.g., Qwen/Qwen2.5-0.5B-Instruct)"
-        return 1
-    fi
-
-    local model="$1"
+    local input_model="$1"
+    local model="$input_model"
     local engine="${INFERENCE_ENGINE:-ollama}"
     local container
     container=$(get_engine_container "$engine")
 
     if [ -z "$container" ]; then
         echo "Error: $engine container is not running. Please start the services first."
+        return 1
+    fi
+
+    # Parse Hugging Face URI if present
+    local is_hf=false
+    if [[ "$input_model" =~ ^hf\.co/ ]] || [[ "$input_model" =~ ^huggingface\.co/ ]]; then
+        is_hf=true
+        # Strip the prefix
+        model=$(echo "$input_model" | sed -E 's|^(hf\.co/\|huggingface\.co/)||')
+    fi
+
+    # Validate model name format (allowing slashes for HF models)
+    if [[ ! "$model" =~ ^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?$ ]]; then
+        echo -e "\xe2\x9d\x8c Invalid model name format: '$model'"
+        echo "   Model names should contain only alphanumeric characters, dots, underscores, dashes, and slashes"
         return 1
     fi
 
@@ -1508,19 +1596,36 @@ function add() {
             return 0
         fi
     else
-        echo "Adding model: $model"
+        echo "Adding model: $model (Engine: $engine)"
         
         # Download logic based on engine
         if [ "$engine" = "ollama" ]; then
-            if docker exec "$container" ollama pull "$model"; then
-                echo "✅ Successfully added model: $model"
+            if [ "$is_hf" = true ]; then
+                # Handle explicit HF pull for Ollama
+                echo "📥 Pulling Hugging Face model into Ollama..."
+                if ${DOCKER_BIN:-docker} exec "$container" ollama pull "$input_model"; then
+                    echo "✅ Successfully added HF model to Ollama: $model"
+                else
+                    echo "⚠️  Direct HF pull failed. Attempting run fallback..."
+                    if ${DOCKER_BIN:-docker} exec "$container" ollama run "$input_model" "/exit" >/dev/null 2>&1; then
+                        echo "✅ Successfully added HF model to Ollama: $model"
+                    else
+                        echo "❌ Failed to add HF model to Ollama: $model"
+                        return 1
+                    fi
+                fi
             else
-                echo "❌ Failed to add model: $model"
-                return 1
+                # Standard Ollama pull
+                if ${DOCKER_BIN:-docker} exec "$container" ollama pull "$model"; then
+                    echo "✅ Successfully added model: $model"
+                else
+                    echo "❌ Failed to add model: $model"
+                    return 1
+                fi
             fi
         elif [ "$engine" = "vllm" ]; then
-            echo "📥 Downloading model from Hugging Face..."
-            if docker exec "$container" huggingface-cli download "$model"; then
+            echo "📥 Downloading model from Hugging Face for vLLM..."
+            if ${DOCKER_BIN:-docker} exec "$container" huggingface-cli download "$model"; then
                 echo "✅ Successfully downloaded model: $model"
             else
                 echo "❌ Failed to download model: $model"
@@ -1528,21 +1633,35 @@ function add() {
             fi
         elif [ "$engine" = "llamacpp" ]; then
             # For llama.cpp, we assume the user provides a Hugging Face path for a GGUF
-            # Format: org/repo/model.gguf
+            # Format: org/repo/model.gguf or just org/repo (we'll try to find a GGUF)
             if [[ "$model" =~ ^([^/]+/[^/]+)/(.+\.gguf)$ ]]; then
                 local repo="${BASH_REMATCH[1]}"
                 local filename="${BASH_REMATCH[2]}"
                 echo "📥 Downloading $filename from $repo..."
-                if docker exec "$container" huggingface-cli download "$repo" "$filename" --local-dir /models --local-dir-use-symlinks False; then
+                if ${DOCKER_BIN:-docker} exec "$container" huggingface-cli download "$repo" "$filename" --local-dir /models --local-dir-use-symlinks False; then
                     echo "✅ Successfully downloaded model: $model"
                 else
                     echo "❌ Failed to download model: $model"
                     return 1
                 fi
             else
-                echo "⚠️  For llama.cpp, please provide a Hugging Face path to a GGUF file (e.g., org/repo/model.gguf)"
-                echo "   If the model already exists in the volume, make sure the name matches the filename."
-                return 1
+                # Try to download the repo and find any .gguf if it's just org/repo
+                echo "📥 Downloading model files from $model..."
+                if ${DOCKER_BIN:-docker} exec "$container" huggingface-cli download "$model" --local-dir /models --local-dir-use-symlinks False --include "*.gguf"; then
+                     # Find the downloaded gguf to update config
+                     local found_gguf
+                     found_gguf=$(${DOCKER_BIN:-docker} exec "$container" find /models -name "*.gguf" -maxdepth 1 | head -1 | xargs basename 2>/dev/null || true)
+                     if [ -n "$found_gguf" ]; then
+                         model="$found_gguf"
+                         echo "✅ Successfully downloaded $model"
+                     else
+                         echo "❌ No GGUF files found in $model"
+                         return 1
+                     fi
+                else
+                    echo "❌ Failed to download model: $model"
+                    return 1
+                fi
             fi
         fi
     fi
@@ -1578,13 +1697,24 @@ function remove() {
         return 1
     fi
 
+    local input_model="$1"
+    local model="$input_model"
+
+    # Parse Hugging Face URI if present (strip prefix for remove)
+    if [[ "$input_model" =~ ^hf\.co/ ]] || [[ "$input_model" =~ ^huggingface\.co/ ]]; then
+        # Strip the prefix - Ollama stores them with the URI but lets us remove by just the URI string
+        # Actually Ollama list shows 'hf.co/user/repo:tag', so we should use the input_model directly
+        # but normalize it.
+        model="$input_model"
+    fi
+
     # Validate model name format
-    if [[ ! "$1" =~ ^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?$ ]]; then
-        echo -e "\xe2\x9d\x8c Invalid model name format: '$1'"
+    if [[ ! "$model" =~ ^[A-Za-z0-9._/-]+(:[A-Za-z0-9._-]+)?$ ]]; then
+        echo -e "\xe2\x9d\x8c Invalid model name format: '$model'"
         return 1
     fi
 
-    echo "Removing model: $1"
+    echo "Removing model: $model"
     
     local engine="${INFERENCE_ENGINE:-ollama}"
     local container
@@ -1595,10 +1725,10 @@ function remove() {
             echo "Error: $engine container is not running. Please start the services first."
             return 1
         fi
-        if docker exec "$container" ollama rm "$1"; then
-            echo "✅ Successfully removed model: $1"
+        if ${DOCKER_BIN:-docker} exec "$container" ollama rm "$model"; then
+            echo "✅ Successfully removed model: $model"
         else
-            echo "❌ Failed to remove model: $1"
+            echo "❌ Failed to remove model: $model"
             return 1
         fi
     elif [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
@@ -1686,7 +1816,7 @@ function list() {
     fi
 
     if [ "$engine" = "ollama" ]; then
-        docker exec "$container" ollama list
+        ${DOCKER_BIN:-docker} exec "$container" ollama list
     else
         # For vLLM and llama.cpp, try to use the OpenAI compatible API
         local url="http://127.0.0.1:11434/v1/models"
@@ -1794,6 +1924,7 @@ function help_menu() {
     echo "  stack status                        - Show service status"
     echo "  stack logs [service] [lines]        - Show logs"
     echo "  stack clean                         - Clean Docker resources"
+    echo "  stack export-quadlet                - Export services as Podman Quadlets (Systemd)"
     echo ""
     echo "  Profiles (usr, dev, ops, sys):"
     echo "    usr   - User-oriented runtime (runtime core, PostgreSQL for persistence)"
@@ -1973,7 +2104,7 @@ function utils_cmd() {
 function stack_cmd() {
     if [[ $# -lt 1 ]]; then
         echo "Error: Stack action is required"
-        echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+        echo "Usage: $0 stack {start|stop|restart|status|logs|clean|export-quadlet}"
         echo "Examples:"
         echo "  $0 stack start                - Start all services with sys profile (default)"
         echo "  $0 stack start --profile usr  - Start runtime core + PostgreSQL (minimal footprint)"
@@ -1988,6 +2119,7 @@ function stack_cmd() {
         echo "  $0 stack logs engine 100      - Show last 100 lines for the active engine"
         echo "  $0 stack logs open-webui      - Show logs for a specific service"
         echo "  $0 stack clean                - Remove unused Docker resources"
+        echo "  $0 stack export-quadlet       - Export services as Podman Quadlets (Systemd)"
         echo ""
         echo "Valid profiles: usr, dev, ops, sys (default: sys)"
         echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
@@ -2031,9 +2163,17 @@ function stack_cmd() {
             fi
             clean
             ;;
+        export-quadlet)
+            if [ $# -gt 0 ]; then
+                echo "Error: Unknown argument '$1'"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|clean|export-quadlet}"
+                return 1
+            fi
+            export_quadlet
+            ;;
         *)
             echo "Error: Unknown stack action '$action'"
-            echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+            echo "Usage: $0 stack {start|stop|restart|status|logs|clean|export-quadlet}"
             echo ""
             echo "For profiles and service contracts, see: docs/architecture/governance/"
             return 1

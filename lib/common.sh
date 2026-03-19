@@ -119,7 +119,7 @@ has_nvidia() {
     if command -v nvidia-smi >/dev/null 2>&1; then
         nvidia-smi >/dev/null 2>&1 && return 0 || return 1
     fi
-    if docker info 2>/dev/null | grep -qi "nvidia"; then
+    if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia"; then
         return 0
     fi
     return 1
@@ -137,4 +137,63 @@ is_arm64() {
             return 1
             ;;
     esac
+}
+
+# Detect if container engine is running in rootless mode
+is_rootless() {
+    # Check Docker
+    if command -v docker >/dev/null 2>&1; then
+        if ${DOCKER_BIN:-docker} info --format '{{.SecurityOptions}}' 2>/dev/null | grep -q "rootless"; then
+            return 0
+        fi
+    fi
+    # Check Podman
+    if command -v podman >/dev/null 2>&1; then
+        if podman info --format '{{.Host.ServiceIsRootless}}' 2>/dev/null | grep -q "true"; then
+            return 0
+        fi
+        # Fallback for older podman versions
+        if podman info --format '{{.Host.Rootless}}' 2>/dev/null | grep -q "true"; then
+            return 0
+        fi
+    fi
+    # Fallback: check if we are not root but can run docker
+    if [ "$(id -u)" != "0" ] && command -v docker >/dev/null 2>&1; then
+        # If we can run ${DOCKER_BIN:-docker} ps without sudo, and it's not via a group, it might be rootless
+        # but the safest check is the info commands above.
+        :
+    fi
+    return 1
+}
+
+# Get the appropriate Docker/Podman socket path
+get_docker_sock() {
+    if is_rootless; then
+        if command -v podman >/dev/null 2>&1; then
+            if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -S "${XDG_RUNTIME_DIR}/podman/podman.sock" ]; then
+                echo "${XDG_RUNTIME_DIR}/podman/podman.sock"
+                return 0
+            fi
+            # Fallback for some systems
+            local user_sock="/run/user/$(id -u)/podman/podman.sock"
+            if [ -S "$user_sock" ]; then
+                echo "$user_sock"
+                return 0
+            fi
+        fi
+        if command -v docker >/dev/null 2>&1; then
+            if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -S "${XDG_RUNTIME_DIR}/docker.sock" ]; then
+                echo "${XDG_RUNTIME_DIR}/docker.sock"
+                return 0
+            fi
+            local user_sock="/run/user/$(id -u)/docker.sock"
+            if [ -S "$user_sock" ]; then
+                echo "$user_sock"
+                return 0
+            fi
+        fi
+    fi
+    
+    # Default to standard root socket
+    echo "/var/run/docker.sock"
 }

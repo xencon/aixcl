@@ -17,6 +17,7 @@ Documentation for contributors and developers:
 
 ### Operations Documentation (`operations/`)
 Documentation for operations and performance tuning:
+- [`security.md`](operations/security.md) - Rootless container operations and security isolation
 - [`ollama-performance-tuning.md`](operations/ollama-performance-tuning.md) - Detailed Ollama performance tuning guide
 - [`ollama-tuning-summary.md`](operations/ollama-tuning-summary.md) - Executive summary of Ollama optimizations
 - [`model-recommendations.md`](operations/model-recommendations.md) - Model size recommendations and configurations
