@@ -210,5 +210,5 @@ None
 
 - Database credentials are managed via environment variables
 - Connection pooling with configurable pool size
-- Graceful degradation when database is unavailable (service continues without persistence)
+- Graceful degradation when database is unavailable (service opencodes without persistence)
 

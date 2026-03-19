@@ -38,24 +38,29 @@ You can use any model already pulled into your AIXCL engine. For the best experi
 
 ## Configuration Example
 
-You can use the following configuration as a template for your OpenCode settings (usually found in `~/.opencode/config.json` or your IDE settings):
+You can use the following configuration as a template for your OpenCode settings (usually found in `~/.opencode/config.json` or your IDE settings). This configuration defines AIXCL as a custom provider and maps local models for use.
 
 ```json
 {
-  "models": [
-    {
-      "title": "AIXCL Chat",
-      "provider": "openai",
-      "model": "qwen2.5-coder:7b",
-      "baseUrl": "http://localhost:11434/v1"
+  "provider": {
+    "aixcl-local": {
+      "api": "openai",
+      "options": {
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "ollama"
+      },
+      "models": {
+        "qwen2.5-coder:7b": {
+          "name": "Qwen 2.5 Coder (7B)"
+        },
+        "qwen2.5-coder:1.5b": {
+          "name": "Qwen 2.5 Coder (1.5B)"
+        }
+      }
     }
-  ],
-  "tabAutocompleteModel": {
-    "title": "AIXCL Autocomplete",
-    "provider": "openai",
-    "model": "qwen2.5-coder:1.5b",
-    "baseUrl": "http://localhost:11434/v1"
-  }
+  },
+  "model": "aixcl-local/qwen2.5-coder:7b",
+  "small_model": "aixcl-local/qwen2.5-coder:1.5b"
 }
 ```
 
