@@ -123,20 +123,20 @@ After successful setup:
    - Open WebUI: http://localhost:8080
    - pgAdmin: http://localhost:5050
    - Grafana: http://localhost:3000
-3. **Configure Continue Plugin**: See [`README.md`](../../README.md) for Continue integration
+3. **Configure OpenCode Plugin**: See [`README.md`](../../README.md) for OpenCode integration
 
 ## Database Configuration
 
 AIXCL uses PostgreSQL for:
 - **webui**: For Open WebUI conversations and data
-- **continue**: For Continue plugin conversations (when configured)
+- *opencode**: For OpenCode plugin conversations (when configured)
 
 Both databases are automatically created on startup. The webui database schema is initialized by Open WebUI when it starts.
 
 ## Notes
 
 - All database migrations run automatically on startup
-- The system gracefully degrades if database is unavailable (continues without persistence)
+- The system gracefully degrades if database is unavailable opencodes without persistence)
 - Database credentials are shared with Open WebUI for simplicity
 - Test scripts are organized by component under `tests/`
 - Database utility scripts are in `scripts/db/`

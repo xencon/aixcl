@@ -5,8 +5,8 @@ permissions:
 on:
   pull_request:
     paths:
-      - '.continue/agents/**'
-      - '.continue/skills/**'
+      - 'opencode/agents/**'
+      - 'opencode/skills/**'
       - 'docs/reference/ai-report-*.md'
       - 'docs/developer/agent-template.md'
       - 'docs/developer/ai-file-naming.md'

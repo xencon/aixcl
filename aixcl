@@ -92,7 +92,7 @@ validate_db_name() {
 }
 
 function ensure_databases() {
-    # Ensure required databases exist (webui and continue)
+    # Ensure required databases exist(webui)
     # This function is idempotent - it won't fail if databases already exist
     
     # Load environment variables if not already loaded
@@ -152,7 +152,7 @@ function ensure_databases() {
         if "${DOCKER_BIN:-docker}" exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "admin"; then
             echo "Removing unwanted admin database..."
             "${DOCKER_BIN:-docker}" exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "DROP DATABASE IF EXISTS \"admin\";" >/dev/null 2>&1 || true
-            echo "   Admin database removed (only webui and continue databases should exist)"
+            echo "   Admin database removed(only webui database should exist)"
         fi
     fi
 }
@@ -682,7 +682,7 @@ function start_service() {
         log_info "Operational Services (profile-dependent):"
         log_info "  ${ALL_SERVICES[*]}"
         echo ""
-        log_info "Note: Continue is a VS Code plugin, not a containerized service"
+        log_info "Note: OpenCode is a VS Code plugin, not a containerized service"
         log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
@@ -861,7 +861,7 @@ function service() {
         echo "Runtime Core Services (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
-        echo "Note: Continue is a VS Code plugin, not a containerized service"
+        echo "Note: OpenCode is a VS Code plugin, not a containerized service"
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
@@ -944,7 +944,7 @@ function logs() {
         
         for service in "${ALL_SERVICES[@]}"; do
             # Skip the 'engine' alias itself in the loop, as it's not a real container name
-            [ "$service" = "engine" ] && continue
+            [ "$service" = "engine" ] && opencode
             
             # Find the actual container name (exact or hash-prefixed)
             local actual_container
@@ -1162,90 +1162,26 @@ function export_quadlet() {
 }
 
 
-# Parse model names from a Continue YAML config (name: or model: under models)
-_parse_continue_models() {
-    local file="$1"
-    [ ! -f "$file" ] && return
-    local in_models=false
-    while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ ^[[:space:]]*models[[:space:]]*: ]]; then
-            in_models=true
-            continue
-        fi
-        if [ "$in_models" = true ]; then
-            if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*$ ]] || [[ "$line" =~ ^[[:space:]]*[a-zA-Z] ]]; then
-                if [[ "$line" =~ ^[[:space:]]*(name|model)[[:space:]]*:[[:space:]]*(.*)$ ]]; then
-                    local val="${BASH_REMATCH[2]}"
-                    val=$(echo "$val" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"' | tr -d "'")
-                    [ -n "$val" ] && echo "$val"
-                fi
-            fi
-        fi
-    done < "$file"
-}
+# Parse model names from a OpenCode YAML config (name: or model: under models)
 
-# Report Continue VS Code plugin models from .continue/plugin/config.yaml; ✅ if configured, ❌ otherwise
-report_continue_plugin_models() {
-    local config_file="${SCRIPT_DIR}/.continue/plugin/config.yaml"
-    if [ ! -f "$config_file" ]; then
-        echo "  ❌ Continue (VS Code) (no config found)"
-        return
-    fi
-    local models
-    models=$(_parse_continue_models "$config_file" | paste -sd, - 2>/dev/null) || true
-    if [ -z "$models" ]; then
-        echo "  ❌ Continue (VS Code) (no models in config)"
+
+# Get config name from OpenCode YAML (top-level name: field)
+
+
+# Report OpenCode (local-first IDE) status
+report_opencode_status() {
+    # Check if OpenCode is likely running/available
+    # For now, we'll check if the inference engine is healthy as a proxy
+    # but in the future this could check for a specific OpenCode port or config.
+    local engine="${INFERENCE_ENGINE:-ollama}"
+    local container
+    container=$(get_engine_container "$engine")
+    
+    if [ -n "$container" ]; then
+        echo "  ✅ OpenCode (IDE)     Status: Active"
     else
-        echo "  ✅ Continue (VS Code) Models: $models"
+        echo "  ❌ OpenCode (IDE)     Status: Offline (Engine down)"
     fi
-}
-
-# Get config name from Continue YAML (top-level name: field)
-_continue_config_name() {
-    local file="$1"
-    [ ! -f "$file" ] && return
-    grep -E '^name[[:space:]]*:' "$file" 2>/dev/null | head -1 | sed -E 's/^name[[:space:]]*:[[:space:]]*//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"' | tr -d "'"
-}
-
-# Report Continue CLI status in same format as cn: Config: <name>   Model: <model>; ✅ if configured, ❌ otherwise
-# Prefer output from cn -p "/info" when available; else parse .continue/cli-ollama.yaml
-report_continue_cli_status() {
-    local config_file="${SCRIPT_DIR}/.continue/cli-ollama.yaml"
-    if [ ! -f "$config_file" ]; then
-        echo "  ❌ Continue CLI       Config: (not generated). Run: ./aixcl continue config"
-        return
-    fi
-    local config_name="" model_line=""
-    local config_abs
-    config_abs="$(cd "$SCRIPT_DIR" && pwd)/.continue/cli-ollama.yaml"
-    # Prefer Continue CLI: run cn -p "/info" to get Config and Model (same as TUI)
-    if command -v cn >/dev/null 2>&1; then
-        local cn_out
-        cn_out=$(timeout 8 cn --config "$config_abs" -p "/info" 2>/dev/null) || true
-        if [ -n "$cn_out" ]; then
-            # Parse "  Using <name>" and "  Model: <name>" from /info output
-            config_name=$(echo "$cn_out" | grep -E 'Using .+' | head -1 | sed -E 's/^[[:space:]]*Using[[:space:]]+//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            model_line=$(echo "$cn_out" | grep -E 'Model: .+' | head -1 | sed -E 's/^[[:space:]]*Model:[[:space:]]+//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            # Strip ANSI codes if present
-                # Using sed for robustness with escape characters in BSD/GNU sed
-                # shellcheck disable=SC2001
-                [ -n "$config_name" ] && config_name=$(echo "$config_name" | sed 's/\x1b\[[0-9;]*m//g')
-                # shellcheck disable=SC2001
-                [ -n "$model_line" ] && model_line=$(echo "$model_line" | sed 's/\x1b\[[0-9;]*m//g')
-        fi
-    fi
-    # Fall back to config file: name from YAML, first model from models list
-    if [ -z "$config_name" ]; then
-        config_name=$(_continue_config_name "$config_file") || true
-        [ -z "$config_name" ] && config_name=".continue/cli-ollama.yaml"
-    fi
-    if [ -z "$model_line" ]; then
-        model_line=$(_parse_continue_models "$config_file" | head -1) || true
-        [ -z "$model_line" ] && model_line="(none)"
-    fi
-    local box="❌"
-    [[ -n "$model_line" && "$model_line" != "(none)" ]] && box="✅"
-    echo "  ${box} Continue CLI       Config: $config_name   Model: $model_line"
 }
 
 function status() {
@@ -1278,7 +1214,7 @@ function status() {
         profile_services=$(get_profile_services "$current_profile" 2>/dev/null) || true
         for s in $profile_services; do
             for core in "${RUNTIME_CORE_SERVICES[@]}"; do
-                [ "$s" = "$core" ] && continue 2
+                [ "$s" = "$core" ] && opencode 2
             done
             profile_operational_list="${profile_operational_list} ${s}"
         done
@@ -1441,6 +1377,9 @@ function status() {
         
         check_service_status "$name$suffix" "$engine" "curl" "$url" "true" "true"
     done
+    
+    # Report OpenCode status as part of runtime core
+    report_opencode_status
     echo ""
 
     # Operational Services
@@ -1766,12 +1705,6 @@ function models() {
                     status=1
                 fi
             done
-            # Refresh Continue CLI config so new models are available in cn
-            if command -v continue_config >/dev/null 2>&1; then
-                continue_config || true
-            else
-                echo "ℹ️  Continue CLI 'continue_config' not found, skipping sync."
-            fi
             ;;
         remove)
             if [[ $# -lt 1 ]]; then

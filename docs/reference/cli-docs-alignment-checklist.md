@@ -8,7 +8,7 @@ Reference: [Consistency Gap Report (2026)](./consistency-gap-report-2026.md)
 
 ## 1. High Priority: Foundational Alignment
 
-- [ ] **Archive Deprecated Commands** — Ensure all documentation (Usage, Manpage, README) has removed references to `continue` and `dashboard` as top-level CLI commands.
+- [ ] **Archive Deprecated Commands** — Ensure all documentation (Usage, Manpage, README) has removed references to opencode` and `dashboard` as top-level CLI commands.
 - [ ] **Sync stack start/restart** — Verify that `stack start` and `stack restart` documentation correctly reflects the `--profile` (`-p`) behavior and the optional service list for restart.
 - [ ] **Engine Configuration** — Ensure `config engine <set|auto>` is fully documented in the manpage and usage guide.
 - [ ] **Models multiple args** — Verify that `models add` and `models remove` are documented as accepting one or more model names.

@@ -50,5 +50,5 @@ The developer workflow agent is registered with id `developer-workflow` and file
 
 - Encodes the AIXCL Issue-First development workflow.
 - References the governance and workflow docs directly in its markdown.
-- Is suitable for use from tools such as Continue CLI, Cursor, or other orchestrators that can read the registry and agent file.
+- Is suitable for use from tools such as OpenCode CLI, Cursor, or other orchestrators that can read the registry and agent file.
 

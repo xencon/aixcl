@@ -12,8 +12,6 @@ if [[ "$INFERENCE_ENGINE" != "ollama" && "$INFERENCE_ENGINE" != "vllm" && "$INFE
 fi
 
 # Runtime core services managed by Docker Compose (always present in all profiles).
-# Note: Continue is also part of the architectural runtime core (see 00_invariants.md)
-# but is a VS Code plugin, not a Docker-managed service, so it is not listed here.
 RUNTIME_CORE_SERVICES=("$INFERENCE_ENGINE")
 
 # Profile descriptions
@@ -26,8 +24,6 @@ declare -A PROFILE_DESCRIPTIONS=(
 
 # Profile service mappings (Docker-managed services only)
 # Each profile includes runtime core services plus profile-specific services.
-# Continue (VS Code plugin) is part of the runtime core architecture but is
-# not managed by Docker Compose and therefore not listed in these mappings.
 declare -A PROFILE_SERVICES=(
     [usr]="$INFERENCE_ENGINE postgres"
     [dev]="$INFERENCE_ENGINE open-webui postgres pgadmin"

@@ -17,7 +17,7 @@ Agent files:
 
 - Contain YAML frontmatter with `name` and `description`.
 - Encode AIXCL-specific constraints (Issue-First workflow, governance rules, plain ASCII markdown).
-- Are intended to be used by multiple AI tools (e.g., Continue CLI, Cursor, Copilot-style agents).
+- Are intended to be used by multiple AI tools (e.g., OpenCode CLI, Cursor, Copilot-style agents).
 
 ### Skills
 
@@ -25,7 +25,7 @@ Agent files:
 - **Filename pattern**: `skill-<verb-noun>.md`
   - Examples:
     - `skill-normalize-issue-labels.md`
-    - `skill-update-continue-config.md`
+    - `skill-updateopencode-config.md`
     - `skill-run-platform-tests.md`
 
 Skill files define narrowly scoped capabilities that agents can rely on, such as a specific refactoring or check.

@@ -11,7 +11,7 @@ Its purpose is to prevent well-intentioned but harmful changes and to preserve a
 AIXCL is an **opinionated AI development distribution** with a **fixed core runtime**:
 
 - Ollama
-- Continue
+- OpenCode
 
 Do **not** attempt to generalize or abstract the runtime core.
 
