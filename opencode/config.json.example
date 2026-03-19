@@ -1,0 +1,30 @@
+{
+  "models": [
+    {
+      "title": "AIXCL Chat (Auto)",
+      "provider": "openai",
+      "model": "qwen2.5-coder:7b",
+      "apiKey": "ollama",
+      "baseUrl": "http://localhost:11434/v1"
+    },
+    {
+      "title": "AIXCL Autocomplete",
+      "provider": "openai",
+      "model": "qwen2.5-coder:1.5b",
+      "apiKey": "ollama",
+      "baseUrl": "http://localhost:11434/v1"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "AIXCL Autocomplete",
+    "provider": "openai",
+    "model": "qwen2.5-coder:1.5b",
+    "apiKey": "ollama",
+    "baseUrl": "http://localhost:11434/v1"
+  },
+  "embeddingsProvider": {
+    "provider": "ollama",
+    "model": "nomic-embed-text",
+    "baseUrl": "http://localhost:11434"
+  }
+}

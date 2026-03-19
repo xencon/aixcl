@@ -36,6 +36,43 @@ You can use any model already pulled into your AIXCL engine. For the best experi
 ./aixcl models add qwen2.5-coder:1.5b
 ```
 
+## Configuration Example
+
+You can use the following configuration as a template for your OpenCode settings (usually found in `~/.opencode/config.json` or your IDE settings):
+
+```json
+{
+  "models": [
+    {
+      "title": "AIXCL Chat",
+      "provider": "openai",
+      "model": "qwen2.5-coder:7b",
+      "baseUrl": "http://localhost:11434/v1"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "AIXCL Autocomplete",
+    "provider": "openai",
+    "model": "qwen2.5-coder:1.5b",
+    "baseUrl": "http://localhost:11434/v1"
+  }
+}
+```
+
+## Usage Examples
+
+### 1. Code Explanations
+Highlight a block of code in your editor and ask OpenCode:
+> "Explain how this function handles error states and suggest improvements for local-first reliability."
+
+### 2. Unit Test Generation
+Select a class or function and use the shortcut for test generation:
+> "Generate Vitest unit tests for this component, ensuring all edge cases are covered."
+
+### 3. Refactoring
+Ask OpenCode to optimize a specific algorithm:
+> "Refactor this loop to be more memory-efficient and idiomatic for TypeScript 5.0."
+
 ## Features
 
 - **Local Chat**: Interact with your models directly within your editor.
