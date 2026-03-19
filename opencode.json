@@ -1,22 +1,30 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "vllm-local": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "vLLM (local)",
+    "aixcl-local": {
+      "api": "openai",
       "options": {
-        "baseURL": "http://localhost:11434/v1"
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "ollama"
       },
       "models": {
-        "qwen2.5-coder:7b-instruct-q5_K_M": {
-          "name": "Qwen 2.5 7B Instruct",
-          "maxTokens": 30000
+        "qwen2.5-coder:7b": {
+          "name": "Qwen 2.5 Coder (7B)",
+          "limit": {
+            "context": 32768,
+            "output": 4096
+          }
         },
-        "modelperm-aef8b1a41087193c": {
-          "name": "ModelPerm (custom)",
-          "maxTokens": 30000
+        "qwen2.5-coder:1.5b": {
+          "name": "Qwen 2.5 Coder (1.5B)",
+          "limit": {
+            "context": 16384,
+            "output": 2048
+          }
         }
       }
     }
-  }
+  },
+  "model": "aixcl-local/qwen2.5-coder:1.5b",
+  "small_model": "aixcl-local/qwen2.5-coder:1.5b"
 }
