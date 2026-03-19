@@ -8,7 +8,7 @@ AIXCL uses two PostgreSQL databases:
 - **webui**: For Open WebUI conversations and data
 - **opencode**: For Continue plugin conversations
 
-Both databases are automatically created on startup by the `ensure_databases()` function in the main `aixcl` script.
+The database is automatically created on startup by the `ensure_databases()` function in the main `aixcl` script.
 
 ## Migration Scripts
 
