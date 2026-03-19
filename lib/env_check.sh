@@ -20,12 +20,10 @@ check_env() {
 
     # Check Docker / Podman
     local engine_found=0
-    local engine_name=""
     
     if command -v podman &> /dev/null; then
         print_success "Podman is installed"
         engine_found=1
-        engine_name="podman"
         if ! podman info &> /dev/null; then
             print_error "Podman service is not running or accessible"
             missing_deps=1
@@ -35,7 +33,6 @@ check_env() {
     elif command -v docker &> /dev/null; then
         print_success "Docker is installed"
         engine_found=1
-        engine_name="docker"
         if ! ${DOCKER_BIN:-docker} info &> /dev/null; then
             print_error "Docker daemon is not running"
             echo "   Start with: sudo systemctl start docker"

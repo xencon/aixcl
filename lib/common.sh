@@ -175,7 +175,7 @@ get_docker_sock() {
                 return 0
             fi
             # Fallback for some systems
-            local user_sock="/run/user/$(id -u)/podman/podman.sock"
+            local user_sock; user_sock="/run/user/$(id -u)/podman/podman.sock"
             if [ -S "$user_sock" ]; then
                 echo "$user_sock"
                 return 0
@@ -186,7 +186,7 @@ get_docker_sock() {
                 echo "${XDG_RUNTIME_DIR}/docker.sock"
                 return 0
             fi
-            local user_sock="/run/user/$(id -u)/docker.sock"
+            local user_sock; user_sock="/run/user/$(id -u)/docker.sock"
             if [ -S "$user_sock" ]; then
                 echo "$user_sock"
                 return 0
