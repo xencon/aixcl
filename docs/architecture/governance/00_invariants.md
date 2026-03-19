@@ -34,7 +34,6 @@ Do **not** attempt to generalize or abstract the runtime core.
 The following components **always** form the AIXCL runtime core:
 
 - **Inference Engine** (e.g., Ollama, vLLM, llama.cpp) - LLM inference engine (Docker-managed service)
-- **Council** - Multi-model orchestration (Docker-managed service)
 - **Continue** - AI-powered code assistance (VS Code plugin, not Docker-managed)
 
 These components are:
@@ -42,7 +41,7 @@ These components are:
 - Always present in every profile
 - Never optional
 
-> **Note:** Continue is a client-side VS Code plugin that connects to Council via the OpenAI-compatible API. It is not managed by Docker Compose and therefore does not appear in the `RUNTIME_CORE_SERVICES` array or profile service mappings. The Docker-managed runtime core services are the Inference Engine and Council.
+> **Note:** Continue is a client-side VS Code plugin that connects to the Inference Engine via the OpenAI-compatible API. It is not managed by Docker Compose and therefore does not appear in the `RUNTIME_CORE_SERVICES` array or profile service mappings. The Docker-managed runtime core service is the Inference Engine.
 
 Any change that removes, replaces, or conditionally disables these components is considered **architecturally breaking**.
 

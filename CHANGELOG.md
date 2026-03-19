@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Renamed service/container from `llm-council` to `council` across codebase and documentation (Fixes #433). Directory `llm-council/` and volume path `council-data/`; display name "Council". Service contract file `llm-council.md` renamed to `council.md`; script `build_and_push_llm_council.sh` renamed to `build_and_push_council.sh`.
+- Renamed service/container from `orchestrator` to `orchestrator` across codebase and documentation (Fixes #433). Directory `orchestrator/` and volume path `orchestrator-data/`; display name "orchestrator". Service contract file `orchestrator.md` renamed to `orchestrator.md`; script `build_and_push_llm_orchestrator.sh` renamed to `build_and_push_orchestrator.sh`.
 - Updated Open WebUI to v0.8.0 (Fixes #454)
 
 ---
@@ -23,18 +23,18 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 ### Added
 
 - Token usage reporting with actual Ollama counts for accurate model usage tracking
-- Continue council YAML configuration replacing legacy agent config
+- Continue orchestrator YAML configuration replacing legacy agent config
 - Commercial licensing documentation (`COMMERCIAL.md`)
 - Explicit timeouts to platform test script API calls
-- Council members test timeout increase to prevent false failures
+- orchestrator members test timeout increase to prevent false failures
 
 ### Changed
 
 - Consolidated duplicated code between `aixcl` CLI and lib modules
 - Replaced DEBUG print statements with proper logging throughout codebase
-- Removed hardcoded confidence penalty heuristics from council
-- Aligned chairman confidence wording and stage 2 ranking criteria
-- Defaulted council to plain text responses
+- Removed hardcoded confidence penalty heuristics from orchestrator
+- Aligned primary model confidence wording and stage 2 ranking criteria
+- Defaulted orchestrator to plain text responses
 - Updated Open WebUI to v0.7.2
 - Bumped `wheel` dependency from 0.45.1 to 0.46.2
 - Updated README with privacy emphasis and profile testing options
@@ -70,15 +70,15 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 - **Documentation Updates**: Updated README.md, docs, and manpage to reflect governance model
 - **Bash Completion**: Updated completion script to reflect service categorization
 
-#### Database Persistence for LLM-Council
-- **PostgreSQL Integration**: Added automatic PostgreSQL-based storage for LLM-Council conversations
+#### Database Persistence for orchestrator
+- **PostgreSQL Integration**: Added automatic PostgreSQL-based storage for orchestrator conversations
   - Automatic schema creation on startup via `ensure_schema()` function
   - Migration system with `001_create_chat_table.sql` for initial schema setup
   - Support for both Open WebUI and Continue plugin conversations via `source` field
   - Conversation tracking with unique IDs generated from message hashes
   - Full message history preservation with stage data (Stage 1, 2, 3 responses)
 
-- **Database Storage Module** (`llm-council/backend/db_storage.py`):
+- **Database Storage Module** (`orchestrator/backend/db_storage.py`):
   - `create_continue_conversation()` - Create new Continue conversations
   - `get_continue_conversation()` - Retrieve conversations by ID
   - `add_message_to_conversation()` - Add messages to existing conversations
@@ -86,13 +86,13 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
   - `delete_conversation()` - Delete conversations
   - `find_conversation_by_messages()` - Find conversations by message content
 
-- **Database Connection Management** (`llm-council/backend/db.py`):
+- **Database Connection Management** (`orchestrator/backend/db.py`):
   - Connection pool management with asyncpg
   - Automatic schema verification and creation
   - Graceful degradation when database is unavailable
   - Environment-based configuration (ENABLE_DB_STORAGE flag)
 
-- **Conversation Tracker** (`llm-council/backend/conversation_tracker.py`):
+- **Conversation Tracker** (`orchestrator/backend/conversation_tracker.py`):
   - Deterministic conversation ID generation from message hashes
   - Message entry creation with proper formatting
   - Integration with database storage
@@ -103,7 +103,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
   - Conversation ID returned in API responses
 
 #### Testing Infrastructure
-- **Test Scripts** (moved to `llm-council/scripts/test/`):
+- **Test Scripts** (moved to `orchestrator/scripts/test/`):
   - `test_db_connection.py` - Comprehensive database connection and operation tests
   - `test_db_in_container.sh` - Container-based test wrapper
   - `test_api.sh` - API endpoint integration tests
@@ -119,16 +119,16 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 
 #### Documentation
 - Updated main `README.md` with database persistence features
-- Created `llm-council/scripts/test/README.md` with test script documentation
+- Created `orchestrator/scripts/test/README.md` with test script documentation
 - Created `scripts/db/README.md` with database utility documentation
-- Updated `llm-council/TESTING.md` with new script paths and testing procedures
+- Updated `orchestrator/TESTING.md` with new script paths and testing procedures
 
 ### Changed
 
 #### Repository Organization
 - **Script Organization**:
   - Moved SQL utility files from root to `scripts/db/` directory
-  - Moved test scripts from `llm-council/` to `llm-council/scripts/test/` directory
+  - Moved test scripts from `orchestrator/` to `orchestrator/scripts/test/` directory
   - Created logical directory structure for better maintainability
 
 - **File Cleanup**:
@@ -162,7 +162,7 @@ Indexes created for performance:
 
 #### Migration System
 - Migrations are automatically executed on startup via `ensure_schema()`
-- Migration files located in `llm-council/backend/migrations/`
+- Migration files located in `orchestrator/backend/migrations/`
 - Uses `IF NOT EXISTS` clauses for idempotent execution
 - Graceful error handling for existing schemas
 
@@ -174,7 +174,7 @@ For existing installations upgrading to include database persistence:
 
 2. **Manual Migration** (if needed):
    ```bash
-   docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < llm-council/backend/migrations/001_create_chat_table.sql
+   docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < orchestrator/backend/migrations/001_create_chat_table.sql
    ```
 
 3. **Adding Source Column** (for databases created before source column was added):

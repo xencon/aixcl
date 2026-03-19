@@ -23,12 +23,10 @@ Status: Running
 Runtime Core (Strict - Always Enabled)
 ---------------------------------------
 OK  ollama          Running
-OK  council     Running
 OK  continue        Active     Connected (VS Code plugin)
 
 Configured Models
 -----------------
-  ✅ Council            Chairman: llama3.2; Members: llama3.2, codellama
   ✅ Continue (VS Code) Models: llama3.2, codellama
   ✅ Continue CLI       Config: AIXCL CLI (Ollama)   Model: llama3.2
 
@@ -43,7 +41,7 @@ SKIP watchtower      Stopped    (not in 'dev' profile)
 
 Health Summary
 --------------
-Runtime Core: 3/3 healthy
+Runtime Core: 2/2 healthy
 Operational:  3/3 healthy (of 3 enabled)
 Overall:      OK All critical services healthy
 ```
@@ -71,25 +69,25 @@ Overall:      OK All critical services healthy
 
 ### usr Profile
 ```
-Runtime Core: 3/3 healthy
+Runtime Core: 2/2 healthy
 Operational:  1/1 healthy (postgres)
 ```
 
 ### dev Profile
 ```
-Runtime Core: 3/3 healthy
+Runtime Core: 2/2 healthy
 Operational:  3/3 healthy (postgres, open-webui, pgadmin)
 ```
 
 ### ops Profile
 ```
-Runtime Core: 3/3 healthy
+Runtime Core: 2/2 healthy
 Operational:  8/8 healthy (postgres, prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter)
 ```
 
 ### sys Profile
 ```
-Runtime Core: 3/3 healthy
+Runtime Core: 2/2 healthy
 Operational:  10/10 healthy (all services enabled: postgres, open-webui, pgadmin, prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter, watchtower)
 ```
 
@@ -114,7 +112,7 @@ When implementing stack status:
 
 4. **Output Format**
    - Default: Human-readable, grouped by category
-   - After Runtime Core, show **Configured Models**: Council, Continue VS Code plugin, Continue CLI (no Ollama). Use green (✅) when models are configured, red (❌) when not, to match other services. Continue CLI in same format as `cn`: Config: <name>   Model: <current model> (prefer `cn -p "/info"` when available; else parse .continue/cli-ollama.yaml)
+   - After Runtime Core, show **Configured Models**: Continue VS Code plugin, Continue CLI (no Ollama). Use green (✅) when models are configured, red (❌) when not, to match other services. Continue CLI in same format as `cn`: Config: <name>   Model: <current model> (prefer `cn -p "/info"` when available; else parse .continue/cli-ollama.yaml)
    - Verbose: Include service details, ports, dependencies
    - JSON: Machine-readable format for automation
 

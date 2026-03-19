@@ -120,18 +120,6 @@
 - Or create new labels (`priority:high`, `priority:medium`, `priority:low`) and migrate existing issues
 - Document the decision in workflow guide
 
-### Component Label Inconsistency
-
-**Issue:** `component:llm-council` vs `component:council`
-
-- **Workflow Documentation Says:** Should be `component:council`
-- **Actual GitHub Label:** `component:llm-council` exists
-- **Note:** Issue #433 was about renaming llm-council to council, but the label may not have been updated
-
-**Recommendation:**
-- Verify if `component:llm-council` label should be renamed to `component:council`
-- Update workflow documentation or migrate label accordingly
-
 ## Actionability Assessment
 
 ### All Issues Should Be Actioned
@@ -163,7 +151,6 @@
 3. ⚠️ **Manual Action Required:** Set issue types to "Bug" in GitHub UI for all three issues
 4. 📋 **Recommendation:** Address security issues in priority order (#450, #449, #451)
 5. 📋 **Recommendation:** Resolve label naming inconsistency (P1/P2/P3 vs priority:high/medium/low)
-6. 📋 **Recommendation:** Verify and update `component:llm-council` label if needed
 
 ## Summary
 
