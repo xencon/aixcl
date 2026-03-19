@@ -57,7 +57,6 @@ else
     echo "Creating continue database..."
     run_psql -d postgres -c "CREATE DATABASE \"$CONTINUE_DATABASE\";" >/dev/null 2>&1
     echo "✅ Continue database created: $CONTINUE_DATABASE"
-    echo "   Note: The Council service will automatically create the schema when it starts."
 fi
 
 # Remove unwanted "admin" database if it exists and is not the intended database

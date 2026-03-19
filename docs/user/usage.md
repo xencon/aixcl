@@ -7,7 +7,6 @@ AIXCL follows a governance model that separates **Runtime Core** from **Operatio
 ### Runtime Core (Strict - Always Enabled)
 These services define what AIXCL is and are always present:
 - **Inference Engine** (Ollama, vLLM, llama.cpp): LLM inference engine
-- **Council**: Multi-model orchestration
 - **Continue**: VS Code plugin for AI-powered code assistance
 
 Runtime core services are non-negotiable and must be running for AIXCL to function.
@@ -115,13 +114,14 @@ Shows:
 ./aixcl models list
 
 # Add example starter models
-./aixcl models add deepseek-coder:1.3b    # Small, fast chairman
-./aixcl models add codegemma:2b            # Small council member
-./aixcl models add qwen2.5-coder:3b        # Small council member
+./aixcl models add deepseek-coder:1.3b
+./aixcl models add codegemma:2b
+./aixcl models add qwen2.5-coder:3b
 
 # For larger GPUs (16GB+), you can use larger models:
-./aixcl models add qwen2.5-coder:7b        # Medium-sized model
-./aixcl models add ministral-3:3b           # Balanced option
+./aixcl models add qwen2.5-coder:7b
+./aixcl models add ministral-3:3b
+```
 
 You can add or remove multiple models in one command: `./aixcl models add a b c`, `./aixcl models remove a b`.
 

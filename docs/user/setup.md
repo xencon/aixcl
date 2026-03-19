@@ -33,7 +33,7 @@ The following are configured automatically:
 - [x] **Environment File**: `.env` is created from `.env.example` if it exists
 - [x] **Database Schema**: PostgreSQL schema is created automatically on first startup
 - [x] **pgAdmin Configuration**: Database server connection is auto-configured
-- [x] **Database Persistence**: Council conversations are automatically stored in PostgreSQL
+- [x] **Database Persistence**: Open WebUI conversations are automatically stored in PostgreSQL
 
 ### 4. Database Persistence Verification
 
@@ -41,17 +41,7 @@ After starting services, verify database persistence is working:
 
 ```bash
 # Check if database schema was created
-docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "\d chat"
-
-# Should show the chat table with columns:
-# - id (uuid)
-# - title (text)
-# - chat (jsonb)
-# - meta (jsonb)
-# - source (text)
-# - created_at (timestamp)
-# - updated_at (timestamp)
-# - user_id (text)
+docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "\dt"
 ```
 
 ### 5. Test Database Connection
@@ -61,10 +51,6 @@ Run the test script to verify everything works:
 ```bash
 # From project root
 python3 tests/database/test_db_connection.py
-
-# Or from council directory with uv
-cd council
-uv run python ../tests/database/test_db_connection.py
 ```
 
 Expected output:
@@ -78,16 +64,13 @@ Test the API with persistence:
 
 ```bash
 # Run API integration test
-python3 tests/api/test_continue_integration.py
-
 # Or via platform test suite
 ./tests/platform-tests.sh --component api
 ```
 
 Expected output:
 - [x] Health endpoint responds
-- [x] Chat completion creates conversation in database
-- [x] Conversation continuity works
+- [x] Chat completion works
 - [x] Deletion endpoint works
 
 ### 7. Verify Services
@@ -99,11 +82,10 @@ Check all services are running:
 ```
 
 Expected services:
-- [x] ollama
+- [x] ollama (or other active engine)
 - [x] open-webui
 - [x] postgres
 - [x] pgadmin
-- [x] council
 - [x] prometheus
 - [x] grafana
 - [x] (and other monitoring services)
@@ -114,25 +96,20 @@ Expected services:
 
 If the schema wasn't created automatically:
 
-1. Check logs: `docker logs council | grep -i database`
-2. Verify `ENABLE_DB_STORAGE=true` in `.env`
-3. Manually run migration:
-   ```bash
-   docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < llm-council/backend/migrations/001_create_chat_table.sql
-   ```
+1. Check logs: `./aixcl stack logs postgres`
+2. Verify `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env`
 
 ### Database Connection Failed
 
 1. Verify PostgreSQL is running: `docker ps | grep postgres`
-2. Check environment variables: `docker exec council env | grep POSTGRES`
-3. Test connection: `docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "SELECT 1;"`
+2. Test connection: `docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "SELECT 1;"`
 
 ### Services Not Starting
 
 1. Check Docker: `docker ps -a`
 2. View logs: `./aixcl stack logs`
 3. Check disk space: `df -h`
-4. Verify ports are available: `netstat -tuln | grep -E '8000|8080|5432|5050'`
+4. Verify ports are available: `netstat -tuln | grep -E '8080|5432|5050'`
 
 ## Post-Setup
 
@@ -142,30 +119,17 @@ After successful setup:
    ```bash
    ./aixcl models add deepseek-coder:1.3b codegemma:2b qwen2.5-coder:3b
    ```
-2. **Configure Council**: 
-   ```bash
-   ./aixcl council configure
-   # Select: Chairman: deepseek-coder:1.3b
-   # Select: Council: codegemma:2b, qwen2.5-coder:3b
-   ```
-3. **Access Web UIs**:
+2. **Access Web UIs**:
    - Open WebUI: http://localhost:8080
    - pgAdmin: http://localhost:5050
    - Grafana: http://localhost:3000
-4. **Configure Continue Plugin**: See [`README.md`](../../README.md) for Continue integration
-
-**Recommended Default Configuration:**
-- **Chairman**: `deepseek-coder:1.3b` (776MB)
-- **Council Members**: `codegemma:2b` (1.6GB), `qwen2.5-coder:3b` (1.9GB)
-- **Performance**: ~24s average, 68.1% keep-alive improvement, ~4.3GB VRAM
-
-See [`docs/operations/model-recommendations.md`](../operations/model-recommendations.md) for alternative configurations.
+3. **Configure Continue Plugin**: See [`README.md`](../../README.md) for Continue integration
 
 ## Database Configuration
 
-AIXCL uses two PostgreSQL databases:
+AIXCL uses PostgreSQL for:
 - **webui**: For Open WebUI conversations and data
-- **continue**: For Continue plugin conversations (managed by Council)
+- **continue**: For Continue plugin conversations (when configured)
 
 Both databases are automatically created on startup. The webui database schema is initialized by Open WebUI when it starts.
 
@@ -179,4 +143,3 @@ Both databases are automatically created on startup. The webui database schema i
   - Database: `tests/database/`
   - API: `tests/api/`
 - Database utility scripts are in `scripts/db/`
-

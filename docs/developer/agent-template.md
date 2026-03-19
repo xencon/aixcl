@@ -98,7 +98,7 @@ Each step can include sub-bullets with more detail. Keep the content repo-specif
 
 Explicitly encode key governance and architecture constraints:
 
-- Do not remove, replace, or conditionally disable runtime core components (Ollama, Council, Continue).
+- Do not remove, replace, or conditionally disable runtime core components (Ollama, Continue).
 - Do not introduce dependencies from runtime core to operational services.
 - Do not merge runtime logic with monitoring, logging, or admin tooling.
 - Do not collapse service boundaries or add hidden coupling.

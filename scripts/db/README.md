@@ -6,7 +6,7 @@ This directory contains utility SQL scripts for managing and querying the AIXCL 
 
 AIXCL uses two PostgreSQL databases:
 - **webui**: For Open WebUI conversations and data
-- **continue**: For Continue plugin conversations (managed by LLM-Council)
+- **continue**: For Continue plugin conversations
 
 Both databases are automatically created on startup by the `ensure_databases()` function in the main `aixcl` script.
 

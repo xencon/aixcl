@@ -6,7 +6,7 @@ This report details the discrepancies found between the documentation, actual fu
 The actual CLI implementation in the root `aixcl` script has drifted significantly from earlier documentation and tracking checklists (e.g., `docs/reference/archive/cli-docs-alignment-report.md` and `docs/reference/cli-docs-alignment-checklist.md`).
 
 **Gaps Found:**
-- **Removed Commands:** The commands `continue`, `council`, and `dashboard` were referenced in older documentation and PR checklists but **no longer exist** in the `aixcl` CLI parsing block. They appear to have been deprecated or consolidated.
+- **Removed Commands:** The commands `continue` and `dashboard` were referenced in older documentation and PR checklists but **no longer exist** in the `aixcl` CLI parsing block. They appear to have been deprecated or consolidated.
 - **Outdated Checklists:** The `cli-docs-alignment-checklist.md` contains unmerged items (M1: add `continue` command) that are no longer valid for the current architecture.
 - **Engine Support:** `docs/user/usage.md` does mention `config engine auto` and `config engine set vllm`, but deep references and manpage entries need to be fully verified against the newest automated engine configurations (e.g., `vllm` and `llamacpp` integration recently added to the `add` model command).
 

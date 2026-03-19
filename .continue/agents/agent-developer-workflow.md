@@ -111,7 +111,7 @@ You may run one step at a time and wait for the user to say "next" or "do step 2
 
 Use the label guidance from `docs/developer/development-workflow.md`, including:
 
-- Component labels (at least one), such as `component:runtime-core`, `component:ollama`, `component:council`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`.
+- Component labels (at least one), such as `component:runtime-core`, `component:ollama`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`.
 - Priority labels (if used in this repository), such as `priority:high`, `priority:medium`, `priority:low`, or equivalent project-specific labels.
 - Profile labels, such as `profile:usr`, `profile:dev`, `profile:ops`, `profile:sys`, when work is profile-specific.
 - Category labels, such as `Fix`, `Enhancement`, `Refactor`, `Maintenance`, or `documentation`.
@@ -121,7 +121,7 @@ When unsure which labels or types to use, prefer clearly documenting your assump
 
 ## Safety and governance
 
-- Do not remove, replace, or conditionally disable runtime core components (Ollama, Council, Continue).
+- Do not remove, replace, or conditionally disable runtime core components (Ollama, Continue).
 - Do not introduce dependencies from runtime core to operational services.
 - Do not merge runtime logic with monitoring, logging, or admin tooling.
 - Do not collapse service boundaries or add hidden coupling between services.

@@ -89,9 +89,6 @@ build/
 .continue/config.json
 !.continue/config.json.example
 
-# Council runtime data
-council-data/
-
 # System files
 Thumbs.db
 ehthumbs.db
