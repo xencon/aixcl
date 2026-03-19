@@ -29,9 +29,10 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: actions  # Projects with multiple languages can add them here as a comma-separated list.
-          queries: security-and-quality
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:actions"
 
   shellcheck:
     name: Shell Script Linting
@@ -64,6 +65,7 @@ jobs:
         if: always()
         with:
           sarif_file: trivy-results.sarif
+          category: "/tool:trivy"
 
   dependency-review:
     name: Dependency Review
