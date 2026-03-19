@@ -149,7 +149,9 @@ services:
       - /bin/bash
       - -c
       - |
-        chown -R 1000:1000 /var/lib/pgadmin/storage /var/lib/pgadmin
+        # In rootless mode, the container root maps to the host user.
+        # We ensure the directories are owned by the user pgAdmin runs as (5050).
+        chown -R 5050:5050 /var/lib/pgadmin/storage /var/lib/pgadmin
         chmod -R 755 /var/lib/pgadmin/storage /var/lib/pgadmin
         find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \;
         find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \;
@@ -164,7 +166,7 @@ services:
     image: containrrr/watchtower:latest
     container_name: watchtower
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
     command: open-webui
     restart: always
 
@@ -291,7 +293,7 @@ services:
       - ../promtail/promtail-config.yml:/etc/promtail/promtail-config.yml
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
     command: -config.file=/etc/promtail/promtail-config.yml
     network_mode: host
     depends_on:

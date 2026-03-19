@@ -589,6 +589,57 @@ test_llm_state() {
 }
 
 # ============================================================================
+# SECTION 7: MODEL INFERENCE TESTS
+# ============================================================================
+test_model_inference() {
+    start_section "Model Inference - Prompt & Response"
+    
+    local test_model="${1:-}"
+    
+    # If no model provided, try to find one already installed
+    if [ -z "$test_model" ]; then
+        test_model=$(get_available_models "$INFERENCE_ENGINE" | head -1)
+    fi
+    
+    # If still no model, use a small default
+    if [ -z "$test_model" ]; then
+        test_model="qwen2.5-coder:1.5b"
+        echo "No models found. Adding small test model: $test_model"
+        ./aixcl models add "$test_model" >/dev/null 2>&1
+    fi
+    
+    echo "Testing inference with model: $test_model"
+    echo "Engine: $INFERENCE_ENGINE"
+    echo "Sending test prompt: 'Why is the sky blue? Answer in one sentence.'"
+    echo "-----------------------------------"
+
+    local response=""
+    case "$INFERENCE_ENGINE" in
+        ollama)
+            response=$(curl -s -X POST http://127.0.0.1:11434/api/generate \
+                -d "{\"model\": \"$test_model\", \"prompt\": \"Why is the sky blue? Answer in one sentence.\", \"stream\": false}" \
+                | jq -r '.response' 2>/dev/null)
+            ;;
+        *)
+            # OpenAI compatible (vLLM, llama.cpp)
+            response=$(curl -s -X POST http://127.0.0.1:11434/v1/chat/completions \
+                -H "Content-Type: application/json" \
+                -d "{\"model\": \"$test_model\", \"messages\": [{\"role\": \"user\", \"content\": \"Why is the sky blue? Answer in one sentence.\"}], \"temperature\": 0}" \
+                | jq -r '.choices[0].message.content' 2>/dev/null)
+            ;;
+    esac
+
+    if [ -n "$response" ] && [ "$response" != "null" ]; then
+        print_success "Received response"
+        echo "Response: $response"
+        record_test "pass" "Model inference successful with $test_model"
+    else
+        print_error "Failed to get response from model"
+        record_test "fail" "Model inference failed with $test_model"
+    fi
+}
+
+# ============================================================================
 # SECTION 5: CLI ALIAS TESTS
 # ============================================================================
 test_cli_aliases() {
@@ -885,6 +936,7 @@ test_profile_usr() {
     test_component_runtime_core
     test_component_database
     test_llm_state
+    test_model_inference
     test_cli_aliases
     test_security_validation
     }
@@ -900,6 +952,7 @@ test_profile_usr() {
     test_component_database
     test_component_ui
     test_llm_state
+    test_model_inference
     test_cli_aliases
     test_security_validation
     }
@@ -916,6 +969,7 @@ test_profile_usr() {
     test_component_monitoring
     test_component_logging
     test_llm_state
+    test_model_inference
     test_cli_aliases
     test_security_validation
     }
@@ -928,6 +982,7 @@ test_profile_usr() {
     test_environment_check
     test_stack_status
     test_llm_state
+    test_model_inference
     test_cli_aliases
     test_security_validation
     }
