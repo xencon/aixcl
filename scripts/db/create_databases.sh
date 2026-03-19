@@ -46,10 +46,6 @@ else
     echo "✅ WebUI database created: $WEBUI_DATABASE"
 fi
 
-else
-    echo "❌ Failed to access opencode database"
-    exit 1
-fi
 
 echo ""
-echo "✅ All databases created successfully!"
+echo "✅ WebUI database verified."
