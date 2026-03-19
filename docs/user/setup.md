@@ -44,12 +44,27 @@ After starting services, verify database persistence is working:
 docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "\dt"
 ```
 
-### 5. Test API Endpoints
+### 5. Test Database Connection
+
+Run the test script to verify everything works:
+
+```bash
+# From project root
+python3 tests/database/test_db_connection.py
+```
+
+Expected output:
+- [x] Database connection pool created successfully
+- [x] Database schema verified/created
+- [x] Conversation creation, retrieval, and deletion tests pass
+
+### 6. Test API Endpoints
 
 Test the API with persistence:
 
 ```bash
-# Run API integration test via platform test suite
+# Run API integration test
+# Or via platform test suite
 ./tests/platform-tests.sh --component api
 ```
 
