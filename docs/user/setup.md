@@ -44,27 +44,12 @@ After starting services, verify database persistence is working:
 docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} -c "\dt"
 ```
 
-### 5. Test Database Connection
-
-Run the test script to verify everything works:
-
-```bash
-# From project root
-python3 tests/database/test_db_connection.py
-```
-
-Expected output:
-- [x] Database connection pool created successfully
-- [x] Database schema verified/created
-- [x] Conversation creation, retrieval, and deletion tests pass
-
-### 6. Test API Endpoints
+### 5. Test API Endpoints
 
 Test the API with persistence:
 
 ```bash
-# Run API integration test
-# Or via platform test suite
+# Run API integration test via platform test suite
 ./tests/platform-tests.sh --component api
 ```
 
@@ -73,7 +58,7 @@ Expected output:
 - [x] Chat completion works
 - [x] Deletion endpoint works
 
-### 7. Verify Services
+### 6. Verify Services
 
 Check all services are running:
 
@@ -138,8 +123,5 @@ Both databases are automatically created on startup. The webui database schema i
 - All database migrations run automatically on startup
 - The system gracefully degrades if database is unavailable (continues without persistence)
 - Database credentials are shared with Open WebUI for simplicity
-- Test scripts are organized by component under `tests/`:
-  - Runtime core: `tests/runtime-core/`
-  - Database: `tests/database/`
-  - API: `tests/api/`
+- Test scripts are organized by component under `tests/`
 - Database utility scripts are in `scripts/db/`

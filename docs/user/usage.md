@@ -240,9 +240,9 @@ docker-compose pull
    ./aixcl stack logs engine 100
    ```
 
-3. **Test Continue integration:**
+3. **Check Status regularly:**
    ```bash
-   python3 tests/api/test_continue_integration.py
+   ./aixcl stack status
    ```
 
 4. **Keep models updated:**
