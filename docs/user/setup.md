@@ -136,7 +136,7 @@ Both databases are automatically created on startup. The webui database schema i
 ## Notes
 
 - All database migrations run automatically on startup
-- The system gracefully degrades if database is unavailable opencodes without persistence)
+- The system gracefully degrades if database is unavailable (continues without persistence)
 - Database credentials are shared with Open WebUI for simplicity
 - Test scripts are organized by component under `tests/`
 - Database utility scripts are in `scripts/db/`

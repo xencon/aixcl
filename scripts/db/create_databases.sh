@@ -46,6 +46,3 @@ else
     echo "✅ WebUI database created: $WEBUI_DATABASE"
 fi
 
-
-echo ""
-echo "✅ WebUI database verified."
