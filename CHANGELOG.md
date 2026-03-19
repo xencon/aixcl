@@ -30,7 +30,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 ### Added
 
 - Token usage reporting with actual Ollama counts for accurate model usage tracking
-- Continue orchestrator YAML configuration replacing legacy agent config
+- OpenCode orchestrator YAML configuration replacing legacy agent config
 - Commercial licensing documentation (`COMMERCIAL.md`)
 - Explicit timeouts to platform test script API calls
 - orchestrator members test timeout increase to prevent false failures
@@ -57,7 +57,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 
 ### Documentation
 
-- Clarified Continue plugin omission from `RUNTIME_CORE_SERVICES`
+- Clarified OpenCode plugin omission from `RUNTIME_CORE_SERVICES`
 - Added assignee and PR labeling requirements to development workflow
 - Improved overall documentation consistency
 
@@ -81,15 +81,15 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 - **PostgreSQL Integration**: Added automatic PostgreSQL-based storage for orchestrator conversations
   - Automatic schema creation on startup via `ensure_schema()` function
   - Migration system with `001_create_chat_table.sql` for initial schema setup
-  - Support for both Open WebUI and Continue plugin conversations via `source` field
+  - Support for both Open WebUI and OpenCode plugin conversations via `source` field
   - Conversation tracking with unique IDs generated from message hashes
   - Full message history preservation with stage data (Stage 1, 2, 3 responses)
 
 - **Database Storage Module** (`orchestrator/backend/db_storage.py`):
-  - `create_continue_conversation()` - Create new Continue conversations
-  - `get_continue_conversation()` - Retrieve conversations by ID
+  - `create_opencode_conversation()` - Create new OpenCode conversations
+  - `get_opencode_conversation()` - Retrieve conversations by ID
   - `add_message_to_conversation()` - Add messages to existing conversations
-  - `list_continue_conversations()` - List all Continue conversations
+  - `list_opencode_conversations()` - List all OpenCode conversations
   - `delete_conversation()` - Delete conversations
   - `find_conversation_by_messages()` - Find conversations by message content
 
@@ -119,7 +119,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 #### Database Utilities
 - **Utility Scripts** (organized in `scripts/db/`):
   - `002_add_source_column.sql` - Migration script for adding source column to existing databases
-  - `query_continue_chats.sql` - Query script for Continue conversations
+  - `query_opencode_chats.sql` - Query script for OpenCode conversations
   - `query_all_chats.sql` - Query script for all conversations
   - `check_db.sh` - Quick database inspection script
   - `README.md` - Documentation for database utilities
@@ -139,7 +139,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
   - Created logical directory structure for better maintainability
 
 - **File Cleanup**:
-  - Removed duplicate `check_continue.sql` file (consolidated with `check_continue_chats.sql`)
+  - Removed duplicate `check_opencode.sql` file (consolidated with `check_opencode_chats.sql`)
   - Organized temporary test files into appropriate directories
   - Updated all script paths in documentation
 
@@ -156,7 +156,7 @@ The `chat` table structure:
 - `title` (TEXT) - Conversation title
 - `chat` (JSONB) - Full conversation data with messages array
 - `meta` (JSONB) - Additional metadata
-- `source` (TEXT) - Source identifier ('openwebui' or 'continue')
+- `source` (TEXT) - Source identifier ('openwebui' or 'opencode')
 - `created_at` (TIMESTAMP) - Creation timestamp
 - `updated_at` (TIMESTAMP) - Auto-updated on changes
 - `user_id` (TEXT) - Optional user identifier
@@ -199,7 +199,7 @@ None
 
 ### Removed
 
-- Removed duplicate `check_continue.sql` file (functionality preserved in `check_continue_chats.sql`)
+- Removed duplicate `check_opencode.sql` file (functionality preserved in `check_opencode_chats.sql`)
 
 ### Fixed
 
@@ -210,5 +210,5 @@ None
 
 - Database credentials are managed via environment variables
 - Connection pooling with configurable pool size
-- Graceful degradation when database is unavailable (service continues without persistence)
+- Graceful degradation when database is unavailable (service opencodes without persistence)
 

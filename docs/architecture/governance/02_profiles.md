@@ -9,9 +9,9 @@ Profiles define **which operational services are enabled** alongside the **alway
 The runtime core consists of two components:
 
 - **Inference Engine** (e.g., Ollama, vLLM, llama.cpp) - LLM inference engine (Docker-managed service)
-- **Continue** - AI-powered code assistance (VS Code plugin, not Docker-managed)
+- **OpenCode** - AI-powered code assistance (VS Code plugin, not Docker-managed)
 
-Continue is a client-side IDE plugin that connects to the Inference Engine via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or `PROFILE_SERVICES` mappings in `cli/lib/profile.sh`.
+OpenCode is a client-side IDE plugin that connects to the Inference Engine via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or `PROFILE_SERVICES` mappings in `cli/lib/profile.sh`.
 
 Note: Runtime persistence is provided by PostgreSQL as an operational service in all current profiles.
 
@@ -34,7 +34,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Purpose**: User-oriented runtime with minimal footprint, optimized for end-user deployments.
 
 **Includes**:
-- Runtime core: Inference Engine, Continue (plugin)
+- Runtime core: Inference Engine, OpenCode (plugin)
 - PostgreSQL (database for runtime persistence)
 
 **Excludes**:
@@ -52,7 +52,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Purpose**: Developer workstation with UI and database tools.
 
 **Includes**:
-- Runtime core: Inference Engine, Continue (plugin)
+- Runtime core: Inference Engine, OpenCode (plugin)
 - Open WebUI (web interface for model interaction)
 - PostgreSQL (database for conversations and data)
 - pgAdmin (database administration UI)
@@ -70,7 +70,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Purpose**: Observability-focused deployment for servers and operators.
 
 **Includes**:
-- Runtime core: Inference Engine, Continue (plugin)
+- Runtime core: Inference Engine, OpenCode (plugin)
 - PostgreSQL (database for runtime data)
 - Prometheus (metrics collection)
 - Grafana (metrics visualization and dashboards)
@@ -94,7 +94,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Purpose**: System-oriented deployment with complete feature set and automation.
 
 **Includes**:
-- Runtime core: Inference Engine, Continue (plugin)
+- Runtime core: Inference Engine, OpenCode (plugin)
 - All dev services: Open WebUI, PostgreSQL, pgAdmin
 - All ops services: Prometheus, Grafana, Loki, Promtail, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
 - Watchtower (automatic container updates)
@@ -113,7 +113,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 ## 5. Profile Invariants
 
 All profiles **must**:
-- Include the complete runtime core (Inference Engine, Continue)
+- Include the complete runtime core (Inference Engine, OpenCode)
 - Never disable or conditionally exclude runtime core components
 - Maintain runtime core independence from operational services
 

@@ -32,7 +32,7 @@ info() {
 
 # Check agent files
 check_agents() {
-    local agents_dir=".continue/agents"
+    local agents_dir=".opencode/agents"
     if [[ ! -d "$agents_dir" ]]; then
         warn "Agent directory $agents_dir does not exist"
         return 0
@@ -105,7 +105,7 @@ check_agents() {
 
 # Check skill files
 check_skills() {
-    local skills_dir=".continue/skills"
+    local skills_dir=".opencode/skills"
     if [[ ! -d "$skills_dir" ]]; then
         return 0  # Skills directory is optional
     fi

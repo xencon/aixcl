@@ -7,7 +7,7 @@ AIXCL follows a governance model that separates **Runtime Core** from **Operatio
 ### Runtime Core (Strict - Always Enabled)
 These services define what AIXCL is and are always present:
 - **Inference Engine** (Ollama, vLLM, llama.cpp): LLM inference engine
-- **Continue**: VS Code plugin for AI-powered code assistance
+- **OpenCode**: VS Code plugin for AI-powered code assistance
 
 Runtime core services are non-negotiable and must be running for AIXCL to function.
 

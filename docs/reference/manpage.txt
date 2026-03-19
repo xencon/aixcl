@@ -55,7 +55,7 @@ COMMANDS
               cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter,
               loki, promtail
 
-              Note: Continue is a VS Code plugin, not a containerized service.
+              Note: OpenCode is a VS Code plugin, not a containerized service.
 
        models <add|remove|list> [name ...]
               Manage LLM models
@@ -138,7 +138,7 @@ ARCHITECTURE
        Runtime Core (Strict)
               Always enabled, required for AIXCL to function:
               - Inference Engine: LLM inference engine (Ollama, vLLM, llama.cpp)
-              - Continue: VS Code plugin for IDE integration
+              - OpenCode: VS Code plugin for IDE integration
 
        Operational Services (Guided)
               Profile-dependent, support/observe the runtime:

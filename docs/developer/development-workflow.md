@@ -134,7 +134,7 @@ GitHub provides native issue types that must be set for each issue. These are se
 Labels are organized into categories using prefixes:
 
 #### Component Labels (Select All That Apply)
-- `component:runtime-core` - Runtime core services (Ollama, Continue)
+- `component:runtime-core` - Runtime core services (Ollama, OpenCode)
 - `component:ollama` - Ollama LLM inference engine
 - `component:persistence` - Database and persistence services
 - `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki, Promtail)
@@ -235,15 +235,15 @@ gh issue view <number> --json labels
 
 **Example:** If automated PRs #351-355 are merged, create issue #356 documenting them.
 
-## Running the workflow with Continue CLI
+## Running the workflow with OpenCode CLI
 
-A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with Continue CLI and approve `gh`/`git` tool calls when prompted:
+A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with OpenCode CLI and approve `gh`/`git` tool calls when prompted:
 
 ```bash
-cn --config "$(pwd)/.continue/cli-ollama.yaml" --agent /ai/orchestration/agent-developer-workflow.md
+cn --config "$(pwd)/opencode/cli-ollama.yaml" --agent /ai/orchestration/agent-developer-workflow.md
 ```
 
-See [continue-cli-setup.md](./continue-cli-setup.md) for install and config.
+See opencode-cli-setup.md](.opencode-cli-setup.md) for install and config.
 
 ## AI Assistant Instructions
 

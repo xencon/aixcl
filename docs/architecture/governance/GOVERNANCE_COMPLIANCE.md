@@ -5,7 +5,7 @@
 ## Compliance Checklist
 
 ### Architectural Invariants
-- [x] Runtime core (Ollama, Continue) is preserved and never disabled
+- [x] Runtime core (Ollama, OpenCode) is preserved and never disabled
 - [x] No dependencies introduced from runtime core → operational services
 - [x] Service boundaries are respected
 - [x] CLI remains a control plane, not a decision engine

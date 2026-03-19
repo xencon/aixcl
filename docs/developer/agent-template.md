@@ -71,7 +71,7 @@ Define cross-cutting rules that apply to everything the agent does. For AIXCL, i
 
 #### Tool usage (generic)
 
-Describe how the agent should use tools in a way that can be mapped to different runtimes (Continue CLI, Cursor, MCP tools, etc.):
+Describe how the agent should use tools in a way that can be mapped to different runtimes (OpenCode CLI, Cursor, MCP tools, etc.):
 
 - Assume access to tools that can:
   - Run shell commands in the repo (e.g. `git`, `gh`, `./aixcl`).
@@ -98,7 +98,7 @@ Each step can include sub-bullets with more detail. Keep the content repo-specif
 
 Explicitly encode key governance and architecture constraints:
 
-- Do not remove, replace, or conditionally disable runtime core components (Ollama, Continue).
+- Do not remove, replace, or conditionally disable runtime core components (Ollama, OpenCode).
 - Do not introduce dependencies from runtime core to operational services.
 - Do not merge runtime logic with monitoring, logging, or admin tooling.
 - Do not collapse service boundaries or add hidden coupling.

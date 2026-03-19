@@ -52,7 +52,7 @@ AIXCL serves different user types through profile-based deployments:
 ## Features
 
 - **Local LLM Execution**: Run models locally with automatic GPU detection and optimization
-- **IDE Integration**: VS Code integration via Continue plugin for AI-powered code assistance
+- **IDE Integration**: VS Code integration via OpenCode for AI-powered code assistance
 - **Web Interface**: Interactive model interaction through Open WebUI (profile-dependent)
 - **Conversation Persistence**: Store dialogues and interactions in PostgreSQL for context preservation
 - **Observability**: Monitor system metrics, GPU usage, and container performance with Prometheus and Grafana

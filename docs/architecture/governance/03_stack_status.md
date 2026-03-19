@@ -23,12 +23,12 @@ Status: Running
 Runtime Core (Strict - Always Enabled)
 ---------------------------------------
 OK  ollama          Running
-OK  continue        Active     Connected (VS Code plugin)
+OK opencode        Active     Connected (VS Code plugin)
 
 Configured Models
 -----------------
-  ✅ Continue (VS Code) Models: llama3.2, codellama
-  ✅ Continue CLI       Config: AIXCL CLI (Ollama)   Model: llama3.2
+  ✅ OpenCode (VS Code) Models: llama3.2, codellama
+  ✅ OpenCode CLI       Config: AIXCL CLI (Ollama)   Model: llama3.2
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
@@ -108,11 +108,11 @@ When implementing stack status:
 3. **Health Check Semantics**
    - Runtime core: Use strict health checks (API must respond)
    - Operational services: Use lenient health checks (graceful degradation acceptable)
-   - Continue: Check plugin connectivity, not container (it's a VS Code extension)
+   - OpenCode: Check plugin connectivity, not container (it's a VS Code extension)
 
 4. **Output Format**
    - Default: Human-readable, grouped by category
-   - After Runtime Core, show **Configured Models**: Continue VS Code plugin, Continue CLI (no Ollama). Use green (✅) when models are configured, red (❌) when not, to match other services. Continue CLI in same format as `cn`: Config: <name>   Model: <current model> (prefer `cn -p "/info"` when available; else parse .continue/cli-ollama.yaml)
+   - After Runtime Core, show **Configured Models**: OpenCode VS Code plugin, OpenCode CLI (no Ollama). Use green (✅) when models are configured, red (❌) when not, to match other services. OpenCode CLI in same format as `cn`: Config: <name>   Model: <current model> (prefer `cn -p "/info"` when available; else parse opencode/cli-ollama.yaml)
    - Verbose: Include service details, ports, dependencies
    - JSON: Machine-readable format for automation
 
