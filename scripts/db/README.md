@@ -6,7 +6,7 @@ This directory contains utility SQL scripts for managing and querying the AIXCL 
 
 AIXCL uses two PostgreSQL databases:
 - **webui**: For Open WebUI conversations and data
-- **opencode**: For Continue plugin conversations
+- **opencode**: For OpenCode conversations
 
 Both databases are automatically created on startup by the `ensure_databases()` function in the main `aixcl` script.
 
@@ -40,11 +40,11 @@ docker exec -i postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE} < scrip
 ## Query Scripts
 
 ### `query_opencode_chats.sql`
-Query to list Continue plugin conversations from the opencode database.
+Query to list OpenCode conversations from the opencode database.
 
 **Usage:**
 ```bash
-docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_CONTINUE_DATABASE:-opencode} -f scripts/db/query_opencode_chats.sql
+docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_OPENCODE_DATABASE:-opencode} -f scripts/db/query_opencode_chats.sql
 ```
 
 ### `query_all_chats.sql`
@@ -55,7 +55,7 @@ Query to list all conversations from the webui database (Open WebUI conversation
 docker exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE:-webui} -f scripts/db/query_all_chats.sql
 ```
 
-**Note:** Continue plugin conversations are stored in the `opencode` database (separate from `webui`). To query Continue conversations, use `check_db.sh` or query the `opencode` database directly.
+**Note:** OpenCode conversations are stored in the `opencode` database (separate from `webui`). To query OpenCode conversations, use `check_db.sh` or query the `opencode` database directly.
 
 ## Notes
 
