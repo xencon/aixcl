@@ -41,6 +41,9 @@ COMMANDS
        stack clean
               Remove unused Docker resources
 
+       stack export-quadlet
+              Export current profile services as Podman Quadlet files for Systemd integration.
+
        service <start|stop|restart> <name>
               Control individual service
 

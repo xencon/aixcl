@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Rootless & Podman Support**: Full support for running AIXCL in rootless environments with both Docker and Podman. Includes automated socket detection and permission handling for volumes (Fixes #498).
+- **Native Multi-Registry Pulls**: Support for `hf.co/` and `huggingface.co/` URIs in the `models add` command, enabling direct pulls from Hugging Face for all supported engines (Fixes #497).
+- **Podman Quadlet Generation**: New `stack export-quadlet` command to generate native Systemd unit files for robust, headless deployments (Fixes #499).
+- **Integrated Model Inference Testing**: Merged prompt/response verification into the main `platform-tests.sh` suite for end-to-end reliability.
+
 ### Changed
 
 - Renamed service/container from `orchestrator` to `orchestrator` across codebase and documentation (Fixes #433). Directory `orchestrator/` and volume path `orchestrator-data/`; display name "orchestrator". Service contract file `orchestrator.md` renamed to `orchestrator.md`; script `build_and_push_llm_orchestrator.sh` renamed to `build_and_push_orchestrator.sh`.

@@ -81,6 +81,9 @@ This will:
 ./aixcl models add deepseek-coder:1.3b
 ./aixcl models add codegemma:2b
 ./aixcl models add qwen2.5-coder:3b
+
+# Add models directly from Hugging Face (GGUF supported via hf.co/ prefix)
+./aixcl models add hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M
 ```
 
 ### 5. Check Status
@@ -202,6 +205,21 @@ This comprehensive status check shows:
 Note: Runtime core services (Inference Engine) health is critical. Operational services health is informational and graceful degradation is acceptable. Status uses text labels (OK/DOWN/WARN) and notes when services are not in the active profile.
 
 ## Maintenance
+
+### Exporting for Systemd (Headless)
+
+For production or headless environments running Podman, you can export your AIXCL stack as native Systemd Quadlet files:
+
+```bash
+./aixcl stack export-quadlet
+```
+
+This generates `.container` and `.network` files in `export/quadlets/`. To install:
+1. Copy the files to `/etc/containers/systemd/` (system-wide) or `~/.config/containers/systemd/` (user-specific).
+2. Run `systemctl daemon-reload` (or `systemctl --user daemon-reload`).
+3. Start your services with `systemctl start aixcl-ollama`, etc.
+
+This provides robust reboot persistence and standard service lifecycle management via `systemctl`.
 
 ### Clean Up Resources
 
