@@ -32,7 +32,7 @@ info() {
 
 # Check agent files
 check_agents() {
-    local agents_dir=".opencode/agents"
+    local agents_dir="ai/orchestration"
     if [[ ! -d "$agents_dir" ]]; then
         warn "Agent directory $agents_dir does not exist"
         return 0
@@ -40,7 +40,7 @@ check_agents() {
 
     local agent_files=("$agents_dir"/agent-*.md)
     if [[ ! -e "${agent_files[0]}" ]]; then
-        warn "No agent files found matching agent-*.md pattern"
+        warn "No agent files found matching agent-*.md pattern in $agents_dir"
         return 0
     fi
 
@@ -105,7 +105,7 @@ check_agents() {
 
 # Check skill files
 check_skills() {
-    local skills_dir=".opencode/skills"
+    local skills_dir="ai/skills"
     if [[ ! -d "$skills_dir" ]]; then
         return 0  # Skills directory is optional
     fi
