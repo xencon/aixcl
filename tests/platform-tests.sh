@@ -631,7 +631,6 @@ test_model_inference() {
 
     local response=""
     local http_status=""
-    local curl_error=""
 
     case "$INFERENCE_ENGINE" in
         ollama)
