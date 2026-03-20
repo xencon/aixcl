@@ -614,28 +614,37 @@ test_model_inference() {
     echo "-----------------------------------"
 
     local response=""
+    local http_status=""
+    local curl_error=""
+
     case "$INFERENCE_ENGINE" in
         ollama)
-            response=$(curl -s -X POST http://127.0.0.1:11434/api/generate \
-                -d "{\"model\": \"$test_model\", \"prompt\": \"Why is the sky blue? Answer in one sentence.\", \"stream\": false}" \
-                | jq -r '.response' 2>/dev/null)
+            # Use Ollama native API
+            local response_json
+            response_json=$(curl -s -i -X POST http://127.0.0.1:11434/api/generate \
+                -d "{\"model\": \"$test_model\", \"prompt\": \"Why is the sky blue? Answer in one sentence.\", \"stream\": false}")
+            http_status=$(echo "$response_json" | grep HTTP | tail -1 | awk '{print $2}')
+            response=$(echo "$response_json" | sed -n '/^{/,$p' | jq -r '.response' 2>/dev/null)
             ;;
         *)
             # OpenAI compatible (vLLM, llama.cpp)
-            response=$(curl -s -X POST http://127.0.0.1:11434/v1/chat/completions \
+            local response_json
+            response_json=$(curl -s -i -X POST http://127.0.0.1:11434/v1/chat/completions \
                 -H "Content-Type: application/json" \
-                -d "{\"model\": \"$test_model\", \"messages\": [{\"role\": \"user\", \"content\": \"Why is the sky blue? Answer in one sentence.\"}], \"temperature\": 0}" \
-                | jq -r '.choices[0].message.content' 2>/dev/null)
+                -d "{\"model\": \"$test_model\", \"messages\": [{\"role\": \"user\", \"content\": \"Why is the sky blue? Answer in one sentence.\"}], \"temperature\": 0}")
+            http_status=$(echo "$response_json" | grep HTTP | tail -1 | awk '{print $2}')
+            response=$(echo "$response_json" | sed -n '/^{/,$p' | jq -r '.choices[0].message.content' 2>/dev/null)
             ;;
     esac
 
-    if [ -n "$response" ] && [ "$response" != "null" ]; then
-        print_success "Received response"
+    if [ "$http_status" = "200" ] && [ -n "$response" ] && [ "$response" != "null" ]; then
+        print_success "Received response (HTTP 200)"
         echo "Response: $response"
         record_test "pass" "Model inference successful with $test_model"
     else
-        print_error "Failed to get response from model"
-        record_test "fail" "Model inference failed with $test_model"
+        print_error "Failed to get response from model (HTTP $http_status)"
+        [ -z "$response" ] || [ "$response" = "null" ] && echo "Error: Empty or null response body"
+        record_test "fail" "Model inference failed with $test_model (HTTP $http_status)"
     fi
 }
 
@@ -657,14 +666,45 @@ test_opencode_integration() {
     
     # Check if we can reach the backend using OpenCode's expected configuration
     # (Checking the inference engine proxy on port 11434)
-    echo "Verifying local inference proxy (11434)..."
-    if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null | grep -qE "200|404"; then
-        # 404 is also acceptable if models list is empty but API is reachable
-        print_success "Inference proxy is reachable"
-        record_test "pass" "Inference proxy reachable"
+    echo "Verifying local inference proxy (11434) via OpenAI-compatible API..."
+    local models_status
+    models_status=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null || echo "000")
+    
+    if [ "$models_status" = "200" ]; then
+        print_success "Inference proxy /v1/models is reachable (HTTP 200)"
+        record_test "pass" "Inference proxy /v1/models reachable"
+    elif [ "$models_status" = "404" ] && [ "$INFERENCE_ENGINE" = "ollama" ]; then
+        # Some older Ollama versions might not support /v1/models but OpenCode prefers it
+        print_warning "Inference proxy /v1/models returned 404 (Ollama might need update)"
+        
+        # Fallback check for Ollama native API
+        if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/api/tags 2>/dev/null | grep -q "200"; then
+            print_success "Ollama native API /api/tags is reachable"
+            record_test "pass" "Ollama native API reachable (but /v1/models failed)"
+        else
+            print_error "Both /v1/models and /api/tags failed"
+            record_test "fail" "Inference proxy unreachable"
+        fi
     else
-        print_error "Inference proxy is not reachable"
-        record_test "fail" "Inference proxy unreachable"
+        print_error "Inference proxy /v1/models is not reachable (HTTP $models_status)"
+        record_test "fail" "Inference proxy unreachable (HTTP $models_status)"
+    fi
+
+    # Dry-run a chat completion to ensure full protocol compatibility
+    echo "Testing OpenAI-compatible chat completion protocol..."
+    local chat_status
+    chat_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:11434/v1/chat/completions \
+        -H "Content-Type: application/json" \
+        -d "{\"model\": \"none-existing-model-for-test\", \"messages\": [{\"role\": \"user\", \"content\": \"test\"}]}" 2>/dev/null || echo "000")
+    
+    # We expect 404 (model not found) or 401 (auth) or 200 (if model exists)
+    # But 000, 502, 503, 504 are definitely failures
+    if [[ "$chat_status" =~ ^(200|404|400|401)$ ]]; then
+        print_success "Inference proxy supports /v1/chat/completions protocol (HTTP $chat_status)"
+        record_test "pass" "Inference proxy protocol /v1/chat/completions supported"
+    else
+        print_error "Inference proxy does not support /v1/chat/completions or is down (HTTP $chat_status)"
+        record_test "fail" "Inference proxy protocol /v1/chat/completions failed"
     fi
 }
 
@@ -748,6 +788,10 @@ test_component_runtime_core() {
             if [ "$engine_healthy" = true ]; then
                 print_success "$engine health check passed"
                 record_test "pass" "$engine health check passed"
+                
+                # Perform deeper protocol validation for the active engine
+                test_model_inference
+                test_opencode_integration
             else
                 print_error "$engine health check failed"
                 record_test "fail" "$engine health check failed"
