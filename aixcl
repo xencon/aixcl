@@ -944,7 +944,7 @@ function logs() {
         
         for service in "${ALL_SERVICES[@]}"; do
             # Skip the 'engine' alias itself in the loop, as it's not a real container name
-            [ "$service" = "engine" ] && opencode
+            [ "$service" = "engine" ] && continue
             
             # Find the actual container name (exact or hash-prefixed)
             local actual_container
@@ -1214,7 +1214,7 @@ function status() {
         profile_services=$(get_profile_services "$current_profile" 2>/dev/null) || true
         for s in $profile_services; do
             for core in "${RUNTIME_CORE_SERVICES[@]}"; do
-                [ "$s" = "$core" ] && opencode 2
+                [ "$s" = "$core" ] && continue 2
             done
             profile_operational_list="${profile_operational_list} ${s}"
         done
