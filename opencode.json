@@ -8,23 +8,14 @@
         "apiKey": "ollama"
       },
       "models": {
-        "qwen2.5-coder:7b": {
-          "name": "Qwen 2.5 Coder (7B)",
-          "limit": {
-            "context": 32768,
-            "output": 4096
-          }
+        "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
+          "name": "Qwen 2.5 Coder (1.5B)"
         },
         "qwen2.5-coder:1.5b": {
-          "name": "Qwen 2.5 Coder (1.5B)",
-          "limit": {
-            "context": 16384,
-            "output": 2048
-          }
+          "name": "Qwen 2.5 Coder (1.5B)"
         }
       }
     }
   },
-  "model": "aixcl-local/qwen2.5-coder:1.5b",
-  "small_model": "aixcl-local/qwen2.5-coder:1.5b"
+  "model": "aixcl-local/qwen2.5-coder:1.5b"
 }
