@@ -197,3 +197,43 @@ get_docker_sock() {
     # Default to standard root socket
     echo "/var/run/docker.sock"
 }
+
+# Validate database name to prevent SQL injection
+# Returns 0 if valid, 1 if invalid
+# Valid names: alphanumeric + underscore, must start with letter or underscore
+validate_db_name() {
+    local name
+    name="$1"
+    local context
+    context="${2:-database}"
+    
+    # Check if empty
+    if [ -z "$name" ]; then
+        echo "Error: Database name for $context cannot be empty" >&2
+        return 1
+    fi
+    
+    # Check length (PostgreSQL limit is 63 bytes)
+    if [ "${#name}" -gt 63 ]; then
+        echo "Error: Database name '$name' exceeds 63 characters" >&2
+        return 1
+    fi
+    
+    # Validate against whitelist pattern: alphanumeric + underscore, must start with letter or underscore
+    if [[ ! "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        echo "Error: Database name '$name' contains invalid characters. Use only letters, numbers, and underscores. Must start with a letter or underscore." >&2
+        return 1
+    fi
+    
+    # Check for reserved PostgreSQL database names
+    local lower_name
+    lower_name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+    case "$lower_name" in
+        postgres|template0|template1)
+            echo "Error: Database name '$name' is a reserved PostgreSQL database name" >&2
+            return 1
+            ;;
+    esac
+    
+    return 0
+}
