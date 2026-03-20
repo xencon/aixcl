@@ -14,10 +14,17 @@ echo ""
 # Ports to check
 # Format: "SERVICE_NAME:PORT"
 SERVICES=(
-    "Ollama:11434"
+    "Inference Engine:11434"
     "PostgreSQL:5432"
     "pgAdmin:5050"
     "Open WebUI:8080"
+    "Prometheus:9090"
+    "Grafana:3000"
+    "cAdvisor:8081"
+    "Loki:3100"
+    "Node Exporter:9100"
+    "Postgres Exporter:9187"
+    "NVIDIA GPU Exporter:9400"
 )
 
 FAILED=0
