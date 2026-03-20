@@ -4,7 +4,8 @@ NAME
        aixcl - AI & Infrastructure Stack Control CLI
 
 SYNOPSIS
-       aixcl <command> <subcommand> [options]
+       aixcl <command> [subcommand] [options]
+       aixcl restart [service]
 
 DESCRIPTION
        aixcl is a unified command-line tool for managing AI services, monitoring
@@ -43,6 +44,9 @@ COMMANDS
 
        stack export-quadlet
               Export current profile services as Podman Quadlet files for Systemd integration.
+
+       restart [service]
+              Shorthand for 'stack restart [service]'.
 
        service <start|stop|restart> <name>
               Control individual service

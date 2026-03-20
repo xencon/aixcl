@@ -73,7 +73,7 @@ Expected output:
 - [x] Chat completion works
 - [x] Deletion endpoint works
 
-### 6. Verify Services
+### 7. Verify Services
 
 Check all services are running:
 
@@ -81,8 +81,8 @@ Check all services are running:
 ./aixcl stack status
 ```
 
-Expected services:
-- [x] ollama (or other active engine)
+Expected services (depending on profile):
+- [x] ollama, vllm, or llamacpp (active engine)
 - [x] open-webui
 - [x] postgres
 - [x] pgadmin
@@ -107,9 +107,10 @@ If the schema wasn't created automatically:
 ### Services Not Starting
 
 1. Check Docker: `docker ps -a`
-2. View logs: `./aixcl stack logs`
-3. Check disk space: `df -h`
-4. Verify ports are available: `netstat -tuln | grep -E '8080|5432|5050'`
+2. View logs for all: `./aixcl stack logs`
+3. View logs for engine: `./aixcl stack logs engine`
+4. Check disk space: `df -h`
+5. Verify ports are available: `netstat -tuln | grep -E '8080|5432|5050'`
 
 ## Post-Setup
 
