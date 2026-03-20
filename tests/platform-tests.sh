@@ -640,6 +640,35 @@ test_model_inference() {
 }
 
 # ============================================================================
+# SECTION 8: OPENCODE INTEGRATION TESTS
+# ============================================================================
+test_opencode_integration() {
+    start_section "OpenCode Integration - IDE Connectivity"
+    
+    # Check if OpenCode is reported as active by the CLI
+    echo "Checking OpenCode status from AIXCL CLI..."
+    if ./aixcl stack status | grep -q "OpenCode (IDE)     Status: Active"; then
+        print_success "AIXCL reports OpenCode as Active"
+        record_test "pass" "AIXCL reports OpenCode Active"
+    else
+        print_error "AIXCL reports OpenCode as Offline"
+        record_test "fail" "AIXCL reports OpenCode Offline"
+    fi
+    
+    # Check if we can reach the backend using OpenCode's expected configuration
+    # (Checking the inference engine proxy on port 11434)
+    echo "Verifying local inference proxy (11434)..."
+    if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null | grep -qE "200|404"; then
+        # 404 is also acceptable if models list is empty but API is reachable
+        print_success "Inference proxy is reachable"
+        record_test "pass" "Inference proxy reachable"
+    else
+        print_error "Inference proxy is not reachable"
+        record_test "fail" "Inference proxy unreachable"
+    fi
+}
+
+# ============================================================================
 # SECTION 5: CLI ALIAS TESTS
 # ============================================================================
 test_cli_aliases() {
@@ -937,6 +966,7 @@ test_profile_usr() {
     test_component_database
     test_llm_state
     test_model_inference
+    test_opencode_integration
     test_cli_aliases
     test_security_validation
     }
@@ -953,6 +983,7 @@ test_profile_usr() {
     test_component_ui
     test_llm_state
     test_model_inference
+    test_opencode_integration
     test_cli_aliases
     test_security_validation
     }
@@ -970,6 +1001,7 @@ test_profile_usr() {
     test_component_logging
     test_llm_state
     test_model_inference
+    test_opencode_integration
     test_cli_aliases
     test_security_validation
     }
@@ -983,6 +1015,7 @@ test_profile_usr() {
     test_stack_status
     test_llm_state
     test_model_inference
+    test_opencode_integration
     test_cli_aliases
     test_security_validation
     }

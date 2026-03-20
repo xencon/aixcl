@@ -31,16 +31,16 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    command: ["--model", "zai-org/GLM-4.7", "--gpu-memory-utilization", "0.8"]
+    command: ["--model", "Qwen/Qwen2.5-Coder-1.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "16384", "--port", "11434"]
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/v1/models || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 180s
-  
+
   llamacpp:
-    image: ghcr.io/ggerganov/llama.cpp:light-cuda-b4719
+    image: ghcr.io/ggerganov/llama.cpp:server-cuda-b4719
     container_name: llamacpp
     volumes:
       - llamacpp-data:/models
@@ -48,13 +48,14 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    command: ["-m", "/models/placeholder.gguf", "--host", "127.0.0.1", "--port", "8080"]
+    command: ["-m", "/models/placeholder.gguf", "--host", "0.0.0.0", "--port", "11434"]
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/v1/models || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.8.10
