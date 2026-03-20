@@ -595,17 +595,33 @@ test_model_inference() {
     start_section "Model Inference - Prompt & Response"
     
     local test_model="${1:-}"
+    local max_retries=5
+    local retry_count=0
     
-    # If no model provided, try to find one already installed
-    if [ -z "$test_model" ]; then
+    # Try to find a model already installed/loaded with retries
+    while [ -z "$test_model" ] && [ $retry_count -lt $max_retries ]; do
         test_model=$(get_available_models "$INFERENCE_ENGINE" | head -1)
-    fi
+        if [ -z "$test_model" ]; then
+            echo "Waiting for $INFERENCE_ENGINE to report available models... ($((retry_count+1))/$max_retries)"
+            sleep 5
+            retry_count=$((retry_count+1))
+        fi
+    done
     
-    # If still no model, use a small default
+    # If still no model, use engine-specific defaults
     if [ -z "$test_model" ]; then
-        test_model="qwen2.5-coder:1.5b"
-        echo "No models found. Adding small test model: $test_model"
-        ./aixcl models add "$test_model" >/dev/null 2>&1
+        case "$INFERENCE_ENGINE" in
+            vllm)
+                test_model="Qwen/Qwen2.5-Coder-1.5B-Instruct"
+                ;;
+            llamacpp)
+                test_model="/models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
+                ;;
+            *)
+                test_model="qwen2.5-coder:1.5b"
+                ;;
+        esac
+        echo "No models detected via API. Using default for $INFERENCE_ENGINE: $test_model"
     fi
     
     echo "Testing inference with model: $test_model"
@@ -615,12 +631,11 @@ test_model_inference() {
 
     local response=""
     local http_status=""
-    local curl_error=""
+    local response_json=""
 
     case "$INFERENCE_ENGINE" in
         ollama)
             # Use Ollama native API
-            local response_json
             response_json=$(curl -s -i -X POST http://127.0.0.1:11434/api/generate \
                 -d "{\"model\": \"$test_model\", \"prompt\": \"Why is the sky blue? Answer in one sentence.\", \"stream\": false}")
             http_status=$(echo "$response_json" | grep HTTP | tail -1 | awk '{print $2}')
@@ -628,7 +643,6 @@ test_model_inference() {
             ;;
         *)
             # OpenAI compatible (vLLM, llama.cpp)
-            local response_json
             response_json=$(curl -s -i -X POST http://127.0.0.1:11434/v1/chat/completions \
                 -H "Content-Type: application/json" \
                 -d "{\"model\": \"$test_model\", \"messages\": [{\"role\": \"user\", \"content\": \"Why is the sky blue? Answer in one sentence.\"}], \"temperature\": 0}")
