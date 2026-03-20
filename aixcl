@@ -1492,7 +1492,8 @@ function add() {
         if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
             echo "ℹ️  Updating configuration to use existing model..."
         else
-            return 0
+            # For Ollama, we still proceed to sync opencode.json
+            :
         fi
     else
         echo "Adding model: $model (Engine: $engine)"
@@ -1601,6 +1602,24 @@ function add() {
             sed -i "/llamacpp:/,/healthcheck:/s|command:.*|command: [\"-m\", \"/models/$model_filename\", \"--host\", \"0.0.0.0\", \"--port\", \"11434\"]|" "$compose_file"
         fi
         echo "✅ Configuration updated. Please restart the stack to apply changes: $0 stack restart"
+    fi
+
+    # Sync opencode.json if it exists
+    local opencode_config="${SCRIPT_DIR}/opencode.json"
+    if [ -f "$opencode_config" ]; then
+        echo "🔄 Synchronizing $opencode_config with model: $model"
+        if command -v jq >/dev/null 2>&1; then
+            local temp_json
+            temp_json=$(mktemp)
+            # 1. Ensure the model exists in the dictionary (with a default name if missing)
+            # 2. Update the active model pointer
+            jq ".provider.\"aixcl-local\".models.\"$model\" |= (. // {\"name\": \"$model\"}) | .model = \"aixcl-local/$model\"" "$opencode_config" > "$temp_json" && mv "$temp_json" "$opencode_config"
+            echo "✅ Successfully updated opencode.json"
+        else
+            # Simple sed fallback if jq is missing (only updates active model)
+            sed -i "s|\"model\": \"aixcl-local/.*\"|\"model\": \"aixcl-local/$model\"|" "$opencode_config"
+            echo "✅ Successfully updated opencode.json (via sed)"
+        fi
     fi
 
     return 0
