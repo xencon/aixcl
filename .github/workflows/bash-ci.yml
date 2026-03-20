@@ -18,36 +18,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # 2️⃣ Install system dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bash curl jq apt-transport-https ca-certificates gnupg lsb-release software-properties-common dos2unix
-
-      # 3️⃣ Install Docker
-      - name: Install Docker
-        run: |
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-          echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-
-      # 4️⃣ Install Docker Compose
-      - name: Install Docker Compose
-        run: |
-          DOCKER_COMPOSE_VERSION="v5.0.0"
-          sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          # Fix line endings in case the binary has Windows CRLF line endings
-          sudo dos2unix /usr/local/bin/docker-compose || sudo sed -i 's/\r$//' /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
-      # 5️⃣ Make the script executable
+      # 2️⃣ Make the script executable
       - name: Make aixcl executable
         run: chmod +x ./aixcl
 
-      # 6️⃣ Run your script with the 'check-env' argument
+      # 3️⃣ Run environment check
       - name: Run aixcl check-env
         run: ./aixcl utils check-env
