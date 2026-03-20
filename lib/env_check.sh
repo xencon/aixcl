@@ -182,31 +182,48 @@ check_env() {
     echo -e "\nChecking system resources..."
     local required_space=10 # GB
     local available_space
-    available_space=$(df -BG "$(pwd)" | awk 'NR==2 {print $4}' | sed 's/G//')
+    # Use -k and manual conversion for better portability, or ensure output format
+    available_space=$(df -k "${SCRIPT_DIR}" | awk 'NR==2 {print $4}' 2>/dev/null || echo "0")
+    # Handle line wrapping in df output
+    if [ -z "$available_space" ] || [[ ! "$available_space" =~ ^[0-9]+$ ]]; then
+        available_space=$(df -k "${SCRIPT_DIR}" | awk 'END{print $3}' 2>/dev/null || echo "0")
+    fi
     
-    if [ "$available_space" -lt "$required_space" ]; then
-        print_error "Insufficient disk space. Required: ${required_space}GB, Available: ${available_space}GB"
-        missing_deps=1
+    # Convert KB to GB (roughly)
+    local available_gb=$((available_space / 1024 / 1024))
+    
+    if [ "$available_gb" -lt "$required_space" ]; then
+        print_warning "Low disk space. Required: ${required_space}GB, Available: ${available_gb}GB"
+        # Only fail if it's extremely low, otherwise just warn for CI/small environments
+        if [ "$available_gb" -lt 2 ]; then
+            print_error "Extremely low disk space detected."
+            missing_deps=1
+        fi
     else
-        print_success "Sufficient disk space available"
+        print_success "Sufficient disk space available (${available_gb}GB)"
     fi
 
     # Check memory
     local total_mem
-    total_mem=$(free -g | awk '/^Mem:/{print $2}')
-    if [ "$total_mem" -lt 8 ]; then
-        print_warning "Low memory detected (${total_mem}GB). Recommended: 8GB+"
+    total_mem=$(free -g 2>/dev/null | awk '/^Mem:/{print $2}' || echo "")
+    
+    if [[ -n "$total_mem" && "$total_mem" =~ ^[0-9]+$ ]]; then
+        if [ "$total_mem" -lt 8 ]; then
+            print_warning "Low memory detected (${total_mem}GB). Recommended: 8GB+"
+        else
+            print_success "Sufficient memory available (${total_mem}GB)"
+        fi
     else
-        print_success "Sufficient memory available"
+        print_warning "Could not determine total memory (skipping check)"
     fi
 
     # Check .env configuration if it exists
     echo -e "\nChecking environment configuration..."
-    if [ -f "$(pwd)/.env" ]; then
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
         local env_errors=0
         # Check for required variables
         for var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DATABASE; do
-            if ! grep -q "^[[:space:]]*${var}=" "$(pwd)/.env"; then
+            if ! grep -q "^[[:space:]]*${var}=" "${SCRIPT_DIR}/.env"; then
                 print_error "Missing required environment variable in .env: $var"
                 env_errors=1
             fi
@@ -214,7 +231,7 @@ check_env() {
         
         # Validate database name using the shared function
         local db_name
-        db_name=$(grep "^[[:space:]]*POSTGRES_DATABASE=" "$(pwd)/.env" | head -1 | cut -d'=' -f2 | sed "s/['\"]//g" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        db_name=$(grep "^[[:space:]]*POSTGRES_DATABASE=" "${SCRIPT_DIR}/.env" | head -1 | cut -d'=' -f2 | sed "s/['\"]//g" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         if [ -n "$db_name" ]; then
             local val_out
             if ! val_out=$(validate_db_name "$db_name" "POSTGRES_DATABASE" 2>&1); then
