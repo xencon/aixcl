@@ -1537,28 +1537,45 @@ function add() {
                 local repo="${BASH_REMATCH[1]}"
                 local filename="${BASH_REMATCH[2]}"
                 echo "📥 Downloading $filename from $repo..."
-                if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$repo" "$filename" --local-dir /models --local-dir-use-symlinks False; then
-                    echo "✅ Successfully downloaded model: $model"
+                # Try huggingface-cli first, then curl fallback
+                if "${DOCKER_BIN:-docker}" exec "$container" command -v huggingface-cli >/dev/null 2>&1; then
+                    if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$repo" "$filename" --local-dir /models --local-dir-use-symlinks False; then
+                        echo "✅ Successfully downloaded model: $model"
+                    else
+                        echo "❌ Failed to download model: $model"
+                        return 1
+                    fi
                 else
-                    echo "❌ Failed to download model: $model"
-                    return 1
+                    echo "⚠️  huggingface-cli not found in container. Falling back to curl..."
+                    if "${DOCKER_BIN:-docker}" exec "$container" curl -L "https://huggingface.co/$repo/resolve/main/$filename" -o "/models/$filename"; then
+                        echo "✅ Successfully downloaded $filename via curl"
+                    else
+                        echo "❌ Failed to download $filename via curl"
+                        return 1
+                    fi
                 fi
             else
                 # Try to download the repo and find any .gguf if it's just org/repo
                 echo "📥 Downloading model files from $model..."
-                if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model" --local-dir /models --local-dir-use-symlinks False --include "*.gguf"; then
-                     # Find the downloaded gguf to update config
-                     local found_gguf
-                     found_gguf=$("${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -maxdepth 1 | head -1 | xargs basename 2>/dev/null || true)
-                     if [ -n "$found_gguf" ]; then
-                         model="$found_gguf"
-                         echo "✅ Successfully downloaded $model"
-                     else
-                         echo "❌ No GGUF files found in $model"
-                         return 1
-                     fi
+                if "${DOCKER_BIN:-docker}" exec "$container" command -v huggingface-cli >/dev/null 2>&1; then
+                    if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model" --local-dir /models --local-dir-use-symlinks False --include "*.gguf"; then
+                         # Find the downloaded gguf to update config
+                         local found_gguf
+                         found_gguf=$("${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -maxdepth 1 | head -1 | xargs basename 2>/dev/null || true)
+                         if [ -n "$found_gguf" ]; then
+                             model="$found_gguf"
+                             echo "✅ Successfully downloaded $model"
+                         else
+                             echo "❌ No GGUF files found in $model"
+                             return 1
+                         fi
+                    else
+                        echo "❌ Failed to download model: $model"
+                        return 1
+                    fi
                 else
-                    echo "❌ Failed to download model: $model"
+                    echo "❌ huggingface-cli not found and $model is not a direct GGUF file path. Cannot download."
+                    echo "   Please provide the full path: org/repo/filename.gguf"
                     return 1
                 fi
             fi
@@ -1575,13 +1592,13 @@ function add() {
         
         echo "🔄 Updating $engine configuration in $compose_file to use model: $model"
         if [[ "$engine" == "vllm" ]]; then
-            # Update vllm model and cleanup potential multi-line command
-            sed -i "/vllm:/,/healthcheck:/{ /command:/s|command:.*|command: [\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\"]|; /command:/!{ /^[[:space:]]\{6,\}/d; /^[[:space:]]*\]/d } }" "$compose_file"
+            # Update vllm model specifically on the command line
+            sed -i "/vllm:/,/healthcheck:/s|command:.*|command: [\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"16384\", \"--port\", \"11434\"]|" "$compose_file"
         elif [[ "$engine" == "llamacpp" ]]; then
-            # Update llamacpp model and cleanup potential multi-line command
+            # Update llamacpp model specifically on the command line
             local model_filename="$model"
             [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
-            sed -i "/llamacpp:/,/healthcheck:/{ /command:/s|command:.*|command: [\"-m\", \"/models/$model_filename\", \"--host\", \"0.0.0.0\", \"--port\", \"8080\"]|; /command:/!{ /^[[:space:]]\{6,\}/d; /^[[:space:]]*\]/d } }" "$compose_file"
+            sed -i "/llamacpp:/,/healthcheck:/s|command:.*|command: [\"-m\", \"/models/$model_filename\", \"--host\", \"0.0.0.0\", \"--port\", \"11434\"]|" "$compose_file"
         fi
         echo "✅ Configuration updated. Please restart the stack to apply changes: $0 stack restart"
     fi
@@ -1601,9 +1618,6 @@ function remove() {
 
     # Parse Hugging Face URI if present (strip prefix for remove)
     if [[ "$input_model" =~ ^hf\.co/ ]] || [[ "$input_model" =~ ^huggingface\.co/ ]]; then
-        # Strip the prefix - Ollama stores them with the URI but lets us remove by just the URI string
-        # Actually Ollama list shows 'hf.co/user/repo:tag', so we should use the input_model directly
-        # but normalize it.
         model="$input_model"
     fi
 
@@ -1630,9 +1644,33 @@ function remove() {
             echo "❌ Failed to remove model: $model"
             return 1
         fi
-    elif [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
-        echo "ℹ️  Model removal for $engine must be handled manually by removing files from volumes."
-        echo "   vLLM/llama.cpp do not support a 'pull-style' removal command via CLI."
+    elif [[ "$engine" == "vllm" ]]; then
+        if [ -z "$container" ]; then
+            echo "Error: $engine container is not running. Please start the services first."
+            return 1
+        fi
+        # vLLM cache is usually in /root/.cache/huggingface/hub/models--USER--REPO
+        local cache_dir="models--$(echo "$model" | sed 's|/|--|g')"
+        echo "📥 Attempting to remove model from vLLM cache..."
+        if "${DOCKER_BIN:-docker}" exec "$container" rm -rf "/root/.cache/huggingface/hub/$cache_dir"; then
+            echo "✅ Successfully removed model files for: $model"
+        else
+            echo "❌ Failed to remove model files for: $model"
+            return 1
+        fi
+    elif [[ "$engine" == "llamacpp" ]]; then
+        if [ -z "$container" ]; then
+            echo "Error: $engine container is not running. Please start the services first."
+            return 1
+        fi
+        local model_filename="$model"
+        [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
+        if "${DOCKER_BIN:-docker}" exec "$container" rm -f "/models/$model_filename"; then
+            echo "✅ Successfully removed model file: $model_filename"
+        else
+            echo "❌ Failed to remove model file: $model_filename"
+            return 1
+        fi
     else
         echo "⚠️  Model management for $engine is not fully automated yet."
     fi
@@ -1710,15 +1748,28 @@ function list() {
 
     if [ "$engine" = "ollama" ]; then
         "${DOCKER_BIN:-docker}" exec "$container" ollama list
-    else
-        # For vLLM and llama.cpp, try to use the OpenAI compatible API
+    elif [ "$engine" = "vllm" ]; then
+        # Show currently loaded model via API
         local url="http://127.0.0.1:11434/v1/models"
-        if command -v curl >/dev/null 2>&1; then
-            echo "API Models:"
-            curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve models via API. Is the service ready?"
-        else
-            echo "⚠️  Curl not found. Cannot retrieve model list from API."
-        fi
+        echo "Currently loaded model (API):"
+        curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve loaded model via API."
+        
+        # Show cached models on disk
+        echo ""
+        echo "Cached models on disk:"
+        "${DOCKER_BIN:-docker}" exec "$container" find /root/.cache/huggingface/hub -maxdepth 1 -name "models--*" 2>/dev/null | sed 's|.*/models--||;s|--|/|g' | sort -u || echo "⚠️  No cached models found."
+    elif [ "$engine" = "llamacpp" ]; then
+        # Show currently loaded model via API
+        local url="http://127.0.0.1:11434/v1/models"
+        echo "Currently loaded model (API):"
+        curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve loaded model via API."
+        
+        # Show files in /models volume
+        echo ""
+        echo "Available GGUF files in volume:"
+        "${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -printf "%f\n" 2>/dev/null | sort -u || echo "⚠️  No GGUF files found in volume."
+    else
+        echo "⚠️  Model listing for $engine is not fully supported yet."
     fi
 }
 
