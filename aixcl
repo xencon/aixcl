@@ -1669,7 +1669,8 @@ function remove() {
             return 1
         fi
         # vLLM cache is usually in /root/.cache/huggingface/hub/models--USER--REPO
-        local cache_dir="models--$(echo "$model" | sed 's|/|--|g')"
+        local cache_dir
+        cache_dir="models--${model//\//--}"
         echo "📥 Attempting to remove model from vLLM cache..."
         if "${DOCKER_BIN:-docker}" exec "$container" rm -rf "/root/.cache/huggingface/hub/$cache_dir"; then
             echo "✅ Successfully removed model files for: $model"
@@ -1769,7 +1770,8 @@ function list() {
         "${DOCKER_BIN:-docker}" exec "$container" ollama list
     elif [ "$engine" = "vllm" ]; then
         # Show currently loaded model via API
-        local url="http://127.0.0.1:11434/v1/models"
+        local url
+        url="http://127.0.0.1:11434/v1/models"
         echo "Currently loaded model (API):"
         curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve loaded model via API."
         
@@ -1779,7 +1781,8 @@ function list() {
         "${DOCKER_BIN:-docker}" exec "$container" find /root/.cache/huggingface/hub -maxdepth 1 -name "models--*" 2>/dev/null | sed 's|.*/models--||;s|--|/|g' | sort -u || echo "⚠️  No cached models found."
     elif [ "$engine" = "llamacpp" ]; then
         # Show currently loaded model via API
-        local url="http://127.0.0.1:11434/v1/models"
+        local url
+        url="http://127.0.0.1:11434/v1/models"
         echo "Currently loaded model (API):"
         curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "⚠️  Could not retrieve loaded model via API."
         
