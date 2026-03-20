@@ -50,6 +50,7 @@ You orchestrate the full AIXCL Issue-First development workflow from this reposi
 4. **Commit**: Create one or more commits using conventional commit format.
 5. **Push and Create PR**: Push the branch and create a PR using `gh pr create` that references the issue.
 6. **Assign and Label**: Ensure the PR is correctly assigned and labeled.
+7. **Verify CI**: Check GitHub Actions status (e.g., `gh run list` or `gh pr view`) and ensure all status checks are passing before considering the task complete.
 
 ## Safety
 

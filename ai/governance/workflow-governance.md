@@ -14,6 +14,7 @@ All changes must follow Issue-First Development.
 - All issues and PRs must have at least one assignee
 - Plain text formatting only (ASCII, markdown checkboxes)
 - Issue type must be Bug, Feature, or Task
+- Verified CI success for all PRs (all status checks must be green)
 
 ## Standard Formatting Templates
 All Issues and PRs must follow a consistent markdown body structure. When using CLI tools, do not use literal `\n` escape characters in inline strings as they break formatting; instead, use interactive editors or multiline string passing.

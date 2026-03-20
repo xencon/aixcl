@@ -94,6 +94,7 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
   - Describe what changed
   - Use plain text formatting (markdown checkboxes `- [x]` instead of Unicode)
   - Include testing notes if applicable
+- **Verify CI Status**: Monitor the status checks in the GitHub PR interface. The task is not complete until all checks (Bash-CI, CodeQL, etc.) are green.
 
 **Example PR body:**
 ```markdown
@@ -111,9 +112,10 @@ Fixes #217
 
 ### 5. Review and Merge
 
+- **Verify CI Status**: Ensure all automated checks (Linting, Security, Environment) have passed. The change is not complete until CI is green.
 - Wait for code review
 - Address feedback
-- Once approved, merge via GitHub UI or CLI
+- Once approved and status checks are passing, merge via GitHub UI or CLI
 
 ## Label Guidelines
 
@@ -259,7 +261,8 @@ Follow the development workflow documented in this document:
 6. Use plain text formatting (markdown checkboxes - [x], not Unicode)
 7. Reference the issue number in commits and PRs
 8. Add labels to issues (type, component, priority, profile as applicable)
-9. For automated PRs, document them retroactively with an issue
+9. Verify CI status: Monitor GitHub Actions and ensure all checks are green before finalizing the task
+10. For automated PRs, document them retroactively with an issue
 ```
 
 ## Quick Reference Commands
