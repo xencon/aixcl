@@ -200,6 +200,38 @@ check_env() {
         print_success "Sufficient memory available"
     fi
 
+    # Check .env configuration if it exists
+    echo -e "\nChecking environment configuration..."
+    if [ -f "$(pwd)/.env" ]; then
+        local env_errors=0
+        # Check for required variables
+        for var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DATABASE; do
+            if ! grep -q "^[[:space:]]*${var}=" "$(pwd)/.env"; then
+                print_error "Missing required environment variable in .env: $var"
+                env_errors=1
+            fi
+        done
+        
+        # Validate database name using the shared function
+        local db_name
+        db_name=$(grep "^[[:space:]]*POSTGRES_DATABASE=" "$(pwd)/.env" | head -1 | cut -d'=' -f2 | sed "s/['\"]//g" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        if [ -n "$db_name" ]; then
+            local val_out
+            if ! val_out=$(validate_db_name "$db_name" "POSTGRES_DATABASE" 2>&1); then
+                print_error "$val_out"
+                env_errors=1
+            fi
+        fi
+
+        if [ $env_errors -eq 1 ]; then
+            missing_deps=1
+        else
+            print_success ".env configuration is valid"
+        fi
+    else
+        print_info ".env file not found (will be created on first start)"
+    fi
+
     if [ $missing_deps -eq 1 ]; then
         echo -e "\n"
         print_error "Environment check failed. Please address the issues above."

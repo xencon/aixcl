@@ -1058,7 +1058,8 @@ test_negative_scenarios() {
             if [ -f "${SCRIPT_DIR}/.env" ]; then
                 print_success "CLI auto-created .env file as expected"
                 record_test "pass" "Negative test: CLI auto-created missing .env"
-                rm "${SCRIPT_DIR}/.env"
+                # If we don't want it to stay, rm it
+                # rm "${SCRIPT_DIR}/.env"
             else
                 print_warning "CLI behavior on missing .env was silent"
                 record_test "skip" "Negative test: CLI behavior on missing .env (no warning)"
@@ -1070,6 +1071,95 @@ test_negative_scenarios() {
     else
         print_warning ".env file not found, skipping environment test"
         record_test "skip" "Negative test: Missing .env (already missing)"
+    fi
+
+    echo ""
+    echo "Environment Validation (Missing POSTGRES_PASSWORD)"
+    echo "-----------------------------------"
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
+        cp "${SCRIPT_DIR}/.env" "${SCRIPT_DIR}/.env.tmp2"
+        # Create .env without password
+        grep -v "POSTGRES_PASSWORD" "${SCRIPT_DIR}/.env.tmp2" > "${SCRIPT_DIR}/.env"
+        
+        # Run check-env
+        if ./aixcl utils check-env 2>&1 | grep -q "Missing required environment variable in .env: POSTGRES_PASSWORD"; then
+            print_success "CLI correctly caught missing POSTGRES_PASSWORD"
+            record_test "pass" "Negative test: CLI reported missing POSTGRES_PASSWORD"
+        else
+            print_error "CLI failed to report missing POSTGRES_PASSWORD"
+            record_test "fail" "Negative test: CLI allowed missing POSTGRES_PASSWORD"
+        fi
+        
+        mv "${SCRIPT_DIR}/.env.tmp2" "${SCRIPT_DIR}/.env"
+    else
+        print_warning ".env file not found, skipping password test"
+        record_test "skip" "Negative test: Missing POSTGRES_PASSWORD (.env missing)"
+    fi
+
+    echo ""
+    echo "CLI - Invalid Database Name Validation"
+    echo "-----------------------------------"
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
+        cp "${SCRIPT_DIR}/.env" "${SCRIPT_DIR}/.env.tmp3"
+        # Set an invalid database name
+        sed -i 's/^[[:space:]]*POSTGRES_DATABASE=.*/POSTGRES_DATABASE="invalid; drop table;"/' "${SCRIPT_DIR}/.env"
+        if ! grep -q "POSTGRES_DATABASE=" "${SCRIPT_DIR}/.env"; then
+            echo "POSTGRES_DATABASE=\"invalid; drop table;\"" >> "${SCRIPT_DIR}/.env"
+        fi
+        
+        # Run check-env
+        local check_env_out
+        check_env_out=$(./aixcl utils check-env 2>&1)
+        
+        if echo "$check_env_out" | grep -q "contains invalid characters"; then
+             print_success "CLI correctly caught invalid database name"
+             record_test "pass" "Negative test: CLI caught malformed DB name"
+        else
+             print_error "CLI failed to catch invalid database name"
+             # echo "Output was: $check_env_out"
+             record_test "fail" "Negative test: CLI allowed malformed DB name"
+        fi
+        
+        mv "${SCRIPT_DIR}/.env.tmp3" "${SCRIPT_DIR}/.env"
+    else
+        print_warning ".env file not found, skipping DB name test"
+        record_test "skip" "Negative test: CLI caught malformed DB name (.env missing)"
+    fi
+
+    echo ""
+    echo "CLI - Invalid Profile Request"
+    echo "-----------------------------------"
+    if ./aixcl stack start --profile "invalid_profile_123" 2>&1 | grep -q "Error: Invalid profile"; then
+        print_success "CLI correctly rejected unknown profile"
+        record_test "pass" "Negative test: CLI rejected invalid profile"
+    else
+        print_error "CLI failed to reject unknown profile"
+        record_test "fail" "Negative test: CLI allowed or failed silently for invalid profile"
+    fi
+
+    echo ""
+    echo "Port Conflict (Simulated)"
+    echo "-----------------------------------"
+    # Port 8080 is usually used by Open WebUI
+    if command -v netstat >/dev/null 2>&1; then
+        if netstat -tuln | grep -q ":8080 "; then
+            print_success "Port 8080 is correctly identified as in-use"
+            record_test "pass" "Negative test: Port 8080 conflict check"
+        else
+            print_warning "Port 8080 is not in use, skipping conflict test"
+            record_test "skip" "Negative test: Port 8080 conflict (port not in use)"
+        fi
+    elif command -v ss >/dev/null 2>&1; then
+        if ss -tuln | grep -q ":8080 "; then
+            print_success "Port 8080 is correctly identified as in-use"
+            record_test "pass" "Negative test: Port 8080 conflict check"
+        else
+            print_warning "Port 8080 is not in use, skipping conflict test"
+            record_test "skip" "Negative test: Port 8080 conflict (port not in use)"
+        fi
+    else
+        print_warning "No netstat/ss found, skipping port conflict test"
+        record_test "skip" "Negative test: Port conflict (tools missing)"
     fi
 }
 
