@@ -631,11 +631,11 @@ test_model_inference() {
 
     local response=""
     local http_status=""
+    local response_json=""
 
     case "$INFERENCE_ENGINE" in
         ollama)
             # Use Ollama native API
-            local response_json
             response_json=$(curl -s -i -X POST http://127.0.0.1:11434/api/generate \
                 -d "{\"model\": \"$test_model\", \"prompt\": \"Why is the sky blue? Answer in one sentence.\", \"stream\": false}")
             http_status=$(echo "$response_json" | grep HTTP | tail -1 | awk '{print $2}')
@@ -643,7 +643,6 @@ test_model_inference() {
             ;;
         *)
             # OpenAI compatible (vLLM, llama.cpp)
-            local response_json
             response_json=$(curl -s -i -X POST http://127.0.0.1:11434/v1/chat/completions \
                 -H "Content-Type: application/json" \
                 -d "{\"model\": \"$test_model\", \"messages\": [{\"role\": \"user\", \"content\": \"Why is the sky blue? Answer in one sentence.\"}], \"temperature\": 0}")
