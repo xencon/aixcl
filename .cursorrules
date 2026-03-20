@@ -30,6 +30,7 @@ Follow the Issue-First Development workflow documented in `docs/developer/develo
 4. **Push branch** and create PR that references the issue: `gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>"`
 5. **Assign and label the PR** matching the issue labels: `gh pr edit <number> --add-assignee <user> --add-label "component:..."`
 6. **Use plain text formatting**: Use markdown checkboxes `- [x]` instead of Unicode characters to avoid encoding issues
+7. **Verify CI status**: Monitor GitHub Actions status checks and ensure all are green before considering the task complete
 
 ## Formatting Guidelines
 
