@@ -24,5 +24,5 @@
       }
     }
   },
-  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
+  "model": "aixcl-local/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
 }
