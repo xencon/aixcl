@@ -24,13 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@eef6142ac125e9dd0f111c3b03240ee83c1abbc3 # v4.2.2
+        uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@480db559a14342288b67e54bd959dd52dc3ee68f # v3.25.10
+        uses: github/codeql-action/init@v3
         with:
           languages: actions  # Projects with multiple languages can add them here as a comma-separated list.
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@480db559a14342288b67e54bd959dd52dc3ee68f # v3.25.10
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:actions"
 
@@ -39,9 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@eef6142ac125e9dd0f111c3b03240ee83c1abbc3 # v4.2.2
+        uses: actions/checkout@v4
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
+        uses: ludeeus/action-shellcheck@v2
         with:
           scandir: '.'
 
@@ -50,9 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@eef6142ac125e9dd0f111c3b03240ee83c1abbc3 # v4.2.2
+        uses: actions/checkout@v4
       - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@v0
         with:
           scan-type: fs
           ignore-unfixed: true
@@ -61,7 +61,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 1
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@480db559a14342288b67e54bd959dd52dc3ee68f # v3.25.10
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -73,8 +73,8 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@eef6142ac125e9dd0f111c3b03240ee83c1abbc3 # v4.2.2
+        uses: actions/checkout@v4
       - name: Dependency Review
-        uses: actions/dependency-review-action@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.3.3
+        uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
