@@ -5,7 +5,8 @@
       "api": "openai",
       "options": {
         "baseURL": "http://localhost:11434/v1",
-        "apiKey": "ollama"
+        "apiKey": "",
+        "stream": false
       },
       "models": {
         "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
@@ -16,9 +17,12 @@
         },
         "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf": {
           "name": "llama.cpp: Qwen 2.5 Coder (1.5B)"
+        },
+        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
         }
       }
     }
   },
-  "model": "aixcl-local/qwen2.5-coder:1.5b"
+  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
 }

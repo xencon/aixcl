@@ -31,7 +31,9 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    command: ["--model", "Qwen/Qwen2.5-Coder-1.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "16384", "--port", "11434"]
+    environment:
+      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
+    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
@@ -40,7 +42,7 @@ services:
       start_period: 180s
 
   llamacpp:
-    image: ghcr.io/ggerganov/llama.cpp:server-cuda-b4719
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
     container_name: llamacpp
     volumes:
       - llamacpp-data:/models
@@ -48,7 +50,7 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    command: ["-m", "/models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf", "--host", "0.0.0.0", "--port", "11434"]
+    command: ["-m", "/models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf", "--host", "0.0.0.0", "--port", "11434", "--chat-template", "chatml"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
