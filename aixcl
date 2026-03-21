@@ -362,7 +362,7 @@ function start() {
     
     echo "Waiting for runtime core services to be ready..."
     local max_attempts
-    max_attempts=600  # 20 minutes (large models take time to load)
+    max_attempts=150  # 5 minutes (reduced timeout)
     local attempt
     attempt=1
     local all_ready
@@ -1284,7 +1284,6 @@ function status() {
         local health_check_type="$4"
         local health_check_arg="$5"
         if ! is_operational_in_profile "$profile_service_name"; then
-            echo "  SKIP  $display_name    (not in '${current_profile:-unknown}' profile)"
             return
         fi
         check_service_status "$display_name" "$container_name" "$health_check_type" "$health_check_arg" "false" "false"
@@ -1325,6 +1324,12 @@ function status() {
     for i in "${!engines[@]}"; do
         local engine
         engine="${engines[$i]}"
+        
+        # Only show the active engine (the one that SHOULD be running in the current profile)
+        if [ "$engine" != "$active_engine" ]; then
+            continue
+        fi
+        
         local name
         name="${names[$i]}"
         local url
@@ -1391,8 +1396,6 @@ function status() {
             echo "  ❌ NVIDIA GPU Exporter"
             ((total_services++)) || true
         fi
-    else
-        echo "  SKIP  NVIDIA GPU Exporter  (not in '${current_profile:-unknown}' profile)"
     fi
 
     # Loki
