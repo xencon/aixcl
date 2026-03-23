@@ -11,7 +11,8 @@ AIXCL is a privacy-focused platform for individuals and teams who want full cont
 ## Prerequisites
 
 - **Docker & Docker Compose** installed.
-- **16 GB RAM** (minimum recommended).
+- **8 GB VRAM** (minimum recommended).
+- **32 GB RAM** (minimum recommended).
 - **128 GB Disk Space** (for models and images).
 
 ## Get Started in 3 Steps
@@ -25,15 +26,23 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 **2. Start the Stack**
 ```bash
 # Choose a profile: usr (minimal), dev (UI+DB), ops (Observability), sys (Full)
-./aixcl stack start --profile dev
+./aixcl stack start --profile usr
 ```
 
-**3. Add your first model**
+**3. Choose your engine**
+```bash
+./aixcl models config engine set ollama
+```
+
+**4. Add your first model**
 ```bash
 ./aixcl models add qwen2.5-coder:7b
 ```
-*Navigate to `http://localhost:8080` to start chatting!*
 
+**5. Prompt the model with OpenCode**
+```bash
+./opencode
+```
 ---
 
 ## 🛠 Management Examples
