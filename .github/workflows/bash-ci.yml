@@ -7,21 +7,18 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
 
 jobs:
   check-env:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3be0be0c823d883a2aa034e4b4bfd4f2040a2d5a  # v4.2.0
 
-      # 2️⃣ Make the script executable
       - name: Make aixcl executable
         run: chmod +x ./aixcl
 
-      # 3️⃣ Run environment check
       - name: Run aixcl check-env
         run: ./aixcl utils check-env
