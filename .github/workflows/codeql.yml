@@ -24,13 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3be0be0c823d883a2aa034e4b4bfd4f2040a2d5a  # v4.2.0
+        uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@46a6823fcb37f981609d3f02d4fa1f27b1992410  # v3.24.5
+        uses: github/codeql-action/init@v3
         with:
           languages: actions
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@46a6823fcb37f981609d3f02d4fa1f27b1992410  # v3.24.5
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:actions"
 
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3be0be0c823d883a2aa034e4b4bfd4f2040a2d5a  # v4.2.0
+        uses: actions/checkout@v4
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3be0be0c823d883a2aa034e4b4bfd4f2040a2d5a  # v4.2.0
+        uses: actions/checkout@v4
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@0.35.0
         with:
@@ -61,8 +61,8 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 1
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@46a6823fcb37f981609d3f02d4fa1f27b1992410  # v3.24.5
-        if: success() || failure()  # CHANGED: was if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: success() || failure()
         with:
           sarif_file: trivy-results.sarif
           category: "/tool:trivy"
@@ -73,8 +73,8 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3be0be0c823d883a2aa034e4b4bfd4f2040a2d5a  # v4.2.0
+        uses: actions/checkout@v4
       - name: Dependency Review
-        uses: actions/dependency-review-action@4e2da1a80e9e02c40c8e11a27e5b308a7b83f0b6  # v4.4.1
+        uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
