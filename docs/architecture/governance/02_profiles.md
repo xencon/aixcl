@@ -40,7 +40,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Excludes**:
 - Open WebUI (web interface)
 - pgAdmin (database admin)
-- Prometheus, Grafana, Loki, Promtail (monitoring/logging)
+- Prometheus, Grafana, Loki, Alloy (monitoring/logging)
 - cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
 
 **Use Cases**: End-user deployments, resource-constrained environments, minimal installations with database persistence
@@ -57,7 +57,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 - pgAdmin (database administration UI)
 
 **Excludes**:
-- Prometheus, Grafana, Loki, Promtail (monitoring/logging)
+- Prometheus, Grafana, Loki, Alloy (monitoring/logging)
 - cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
 
 **Use Cases**: Local development, testing, interactive model exploration
@@ -73,7 +73,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 - Prometheus (metrics collection)
 - Grafana (metrics visualization and dashboards)
 - Loki (log aggregation)
-- Promtail (log shipping)
+- Alloy (log shipping)
 - cAdvisor (container metrics)
 - node-exporter (host metrics)
 - postgres-exporter (database metrics)
@@ -93,7 +93,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Includes**:
 - Runtime core: Inference Engine, OpenCode (plugin)
 - All dev services: Open WebUI, PostgreSQL, pgAdmin
-- All ops services: Prometheus, Grafana, Loki, Promtail, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+- All ops services: Prometheus, Grafana, Loki, Alloy, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
 
 **Use Cases**: System deployments, demonstrations, full-featured environments with automation
 
