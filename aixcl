@@ -19,7 +19,7 @@ source "${SCRIPT_DIR}/lib/common.sh"
 
 # Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
 if ! load_env_file ".env"; then
-    if [ "$1" != "stack" ] || [ "$2" != "start" ]; then
+    if [ "${1:-}" != "stack" ] || [ "${2:-}" != "start" ]; then
         echo "⚠️  Warning: .env file not found. AIXCL will use default values."
         echo "   Run './aixcl stack start' to initialize the environment."
         echo ""
