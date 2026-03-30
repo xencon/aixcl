@@ -1,6 +1,4 @@
-<a href="https://youtu.be/YaBABt0TsPI">
-  <img src="AIXCL.png" alt="AIXCL" width="800" height=500/>
-</a>
+[![AIXCL](https://github.com/xencon/aixcl/raw/main/AIXCL.png)](https://youtu.be/YaBABt0TsPI)
 
 # AIXCL
 
@@ -10,47 +8,54 @@ AIXCL is a privacy-focused platform for individuals and teams who want full cont
 
 ## Prerequisites
 
-- **Docker & Docker Compose** installed.
-- **8 GB VRAM** (minimum recommended).
-- **32 GB RAM** (minimum recommended).
-- **128 GB Disk Space** (for models and images).
+* **Docker & Docker Compose** installed.
+* **8 GB VRAM** (minimum recommended).
+* **32 GB RAM** (minimum recommended).
+* **128 GB Disk Space** (for models and images).
 
 ## Get Started in 3 Steps
 
 **1. Clone and Verify**
-```bash
+
+```
 git clone https://github.com/xencon/aixcl.git && cd aixcl
 ./aixcl utils check-env
 ```
 
 **2. Start the Stack**
-```bash
+
+```
 # Choose a profile: usr (minimal), dev (UI+DB), ops (Observability), sys (Full)
 ./aixcl stack start --profile usr
 ```
 
 **3. Choose your engine**
-```bash
+
+```
 ./aixcl models config engine set ollama
 ```
 
 **4. Add your first model**
-```bash
+
+```
 ./aixcl models add qwen2.5-coder:7b
 ```
 
 **5. Prompt the model with OpenCode**
-```bash
+
+```
 ./opencode
 ```
+
 ---
 
 ## 🛠 Management Examples
 
 ### 1. Engine Management
+
 AIXCL supports multiple backends. You can switch them instantly:
 
-```bash
+```
 # Auto-detect optimal engine based on your hardware
 ./aixcl config engine auto
 
@@ -65,9 +70,10 @@ AIXCL supports multiple backends. You can switch them instantly:
 ```
 
 ### 2. Model Management
+
 Manage your local library across any active engine:
 
-```bash
+```
 # Add from Ollama Registry
 ./aixcl models add llama3.2:3b
 
@@ -81,18 +87,22 @@ Manage your local library across any active engine:
 ./aixcl models remove llama3.2:3b
 ```
 
-### 3. OpenCode IDE Integration
-AIXCL is designed to power your editor. OpenCode (IDE) connects to your stack for local chat, autocomplete, and agentic workflows.
+### 3. OpenCode CLI Integration
 
-- **Endpoint:** `http://localhost:11434/v1`
-- **Setup:** See [OpenCode Setup Guide](docs/developer/opencode-setup.md) for IDE configuration.
+AIXCL is designed to power local agentic development workflows via the OpenCode CLI. OpenCode connects to your stack for local chat, autocomplete, and agentic coding — all running on-device.
+
+* **Endpoint:** `http://localhost:11434/v1`
+* **Start a session:** `./opencode`
+* **Setup:** See [OpenCode Setup Guide](https://github.com/xencon/aixcl/blob/main/docs/developer/opencode-setup.md) for full configuration details.
+
+Agent workflow rules and permissions are configured automatically via `opencode.json` and `DEVELOPMENT.md`.
 
 ---
 
 ## 🚀 Common Commands
 
 | Command | Description |
-| :--- | :--- |
+| --- | --- |
 | `./aixcl stack status` | Check service health and OpenCode connectivity |
 | `./aixcl stack logs engine` | View real-time inference logs |
 | `./aixcl stack stop` | Stop all services gracefully |
@@ -101,9 +111,13 @@ AIXCL is designed to power your editor. OpenCode (IDE) connects to your stack fo
 ---
 
 ## 📚 Documentation
-- [User Guide](docs/user/usage.md) - Detailed workflows and tips.
-- [Architecture](docs/architecture/governance/) - Profiles and service contracts.
-- [Security](docs/operations/security.md) - Rootless Podman/Docker operations.
+
+* [User Guide](https://github.com/xencon/aixcl/blob/main/docs/user/usage.md) - Detailed workflows and tips.
+* [Architecture](https://github.com/xencon/aixcl/blob/main/docs/architecture/governance) - Profiles and service contracts.
+* [Security](https://github.com/xencon/aixcl/blob/main/docs/operations/security.md) - Rootless Podman/Docker operations.
+* [OpenCode Setup](https://github.com/xencon/aixcl/blob/main/docs/developer/opencode-setup.md) - CLI configuration and agent workflow.
+* [Contributing](https://github.com/xencon/aixcl/blob/main/DEVELOPMENT.md) - Issue-first workflow, templates, and PR requirements.
 
 ## License
-Apache License 2.0 - See [LICENSE](./LICENSE).
+
+Apache License 2.0 - See [LICENSE](https://github.com/xencon/aixcl/blob/main/LICENSE).

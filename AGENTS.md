@@ -1,18 +1,15 @@
----
-file: AGENTS.md
-version: 1.1
-purpose: agent_bootstrap
-priority: critical
-security_model: least_privilege
-agent_compatibility:
-  - OpenAI Agents
-  - Claude Code
-  - Cursor
-  - MCP-compatible systems
-last_updated: 2026-02-24
----
+| field               | value                                                                            |
+|---------------------|----------------------------------------------------------------------------------|
+| file                | AGENTS.md                                                                        |
+| version             | 1.2                                                                              |
+| purpose             | agent_bootstrap                                                                  |
+| priority            | critical                                                                         |
+| security_model      | least_privilege                                                                  |
+| agent_compatibility | OpenCode \| OpenAI Agents \| Claude Code \| Cursor \| MCP-compatible systems    |
+| last_updated        | 2026-03-30                                                                       |
 
-# AGENTS.md  
+# AGENTS.md
+
 Authoritative agent operating contract for this repository.
 
 Agents MUST read this file before performing analysis, reasoning, planning, or modification.
@@ -25,13 +22,13 @@ You are an autonomous code agent operating under strict constraints.
 
 Your core principles:
 
-1. Security over convenience  
-2. Determinism over creativity  
-3. Minimal scope changes  
-4. Explicit reasoning over implicit assumptions  
-5. No speculative modifications  
-6. No unauthorized dependency introduction  
-7. No hidden behavior  
+1. Security over convenience
+2. Determinism over creativity
+3. Minimal scope changes
+4. Explicit reasoning over implicit assumptions
+5. No speculative modifications
+6. No unauthorized dependency introduction
+7. No hidden behavior
 
 ---
 
@@ -39,14 +36,15 @@ Your core principles:
 
 In case of instruction conflicts, follow this order:
 
-1. Direct human instruction in active session  
-2. This AGENTS.md file  
-3. `/ai/governance/*`  
-4. `/ai/orchestration/*`  
-5. `/ai/skills/*`  
-6. Other documentation  
+1. Direct human instruction in active session
+2. This AGENTS.md file
+3. `DEVELOPMENT.md`
+4. `/ai/governance/*`
+5. `/ai/orchestration/*`
+6. `/ai/skills/*`
+7. Other documentation
 
-If `/ai/` exists, it defines structured runtime guidance.  
+If `/ai/` exists, it defines structured runtime guidance.
 Never override higher authority with lower authority rules.
 
 ---
@@ -57,38 +55,29 @@ If an `/ai/` directory exists, you MUST treat it as structured runtime guidance.
 
 Expected structure:
 
+```
 /ai/
   governance/
   skills/
   orchestration/
+  templates/
   README.md
+```
 
 ## 3.1 Governance Layer
 
-Files in:
-
-`/ai/governance/`
-
-Define behavioral constraints and workflow policy.
+Files in `/ai/governance/` define behavioral constraints and workflow policy.
 
 ## 3.2 Skills Layer
 
-Files in:
+Files in `/ai/skills/` define modular, bounded capabilities.
 
-`/ai/skills/`
-
-Define modular, bounded capabilities.
-
-Load only relevant skills for the task.  
+Load only relevant skills for the task.
 Do not expand scope based on skill presence.
 
 ## 3.3 Orchestration Layer
 
-Files in:
-
-`/ai/orchestration/`
-
-Define state machines and execution flow.
+Files in `/ai/orchestration/` define state machines and execution flow.
 
 If present, follow defined transitions strictly.
 
@@ -96,11 +85,20 @@ If present, follow defined transitions strictly.
 
 Files in `/ai/templates/`:
 
-- Provide structured output guidance
+- Provide structured output guidance for issues and pull requests
 - Are read-only unless explicitly instructed
-- Load only task-relevant template
+- Load only the task-relevant template
 - Instantiate placeholders before use
-- Fall back to human guidance if template missing
+- Fall back to human guidance if template is missing
+
+Available templates:
+
+| Template             | Path                                   |
+|----------------------|----------------------------------------|
+| Bug report           | `ai/templates/issue/bug_report.md`     |
+| Feature request      | `ai/templates/issue/feature_request.md`|
+| Task / investigation | `ai/templates/issue/task.md`           |
+| Pull request         | `ai/templates/pr/pull_request.md`      |
 
 ---
 
@@ -108,10 +106,10 @@ Files in `/ai/templates/`:
 
 ## 4.1 Modification Scope
 
-- ONLY modify files explicitly requested.
-- NEVER refactor unrelated components.
-- NEVER rename files unless explicitly instructed.
-- NEVER introduce structural changes without approval.
+- ONLY modify files explicitly requested
+- NEVER refactor unrelated components
+- NEVER rename files unless explicitly instructed
+- NEVER introduce structural changes without approval
 
 Presence of `/ai/` does NOT expand modification authority.
 
@@ -150,20 +148,18 @@ If missing required data → ASK.
 
 MODE: SAFE_INCREMENTAL
 
-- Small changes  
-- Clear diff explanation  
-- Risk surfaced  
-- Tests suggested  
+- Small changes
+- Clear diff explanation
+- Risk surfaced
+- Tests suggested
 
 ---
 
 # 7. HALLUCINATION GUARD
 
-If repository evidence is insufficient:
+If repository evidence is insufficient, respond with:
 
-Respond with:
-
-"Insufficient repository evidence. Clarification required."
+> "Insufficient repository evidence. Clarification required."
 
 Never fabricate missing details.
 
@@ -173,11 +169,12 @@ Never fabricate missing details.
 
 When performing a task:
 
-1. Read AGENTS.md  
-2. Check if `/ai/` exists  
-3. Load relevant governance/skills/orchestration  
-4. Read only task-relevant files  
-5. Avoid full repo scans unless necessary  
+1. Read `AGENTS.md`
+2. Read `DEVELOPMENT.md` — workflow rules, issue and PR templates
+3. Check if `/ai/` exists
+4. Load relevant governance / skills / orchestration files
+5. Read only task-relevant files
+6. Avoid full repo scans unless necessary
 
 ---
 

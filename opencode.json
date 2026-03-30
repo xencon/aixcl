@@ -1,5 +1,32 @@
 {
   "$schema": "https://opencode.ai/config.json",
+
+  "instructions": [
+    "AGENTS.md",
+    "DEVELOPMENT.md"
+  ],
+
+  "permission": {
+    "bash": {
+      "*":              "ask",
+      "git status":     "allow",
+      "git diff *":     "allow",
+      "git log *":      "allow",
+      "git add *":      "allow",
+      "git commit *":   "ask",
+      "git push *":     "deny",
+      "grep *":         "allow",
+      "cat *":          "allow",
+      "ls *":           "allow",
+      "gh issue *":     "allow",
+      "gh pr create *": "ask",
+      "gh pr edit *":   "ask",
+      "./aixcl *":      "ask"
+    },
+    "edit":     "ask",
+    "webfetch": "ask"
+  },
+
   "provider": {
     "aixcl-local": {
       "api": "openai",
@@ -24,5 +51,6 @@
       }
     }
   },
+
   "model": "aixcl-local/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
 }

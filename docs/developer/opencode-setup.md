@@ -1,10 +1,20 @@
 # OpenCode Integration for AIXCL
 
-OpenCode is the recommended local-first IDE integration for AIXCL. It connects directly to your AIXCL inference engine (Ollama, vLLM, or llama.cpp) to provide AI-powered coding assistance, including chat, autocomplete, and agentic workflows.
+OpenCode is the recommended local-first CLI integration for AIXCL. It connects directly to your
+AIXCL inference engine (Ollama, vLLM, or llama.cpp) to provide AI-powered coding assistance,
+including chat, autocomplete, and agentic workflows — entirely on-device.
 
 ## Overview
 
-Unlike other AI tools that rely on cloud backends, OpenCode is designed to be local-first, ensuring that your code and conversations stay within your controlled environment. It is a fundamental part of the AIXCL **Runtime Core**.
+Unlike other AI tools that rely on cloud backends, OpenCode is a local-first CLI tool, ensuring
+that your code and conversations stay within your controlled environment. It is a fundamental part
+of the AIXCL **Runtime Core**.
+
+Agent workflow rules, permissions, and governance are loaded automatically at session start from
+`AGENTS.md` and `DEVELOPMENT.md` via the `instructions` field in `opencode.json`. No manual
+context loading is required.
+
+---
 
 ## Setup Instructions
 
@@ -17,74 +27,158 @@ Ensure your AIXCL stack is running and your preferred inference engine is health
 ./aixcl stack status
 ```
 
-### 2. Configure OpenCode
+### 2. Start OpenCode
 
-OpenCode connects to your AIXCL stack via the OpenAI-compatible API provided by the inference engine (usually on port `11434`).
+From the repo root:
 
-- **Base URL**: `http://localhost:11434/v1` (or your host IP if running remotely)
-- **API Key**: Not required for local AIXCL deployments (use `ollama` or any string if prompted)
+```bash
+./opencode
+```
+
+OpenCode will connect to the AIXCL local provider defined in `opencode.json` and load the
+governance and workflow rules automatically.
 
 ### 3. Model Configuration
 
-You can use any model already pulled into your AIXCL engine. For the best experience with OpenCode, we recommend:
+You can use any model already pulled into your AIXCL engine. For the best experience with
+OpenCode, we recommend:
 
 ```bash
 # High-performance coding assistant
 ./aixcl models add qwen2.5-coder:7b
 
-# Lightweight autocomplete
+# Lightweight option
 ./aixcl models add qwen2.5-coder:1.5b
 ```
 
-## Configuration Example
+---
 
-You can use the following configuration as a template for your OpenCode settings (usually found in `~/.opencode/config.json` or your IDE settings). This configuration defines AIXCL as a custom provider and maps local models for use.
+## Configuration Reference
+
+The `opencode.json` file at the repo root configures the AIXCL provider, auto-loads governance
+documents, and sets agent permissions. The full structure is:
 
 ```json
 {
+  "$schema": "https://opencode.ai/config.json",
+
+  "instructions": [
+    "AGENTS.md",
+    "DEVELOPMENT.md"
+  ],
+
+  "permission": {
+    "bash": {
+      "*":              "ask",
+      "git status":     "allow",
+      "git diff *":     "allow",
+      "git log *":      "allow",
+      "git add *":      "allow",
+      "git commit *":   "ask",
+      "git push *":     "deny",
+      "grep *":         "allow",
+      "cat *":          "allow",
+      "ls *":           "allow",
+      "gh issue *":     "allow",
+      "gh pr create *": "ask",
+      "gh pr edit *":   "ask",
+      "./aixcl *":      "ask"
+    },
+    "edit":     "ask",
+    "webfetch": "ask"
+  },
+
   "provider": {
     "aixcl-local": {
       "api": "openai",
       "options": {
         "baseURL": "http://localhost:11434/v1",
-        "apiKey": "ollama"
+        "apiKey": "",
+        "stream": false
       },
       "models": {
-        "qwen2.5-coder:7b": {
-          "name": "Qwen 2.5 Coder (7B)"
+        "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
+          "name": "vLLM: Qwen 2.5 Coder (1.5B)"
         },
         "qwen2.5-coder:1.5b": {
-          "name": "Qwen 2.5 Coder (1.5B)"
+          "name": "Ollama: Qwen 2.5 Coder (1.5B)"
+        },
+        "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf": {
+          "name": "llama.cpp: Qwen 2.5 Coder (1.5B)"
+        },
+        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
         }
       }
     }
   },
-  "model": "aixcl-local/qwen2.5-coder:7b",
-  "small_model": "aixcl-local/qwen2.5-coder:1.5b"
+
+  "model": "aixcl-local/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
 }
 ```
 
+### Instructions
+
+The `instructions` field loads `AGENTS.md` and `DEVELOPMENT.md` at every session start. This
+gives the agent the full authority hierarchy, security model, issue templates, and PR workflow
+without any manual prompting.
+
+### Permissions
+
+Permissions follow a last-matching-rule-wins pattern. The default posture is:
+
+| Operation | Permission |
+|---|---|
+| Read-only git commands (`status`, `diff`, `log`) | `allow` |
+| Read-only shell commands (`grep`, `cat`, `ls`) | `allow` |
+| `git add` | `allow` |
+| `git commit`, PR creation, file edits | `ask` |
+| `git push` | `deny` |
+| `./aixcl *` stack commands | `ask` |
+| Everything else | `ask` |
+
+`git push` is denied outright — the local model cannot push to the remote without a human
+explicitly overriding the permission in `opencode.json`.
+
+---
+
+## Extending OpenCode
+
+Custom slash commands and agents can be added to the repo without modifying `opencode.json`:
+
+- **Custom commands:** `.opencode/commands/<name>.md`
+- **Custom agents:** `.opencode/agents/<name>.md`
+
+---
+
 ## Usage Examples
 
-### 1. Code Explanations
-Highlight a block of code in your editor and ask OpenCode:
-> "Explain how this function handles error states and suggest improvements for local-first reliability."
+### Code explanation
 
-### 2. Unit Test Generation
-Select a class or function and use the shortcut for test generation:
-> "Generate Vitest unit tests for this component, ensuring all edge cases are covered."
+```
+> Explain how this function handles error states and suggest improvements.
+```
 
-### 3. Refactoring
-Ask OpenCode to optimize a specific algorithm:
-> "Refactor this loop to be more memory-efficient and idiomatic for TypeScript 5.0."
+### Test generation
 
-## Features
+```
+> Generate tests for this function covering all edge cases.
+```
 
-- **Local Chat**: Interact with your models directly within your editor.
-- **Privacy First**: All inference happens on your local AIXCL stack.
-- **Agentic Workflows**: Use AIXCL skills and agents directly through the OpenCode interface.
+### Refactoring
+
+```
+> Refactor this to be more idiomatic shell — avoid subshells where possible.
+```
+
+---
 
 ## Troubleshooting
 
-- **Connection Refused**: Ensure the inference engine is running and bound to the correct network interface. Check `./aixcl stack status`.
-- **Model Not Found**: Verify the model name exactly matches what is listed in `./aixcl models list`.
+**Connection refused** — Ensure the inference engine is running and bound to the correct
+interface. Check with `./aixcl stack status`.
+
+**Model not found** — Verify the model name exactly matches the output of `./aixcl models list`.
+
+**Agent not following workflow rules** — Confirm `AGENTS.md` and `DEVELOPMENT.md` are present at
+the repo root and listed in the `instructions` field of `opencode.json`.
