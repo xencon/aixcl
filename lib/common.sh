@@ -74,7 +74,7 @@ ALL_SERVICES=(
     "postgres-exporter"
     "nvidia-gpu-exporter"
     "loki"
-    "promtail"
+    "alloy"
 )
 
 # Function to validate service name

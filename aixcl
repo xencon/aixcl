@@ -1404,7 +1404,7 @@ function status() {
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
     # Promtail
-    check_operational_service "Promtail" "promtail" "promtail" "" ""
+    check_operational_service "Alloy" "alloy" "alloy" "" ""
 
     # Health Summary section
     echo ""

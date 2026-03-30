@@ -275,18 +275,18 @@ services:
       timeout: 10s
       retries: 3
 
-  # SECURITY NOTE: promtail requires Docker socket access for container log discovery.
+  # SECURITY NOTE: alloy requires Docker socket access for container log discovery.
   # This is equivalent to root access on the host. See docs/reference/security.md
   # section 6 for details and mitigation options.
-  promtail:
-    image: grafana/promtail:3.3.0
-    container_name: promtail
+  alloy:
+    image: grafana/alloy:v1.5.0
+    container_name: alloy
     volumes:
-      - ../promtail/promtail-config.yml:/etc/promtail/promtail-config.yml
+      - ../alloy/config.alloy:/etc/alloy/config.alloy
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
-    command: -config.file=/etc/promtail/promtail-config.yml
+    command: run /etc/alloy/config.alloy
     network_mode: host
     depends_on:
       - loki

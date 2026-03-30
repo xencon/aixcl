@@ -64,7 +64,7 @@ The following services mount the Docker socket (`/var/run/docker.sock`):
 | Service | Profile | Purpose | Risk Level |
 |---------|---------|---------|------------|
 | **watchtower** | `sys` | Automatic container updates | High |
-| **promtail** | `ops`, `sys` | Log collection from containers | High |
+| **alloy** | `ops`, `sys` | Log collection from containers | High |
 
 ### 6.2 Security Implications
 
@@ -81,7 +81,7 @@ Containers with Docker socket access can:
 **For AIXCL's target use case (local/self-hosted deployments):**
 - **Acceptable risk**: AIXCL is designed for single-node, self-hosted deployments where the user controls the entire stack
 - **Trusted environment**: Users run AIXCL on their own infrastructure with administrative control
-- **Well-maintained tools**: Both watchtower and promtail are standard, widely-used open source projects
+- **Well-maintained tools**: Both watchtower and alloy are standard, widely-used open source projects
 
 **Not recommended for:**
 - Multi-tenant environments
@@ -108,7 +108,7 @@ Containers with Docker socket access can:
 **Option 3: Docker Socket Proxy (Advanced)**
 For users requiring stricter security, consider implementing a Docker socket proxy (e.g., `docker-socket-proxy`) to restrict API access:
 - watchtower: Allow only container inspection and restart
-- promtail: Allow only container listing and log access
+- alloy: Allow only container listing and log access
 
 Note: This requires manual configuration and is not officially supported.
 

@@ -251,7 +251,7 @@ test_stack_status() {
         record_test "fail" "Loki container is not running"
     fi
     
-    if is_container_running "promtail"; then
+    if is_container_running "alloy"; then
         print_success "Promtail"
         record_test "pass" "Promtail container is running"
     else
@@ -450,7 +450,7 @@ test_stack_status() {
     fi
     
     # Promtail doesn't have a health endpoint, so we just check if it's running
-    if is_container_running "promtail"; then
+    if is_container_running "alloy"; then
         print_success "Promtail (container running)"
         record_test "pass" "Promtail container is running (no health endpoint)"
     else
@@ -935,7 +935,7 @@ test_component_logging() {
     fi
     
     # Promtail
-    if is_container_running "promtail"; then
+    if is_container_running "alloy"; then
         print_success "Promtail container is running"
         record_test "pass" "Promtail container is running (no health endpoint)"
     else
