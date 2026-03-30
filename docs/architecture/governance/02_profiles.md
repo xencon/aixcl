@@ -24,7 +24,7 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 | usr     | User-oriented runtime | End users, minimal deployments |
 | dev     | Developer workstation | Local development |
 | ops     | Operations-focused | Servers/operators |
-| sys     | System-oriented | Complete deployments, automation |
+| sys     | System-oriented | Complete deployments |
 
 ---
 
@@ -42,7 +42,6 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 - pgAdmin (database admin)
 - Prometheus, Grafana, Loki, Promtail (monitoring/logging)
 - cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
-- Watchtower (automation)
 
 **Use Cases**: End-user deployments, resource-constrained environments, minimal installations with database persistence
 
@@ -60,7 +59,6 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Excludes**:
 - Prometheus, Grafana, Loki, Promtail (monitoring/logging)
 - cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
-- Watchtower (automation)
 
 **Use Cases**: Local development, testing, interactive model exploration
 
@@ -84,7 +82,6 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 **Excludes**:
 - Open WebUI (web interface)
 - pgAdmin (database admin)
-- Watchtower (automation)
 
 **Use Cases**: Production servers, monitoring-focused deployments, observability analysis
 
@@ -97,7 +94,6 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 - Runtime core: Inference Engine, OpenCode (plugin)
 - All dev services: Open WebUI, PostgreSQL, pgAdmin
 - All ops services: Prometheus, Grafana, Loki, Promtail, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
-- Watchtower (automatic container updates)
 
 **Use Cases**: System deployments, demonstrations, full-featured environments with automation
 

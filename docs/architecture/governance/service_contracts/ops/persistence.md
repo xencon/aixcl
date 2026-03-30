@@ -19,7 +19,6 @@ Provides PostgreSQL database storage for runtime data (Open WebUI conversations,
 
 ## Must Not Depend On
 - UI logic (pgAdmin is admin tool, not runtime UI)
-- Automation logic (Watchtower)
 - Monitoring/logging services
 
 ## Notes

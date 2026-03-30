@@ -19,7 +19,7 @@ declare -A PROFILE_DESCRIPTIONS=(
     [usr]="User-oriented runtime (minimal footprint with database persistence)"
     [dev]="Developer workstation (UI + DB + admin tools)"
     [ops]="Observability-focused (monitoring/logging)"
-    [sys]="System-oriented (complete stack with automation)"
+    [sys]="System-oriented (complete stack)"
 )
 
 # Profile service mappings (Docker-managed services only)
@@ -28,7 +28,7 @@ declare -A PROFILE_SERVICES=(
     [usr]="$INFERENCE_ENGINE postgres"
     [dev]="$INFERENCE_ENGINE open-webui postgres pgadmin"
     [ops]="$INFERENCE_ENGINE postgres prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="$INFERENCE_ENGINE open-webui postgres pgadmin prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter watchtower"
+    [sys]="$INFERENCE_ENGINE open-webui postgres pgadmin prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
 )
 
 # Profile database storage settings

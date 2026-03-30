@@ -55,7 +55,7 @@ COMMANDS
               $INFERENCE_ENGINE (e.g., ollama, vllm, llamacpp)
 
               Operational Services (profile-dependent):
-              open-webui, postgres, pgadmin, watchtower, prometheus, grafana,
+              open-webui, postgres, pgadmin, prometheus, grafana,
               cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter,
               loki, promtail
 
@@ -150,7 +150,6 @@ ARCHITECTURE
               - Observability: prometheus, grafana, loki, promtail, cadvisor,
                 node-exporter, postgres-exporter, nvidia-gpu-exporter
               - UI: open-webui
-              - Automation: watchtower
 
        See docs/architecture/governance/ for complete architectural documentation.
 

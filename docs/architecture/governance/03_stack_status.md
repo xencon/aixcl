@@ -37,7 +37,6 @@ OK   open-webui      Running
 OK   pgadmin         Running
 SKIP prometheus      Stopped    (not in 'dev' profile)
 SKIP grafana         Stopped    (not in 'dev' profile)
-SKIP watchtower      Stopped    (not in 'dev' profile)
 
 Health Summary
 --------------
@@ -88,7 +87,7 @@ Operational:  8/8 healthy (postgres, prometheus, grafana, loki, promtail, cadvis
 ### sys Profile
 ```
 Runtime Core: 2/2 healthy
-Operational:  10/10 healthy (all services enabled: postgres, open-webui, pgadmin, prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter, watchtower)
+Operational:  10/10 healthy (all services enabled: postgres, open-webui, pgadmin, prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter)
 ```
 
 ## AI Guidance for Status Implementation

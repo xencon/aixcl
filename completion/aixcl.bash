@@ -52,8 +52,7 @@ _aixcl_complete() {
     # - Persistence: postgres, pgadmin
     # - Observability: prometheus, grafana, loki, promtail, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
     # - UI: open-webui
-    # - Automation: watchtower
-    local operational_services="open-webui postgres pgadmin watchtower prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
+    local operational_services="open-webui postgres pgadmin prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki promtail"
     
     # Combined list of all services (for backward compatibility and general completion)
     # Includes 'engine' alias for convenience

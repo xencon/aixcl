@@ -1406,9 +1406,6 @@ function status() {
     # Promtail
     check_operational_service "Promtail" "promtail" "promtail" "" ""
 
-    # Watchtower
-    check_operational_service "Watchtower" "watchtower" "watchtower" "" ""
-    
     # Health Summary section
     echo ""
     if [ $total_services -gt 0 ]; then

@@ -67,7 +67,6 @@ ALL_SERVICES=(
     "open-webui"
     "postgres"
     "pgadmin"
-    "watchtower"
     "prometheus"
     "grafana"
     "cadvisor"

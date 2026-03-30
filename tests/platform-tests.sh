@@ -262,13 +262,6 @@ test_stack_status() {
     # Utility Services
     echo ""
     echo "Utility"
-    if is_container_running "watchtower"; then
-        print_success "Watchtower"
-        record_test "pass" "Watchtower container is running"
-    else
-        print_error "Watchtower"
-        record_test "fail" "Watchtower container is not running"
-    fi
     
     # Health Checks
     echo ""
@@ -996,18 +989,6 @@ test_component_ui() {
     fi
 }
 
-# Test automation services
-test_component_automation() {
-    start_section "Automation - Watchtower"
-    
-    if is_container_running "watchtower"; then
-        print_success "Watchtower container is running"
-        record_test "pass" "Watchtower container is running"
-    else
-        print_error "Watchtower container is not running"
-        record_test "fail" "Watchtower container is not running"
-    fi
-}
 
 # ============================================================================
 # PROFILE-BASED TEST RUNNERS
@@ -1296,7 +1277,6 @@ main() {
                 echo "  monitoring    - Prometheus, Grafana, exporters"
                 echo "  logging       - Loki and Promtail"
                 echo "  ui            - Open WebUI"
-                echo "  automation    - Watchtower"
                 echo "  negative      - Error handling and recovery scenarios"
                 echo "  security      - Network binding and access control validation"
                 exit 0
@@ -1326,7 +1306,6 @@ main() {
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
         echo "  ui            - Open WebUI"
-        echo "  automation    - Watchtower"
         exit 0
     fi
     
@@ -1353,7 +1332,6 @@ main() {
         echo "  monitoring    - Prometheus, Grafana, exporters"
         echo "  logging       - Loki and Promtail"
         echo "  ui            - Open WebUI"
-        echo "  automation    - Watchtower"
         echo ""
         echo "Examples:"
         echo "  $0 --profile usr                # Test usr profile"

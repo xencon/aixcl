@@ -24,7 +24,6 @@ These services support, observe, or operate the runtime:
   - postgres-exporter (database metrics)
   - nvidia-gpu-exporter (GPU metrics)
 - **UI**: Open WebUI (web interface)
-- **Automation**: Watchtower (automatic container updates)
 
 Operational services are optional and can be enabled based on deployment profiles (usr, dev, ops, sys).
 
@@ -235,7 +234,7 @@ This removes:
 
 ### Update Services
 
-Services are automatically updated by Watchtower, or manually:
+Services are updated manually:
 
 ```bash
 # Pull latest images
