@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@4.3.0
+        uses: actions/checkout@v4.3.0
 
       - name: Make aixcl executable
         run: chmod +x ./aixcl
