@@ -11,11 +11,11 @@ services:
       - OLLAMA_NUM_GPU=1               # Explicit single GPU usage
       - OLLAMA_NUM_THREAD=8            # Match CPU cores (adjust based on your CPU)
     container_name: ollama
-    pull_policy: always
+    pull_policy: if_not_present
     tty: true
     network_mode: host
     restart: unless-stopped
-    image: ollama/ollama:latest
+    image: ollama/ollama:v0.19.0
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
@@ -25,7 +25,7 @@ services:
       retries: 5
       start_period: 30s
   vllm:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.18.0
     container_name: vllm
     pull_policy: if_not_present
     tty: true
@@ -62,7 +62,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.8.10
     container_name: open-webui
-    pull_policy: always
+    pull_policy: if_not_present
     volumes:
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
@@ -240,7 +240,7 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
+    image: prometheuscommunity/postgres-exporter:v0.16.0
     container_name: postgres-exporter
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
