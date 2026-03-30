@@ -26,11 +26,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.3.0
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: actions
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:actions"
 
@@ -61,7 +61,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 1
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: success() || failure()
         with:
           sarif_file: trivy-results.sarif
