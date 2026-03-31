@@ -15,7 +15,7 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    image: docker.io/ollama/ollama:latest
+    image: docker.io/ollama/ollama:0.19.0
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
