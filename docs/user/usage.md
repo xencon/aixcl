@@ -18,7 +18,7 @@ These services support, observe, or operate the runtime:
   - Prometheus (metrics)
   - Grafana (dashboards)
   - Loki (logs)
-  - Promtail (log shipping)
+  - Alloy (log shipping)
   - cAdvisor (container metrics)
   - node-exporter (host metrics)
   - postgres-exporter (database metrics)

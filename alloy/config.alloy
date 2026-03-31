@@ -1,0 +1,67 @@
+// /alloy/config.alloy
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  filter {
+    name = "label"
+    values = ["com.docker.compose.project=services"]
+  }
+}
+
+discovery.relabel "docker_logs" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex = "/(.*)"
+    target_label = "container"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_id"]
+    target_label = "container_id"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label = "compose_service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label = "compose_project"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_image"]
+    target_label = "image"
+  }
+}
+
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.docker_logs.output
+  forward_to = [loki.write.local.receiver]
+}
+
+local.file_match "varlogs" {
+  path_targets = [{"__path__" = "/var/log/*.log"}]
+}
+
+discovery.relabel "varlog_labels" {
+  targets = local.file_match.varlogs.targets
+  rule {
+    target_label = "job"
+    replacement  = "varlogs"
+  }
+  rule {
+    target_label = "host"
+    replacement  = "aixcl-host"
+  }
+}
+
+loki.source.file "varlogs" {
+  targets    = discovery.relabel.varlog_labels.output
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://localhost:3100/loki/api/v1/push"
+  }
+}

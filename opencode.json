@@ -44,9 +44,6 @@
         },
         "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf": {
           "name": "llama.cpp: Qwen 2.5 Coder (1.5B)"
-        },
-        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
-          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
         }
       }
     }

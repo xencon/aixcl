@@ -45,7 +45,7 @@
 - **Actionability:** ✅ **YES - Should be actioned immediately**
   - High-priority security issue
   - Docker socket mounts pose security risk
-  - Affects watchtower and promtail services
+  - Affects alloy service
   - Requires investigation of proxy or least-privilege configuration
 
 **Recommendation:** **HIGH PRIORITY** - Address immediately. Critical security hardening.
@@ -134,7 +134,7 @@
 
 1. **Issue #450** (P1) - Harden Docker Socket Mounts
    - Highest risk: Docker socket access is a critical security concern
-   - Affects multiple services (watchtower, promtail)
+   - Affects alloy service
 
 2. **Issue #449** (P1) - Reduce Docker Network Exposure
    - High risk: Network isolation bypass

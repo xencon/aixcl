@@ -27,8 +27,8 @@ declare -A PROFILE_DESCRIPTIONS=(
 declare -A PROFILE_SERVICES=(
     [usr]="$INFERENCE_ENGINE postgres"
     [dev]="$INFERENCE_ENGINE open-webui postgres pgadmin"
-    [ops]="$INFERENCE_ENGINE postgres prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="$INFERENCE_ENGINE open-webui postgres pgadmin prometheus grafana loki promtail cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [ops]="$INFERENCE_ENGINE postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [sys]="$INFERENCE_ENGINE open-webui postgres pgadmin prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
 )
 
 # Profile database storage settings

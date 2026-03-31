@@ -4,9 +4,9 @@
 **Enforcement Level:** Guided
 
 ## Purpose
-Provides metrics, logs, and dashboards for runtime observation. Includes Prometheus (metrics collection), Grafana (visualization), Loki (log aggregation), Promtail (log shipping), cAdvisor (container metrics), and node-exporter (host metrics).
-
-## Depends On
+Provides metrics, logs, and dashboards for runtime observation. Includes Prometheus (metrics collection), Grafana (visualization), Loki (log aggregation), Alloy (log shipping), cAdvisor (container metrics), and node-exporter (host metrics).
+...
+- Alloy log shipping
 - Runtime core (read-only observation)
 - PostgreSQL (for postgres-exporter metrics)
 
@@ -14,7 +14,7 @@ Provides metrics, logs, and dashboards for runtime observation. Includes Prometh
 - Prometheus metrics endpoint (port 9090)
 - Grafana dashboards (port 3000)
 - Loki log aggregation API (port 3100)
-- Promtail log shipping
+- Alloy log shipping
 - cAdvisor container metrics (port 8081)
 - node-exporter host metrics (port 9100)
 - postgres-exporter database metrics (port 9187)

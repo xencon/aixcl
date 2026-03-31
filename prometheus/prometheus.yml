@@ -76,10 +76,10 @@ scrape_configs:
         labels:
           service: 'loki'
 
-  # Promtail - Log collection agent metrics
-  - job_name: 'promtail'
+  # Alloy - Telemetry collector metrics
+  - job_name: 'alloy'
     static_configs:
-      - targets: ['localhost:9080']
+      - targets: ['localhost:12345']
         labels:
-          service: 'promtail'
+          service: 'alloy'
 

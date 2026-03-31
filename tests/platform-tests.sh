@@ -251,12 +251,12 @@ test_stack_status() {
         record_test "fail" "Loki container is not running"
     fi
     
-    if is_container_running "promtail"; then
-        print_success "Promtail"
-        record_test "pass" "Promtail container is running"
+    if is_container_running "alloy"; then
+        print_success "Alloy"
+        record_test "pass" "Alloy container is running"
     else
-        print_error "Promtail"
-        record_test "fail" "Promtail container is not running"
+        print_error "Alloy"
+        record_test "fail" "Alloy container is not running"
     fi
     
     # Utility Services
@@ -449,13 +449,13 @@ test_stack_status() {
         record_test "fail" "Loki health check failed (HTTP $LOKI_STATUS)"
     fi
     
-    # Promtail doesn't have a health endpoint, so we just check if it's running
-    if is_container_running "promtail"; then
-        print_success "Promtail (container running)"
-        record_test "pass" "Promtail container is running (no health endpoint)"
+    # Alloy doesn't have a health endpoint, so we just check if it's running
+    if is_container_running "alloy"; then
+        print_success "Alloy (container running)"
+        record_test "pass" "Alloy container is running (no health endpoint)"
     else
-        print_error "Promtail"
-        record_test "fail" "Promtail container is not running"
+        print_error "Alloy"
+        record_test "fail" "Alloy container is not running"
     fi
 }
 
@@ -915,7 +915,7 @@ test_component_monitoring() {
 
 # Test logging services
 test_component_logging() {
-    start_section "Logging - Loki & Promtail"
+    start_section "Logging - Loki & Alloy"
     
     # Loki
     if is_container_running "loki"; then
@@ -934,13 +934,13 @@ test_component_logging() {
         record_test "fail" "Loki container is not running"
     fi
     
-    # Promtail
-    if is_container_running "promtail"; then
-        print_success "Promtail container is running"
-        record_test "pass" "Promtail container is running (no health endpoint)"
+    # Alloy
+    if is_container_running "alloy"; then
+        print_success "Alloy container is running"
+        record_test "pass" "Alloy container is running (no health endpoint)"
     else
-        print_error "Promtail container is not running"
-        record_test "fail" "Promtail container is not running"
+        print_error "Alloy container is not running"
+        record_test "fail" "Alloy container is not running"
     fi
 }
 
@@ -1275,7 +1275,7 @@ main() {
                 echo "  runtime-core  - AI Inference Engine ($INFERENCE_ENGINE)"
                 echo "  database      - PostgreSQL and pgAdmin"
                 echo "  monitoring    - Prometheus, Grafana, exporters"
-                echo "  logging       - Loki and Promtail"
+                echo "  logging       - Loki and Alloy"
                 echo "  ui            - Open WebUI"
                 echo "  negative      - Error handling and recovery scenarios"
                 echo "  security      - Network binding and access control validation"
@@ -1304,7 +1304,7 @@ main() {
         echo "  runtime-core  - Ollama"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
-        echo "  logging       - Loki and Promtail"
+        echo "  logging       - Loki and Alloy"
         echo "  ui            - Open WebUI"
         exit 0
     fi
@@ -1330,7 +1330,7 @@ main() {
         echo "  runtime-core  - AI Inference Engine ($INFERENCE_ENGINE)"
         echo "  database      - PostgreSQL and pgAdmin"
         echo "  monitoring    - Prometheus, Grafana, exporters"
-        echo "  logging       - Loki and Promtail"
+        echo "  logging       - Loki and Alloy"
         echo "  ui            - Open WebUI"
         echo ""
         echo "Examples:"
