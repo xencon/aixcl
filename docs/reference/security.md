@@ -117,27 +117,6 @@ Note: This requires manual configuration and is not officially supported.
 
 ## 7. Network Mode Design
 
-### 7.1  is Intentional
-
-AIXCL uses  for all Docker services. This is an **intentional architectural decision**, not a security vulnerability.
-
-### 7.2 Rationale
-
-| Aspect | Design Choice |
-|--------|---------------|
-| **Networking** |  |
-| **Purpose** | Simplified local development |
-| **Target** | Single-node, self-hosted deployments |
-
-**Benefits:**
-- No Docker DNS resolution complexity
-- No port mapping management
-- No network aliases needed
-- Direct localhost access for all services
-- Clone
-
-## 7. Network Mode Design
-
 ### 7.1 network_mode: host is Intentional
 
 AIXCL uses network_mode: host for all Docker services. This is an **intentional architectural decision**, not a security vulnerability.

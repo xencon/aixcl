@@ -15,7 +15,7 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    image: ollama/ollama:v0.19.0
+    image: docker.io/ollama/ollama:latest
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
@@ -25,7 +25,7 @@ services:
       retries: 5
       start_period: 30s
   vllm:
-    image: vllm/vllm-openai:v0.18.0
+    image: docker.io/vllm/vllm-openai:v0.18.0
     container_name: vllm
     pull_policy: if_not_present
     tty: true
