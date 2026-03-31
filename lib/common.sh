@@ -113,14 +113,42 @@ get_container_name() {
     esac
 }
 
-# Detect if NVIDIA GPU is available
+# Detect if NVIDIA GPU is available (hardware OR toolkit OR runtime)
 has_nvidia() {
-    if command -v nvidia-smi >/dev/null 2>&1; then
-        nvidia-smi >/dev/null 2>&1 && return 0 || return 1
+    # Check for NVIDIA hardware via nvidia-smi
+    if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+        return 0
     fi
+    
+    # Check for NVIDIA Container Toolkit
+    if command -v nvidia-container-cli >/dev/null 2>&1; then
+        return 0
+    fi
+    
+    # Check for installation via package managers
+    if command -v dpkg >/dev/null 2>&1 && dpkg -l 2>/dev/null | grep -q nvidia-container-toolkit; then
+        return 0
+    fi
+    
+    if command -v rpm >/dev/null 2>&1 && rpm -qa | grep -q nvidia-container-toolkit; then
+        return 0
+    fi
+    
+    # Check for Docker/Podman configured with nvidia runtime
     if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia"; then
         return 0
     fi
+    
+    # Check for hardware via pciutils (if available)
+    if command -v lspci >/dev/null 2>&1 && lspci | grep -qi "nvidia"; then
+        return 0
+    fi
+    
+    # Check for WSL GPU support
+    if [ -e /dev/dxg ]; then
+        return 0
+    fi
+    
     return 1
 }
 

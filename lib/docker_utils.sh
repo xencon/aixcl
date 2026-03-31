@@ -37,12 +37,12 @@ set_compose_cmd() {
         files+=( -f "${SERVICES_DIR}/docker-compose.arm.yml" )
     fi
     
-    # Check for NVIDIA GPU
-    if has_nvidia && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
-        echo "Detected NVIDIA GPU. Enabling GPU overrides."
+    # Check for NVIDIA GPU hardware AND toolkit availability
+    if has_nvidia && has_nvidia_container_toolkit && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
+        echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
         files+=( -f "${SERVICES_DIR}/docker-compose.gpu.yml" )
     else
-        echo "No NVIDIA GPU detected. Running without GPU overrides."
+        echo "No NVIDIA GPU support detected. Running without GPU overrides."
     fi
     
     # Detect appropriate compose command
