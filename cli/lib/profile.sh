@@ -71,7 +71,16 @@ get_profile_services() {
         echo ""
         return 1
     fi
-    echo "${PROFILE_SERVICES[$profile]}"
+    
+    local services="${PROFILE_SERVICES[$profile]}"
+    
+    # Exclude GPU exporter if NVIDIA Container Toolkit is not available
+    # (even if hardware exists, we need the toolkit for container GPU access)
+    if ! has_nvidia_container_toolkit; then
+        services=$(echo "$services" | sed 's/nvidia-gpu-exporter//g' | xargs)
+    fi
+    
+    echo "$services"
 }
 
 # Get database storage enabled setting for a profile
