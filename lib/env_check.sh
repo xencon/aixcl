@@ -161,7 +161,7 @@ check_env() {
     elif command -v rpm &> /dev/null && rpm -qa | grep -q nvidia-container-toolkit; then
         print_success "NVIDIA Container Toolkit installed"
     else
-        print_warning "NVIDIA Container Toolkit not found (optional)"
+        print_warning "NVIDIA Container Toolkit not found (REQUIRED for GPU support; falling back to CPU)"
         case "$os_id" in
             ubuntu|debian)
                 echo "   Install toolkit with:"
