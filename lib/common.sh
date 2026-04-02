@@ -173,19 +173,17 @@ get_container_name() {
          return 0
      fi
      
-     # Check for NVIDIA container runtime in Docker/Podman
-     if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia.*runtime"; then
-         return 0
-     fi
-     
-     return 1
-    
-    # Check for WSL GPU support
-    if [ -e /dev/dxg ]; then
-        return 0
-    fi
-    
-    return 1
+      # Check for NVIDIA container runtime in Docker/Podman
+      if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia.*runtime"; then
+          return 0
+      fi
+
+      # Check for WSL GPU support
+      if [ -e /dev/dxg ]; then
+          return 0
+      fi
+
+      return 1
 }
 
 # Detect if running on ARM64 architecture
