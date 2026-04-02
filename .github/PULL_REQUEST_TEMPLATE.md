@@ -1,20 +1,29 @@
-<!-- Link to the related issue -->
-Fixes #<issue-number>
+# Pull Request
 
-## Changes
-<!-- List the changes made in this PR using checkboxes -->
-- [ ] Change description 1
-- [ ] Change description 2
+## Summary
+Fixes #<ISSUE_NUMBER>
 
-## Testing
-<!-- Describe how you tested these changes -->
-- Test description 1
-- Test description 2
+### Description of Changes
+Provide a concise summary of changes.
 
-## Compliance Checklist
-- [ ] Changes pass all CI status checks (Linting, Security, Environment)
-- [ ] PR references the correct issue number
-- [ ] Labels and assignees match the linked issue
+### Change Checklist
+- [ ] Issue referenced in title and description
+- [ ] Branch is named correctly
+- [ ] Commit messages follow conventional style
+- [ ] All tests run and pass
 
-## Additional Notes
-<!-- Any additional context, screenshots, or notes -->
+### Testing Notes
+Describe how this change was tested:
+
+- Steps to reproduce (if relevant)
+- What environments were used
+
+### Verification
+To verify this change is complete:
+
+- [ ] Behavior works as expected
+- [ ] No regressions observed
+- [ ] Tests cover change
+
+### Related Issues
+- Closes #<ISSUE_NUMBER>

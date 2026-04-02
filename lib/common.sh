@@ -114,42 +114,76 @@ get_container_name() {
 }
 
 # Detect if NVIDIA GPU is available (hardware OR toolkit OR runtime)
-has_nvidia() {
-    # Check for NVIDIA hardware via nvidia-smi
-    if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
-        return 0
-    fi
-    
-    # Check for NVIDIA Container Toolkit
-    if command -v nvidia-container-cli >/dev/null 2>&1; then
-        return 0
-    fi
-    
-    # Check for installation via package managers
-    if command -v dpkg >/dev/null 2>&1 && dpkg -l 2>/dev/null | grep -q nvidia-container-toolkit; then
-        return 0
-    fi
-    
-    if command -v rpm >/dev/null 2>&1 && rpm -qa | grep -q nvidia-container-toolkit; then
-        return 0
-    fi
-    
-    # Check for Docker/Podman configured with nvidia runtime
-    if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia"; then
-        return 0
-    fi
-    
-    # Check for hardware via pciutils (if available)
-    if command -v lspci >/dev/null 2>&1 && lspci | grep -qi "nvidia"; then
-        return 0
-    fi
-    
-    # Check for WSL GPU support
-    if [ -e /dev/dxg ]; then
-        return 0
-    fi
-    
-    return 1
+ has_nvidia() {
+     # Check for NVIDIA hardware via nvidia-smi
+     if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+         return 0
+     fi
+     
+     # Check for NVIDIA Container Toolkit
+     if command -v nvidia-container-cli >/dev/null 2>&1; then
+         return 0
+     fi
+     
+     # Check for installation via package managers
+     if command -v dpkg >/dev/null 2>&1 && dpkg -l 2>/dev/null | grep -q nvidia-container-toolkit; then
+         return 0
+     fi
+     
+     if command -v rpm >/dev/null 2>&1 && rpm -qa | grep -q nvidia-container-toolkit; then
+         return 0
+     fi
+     
+     # Check for Docker/Podman configured with nvidia runtime
+     if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia"; then
+         return 0
+     fi
+     
+     # Check for hardware via pciutils (if available)
+     if command -v lspci >/dev/null 2>&1 && lspci | grep -qi "nvidia"; then
+         return 0
+     fi
+     
+     return 1
+ }
+ 
+ # Check for NVIDIA Container Toolkit (specifically for GPU monitoring)
+ has_nvidia_container_toolkit() {
+     # Check for NVIDIA Container Toolkit CLI (primary method)
+     if command -v nvidia-ctk >/dev/null 2>&1; then
+         return 0
+     fi
+     
+     # Check for nvidia-container-cli as alternative
+     if command -v nvidia-container-cli >/dev/null 2>&1; then
+         return 0
+     fi
+     
+     # Check for toolkit installation files
+     if [ -f "/usr/bin/nvidia-container-toolkit" ] || [ -f "/usr/local/bin/nvidia-container-toolkit" ]; then
+         return 0
+     fi
+     
+     # Check for installation via package managers
+     if command -v dpkg >/dev/null 2>&1 && dpkg -l 2>/dev/null | grep -q nvidia-container-toolkit; then
+         return 0
+     fi
+     
+     if command -v rpm >/dev/null 2>&1 && rpm -qa 2>/dev/null | grep -q nvidia-container-toolkit; then
+         return 0
+     fi
+     
+      # Check for NVIDIA container runtime in Docker/Podman
+      if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia.*runtime"; then
+          return 0
+      fi
+
+      # Check for WSL GPU support
+      if [ -e /dev/dxg ]; then
+          return 0
+      fi
+
+      return 1
 }
 
 # Detect if running on ARM64 architecture
