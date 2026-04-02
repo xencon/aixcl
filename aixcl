@@ -1839,8 +1839,8 @@ function config_cmd() {
                     cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
                 fi
                 
-                if has_nvidia; then
-                    echo "NVIDIA GPU detected. Setting engine to vLLM for optimized performance."
+                if has_nvidia_container_toolkit; then
+                    echo "NVIDIA GPU and Container Toolkit detected. Setting engine to vLLM for optimized performance."
                     if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
                         sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=vllm/" "${SCRIPT_DIR}/.env"
                     else

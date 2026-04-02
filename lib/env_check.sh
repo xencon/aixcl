@@ -120,8 +120,8 @@ check_env() {
             elif [ -e /dev/dxg ]; then
                 print_success "NVIDIA GPU hardware exposed via /dev/dxg"
                 has_gpu_hardware=1
-            elif has_nvidia; then
-                print_success "NVIDIA GPU support detected via Docker runtime checks"
+            elif has_nvidia_container_toolkit; then
+                print_success "NVIDIA GPU support detected via Container Toolkit"
                 has_gpu_hardware=1
             else
                 print_info "Unable to confirm NVIDIA GPU support in WSL."
