@@ -34,37 +34,37 @@ traceable to a GitHub issue. Do not begin modifying files until an issue exists.
 
 Select the correct template from `/ai/templates/issue/` based on the type of work:
 
-### Bug report — `/ai/templates/issue/bug_report.md`
+### Bug report - `/ai/templates/issue/bug_report.md`
 
 - Title prefix: `[BUG]`
 - Labels: `priority:medium`, `profile:dev`
-- Assignee: `sbadakhc`
+- Assignee: `<assignee>`
 - Required sections: Bug Summary, Steps to Reproduce, Expected Behavior, Actual Behavior,
   Impact (component / severity / frequency), Root Cause Analysis, Remediation, Verification,
   Additional Context
 
-### Feature request — `/ai/templates/issue/feature_request.md`
+### Feature request - `/ai/templates/issue/feature_request.md`
 
 - Title prefix: `[FEATURE]`
 - Labels: `enhancement`
-- Assignee: `sbadakhc`
+- Assignee: `<assignee>`
 - Required sections: Feature Overview, Problem Statement, Current Behavior, Proposed Solution,
   Design Considerations, Implementation Plan, Verification
 
-### Task / investigation — `/ai/templates/issue/task.md`
+### Task / investigation - `/ai/templates/issue/task.md`
 
 - Title prefix: `[TASK]`
 - Labels: `maintenance`
-- Assignee: `sbadakhc`
+- Assignee: `<assignee>`
 - Required sections: Task Summary, Background, Deliverables, Verification
 
 Every issue must include a **Verification** section with concrete done-criteria before it is
 considered ready to work.
 
 ```bash
-gh issue create --title "[BUG] <title>" --label "priority:medium,profile:dev" --assignee sbadakhc
-gh issue create --title "[FEATURE] <title>" --label "enhancement" --assignee sbadakhc
-gh issue create --title "[TASK] <title>" --label "maintenance" --assignee sbadakhc
+gh issue create --title "[BUG] <title>" --label "priority:medium,profile:dev" --assignee <assignee>
+gh issue create --title "[FEATURE] <title>" --label "enhancement" --assignee <assignee>
+gh issue create --title "[TASK] <title>" --label "maintenance" --assignee <assignee>
 ```
 
 ---
@@ -202,5 +202,18 @@ When working via the OpenCode CLI:
 ## 10. Agent Compliance
 
 Agents must confirm they've read AGENTS.md and verified compliance with its security model before starting any task.
+
+---
+
+## 11. Issue and PR Assignee Policy
+
+**Issue and PR templates must use generic assignee placeholders, not specific usernames.**
+
+- Use `<assignee>` placeholder in templates and documentation
+- Never hardcode specific GitHub usernames 
+- Individual issues/PRs can be manually assigned as needed
+- This applies to: issue templates, PR templates, and workflow documentation
+
+This rule prevents documentation from becoming outdated when team members change.
 
 ---
