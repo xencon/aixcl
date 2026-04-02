@@ -208,7 +208,7 @@ services:
       retries: 3
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
@@ -223,6 +223,7 @@ services:
     restart: unless-stopped
     command:
       - '--port=8081'
+      - '--docker_only=true'
 
   node-exporter:
     image: prom/node-exporter:v1.8.2
