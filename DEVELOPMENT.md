@@ -1,12 +1,12 @@
 # Development Workflow Rules
 
-| field         | value                                                              |
-|---------------|--------------------------------------------------------------------|
-| file          | DEVELOPMENT.md                                                     |
-| version       | 2.0                                                                |
-| scope         | all agents and AI assistants                                       |
-| priority      | high                                                               |
-| compatibility | OpenCode, Claude Code, Cursor, Copilot, any MCP-compatible agent   |
+| field         | value                                                                      |
+|---------------|----------------------------------------------------------------------------|
+| file          | DEVELOPMENT.md                                                             |
+| version       | 2.0 (tracks workflow evolution; subordinate to AGENTS.md v1.2)             |
+| scope         | all agents and AI assistants                                               |
+| priority      | high                                                                       |
+| compatibility | OpenCode, Claude Code, Cursor, Copilot, any MCP-compatible agent           |
 
 Agents and AI assistants MUST read this file before performing any development work in this repository.
 This file is the single source of truth for workflow, formatting, and contribution rules.
@@ -19,10 +19,11 @@ It complements `AGENTS.md` (the operating contract) and `ai/governance/` (behavi
 Read the following documents before beginning work:
 
 1. `AGENTS.md` — agent operating contract and authority hierarchy
-2. `docs/developer/development-workflow.md` — full workflow guide
-3. `docs/architecture/governance/` — platform invariants and service contracts
+2. `DEVELOPMENT.md` — workflow rules, issue and PR templates
+3. `docs/developer/development-workflow.md` — full workflow guide
+4. `docs/architecture/governance/` — platform invariants and service contracts
 
-If any of these files are absent, stop and request clarification from the human operator.
+**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent → **HALT** and create [TASK] issue: "Missing governance documentation". Await human clarification before proceeding.
 
 ---
 
@@ -31,39 +32,39 @@ If any of these files are absent, stop and request clarification from the human 
 **Always create an issue before starting work.** Every code change, fix, or feature must be
 traceable to a GitHub issue. Do not begin modifying files until an issue exists.
 
-Select the correct template from `ai/templates/issue/` based on the type of work:
+Select the correct template from `/ai/templates/issue/` based on the type of work:
 
-### Bug report — `ai/templates/issue/bug_report.md`
+### Bug report - `/ai/templates/issue/bug_report.md`
 
 - Title prefix: `[BUG]`
 - Labels: `priority:medium`, `profile:dev`
-- Assignee: `sbadakhc`
+- Assignee: `<assignee>`
 - Required sections: Bug Summary, Steps to Reproduce, Expected Behavior, Actual Behavior,
   Impact (component / severity / frequency), Root Cause Analysis, Remediation, Verification,
   Additional Context
 
-### Feature request — `ai/templates/issue/feature_request.md`
+### Feature request - `/ai/templates/issue/feature_request.md`
 
 - Title prefix: `[FEATURE]`
 - Labels: `enhancement`
-- Assignee: `sbadakhc`
+- Assignee: `<assignee>`
 - Required sections: Feature Overview, Problem Statement, Current Behavior, Proposed Solution,
   Design Considerations, Implementation Plan, Verification
 
-### Task / investigation — `ai/templates/issue/task.md`
+### Task / investigation - `/ai/templates/issue/task.md`
 
 - Title prefix: `[TASK]`
 - Labels: `maintenance`
-- Assignee: `sbadakhc`
+- Assignee: `<assignee>`
 - Required sections: Task Summary, Background, Deliverables, Verification
 
 Every issue must include a **Verification** section with concrete done-criteria before it is
 considered ready to work.
 
 ```bash
-gh issue create --title "[BUG] <title>" --label "priority:medium,profile:dev" --assignee sbadakhc
-gh issue create --title "[FEATURE] <title>" --label "enhancement" --assignee sbadakhc
-gh issue create --title "[TASK] <title>" --label "maintenance" --assignee sbadakhc
+gh issue create --title "[BUG] <title>" --label "priority:medium,profile:dev" --assignee <assignee>
+gh issue create --title "[FEATURE] <title>" --label "enhancement" --assignee <assignee>
+gh issue create --title "[TASK] <title>" --label "maintenance" --assignee <assignee>
 ```
 
 ---
@@ -191,7 +192,28 @@ When working via the OpenCode CLI:
 
 | Template | Path |
 |---|---|
-| Bug report | `ai/templates/issue/bug_report.md` |
-| Feature request | `ai/templates/issue/feature_request.md` |
-| Task / investigation | `ai/templates/issue/task.md` |
-| Pull request | `ai/templates/pr/pull_request.md` |
+| Bug report | `/ai/templates/issue/bug_report.md` |
+| Feature request | `/ai/templates/issue/feature_request.md` |
+| Task / investigation | `/ai/templates/issue/task.md` |
+| Pull request | `/ai/templates/pr/pull_request.md` |
+
+---
+
+## 10. Agent Compliance
+
+Agents must confirm they've read AGENTS.md and verified compliance with its security model before starting any task.
+
+---
+
+## 11. Issue and PR Assignee Policy
+
+**Issue and PR templates must use generic assignee placeholders, not specific usernames.**
+
+- Use `<assignee>` placeholder in templates and documentation
+- Never hardcode specific GitHub usernames 
+- Individual issues/PRs can be manually assigned as needed
+- This applies to: issue templates, PR templates, and workflow documentation
+
+This rule prevents documentation from becoming outdated when team members change.
+
+---

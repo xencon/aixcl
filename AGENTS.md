@@ -95,10 +95,10 @@ Available templates:
 
 | Template             | Path                                   |
 |----------------------|----------------------------------------|
-| Bug report           | `ai/templates/issue/bug_report.md`     |
-| Feature request      | `ai/templates/issue/feature_request.md`|
-| Task / investigation | `ai/templates/issue/task.md`           |
-| Pull request         | `ai/templates/pr/pull_request.md`      |
+| Bug report           | `/ai/templates/issue/bug_report.md`    |
+| Feature request      | `/ai/templates/issue/feature_request.md`|
+| Task / investigation | `/ai/templates/issue/task.md`          |
+| Pull request         | `/ai/templates/pr/pull_request.md`     |
 
 ---
 
@@ -144,6 +144,19 @@ If missing required data → ASK.
 
 ---
 
+## 5.1 AUTHORITY CONFLICT RESOLUTION
+
+When human instruction conflicts with lower-authority rules (e.g., issue-first policy):
+
+1. Acknowledge the conflict explicitly to human
+2. Document the override request in a new issue using [TASK] template
+3. Obtain explicit written confirmation: "Proceed without issue" or "Create issue first"
+4. If proceeding, prefix all commits with `[OVERRIDE]`
+
+NEVER silently bypass issue-first requirement.
+
+---
+
 # 6. DEFAULT EXECUTION MODE
 
 MODE: SAFE_INCREMENTAL
@@ -165,16 +178,54 @@ Never fabricate missing details.
 
 ---
 
-# 8. CONTEXT LOADING PROTOCOL
+# 8. SELF-VERIFICATION CHECKPOINT
+
+Before ANY bash/edit/write operation, agents MUST confirm:
+
+- [ ] I have read and understood AGENTS.md and DEVELOPMENT.md
+- [ ] This change is explicitly requested and minimally scoped
+- [ ] Sufficient repository evidence exists (no hallucination risk)
+- [ ] Required issue exists or override is documented per section 5.1
+- [ ] No security principles are violated
+- [ ] No unauthorized dependencies are introduced
+
+If ANY check fails → HALT and escalate per section 9.
+
+---
+
+# 9. CONTEXT LOADING PROTOCOL
 
 When performing a task:
 
 1. Read `AGENTS.md`
 2. Read `DEVELOPMENT.md` — workflow rules, issue and PR templates
-3. Check if `/ai/` exists
-4. Load relevant governance / skills / orchestration files
-5. Read only task-relevant files
-6. Avoid full repo scans unless necessary
+3. **Load relevant templates from `/ai/templates/` based on task type**
+4. Check if `/ai/` exists
+5. Load relevant governance / skills / orchestration files
+6. **Validate all referenced governance docs exist; if missing → HALT per section 9.1**
+7. Read only task-relevant files
+8. Avoid full repo scans unless necessary
+
+## 9.1 MISSING GOVERNANCE VALIDATION
+
+If `docs/developer/development-workflow.md` or governance docs in `docs/architecture/governance/` are missing:
+
+1. HALT all work immediately
+2. Create [TASK] issue: "Missing governance documentation"
+3. Await human clarification before proceeding
+
+---
+
+# 10. ESCALATION PROCEDURES
+
+When halting due to insufficient evidence, missing requirements, or conflicts:
+
+1. **If working on an issue:** Post clarification question as issue comment
+2. **If no issue exists:** Ask human operator directly; do not create issue unilaterally
+3. **If security concern:** Flag with `[SECURITY]` prefix and await explicit approval
+4. **If authority conflict:** Follow section 5.1 protocol
+
+Document all escalations in the issue timeline.
 
 ---
 
