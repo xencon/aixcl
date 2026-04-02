@@ -202,7 +202,7 @@ When performing a task:
 3. **Load relevant templates from `/ai/templates/` based on task type**
 4. Check if `/ai/` exists
 5. Load relevant governance / skills / orchestration files
-6. **Validate all referenced governance docs exist; if missing → HALT per section 9.1**
+6. **Validate all referenced governance docs exist per section 9.1 instructions; if missing → HALT**
 7. Read only task-relevant files
 8. Avoid full repo scans unless necessary
 
@@ -213,6 +213,22 @@ If `docs/developer/development-workflow.md` or governance docs in `docs/architec
 1. HALT all work immediately
 2. Create [TASK] issue: "Missing governance documentation"
 3. Await human clarification before proceeding
+
+**Validation Instructions:** Agents MUST manually verify each required file exists:
+
+```
+1. Check docs/developer/development-workflow.md exists
+2. Check docs/architecture/governance/00_invariants.md exists
+3. Check docs/architecture/governance/01_ai_guidance.md exists
+4. Check docs/architecture/governance/02_profiles.md exists
+5. Check docs/architecture/governance/03_stack_status.md exists
+6. Check docs/architecture/governance/service_contracts/ directory exists
+```
+
+**CRITICAL: DO NOT assume files exist based on parent directory listing - verify EACH file
+individually. A directory listing showing the governance folder does NOT confirm its contents.
+Always use explicit file existence checks (e.g., `ls <filepath>` or `read <filepath>`) for each
+required document.**
 
 ---
 
