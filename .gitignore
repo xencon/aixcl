@@ -3,6 +3,7 @@
 .env.local
 .env.backup.*
 .env.*.local
+config/.env
 .pythonenv
 venv/
 .env/
