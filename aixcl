@@ -11,9 +11,6 @@ set -o pipefail  # Catch errors in pipelines
 # Get script directory early (needed for compose file paths and library sourcing)
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
-# AIXCL-specific constants
-export CONTAINER_NAME="open-webui"
-
 # ── Source shared libraries ──────────────────────────────────────────────────
 # Order matters: color.sh and common.sh first (no dependencies), then modules
 # that depend on them. load_env_file must run before docker_utils.sh so that

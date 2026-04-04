@@ -2,10 +2,20 @@
 # Utility commands for AIXCL
 
 function needs_rebuild() {
-    # shellcheck disable=SC2034
     local service="$1"
+    # Check if service needs rebuild based on source changes
     # Currently no local-build services remain in the stack.
-    return 1
+    # The service parameter is kept for API compatibility.
+    case "$service" in
+        open-webui|ollama|vllm|llamacpp)
+            # These are all remote images now, no local builds
+            return 1
+            ;;
+        *)
+            # Unknown service, assume no rebuild needed
+            return 1
+            ;;
+    esac
 }
 
 function utils_cmd() {

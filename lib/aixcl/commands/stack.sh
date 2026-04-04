@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Stack management commands for AIXCL
-# shellcheck disable=SC2153  # CONTAINER_NAME is exported from main aixcl script
+
+# Container name for Open WebUI - must match docker-compose service name
+readonly CONTAINER_NAME="open-webui"
 
 function ensure_databases() {
     # Ensure required databases exist (webui)
