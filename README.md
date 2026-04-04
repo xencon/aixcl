@@ -13,39 +13,101 @@ AIXCL is a privacy-focused platform for individuals and teams who want full cont
 * **32 GB RAM** (minimum recommended).
 * **128 GB Disk Space** (for models and images).
 
-## Get Started in 3 Steps
+---
+
+## Quick Start
 
 **1. Clone and Verify**
 
-```
+```bash
 git clone https://github.com/xencon/aixcl.git && cd aixcl
 ./aixcl utils check-env
 ```
 
+> Note: The check will warn if `huggingface-cli` is missing. Install with `pip install huggingface-hub` if you plan to use llama.cpp or vLLM engines.
+
 **2. Start the Stack**
 
-```
+```bash
 # Choose a profile: usr (minimal), dev (UI+DB), ops (Observability), sys (Full)
 ./aixcl stack start --profile usr
 ```
 
-**3. Choose your engine**
+**3. Choose Your Engine**
 
-```
-./aixcl models config engine set ollama
+```bash
+# See available engines
+./aixcl config engine auto
+
+# Or set manually
+./aixcl config engine set ollama   # Recommended for beginners
+./aixcl config engine set vllm     # For high-end GPUs
+./aixcl config engine set llamacpp  # For GGUF models
 ```
 
-**4. Add your first model**
+**4. Add Your First Model**
 
-```
-./aixcl models add qwen2.5-coder:7b
+```bash
+# Quick test model (smallest, fastest download)
+./aixcl models add qwen2.5-coder:0.5b
 ```
 
-**5. Prompt the model with OpenCode**
+> See [Quick Test Models](#quick-test-models) for engine-specific options.
 
-```
+**5. Launch OpenCode**
+
+```bash
 ./opencode
 ```
+
+---
+
+## Understanding Model Downloads
+
+Models are downloaded on-demand when you run `./aixcl models add`, not during installation. Download times vary based on model size and your connection speed.
+
+### Download Time Estimates
+
+| Model Size | Approximate File Size | Download Time (100 Mbps) | Download Time (20 Mbps) | Download Time (5 Mbps) |
+|------------|----------------------|--------------------------|-------------------------|------------------------|
+| 0.5B params | ~350-400 MB | ~30 seconds | ~2 minutes | ~5 minutes |
+| 1.5B params | ~1 GB | ~1 minute | ~5 minutes | ~15 minutes |
+| 7B params | ~4-5 GB | ~5 minutes | ~20 minutes | ~45 minutes |
+
+> **Note:** Times are estimates. Actual speeds depend on network conditions and HuggingFace/Ollama server load.
+
+---
+
+## Quick Test Models
+
+These are the smallest viable models for testing your AIXCL setup with OpenCode:
+
+### Ollama (Recommended for Beginners)
+
+| Model | Size | Command |
+|-------|------|---------|
+| Qwen2.5-Coder 0.5B | ~398 MB | `./aixcl models add qwen2.5-coder:0.5b` |
+| Qwen2.5-Coder 1.5B | ~986 MB | `./aixcl models add qwen2.5-coder:1.5b` |
+
+> Ollama models use the format `model:tag`. The `0.5b` tag indicates the smallest variant.
+
+### vLLM
+
+| Model | Size | Command |
+|-------|------|---------|
+| Qwen2.5-Coder 0.5B | ~1 GB* | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct` |
+
+> *vLLM downloads the full HuggingFace model (safetensors format), which is larger than GGUF.
+> Requires `huggingface-cli` to be installed on the host.
+
+### llama.cpp
+
+| Model | Size | Command |
+|-------|------|---------|
+| Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf` |
+
+> llama.cpp requires GGUF format models. The format is `username/repo/filename.gguf`.
+> Requires `huggingface-cli` to be installed on the host.
 
 ---
 
@@ -55,7 +117,7 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 
 AIXCL supports multiple backends. You can switch them instantly:
 
-```
+```bash
 # Auto-detect optimal engine based on your hardware
 ./aixcl config engine auto
 
@@ -73,12 +135,11 @@ AIXCL supports multiple backends. You can switch them instantly:
 
 Manage your local library across any active engine:
 
-```
+**Ollama Engine:**
+```bash
 # Add from Ollama Registry
 ./aixcl models add llama3.2:3b
-
-# Add directly from Hugging Face (GGUF)
-./aixcl models add hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M
+./aixcl models add qwen2.5-coder:7b
 
 # List all local models
 ./aixcl models list
@@ -87,9 +148,27 @@ Manage your local library across any active engine:
 ./aixcl models remove llama3.2:3b
 ```
 
+**vLLM Engine:**
+```bash
+# Add from HuggingFace (full model path)
+./aixcl models add Qwen/Qwen2.5-Coder-1.5B-Instruct
+
+# List downloaded models
+./aixcl models list
+```
+
+**llama.cpp Engine:**
+```bash
+# Add GGUF from HuggingFace (requires full path with filename)
+./aixcl models add bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf
+
+# List GGUF files in volume
+./aixcl models list
+```
+
 ### 3. OpenCode CLI Integration
 
-AIXCL is designed to power local agentic development workflows via the OpenCode CLI. OpenCode connects to your stack for local chat, autocomplete, and agentic coding — all running on-device.
+AIXCL is designed to power local agentic development workflows via the OpenCode CLI. OpenCode connects to your stack for local chat, autocomplete, and agentic coding - all running on-device.
 
 * **Endpoint:** `http://localhost:11434/v1`
 * **Start a session:** `./opencode`
@@ -103,6 +182,7 @@ Agent workflow rules and permissions are configured automatically via `opencode.
 
 | Command | Description |
 | --- | --- |
+| `./aixcl utils check-env` | Validate environment and dependencies |
 | `./aixcl stack status` | Check service health and OpenCode connectivity |
 | `./aixcl stack logs engine` | View real-time inference logs |
 | `./aixcl stack stop` | Stop all services gracefully |
