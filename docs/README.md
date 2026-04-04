@@ -31,7 +31,7 @@ Documentation about system architecture and design:
 ### Reference Documentation (`reference/`)
 Reference materials and specifications:
 - [`manpage.txt`](reference/manpage.txt) - Command-line reference
-- [`security.md`](reference/security.md) - Security policy and practices
+- See root [`SECURITY.md`](../SECURITY.md) - Security policy and practices
 
 ## Component-Specific Documentation
 
