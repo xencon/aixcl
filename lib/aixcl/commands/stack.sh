@@ -200,7 +200,7 @@ function start() {
     # Check for .env file and restore from backup or create from .env.example if missing
     # Use SCRIPT_DIR to ensure we're looking in the correct location
     local env_file="${SCRIPT_DIR}/.env"
-    local env_example="${SCRIPT_DIR}/.env.example"
+    local env_example="${SCRIPT_DIR}/config/.env.example"
     local env_backup_volume="aixcl-env-backup"
     
     # NEVER overwrite existing .env file (preserves user configuration)
