@@ -276,6 +276,7 @@ services:
   loki:
     image: grafana/loki:3.3.0
     container_name: loki
+    pull_policy: if_not_present
     volumes:
       - ../loki/loki-config.yml:/etc/loki/loki-config.yml
       - loki-data:/loki
