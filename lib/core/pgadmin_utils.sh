@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # pgAdmin utility functions
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Get script directory (repo root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Generate pgAdmin configuration
 generate_pgadmin_config() {

@@ -58,7 +58,7 @@ _aixcl_complete() {
     # Includes 'engine' alias for convenience
     local services="$runtime_core_services $operational_services engine"
     
-    # Valid profiles (must match VALID_PROFILES in cli/lib/profile.sh)
+    # Valid profiles (must match VALID_PROFILES in lib/cli/profile.sh)
     local profiles="usr dev ops sys"
     
     # If we're completing the first argument (right after the command)

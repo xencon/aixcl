@@ -11,7 +11,7 @@ The runtime core consists of two components:
 - **Inference Engine** (e.g., Ollama, vLLM, llama.cpp) - LLM inference engine (Docker-managed service)
 - **OpenCode** - AI-powered code assistance (VS Code plugin, not Docker-managed)
 
-OpenCode is a client-side IDE plugin that connects to the Inference Engine via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or `PROFILE_SERVICES` mappings in `cli/lib/profile.sh`.
+OpenCode is a client-side IDE plugin that connects to the Inference Engine via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or `PROFILE_SERVICES` mappings in `lib/cli/profile.sh`.
 
 Note: Runtime persistence is provided by PostgreSQL as an operational service in all current profiles.
 

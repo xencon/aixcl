@@ -31,16 +31,16 @@ set -u
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/core/common.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/docker_utils.sh"
+source "${SCRIPT_DIR}/lib/core/docker_utils.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/color.sh"
+source "${SCRIPT_DIR}/lib/core/color.sh"
 
 # Source profile library if available
 # shellcheck disable=SC1091
-if [ -f "${SCRIPT_DIR}/cli/lib/profile.sh" ]; then
-    source "${SCRIPT_DIR}/cli/lib/profile.sh"
+if [ -f "${SCRIPT_DIR}/lib/cli/profile.sh" ]; then
+    source "${SCRIPT_DIR}/lib/cli/profile.sh"
 fi
 
 # Load environment variables
