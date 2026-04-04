@@ -114,7 +114,7 @@ function start() {
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
             local env_profile
-            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$/")
+            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
@@ -171,7 +171,7 @@ function start() {
         local env_file="${SCRIPT_DIR}/.env"
         if [ -f "$env_file" ]; then
             local current_env_profile
-            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$/")
+            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             if [ "$current_env_profile" != "$profile" ]; then
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -503,7 +503,7 @@ function restart() {
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
             local env_profile
-            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$/")
+            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
@@ -556,7 +556,7 @@ function restart() {
         local env_file="${SCRIPT_DIR}/.env"
         if [ -f "$env_file" ]; then
             local current_env_profile
-            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$/")
+            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             if [ "$current_env_profile" != "$profile" ]; then
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -993,7 +993,7 @@ function export_quadlet() {
     local profile=""
     # Load profile from .env if not specified
     if [ -f "${SCRIPT_DIR}/.env" ]; then
-        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$/")
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     fi
     
     if [ -z "$profile" ]; then
@@ -1092,7 +1092,7 @@ function status() {
     local current_profile=""
     local env_file="${SCRIPT_DIR}/.env"
     if [ -f "$env_file" ]; then
-        current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed "s/^['\"]//;s/['\"]$/")
+        current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     fi
     
     # Determine overall status (Running/Stopped)
