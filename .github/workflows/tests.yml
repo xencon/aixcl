@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run security tests
+        run: |
+          echo "Running security tests..."
+          chmod +x tests/security/*.sh
+          for test in tests/security/*.sh; do
+            echo "Running: $test"
+            bash "$test" || exit 1
+          done
+          echo "All security tests passed!"
+
+  script-validation:
+    name: Validate Shell Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check script syntax
+        run: |
+          echo "Checking shell script syntax..."
+          find . -type f -name "*.sh" ! -path "./.git/*" -exec bash -n {} \; 2>&1 | tee /tmp/syntax_errors.txt
+          if [ -s /tmp/syntax_errors.txt ]; then
+            echo "Syntax errors found!"
+            exit 1
+          fi
+          echo "All scripts have valid syntax!"
+
+      - name: Test script execution
+        run: |
+          echo "Testing critical scripts can be sourced..."
+          chmod +x ./aixcl
+          ./aixcl --help > /dev/null || exit 1
+          echo "Scripts are executable!"
