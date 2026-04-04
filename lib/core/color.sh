@@ -21,7 +21,6 @@ ICON_SUCCESS="✅"
 ICON_ERROR="❌"
 ICON_WARNING="⚠️"
 ICON_INFO="ℹ️"
-ICON_CLEAN="🧹"
 
 # Print colored success message
 print_success() {
@@ -41,9 +40,4 @@ print_warning() {
 # Print colored info message
 print_info() {
     echo -e "${BLUE}${ICON_INFO}${NC} $1"
-}
-
-# Print clean icon message
-print_clean() {
-    echo -e "${GREEN}${ICON_CLEAN}${NC} $1"
 }

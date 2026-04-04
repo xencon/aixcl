@@ -116,14 +116,4 @@ get_engine_container() {
     ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" | head -1
 }
 
-# Get the actual Ollama container name (handles hash-prefixed containers)
-# Kept for backward compatibility
-get_ollama_container() {
-    get_engine_container "ollama"
-}
 
-# Check if any service containers are running
-are_services_running() {
-    local pattern="$1"
-    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -qE "$pattern"
-}
