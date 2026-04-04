@@ -103,7 +103,7 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 
 | Model | Size | Command |
 |-------|------|---------|
-| Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf` |
+| Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` |
 
 > llama.cpp requires GGUF format models. The format is `username/repo/filename.gguf`.
 > Requires `hf` CLI to be installed on the host.
