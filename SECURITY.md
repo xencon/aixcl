@@ -19,11 +19,9 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via one of the following methods:
+Instead, please use one of the following methods:
 
 1. **GitHub Security Advisories (Preferred)**: Use the [GitHub Security Advisory](https://github.com/xencon/aixcl/security/advisories/new) feature to report vulnerabilities privately.
-
-2. **Email**: If you prefer email, contact us at `security@example.com` (replace this with a monitored security contact address for this project).
 
 ### What to Include
 
@@ -89,6 +87,96 @@ AIXCL is a self-hosted platform designed for local deployment. Security consider
 - **Model Management**: Security of model downloads and execution
 - **CLI Security**: Command-line interface security and privilege escalation
 
+## Docker Socket Security Considerations
+
+AIXCL uses Docker socket mounts for specific operational services. This section documents the security trade-offs and recommendations.
+
+### Services Using Docker Socket
+
+The following services mount the Docker socket (`/var/run/docker.sock`):
+
+| Service | Profile | Purpose | Risk Level |
+|---------|---------|---------|------------|
+| **alloy** | `ops`, `sys` | Log collection from containers | High |
+
+### Security Implications
+
+**Docker socket access is equivalent to root access on the host.**
+
+Containers with Docker socket access can:
+- Start, stop, or remove any container
+- Access the host filesystem
+- Create privileged containers
+- Access other containers' networks and volumes
+
+### Risk Assessment
+
+**For AIXCL's target use case (local/self-hosted deployments):**
+- **Acceptable risk**: AIXCL is designed for single-node, self-hosted deployments where the user controls the entire stack
+- **Trusted environment**: Users run AIXCL on their own infrastructure with administrative control
+- **Well-maintained tool**: Alloy is a standard, widely-used open source project
+
+**Not recommended for:**
+- Multi-tenant environments
+- Untrusted networks
+- Shared hosting scenarios
+- Production environments with strict security requirements
+
+### Mitigation Options
+
+**Option 1: Document and Accept (Default)**
+- Understand the security trade-off
+- Use only in trusted, single-administrator environments
+- Monitor for unusual container activity
+
+**Option 2: Docker Socket Proxy (Advanced)**
+For users requiring stricter security, consider implementing a Docker socket proxy (e.g., `docker-socket-proxy`) to restrict API access:
+- alloy: Allow only container listing and log access
+
+Note: This requires manual configuration and is not officially supported.
+
+### Recommendations by Profile
+
+| Profile | Docker Socket Access | Recommendation |
+|---------|----------------------|----------------|
+| `usr` | No | No action needed |
+| `dev` | No | No action needed |
+| `ops` | Yes (`alloy`) | Use in trusted environments |
+| `sys` | Yes (`alloy`) | Use in trusted environments |
+
+## Network Mode Design
+
+### network_mode: host is Intentional
+
+AIXCL uses network_mode: host for all Docker services. This is an **intentional architectural decision**, not a security vulnerability.
+
+### Rationale
+
+| Aspect | Design Choice |
+|--------|---------------|
+| **Networking** | network_mode: host |
+| **Purpose** | Simplified local development |
+| **Target** | Single-node, self-hosted deployments |
+
+**Benefits:**
+- No Docker DNS resolution complexity
+- No port mapping management
+- No network aliases needed
+- Direct localhost access for all services
+- Clone and run simplicity
+
+### Security Context
+
+**Not a vulnerability because:**
+- AIXCL is designed for **localhost/trusted network** deployments
+- Users have **full control** over their infrastructure
+- All services run on the **same host**
+- Alternative (custom networks) adds complexity without security benefit for single-node use
+
+### Architecture Reference
+
+See [docs/architecture/governance/00_invariants.md](docs/architecture/governance/00_invariants.md) section 7 for the formal architectural invariant.
+
 ## Security Best Practices
 
 When deploying AIXCL:
@@ -101,7 +189,7 @@ When deploying AIXCL:
 6. **Monitoring**: Enable observability features to detect anomalies
 7. **Backups**: Regularly backup PostgreSQL data and configurations
 
-For detailed security guidance, see the security documentation in the [`docs/` directory](docs/).
+For operational security guidance, see [docs/operations/security.md](docs/operations/security.md) for rootless container operations.
 
 ## Security Updates
 
@@ -119,7 +207,6 @@ If you wish to be acknowledged for your report, please let us know. Otherwise, w
 
 ---
 
-**Last Updated**: December 2024
+**Last Updated**: April 2026
 
 For questions about this security policy, please open a discussion in the repository.
-
