@@ -34,11 +34,15 @@
 
   "provider": {
     "aixcl-local": {
-      "api": "openai",
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "AIXCL",
       "options": {
-        "baseURL": "http://localhost:11434/v1",
-        "apiKey": "",
-        "stream": false
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
+          "name": "Qwen 2.5 Coder 1.5B"
+        }
       }
     }
   }
