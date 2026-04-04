@@ -1,18 +1,6 @@
 #!/usr/bin/env bash
 # Configuration commands for AIXCL
 
-function open_url_in_browser() {
-    local url="$1"
-
-    if command -v xdg-open &> /dev/null; then
-        xdg-open "$url" 2>/dev/null &
-    elif command -v open &> /dev/null; then
-        open "$url" 2>/dev/null &
-    else
-        echo "   Could not detect default browser. Please open $url manually."
-    fi
-}
-
 function config_cmd() {
     local action="${1:-}"
     case "$action" in
