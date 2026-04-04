@@ -66,24 +66,24 @@ ai/
 
 ## 3.1 Governance Layer
 
-Files in `/ai/governance/` define behavioral constraints and workflow policy.
+Files in `ai/governance/` define behavioral constraints and workflow policy.
 
 ## 3.2 Skills Layer
 
-Files in `/ai/skills/` define modular, bounded capabilities.
+Files in `ai/skills/` define modular, bounded capabilities.
 
 Load only relevant skills for the task.
 Do not expand scope based on skill presence.
 
 ## 3.3 Orchestration Layer
 
-Files in `/ai/orchestration/` define state machines and execution flow.
+Files in `ai/orchestration/` define state machines and execution flow.
 
 If present, follow defined transitions strictly.
 
 ## 3.4 Template Layer
 
-Files in `/ai/templates/`:
+Files in `ai/templates/`:
 
 - Provide structured output guidance for issues and pull requests
 - Are read-only unless explicitly instructed
@@ -95,10 +95,10 @@ Available templates:
 
 | Template             | Path                                   |
 |----------------------|----------------------------------------|
-| Bug report           | `/ai/templates/issue/bug_report.md`    |
-| Feature request      | `/ai/templates/issue/feature_request.md`|
-| Task / investigation | `/ai/templates/issue/task.md`          |
-| Pull request         | `/ai/templates/pr/pull_request.md`     |
+| Bug report           | `ai/templates/issue/bug_report.md`     |
+| Feature request      | `ai/templates/issue/feature_request.md`|
+| Task investigation   | `ai/templates/issue/task.md`           |
+| Pull request         | `ai/templates/pr/pull_request.md`      |
 
 ---
 
@@ -111,7 +111,7 @@ Available templates:
 - NEVER rename files unless explicitly instructed
 - NEVER introduce structural changes without approval
 
-Presence of `/ai/` does NOT expand modification authority.
+Presence of `ai/` does NOT expand modification authority.
 
 ## 4.2 Dependency Policy
 
