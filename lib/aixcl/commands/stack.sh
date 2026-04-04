@@ -654,11 +654,11 @@ function start_service() {
     log_info "Starting service: $service..."
     
     # Check for .env file if needed (for services that require it)
-    if [ ! -f .env ] && { [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; }; then
-        if [ -f .env.example ]; then
-            log_warning ".env file not found. Copying from .env.example..."
-            cp .env.example .env
-            load_env_file ".env"
+    if [ ! -f "${SCRIPT_DIR}/.env" ] && { [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; }; then
+        if [ -f "${SCRIPT_DIR}/config/.env.example" ]; then
+            log_warning ".env file not found. Copying from config/.env.example..."
+            cp "${SCRIPT_DIR}/config/.env.example" "${SCRIPT_DIR}/.env"
+            load_env_file "${SCRIPT_DIR}/.env"
         else
             log_error ".env file required for service '$service'"
             return 1
