@@ -46,11 +46,15 @@ services:
     container_name: llamacpp
     volumes:
       - llamacpp-data:/models
+      - ../scripts/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
     pull_policy: if_not_present
     tty: true
     network_mode: host
     restart: unless-stopped
-    command: ["-m", "/models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf", "--host", "0.0.0.0", "--port", "11434"]
+    environment:
+      - LLAMACPP_MODEL=${LLAMACPP_MODEL:-qwen2.5-coder-1.5b-instruct-q4_k_m.gguf}
+    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
+    command: ["--host", "0.0.0.0", "--port", "11434"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s

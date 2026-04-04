@@ -249,6 +249,18 @@ check_env() {
         print_info ".env file not found (will be created on first start)"
     fi
 
+    # Check huggingface-cli for llama.cpp and vLLM model downloads
+    echo -e "\nChecking model download tools..."
+    if command -v huggingface-cli &> /dev/null; then
+        print_success "huggingface-cli is available (for llama.cpp and vLLM models)"
+    else
+        print_warning "huggingface-cli not found"
+        echo "   Required for downloading models when using llama.cpp or vLLM engines"
+        echo "   Install with: pip install huggingface-hub"
+        echo "   Or: pip3 install huggingface-hub"
+        echo "   Note: Ollama engine doesn't require huggingface-cli"
+    fi
+
     if [ $missing_deps -eq 1 ]; then
         echo -e "\n"
         print_error "Environment check failed. Please address the issues above."

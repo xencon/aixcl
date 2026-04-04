@@ -1443,9 +1443,20 @@ is_model_installed() {
             return $?
             ;;
         llamacpp)
-            # llama.cpp uses a flat models directory. Check if file exists
-            "${DOCKER_BIN:-docker}" exec "$container" ls "/models/$model" >/dev/null 2>&1
-            return $?
+            # llama.cpp uses a flat models directory. Check if file exists in volume on host
+            local llamacpp_volume="${SERVICES_DIR:-services}_llamacpp-data"
+            local volume_path
+            volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
+            if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
+                [ -f "${volume_path}/${model}" ]
+                return $?
+            fi
+            # Fallback: check via container if volume path not available
+            if [ -n "$container" ]; then
+                "${DOCKER_BIN:-docker}" exec "$container" ls "/models/$model" >/dev/null 2>&1
+                return $?
+            fi
+            return 1
             ;;
     esac
     return 1
@@ -1463,11 +1474,6 @@ function add() {
     local engine="${INFERENCE_ENGINE:-ollama}"
     local container
     container=$(get_engine_container "$engine")
-
-    if [ -z "$container" ]; then
-        echo "Error: $engine container is not running. Please start the services first."
-        return 1
-    fi
 
     # Parse Hugging Face URI if present
     local is_hf=false
@@ -1500,6 +1506,10 @@ function add() {
         
         # Download logic based on engine
         if [ "$engine" = "ollama" ]; then
+            if [ -z "$container" ]; then
+                echo "Error: $engine container is not running. Please start the services first."
+                return 1
+            fi
             if [ "$is_hf" = true ]; then
                 # Handle explicit HF pull for Ollama
                 echo "📥 Pulling Hugging Face model into Ollama..."
@@ -1524,6 +1534,10 @@ function add() {
                 fi
             fi
         elif [ "$engine" = "vllm" ]; then
+            if [ -z "$container" ]; then
+                echo "Error: $engine container is not running. Please start the services first."
+                return 1
+            fi
             echo "📥 Downloading model from Hugging Face for vLLM..."
             if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model"; then
                 echo "✅ Successfully downloaded model: $model"
@@ -1532,53 +1546,63 @@ function add() {
                 return 1
             fi
         elif [ "$engine" = "llamacpp" ]; then
-            # For llama.cpp, we assume the user provides a Hugging Face path for a GGUF
-            # Format: org/repo/model.gguf or just org/repo (we'll try to find a GGUF)
+            # For llama.cpp, download to volume first, then the container will pick it up
+            # Format: org/repo/model.gguf
             if [[ "$model" =~ ^([^/]+/[^/]+)/(.+\.gguf)$ ]]; then
                 local repo="${BASH_REMATCH[1]}"
                 local filename="${BASH_REMATCH[2]}"
                 echo "📥 Downloading $filename from $repo..."
-                # Try huggingface-cli first, then curl fallback
-                if "${DOCKER_BIN:-docker}" exec "$container" command -v huggingface-cli >/dev/null 2>&1; then
-                    if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$repo" "$filename" --local-dir /models --local-dir-use-symlinks False; then
-                        echo "✅ Successfully downloaded model: $model"
+                
+                # Get the volume mount point
+                local llamacpp_volume="${SERVICES_DIR:-services}_llamacpp-data"
+                local volume_path
+                volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
+                
+                if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
+                    echo "   Downloading to volume: $volume_path"
+                    
+                    # Try huggingface-cli first
+                    if command -v huggingface-cli >/dev/null 2>&1; then
+                        if huggingface-cli download "$repo" "$filename" --local-dir "$volume_path" --local-dir-use-symlinks False; then
+                            echo "✅ Successfully downloaded model to volume: $filename"
+                        else
+                            echo "❌ Failed to download model: $model"
+                            return 1
+                        fi
+                    # Fall back to Python script
+                    elif [ -f "${SCRIPT_DIR}/scripts/download-hf-model.py" ] && python3 -c "import huggingface_hub" 2>/dev/null; then
+                        echo "   Using Python fallback for download..."
+                        if python3 "${SCRIPT_DIR}/scripts/download-hf-model.py" "$repo" "$filename" --local-dir "$volume_path" --docker-volume "$llamacpp_volume"; then
+                            echo "✅ Successfully downloaded model to volume: $filename"
+                        else
+                            echo "❌ Failed to download model: $model"
+                            return 1
+                        fi
                     else
-                        echo "❌ Failed to download model: $model"
+                        echo "❌ huggingface-cli not found on host and Python fallback unavailable."
+                        echo "   Install huggingface-hub with: pip install huggingface-hub"
                         return 1
                     fi
                 else
-                    echo "⚠️  huggingface-cli not found in container. Falling back to curl..."
-                    if "${DOCKER_BIN:-docker}" exec "$container" curl -L "https://huggingface.co/$repo/resolve/main/$filename" -o "/models/$filename"; then
-                        echo "✅ Successfully downloaded $filename via curl"
+                    # Fallback: try downloading directly via curl to volume
+                    echo "   Downloading directly to volume..."
+                    if curl -L "https://huggingface.co/$repo/resolve/main/$filename" -o "/tmp/$filename" 2>/dev/null; then
+                        # Copy to volume using docker run
+                        ${DOCKER_BIN:-docker} run --rm -v "${llamacpp_volume}:/models" alpine:latest cp "/tmp/$filename" "/models/$filename" 2>/dev/null || {
+                            echo "❌ Failed to copy model to volume"
+                            return 1
+                        }
+                        rm -f "/tmp/$filename"
+                        echo "✅ Successfully downloaded model: $filename"
                     else
-                        echo "❌ Failed to download $filename via curl"
+                        echo "❌ Failed to download model: $model"
                         return 1
                     fi
                 fi
             else
-                # Try to download the repo and find any .gguf if it's just org/repo
-                echo "📥 Downloading model files from $model..."
-                if "${DOCKER_BIN:-docker}" exec "$container" command -v huggingface-cli >/dev/null 2>&1; then
-                    if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model" --local-dir /models --local-dir-use-symlinks False --include "*.gguf"; then
-                         # Find the downloaded gguf to update config
-                         local found_gguf
-                         found_gguf=$("${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -maxdepth 1 | head -1 | xargs basename 2>/dev/null || true)
-                         if [ -n "$found_gguf" ]; then
-                             model="$found_gguf"
-                             echo "✅ Successfully downloaded $model"
-                         else
-                             echo "❌ No GGUF files found in $model"
-                             return 1
-                         fi
-                    else
-                        echo "❌ Failed to download model: $model"
-                        return 1
-                    fi
-                else
-                    echo "❌ huggingface-cli not found and $model is not a direct GGUF file path. Cannot download."
-                    echo "   Please provide the full path: org/repo/filename.gguf"
-                    return 1
-                fi
+                echo "❌ Invalid model format for llama.cpp. Expected: username/repo/model.gguf"
+                echo "   Example: bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf"
+                return 1
             fi
         fi
     fi
@@ -1596,10 +1620,26 @@ function add() {
             # Update vllm model specifically on the command line
             sed -i "/vllm:/,/healthcheck:/s|command:.*|command: [\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"32768\", \"--port\", \"11434\", \"--enable-auto-tool-choice\", \"--tool-call-parser\", \"hermes\"]|" "$compose_file"
         elif [[ "$engine" == "llamacpp" ]]; then
-            # Update llamacpp model specifically on the command line
+            # Update llamacpp model via environment variable
             local model_filename="$model"
             [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
-            sed -i "/llamacpp:/,/healthcheck:/s|command:.*|command: [\"-m\", \"/models/$model_filename\", \"--host\", \"0.0.0.0\", \"--port\", \"11434\"]|" "$compose_file"
+            
+            # Update the environment variable in .env file
+            local env_file="${SCRIPT_DIR}/.env"
+            if [ -f "$env_file" ]; then
+                if grep -q "^LLAMACPP_MODEL=" "$env_file"; then
+                    # Update existing variable
+                    sed -i "s/^LLAMACPP_MODEL=.*/LLAMACPP_MODEL=$model_filename/" "$env_file"
+                else
+                    # Add new variable
+                    echo "LLAMACPP_MODEL=$model_filename" >> "$env_file"
+                fi
+                echo "✅ Configuration updated in .env. Restarting llamacpp container..."
+                # Restart the container to pick up the new model
+                ${DOCKER_BIN:-docker} restart llamacpp 2>/dev/null || true
+            else
+                echo "⚠️  .env file not found. Please set LLAMACPP_MODEL=$model_filename manually."
+            fi
         fi
         echo "✅ Configuration updated. Please restart the stack to apply changes: $0 stack restart"
     fi
