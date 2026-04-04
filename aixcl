@@ -1444,7 +1444,7 @@ is_model_installed() {
             ;;
         llamacpp)
             # llama.cpp uses a flat models directory. Check if file exists in volume on host
-            local llamacpp_volume="${SERVICES_DIR:-services}_llamacpp-data"
+            local llamacpp_volume="services_llamacpp-data"
             local volume_path
             volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
             if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
@@ -1553,51 +1553,72 @@ function add() {
                 local filename="${BASH_REMATCH[2]}"
                 echo "📥 Downloading $filename from $repo..."
                 
-                # Get the volume mount point
-                local llamacpp_volume="${SERVICES_DIR:-services}_llamacpp-data"
-                local volume_path
-                volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
+                # For llama.cpp, we need to download the GGUF file to the Docker volume
+                # Since Docker volumes may not be directly accessible on the host filesystem,
+                # we download to a temp location and use docker run to copy to the volume
+                local llamacpp_volume="services_llamacpp-data"
+                local temp_dir="/tmp/aixcl-downloads-$$"
+                local downloaded_file="${temp_dir}/${filename}"
                 
-                if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
-                    echo "   Downloading to volume: $volume_path"
+                # Create temp directory
+                mkdir -p "$temp_dir"
+                
+                echo "   Downloading to temporary location..."
+                
+                # Download using available method
+                local download_success=false
+                
+                # Try huggingface-cli first
+                if command -v huggingface-cli >/dev/null 2>&1; then
+                    echo "   Attempting download with huggingface-cli..."
+                    if huggingface-cli download "$repo" "$filename" --local-dir "$temp_dir" --local-dir-use-symlinks False; then
+                        download_success=true
+                        echo "   ✓ huggingface-cli download successful"
+                    else
+                        echo "   ⚠ huggingface-cli download failed"
+                    fi
+                fi
+                
+                # Fall back to Python script
+                if [ "$download_success" = false ] && [ -f "${SCRIPT_DIR}/scripts/download-hf-model.py" ] && python3 -c "import huggingface_hub" 2>/dev/null; then
+                    echo "   Attempting download with Python fallback..."
+                    if python3 "${SCRIPT_DIR}/scripts/download-hf-model.py" "$repo" "$filename" --local-dir "$temp_dir" > /dev/null 2>&1; then
+                        download_success=true
+                        echo "   ✓ Python download successful"
+                    else
+                        echo "   ⚠ Python download failed"
+                    fi
+                fi
+                
+                # Last resort: curl
+                if [ "$download_success" = false ]; then
+                    echo "   Using curl to download..."
+                    if curl -L "https://huggingface.co/$repo/resolve/main/$filename" -o "$downloaded_file" --progress-bar 2>/dev/null; then
+                        download_success=true
+                    fi
+                fi
+                
+                if [ "$download_success" = false ]; then
+                    rm -rf "$temp_dir"
+                    echo "❌ Failed to download model: $model"
+                    echo "   Install huggingface-hub: pip install huggingface-hub"
+                    return 1
+                fi
+                
+                # Now copy to Docker volume using docker run
+                echo "   Copying to Docker volume..."
+                if ${DOCKER_BIN:-docker} run --rm \
+                    -v "${llamacpp_volume}:/models" \
+                    -v "${temp_dir}:/source:ro" \
+                    alpine:latest \
+                    cp "/source/${filename}" "/models/"; then
                     
-                    # Try huggingface-cli first
-                    if command -v huggingface-cli >/dev/null 2>&1; then
-                        if huggingface-cli download "$repo" "$filename" --local-dir "$volume_path" --local-dir-use-symlinks False; then
-                            echo "✅ Successfully downloaded model to volume: $filename"
-                        else
-                            echo "❌ Failed to download model: $model"
-                            return 1
-                        fi
-                    # Fall back to Python script
-                    elif [ -f "${SCRIPT_DIR}/scripts/download-hf-model.py" ] && python3 -c "import huggingface_hub" 2>/dev/null; then
-                        echo "   Using Python fallback for download..."
-                        if python3 "${SCRIPT_DIR}/scripts/download-hf-model.py" "$repo" "$filename" --local-dir "$volume_path" --docker-volume "$llamacpp_volume"; then
-                            echo "✅ Successfully downloaded model to volume: $filename"
-                        else
-                            echo "❌ Failed to download model: $model"
-                            return 1
-                        fi
-                    else
-                        echo "❌ huggingface-cli not found on host and Python fallback unavailable."
-                        echo "   Install huggingface-hub with: pip install huggingface-hub"
-                        return 1
-                    fi
+                    echo "✅ Successfully downloaded and copied model: $filename"
+                    rm -rf "$temp_dir"
                 else
-                    # Fallback: try downloading directly via curl to volume
-                    echo "   Downloading directly to volume..."
-                    if curl -L "https://huggingface.co/$repo/resolve/main/$filename" -o "/tmp/$filename" 2>/dev/null; then
-                        # Copy to volume using docker run
-                        ${DOCKER_BIN:-docker} run --rm -v "${llamacpp_volume}:/models" alpine:latest cp "/tmp/$filename" "/models/$filename" 2>/dev/null || {
-                            echo "❌ Failed to copy model to volume"
-                            return 1
-                        }
-                        rm -f "/tmp/$filename"
-                        echo "✅ Successfully downloaded model: $filename"
-                    else
-                        echo "❌ Failed to download model: $model"
-                        return 1
-                    fi
+                    echo "❌ Failed to copy model to Docker volume"
+                    rm -rf "$temp_dir"
+                    return 1
                 fi
             else
                 echo "❌ Invalid model format for llama.cpp. Expected: username/repo/model.gguf"
