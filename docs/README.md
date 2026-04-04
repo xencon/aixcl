@@ -14,6 +14,7 @@ Documentation for contributors and developers:
 - [`contributing.md`](developer/contributing.md) - Contribution guidelines
 - [`development-workflow.md`](developer/development-workflow.md) - Development workflow and best practices
 - [`opencode-setup.md`](developer/opencode-setup.md) - OpenCode CLI (cn) with Ollama and agentic mode
+- **Moved to docs/developer/**: `AGENTS.md` and `DEVELOPMENT.md` - Agent operating contracts and workflow rules
 
 ### Operations Documentation (`operations/`)
 Documentation for operations and performance tuning:
@@ -33,17 +34,29 @@ Reference materials and specifications:
 - [`manpage.txt`](reference/manpage.txt) - Command-line reference
 - See root [`SECURITY.md`](../SECURITY.md) - Security policy and practices
 
+### Configuration Documentation (`config/`)
+Configuration templates and profiles:
+- `.env.example` - Environment configuration template
+- `profiles/` - Profile-specific configurations (usr, dev, ops, sys)
+
+### GitHub Templates (`.github/`)
+GitHub-specific templates:
+- `PULL_REQUEST_TEMPLATE.md` - Pull request template
+- Issue templates are in `ai/templates/issue/`
+
 ## Component-Specific Documentation
 
 Component-specific documentation remains with their respective components:
 - **Tests**: `tests/README.md` and component-specific test docs
 - **Scripts**: `scripts/*/README.md` files
+- **Libraries**: `lib/README.md` files
 
 ## Root-Level Documentation
 
 The following files remain at the project root (standard practice):
 - `README.md` - Main project overview and quick start
 - `CHANGELOG.md` - Project changelog
+- `SECURITY.md` - Security policy and practices
 
 ## Quick Links
 
@@ -51,4 +64,5 @@ The following files remain at the project root (standard practice):
 - **Contributing**: See [`developer/contributing.md`](developer/contributing.md)
 - **Architecture**: Explore [`architecture/governance/`](architecture/governance/)
 - **Performance**: Check [`operations/ollama-performance-tuning.md`](operations/ollama-performance-tuning.md) and [`operations/model-recommendations.md`](operations/model-recommendations.md)
+- **Configuration**: See [`../config/README.md`](../config/README.md)
 
