@@ -52,8 +52,14 @@ fi
 # check_env() is provided by lib/env_check.sh
 
 function ensure_databases() {
-    # Ensure required databases exist(webui)
+    # Ensure required databases exist (webui)
     # This function is idempotent - it won't fail if databases already exist
+    # 
+    # NOTE: PostgreSQL init scripts in scripts/db/init/ now create the database
+    # on first container startup. This function serves as a fallback for:
+    # - Edge cases where init scripts didn't run (e.g., volume already had data)
+    # - Database recreation scenarios
+    # - Manual database provisioning if needed
     
     # Load environment variables if not already loaded
     if [ -z "${POSTGRES_USER:-}" ]; then
