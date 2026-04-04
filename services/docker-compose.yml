@@ -15,7 +15,7 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    image: docker.io/ollama/ollama:0.19.0
+    image: docker.io/ollama/ollama:0.20.2
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
@@ -64,7 +64,7 @@ services:
 
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.8.10
+    image: ghcr.io/open-webui/open-webui:v0.8.12
     container_name: open-webui
     pull_policy: if_not_present
     volumes:
@@ -100,6 +100,7 @@ services:
   postgres:
     image: postgres:17.2
     container_name: postgres
+    pull_policy: if_not_present
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -131,6 +132,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:9.13
     container_name: pgadmin
+    pull_policy: if_not_present
     environment:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
       PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
@@ -170,6 +172,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.0
     container_name: prometheus
+    pull_policy: if_not_present
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ../prometheus/alerts.yml:/etc/prometheus/alerts.yml
@@ -192,6 +195,7 @@ services:
   grafana:
     image: grafana/grafana:11.3.0
     container_name: grafana
+    pull_policy: if_not_present
     volumes:
       - grafana-data:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning
@@ -215,6 +219,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
+    pull_policy: if_not_present
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -233,6 +238,7 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: node-exporter
+    pull_policy: if_not_present
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -248,6 +254,7 @@ services:
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:v0.16.0
     container_name: postgres-exporter
+    pull_policy: if_not_present
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
     network_mode: host
@@ -258,6 +265,7 @@ services:
   nvidia-gpu-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
     container_name: nvidia-gpu-exporter
+    pull_policy: if_not_present
     network_mode: host
     restart: unless-stopped
     environment:
@@ -287,6 +295,7 @@ services:
   alloy:
     image: grafana/alloy:v1.5.0
     container_name: alloy
+    pull_policy: if_not_present
     volumes:
       - ../alloy/config.alloy:/etc/alloy/config.alloy
       - /var/log:/var/log:ro
