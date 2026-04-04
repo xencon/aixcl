@@ -37,7 +37,8 @@
       "options": {
         "baseURL": "http://localhost:11434/v1"
       },
+<<<<<<< HEAD
       "models": {}
     }
-  },
+  }
 }
