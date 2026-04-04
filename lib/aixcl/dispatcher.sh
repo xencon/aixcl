@@ -21,8 +21,17 @@ function main() {
             ;;
 
         config)
+            echo "Error: The 'config' command has been deprecated."
+            echo "Use './aixcl engine' instead of './aixcl config engine'."
+            echo ""
+            echo "Examples:"
+            echo "  ./aixcl engine set ollama"
+            echo "  ./aixcl engine auto"
+            return 1
+            ;;
+        engine)
             shift
-            config_cmd "$@"
+            engine "$@"
             ;;
         utils)
             shift

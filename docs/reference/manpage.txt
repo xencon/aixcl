@@ -68,11 +68,11 @@ COMMANDS
               remove  Remove one or more models
               list    List installed models
 
-       config engine <set|auto> [engine]
-              Configure the active inference engine.
+       engine <set|auto> [engine]
+               Configure the active inference engine.
 
-              set     Manually assign an engine (ollama, vllm, llamacpp)
-              auto    Auto-detect optimal engine based on hardware
+               set     Manually assign an engine (ollama, vllm, llamacpp)
+               auto    Auto-detect optimal engine based on hardware
 
        utils check-env
               Validate environment setup

@@ -54,7 +54,7 @@ source "${SCRIPT_DIR}/lib/aixcl/cli.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/commands/utils.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/aixcl/commands/config.sh"
+source "${SCRIPT_DIR}/lib/aixcl/commands/engine.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/commands/models.sh"
 # shellcheck disable=SC1091

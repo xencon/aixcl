@@ -67,10 +67,10 @@ This will:
 
 ```bash
 # Auto-detect optimal engine based on hardware (vLLM for GPU, llama.cpp for ARM, Ollama for general)
-./aixcl config engine auto
+./aixcl engine auto
 
 # Manually assign an inference engine
-./aixcl config engine set vllm
+./aixcl engine set vllm
 ```
 
 ### 4. Add Models
