@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # CLI argument parsing and help functionality for AIXCL
 
-# Container name constant
-CONTAINER_NAME="open-webui"
-
 # Completion script path (set by main script)
 COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
 

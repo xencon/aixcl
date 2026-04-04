@@ -394,6 +394,7 @@ function stop() {
     # Join ALL_SERVICES with | for grep
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
+    # shellcheck disable=SC2153
     if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         echo "Services are not running."
         return 0
@@ -404,6 +405,7 @@ function stop() {
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
+        # shellcheck disable=SC2153
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
             echo "All services stopped successfully."
             return 0
@@ -1100,6 +1102,7 @@ function status() {
     # Join ALL_SERVICES with | for grep
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
+    # shellcheck disable=SC2153
     if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         overall_status="Running"
     fi
