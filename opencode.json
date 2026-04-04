@@ -37,8 +37,12 @@
       "options": {
         "baseURL": "http://localhost:11434/v1"
       },
-      "models": {}
+      "models": {
+        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
+        }
+      }
     }
   },
-  "model": "aixcl-local/"
+  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
 }

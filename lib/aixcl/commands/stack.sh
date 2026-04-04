@@ -537,7 +537,7 @@ function restart() {
             echo "  ./aixcl stack start -p ops                  # Start ops profile" >&2
             echo "  ./aixcl stack status                        # Show all service status" >&2
             echo "  ./aixcl stack logs -f engine                # Follow logs for active engine" >&2
-            echo "  ./aixcl stack clean                      # Clean containers/volumes" >&2
+            echo "  ./aixcl utils clean                      # Clean unused Docker resources" >&2
             exit 1
         fi
     fi
@@ -947,48 +947,6 @@ function logs() {
     fi
 }
 
-function clean() {
-    log_info "Cleaning up Docker resources..."
-    
-    # Set up compose command with GPU detection
-    set_compose_cmd
-    
-    log_info "Stopping all containers..."
-    run_compose down
-    
-    # Remove postgres container and associated volumes specifically
-    if "${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" | grep -q "^postgres$"; then
-        echo "Removing PostgreSQL container..."
-        "${DOCKER_BIN:-docker}" rm -f postgres 2>/dev/null || true
-    fi
-    
-    # Remove postgres-related volumes
-    log_info "Removing PostgreSQL volumes..."
-    "${DOCKER_BIN:-docker}" volume ls --format "{{.Name}}" | grep -i postgres | while read -r volume; do
-        if [ -n "$volume" ]; then
-            log_info "  Removing volume: $volume"
-            "${DOCKER_BIN:-docker}" volume rm "$volume" 2>/dev/null || true
-        fi
-    done
-    
-    log_info "Removing stopped containers..."
-    "${DOCKER_BIN:-docker}" container prune -f
-    
-    log_info "Removing unused images..."
-    "${DOCKER_BIN:-docker}" image prune -a -f
-    
-    log_info "Removing unused volumes..."
-    "${DOCKER_BIN:-docker}" volume prune -f
-    
-    # Clean up pgAdmin configuration file for security
-    if [ -f "pgadmin-servers.json" ]; then
-        rm -f pgadmin-servers.json
-        log_success "Cleaned up pgAdmin configuration file"
-    fi
-    
-    log_success "Clean up complete."
-}
-
 function export_quadlet() {
     local profile=""
     # Load profile from .env if not specified
@@ -1364,7 +1322,7 @@ function status() {
 function stack_cmd() {
     if [[ $# -lt 1 ]]; then
         echo "Error: Stack action is required"
-        echo "Usage: $0 stack {start|stop|restart|status|logs|clean|export-quadlet}"
+        echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
         echo "Examples:"
         echo "  $0 stack start                - Start all services with sys profile (default)"
         echo "  $0 stack start --profile usr  - Start runtime core + PostgreSQL (minimal footprint)"
@@ -1378,7 +1336,7 @@ function stack_cmd() {
         echo "  $0 stack logs engine          - Show logs for the active inference engine"
         echo "  $0 stack logs engine 100      - Show last 100 lines for the active engine"
         echo "  $0 stack logs open-webui      - Show logs for a specific service"
-        echo "  $0 stack clean                - Remove unused Docker resources"
+        echo "  $0 utils clean                - Remove unused Docker resources"
         echo "  $0 stack export-quadlet       - Export services as Podman Quadlets (Systemd)"
         echo ""
         echo "Valid profiles: usr, dev, ops, sys (default: sys)"
@@ -1396,7 +1354,7 @@ function stack_cmd() {
         stop)
             if [ $# -gt 0 ]; then
                 echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+                echo "Usage: $0 stack {start|stop|restart|status|logs}"
                 return 1
             fi
             stop
@@ -1407,7 +1365,7 @@ function stack_cmd() {
         status)
             if [ $# -gt 0 ]; then
                 echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
+                echo "Usage: $0 stack {start|stop|restart|status|logs}"
                 return 1
             fi
             status
@@ -1415,25 +1373,17 @@ function stack_cmd() {
         logs)
             logs "$@"
             ;;
-        clean)
-            if [ $# -gt 0 ]; then
-                echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|clean}"
-                return 1
-            fi
-            clean
-            ;;
         export-quadlet)
             if [ $# -gt 0 ]; then
                 echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|clean|export-quadlet}"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
                 return 1
             fi
             export_quadlet
             ;;
         *)
             echo "Error: Unknown stack action '$action'"
-            echo "Usage: $0 stack {start|stop|restart|status|logs|clean|export-quadlet}"
+            echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
             echo ""
             echo "For profiles and service contracts, see: docs/architecture/governance/"
             return 1

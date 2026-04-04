@@ -187,7 +187,7 @@ Agent workflow rules and permissions are configured automatically via `opencode.
 | `./aixcl stack status` | Check service health and OpenCode connectivity |
 | `./aixcl stack logs engine` | View real-time inference logs |
 | `./aixcl stack stop` | Stop all services gracefully |
-| `./aixcl stack clean` | Wipe unused containers and volumes (Fresh start) |
+| `./aixcl utils clean` | Wipe unused containers and volumes (Fresh start) |
 
 ---
 

@@ -153,7 +153,7 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 ./aixcl stack restart engine
 
 # Clean up and start fresh
-./aixcl stack clean
+./aixcl utils clean
 ./aixcl stack start [--profile sys]
 ```
 
@@ -223,14 +223,16 @@ This provides robust reboot persistence and standard service lifecycle managemen
 ### Clean Up Resources
 
 ```bash
-./aixcl stack clean
+./aixcl utils clean
 ```
 
-This removes:
+This removes unused Docker resources without stopping running services:
+- Dangling images (untagged, not referenced)
+- Unused images (not referenced by running containers)
 - Stopped containers
-- Unused images
 - Unused volumes
-- PostgreSQL containers and volumes (careful!)
+
+Note: Running containers and their images are preserved.
 
 ### Update Services
 

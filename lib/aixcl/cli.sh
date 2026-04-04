@@ -15,7 +15,6 @@ function help_menu() {
     echo "  stack restart [--profile <profile>] - Restart services (uses .env PROFILE if not specified)"
     echo "  stack status                        - Show service status"
     echo "  stack logs [service] [lines]        - Show logs"
-    echo "  stack clean                         - Clean Docker resources"
     echo "  stack export-quadlet                - Export services as Podman Quadlets (Systemd)"
     echo ""
     echo "  Profiles (usr, dev, ops, sys):"
@@ -41,6 +40,7 @@ function help_menu() {
     echo "Utils: utils <action>"
     echo "  utils check-env                     - Verify environment setup"
     echo "  utils bash-completion               - Install bash completion"
+    echo "  utils clean                         - Clean up unused Docker resources"
     echo ""
     echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
     exit 0
