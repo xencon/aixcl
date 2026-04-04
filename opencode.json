@@ -8,24 +8,28 @@
 
   "permission": {
     "bash": {
-      "*":              "ask",
-      "git status":     "allow",
-      "git diff *":     "allow",
-      "git log *":      "allow",
-      "git add *":      "allow",
-      "git commit *":   "ask",
+      "*":                  "ask",
+      "git status":         "allow",
+      "git diff *":         "allow",
+      "git log *":          "allow",
+      "git add *":          "allow",
+      "git commit *":       "ask",
       "git push origin main": "deny",
-      "git push *":           "ask",
-      "grep *":         "allow",
-      "cat *":          "allow",
-      "ls *":           "allow",
-      "gh issue *":     "allow",
-      "gh pr create *": "ask",
-      "gh pr edit *":   "ask",
-      "./aixcl *":      "ask"
+      "git push *":         "ask",
+      "grep *":             "allow",
+      "cat *":              "allow",
+      "ls *":               "allow",
+      "gh repo *":          "allow",
+      "gh issue *":         "allow",
+      "gh pr create *":     "ask",
+      "gh pr edit *":       "ask",
+      "gh pr merge *":      "deny",
+      "gh pr close *":      "ask",
+      "gh api *":           "ask",
+      "./aixcl *":          "ask"
     },
-    "edit":     "ask",
-    "webfetch": "ask"
+    "edit":         "ask",
+    "webfetch":     "ask"
   },
 
   "provider": {
@@ -35,20 +39,7 @@
         "baseURL": "http://localhost:11434/v1",
         "apiKey": "",
         "stream": false
-      },
-      "models": {
-        "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
-          "name": "vLLM: Qwen 2.5 Coder (1.5B)"
-        },
-        "qwen2.5-coder:1.5b": {
-          "name": "Ollama: Qwen 2.5 Coder (1.5B)"
-        },
-        "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf": {
-          "name": "llama.cpp: Qwen 2.5 Coder (1.5B)"
-        }
       }
     }
-  },
-
-  "model": "aixcl-local/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
+  }
 }
