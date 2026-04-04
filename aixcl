@@ -1545,10 +1545,26 @@ function add() {
                 return 1
             fi
             echo "📥 Downloading model from Hugging Face for vLLM..."
-            if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model"; then
-                echo "✅ Successfully downloaded model: $model"
+            # Try hf (new) first, fall back to huggingface-cli (deprecated) for backward compatibility
+            if "${DOCKER_BIN:-docker}" exec "$container" bash -c "command -v hf" >/dev/null 2>&1; then
+                echo "   Using hf download..."
+                if "${DOCKER_BIN:-docker}" exec "$container" hf download "$model"; then
+                    echo "✅ Successfully downloaded model: $model"
+                else
+                    echo "❌ Failed to download model: $model"
+                    return 1
+                fi
+            elif "${DOCKER_BIN:-docker}" exec "$container" bash -c "command -v huggingface-cli" >/dev/null 2>&1; then
+                echo "   Using huggingface-cli download (deprecated)..."
+                if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model"; then
+                    echo "✅ Successfully downloaded model: $model"
+                else
+                    echo "❌ Failed to download model: $model"
+                    return 1
+                fi
             else
-                echo "❌ Failed to download model: $model"
+                echo "❌ Neither 'hf' nor 'huggingface-cli' found in container"
+                echo "   Please ensure huggingface-hub is installed in the vLLM container"
                 return 1
             fi
         elif [ "$engine" = "llamacpp" ]; then
@@ -1574,9 +1590,17 @@ function add() {
                 # Download using available method
                 local download_success=false
                 
-                # Try huggingface-cli first
-                if command -v huggingface-cli >/dev/null 2>&1; then
-                    echo "   Attempting download with huggingface-cli..."
+                # Try hf (new) first, then huggingface-cli (deprecated)
+                if command -v hf >/dev/null 2>&1; then
+                    echo "   Attempting download with hf..."
+                    if hf download "$repo" "$filename" --local-dir "$temp_dir" --local-dir-use-symlinks False; then
+                        download_success=true
+                        echo "   ✓ hf download successful"
+                    else
+                        echo "   ⚠ hf download failed"
+                    fi
+                elif command -v huggingface-cli >/dev/null 2>&1; then
+                    echo "   Attempting download with huggingface-cli (deprecated)..."
                     if huggingface-cli download "$repo" "$filename" --local-dir "$temp_dir" --local-dir-use-symlinks False; then
                         download_success=true
                         echo "   ✓ huggingface-cli download successful"

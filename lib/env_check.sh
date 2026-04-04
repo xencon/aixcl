@@ -249,16 +249,19 @@ check_env() {
         print_info ".env file not found (will be created on first start)"
     fi
 
-    # Check huggingface-cli for llama.cpp and vLLM model downloads
+    # Check hf (new) or huggingface-cli (deprecated) for llama.cpp and vLLM model downloads
     echo -e "\nChecking model download tools..."
-    if command -v huggingface-cli &> /dev/null; then
+    if command -v hf &> /dev/null; then
+        print_success "hf is available (for llama.cpp and vLLM models)"
+    elif command -v huggingface-cli &> /dev/null; then
         print_success "huggingface-cli is available (for llama.cpp and vLLM models)"
+        echo "   Note: huggingface-cli is deprecated. Consider upgrading to 'hf' CLI."
     else
-        print_warning "huggingface-cli not found"
+        print_warning "hf (or huggingface-cli) not found"
         echo "   Required for downloading models when using llama.cpp or vLLM engines"
-        echo "   Install with: pip install huggingface-hub"
-        echo "   Or: pip3 install huggingface-hub"
-        echo "   Note: Ollama engine doesn't require huggingface-cli"
+        echo "   Install with: pip install huggingface-hub[cli]"
+        echo "   Or: pip3 install huggingface-hub[cli]"
+        echo "   Note: Ollama engine doesn't require hf/huggingface-cli"
     fi
 
     if [ $missing_deps -eq 1 ]; then
