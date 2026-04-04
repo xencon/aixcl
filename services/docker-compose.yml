@@ -46,7 +46,7 @@ services:
     container_name: llamacpp
     volumes:
       - llamacpp-data:/models
-      - ../scripts/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
+      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
     pull_policy: if_not_present
     tty: true
     network_mode: host
@@ -70,7 +70,7 @@ services:
     volumes:
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
-      - ../scripts/openwebui.sh:/app/backend/openwebui.sh
+      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
     environment:
       - DATA_DIR=/app/data
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}

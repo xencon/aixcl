@@ -10,7 +10,7 @@ on:
       - 'docs/reference/ai-report-*.md'
       - 'docs/developer/agent-template.md'
       - 'docs/developer/ai-file-naming.md'
-      - 'scripts/check-agents.sh'
+      - 'scripts/checks/check-agents.sh'
   workflow_dispatch:
 
 jobs:
@@ -22,4 +22,4 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Run agent/skill/report checks
-        run: ./scripts/check-agents.sh
+        run: ./scripts/checks/check-agents.sh
