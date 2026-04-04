@@ -39,10 +39,7 @@ COMMANDS
               then follow. Use 'engine' as svc to see logs for the active
               inference engine (ollama, vllm, or llamacpp).
 
-       stack clean
-              Remove unused Docker resources
-
-       stack export-quadlet
+        stack export-quadlet
               Export current profile services as Podman Quadlet files for Systemd integration.
 
        restart [service]
@@ -77,11 +74,15 @@ COMMANDS
        utils check-env
               Validate environment setup
 
-       utils bash-completion
-              Install bash completion support
+        utils bash-completion
+               Install bash completion support
 
-       help
-              Show help message
+        utils clean
+               Clean up unused Docker resources (dangling images, unused images,
+               stopped containers, unused volumes)
+
+        help
+               Show help message
 
 EXAMPLES
        Start the entire stack:

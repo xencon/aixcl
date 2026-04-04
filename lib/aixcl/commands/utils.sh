@@ -18,23 +18,66 @@ function needs_rebuild() {
     esac
 }
 
+function clean() {
+    echo "Cleaning up unused Docker resources..."
+    echo ""
+    
+    # Show current disk usage
+    echo "Current Docker disk usage:"
+    docker system df
+    echo ""
+    
+    # Remove dangling images (untagged, not referenced)
+    echo "Removing dangling images..."
+    docker image prune -f
+    echo ""
+    
+    # Remove unused images (not referenced by running containers)
+    echo "Removing unused images (not referenced by running containers)..."
+    docker image prune -a -f
+    echo ""
+    
+    # Remove stopped containers
+    echo "Removing stopped containers..."
+    docker container prune -f
+    echo ""
+    
+    # Remove unused volumes
+    echo "Removing unused volumes..."
+    docker volume prune -f
+    echo ""
+    
+    # Clean up pgAdmin configuration file for security
+    if [ -f "pgadmin-servers.json" ]; then
+        rm -f pgadmin-servers.json
+        echo "Cleaned up pgAdmin configuration file"
+    fi
+    
+    echo ""
+    echo "[x] Cleanup complete."
+    echo ""
+    echo "Updated Docker disk usage:"
+    docker system df
+}
+
 function utils_cmd() {
     if [[ $# -lt 1 ]]; then
         echo "Error: Utils action is required"
-        echo "Usage: $0 utils {check-env|bash-completion}"
+        echo "Usage: $0 utils {check-env|bash-completion|clean}"
         echo "Examples:"
         echo "  $0 utils check-env         - Verify environment setup"
         echo "  $0 utils bash-completion   - Install bash completion"
+        echo "  $0 utils clean              - Clean up unused Docker resources"
         return 1
     fi
 
     local action="$1"
     shift
 
-    # Check for extra arguments
-    if [ $# -gt 0 ]; then
+    # Check for extra arguments for actions that don't take them
+    if [ $# -gt 0 ] && [ "$action" != "clean" ]; then
         echo "Error: Unknown argument '$1'"
-        echo "Usage: $0 utils {check-env|bash-completion}"
+        echo "Usage: $0 utils {check-env|bash-completion|clean}"
         return 1
     fi
 
@@ -45,12 +88,16 @@ function utils_cmd() {
         bash-completion)
             install_completion
             ;;
+        clean)
+            clean
+            ;;
         *)
             echo "Error: Unknown utils action '$action'"
-            echo "Usage: $0 utils {check-env|bash-completion}"
+            echo "Usage: $0 utils {check-env|bash-completion|clean}"
             echo "Examples:"
             echo "  $0 utils check-env         - Verify environment setup"
             echo "  $0 utils bash-completion   - Install bash completion"
+            echo "  $0 utils clean              - Clean up unused Docker resources"
             return 1
             ;;
     esac
