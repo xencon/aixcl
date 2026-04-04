@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Utility commands for AIXCL
 
-# shellcheck disable=SC2034
 function needs_rebuild() {
+    # shellcheck disable=SC2034
     local service="$1"
     # Currently no local-build services remain in the stack.
     return 1
