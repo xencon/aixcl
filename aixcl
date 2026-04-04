@@ -1545,10 +1545,16 @@ function add() {
                 return 1
             fi
             echo "📥 Downloading model from Hugging Face for vLLM..."
-            if "${DOCKER_BIN:-docker}" exec "$container" huggingface-cli download "$model"; then
-                echo "✅ Successfully downloaded model: $model"
+            if "${DOCKER_BIN:-docker}" exec "$container" bash -c "command -v hf" >/dev/null 2>&1; then
+                if "${DOCKER_BIN:-docker}" exec "$container" hf download "$model"; then
+                    echo "✅ Successfully downloaded model: $model"
+                else
+                    echo "❌ Failed to download model: $model"
+                    return 1
+                fi
             else
-                echo "❌ Failed to download model: $model"
+                echo "❌ 'hf' command not found in container"
+                echo "   Please ensure huggingface-hub is installed in the vLLM container"
                 return 1
             fi
         elif [ "$engine" = "llamacpp" ]; then
@@ -1574,14 +1580,10 @@ function add() {
                 # Download using available method
                 local download_success=false
                 
-                # Try huggingface-cli first
-                if command -v huggingface-cli >/dev/null 2>&1; then
-                    echo "   Attempting download with huggingface-cli..."
-                    if huggingface-cli download "$repo" "$filename" --local-dir "$temp_dir" --local-dir-use-symlinks False; then
+                # Try hf first
+                if command -v hf >/dev/null 2>&1; then
+                    if hf download "$repo" "$filename" --local-dir "$temp_dir" --local-dir-use-symlinks False; then
                         download_success=true
-                        echo "   ✓ huggingface-cli download successful"
-                    else
-                        echo "   ⚠ huggingface-cli download failed"
                     fi
                 fi
                 

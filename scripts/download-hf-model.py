@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Download models from Hugging Face Hub for AIXCL.
-Used when huggingface-cli is not available in PATH.
+Used when hf (or huggingface-cli) is not available in PATH.
 """
 import sys
 import os

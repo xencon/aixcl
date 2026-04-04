@@ -1,38 +1,35 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
   "instructions": [
     "AGENTS.md",
     "DEVELOPMENT.md",
     "ai/skills/ascii_output.md"
   ],
-
   "permission": {
     "bash": {
-      "*":                  "ask",
-      "git status":         "allow",
-      "git diff *":         "allow",
-      "git log *":          "allow",
-      "git add *":          "allow",
-      "git commit *":       "ask",
+      "*": "ask",
+      "git status": "allow",
+      "git diff *": "allow",
+      "git log *": "allow",
+      "git add *": "allow",
+      "git commit *": "ask",
       "git push origin main": "deny",
-      "git push *":         "ask",
-      "grep *":             "allow",
-      "cat *":              "allow",
-      "ls *":               "allow",
-      "gh repo *":          "allow",
-      "gh issue *":         "allow",
-      "gh pr create *":     "ask",
-      "gh pr edit *":       "ask",
-      "gh pr merge *":      "deny",
-      "gh pr close *":      "ask",
-      "gh api *":           "ask",
-      "./aixcl *":          "ask"
+      "git push *": "ask",
+      "grep *": "allow",
+      "cat *": "allow",
+      "ls *": "allow",
+      "gh repo *": "allow",
+      "gh issue *": "allow",
+      "gh pr create *": "ask",
+      "gh pr edit *": "ask",
+      "gh pr merge *": "deny",
+      "gh pr close *": "ask",
+      "gh api *": "ask",
+      "./aixcl *": "ask"
     },
-    "edit":         "ask",
-    "webfetch":     "ask"
+    "edit": "ask",
+    "webfetch": "ask"
   },
-
   "provider": {
     "aixcl-local": {
       "npm": "@ai-sdk/openai-compatible",
@@ -43,8 +40,12 @@
       "models": {
         "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
           "name": "Qwen 2.5 Coder 1.5B"
+        },
+        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
         }
       }
     }
-  }
+  },
+  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
 }
