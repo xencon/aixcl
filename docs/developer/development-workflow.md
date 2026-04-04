@@ -227,7 +227,31 @@ gh issue view <number> --json labels
 - Use emoji in technical documentation
 - Use special Unicode characters that may not render consistently
 
-## Handling Automated PRs
+## Line Endings
+
+All text files in this repository must use **Unix-style line endings (LF)**, not Windows-style (CRLF).
+
+### Why This Matters
+- Cross-platform compatibility
+- Consistent diffs and reviews
+- Git best practices
+
+### Automatic Handling
+The repository includes a `.gitattributes` file that automatically converts line endings for most contributors.
+
+### Manual Conversion (if needed)
+If you accidentally commit files with CRLF line endings, convert them before submitting a PR:
+
+```bash
+# Convert a single file
+sed -i 's/\r$//' <filename>
+
+# Convert all files in a directory
+find . -type f -name "*.md" -exec sed -i 's/\r$//' {} \;
+```
+
+### CI Check
+The CI workflow automatically checks for CRLF line endings and will fail the build if any are found.
 
 **GitHub Code Quality AI findings and automated fixes:**
 - Automated PRs from GitHub Code Quality (Copilot Autofix) may bypass the Issue-First workflow
