@@ -11,7 +11,7 @@ Reference: [Consistency Gap Report (2026)](./consistency-gap-report-2026.md)
 - [x] **Archive Deprecated Commands** — References to `opencode` and `dashboard` as top-level CLI commands have been removed from README, Usage, and Manpage.
 - [x] **Top-level `restart` alias** — Documented the `aixcl restart [service]` top-level alias in the Manpage.
 - [x] **Sync `stack start/restart`** — Manpage and Usage Guide consistently document both `--profile` and `-p` short-form.
-- [x] **Engine Configuration** — `config engine <set|auto> [engine]` is fully described in the Manpage.
+- [x] **Engine Configuration** — `engine <set|auto> [engine]` is fully described in the Manpage (moved from `config engine`).
 - [x] **Models multiple args** — `models add` and `models remove` are documented as accepting one or more model names.
 
 ---

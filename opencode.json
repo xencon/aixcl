@@ -39,5 +39,6 @@
       },
       "models": {}
     }
-  }
+  },
+  "model": "aixcl-local/"
 }

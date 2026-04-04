@@ -37,12 +37,12 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 
 ```bash
 # See available engines
-./aixcl config engine auto
+./aixcl engine auto
 
 # Or set manually
-./aixcl config engine set ollama   # Recommended for beginners
-./aixcl config engine set vllm     # For high-end GPUs
-./aixcl config engine set llamacpp  # For GGUF models
+./aixcl engine set ollama   # Recommended for beginners
+./aixcl engine set vllm     # For high-end GPUs
+./aixcl engine set llamacpp  # For GGUF models
 ```
 
 **4. Add Your First Model**
@@ -118,13 +118,13 @@ AIXCL supports multiple backends. You can switch them instantly:
 
 ```bash
 # Auto-detect optimal engine based on your hardware
-./aixcl config engine auto
+./aixcl engine auto
 
 # Manually switch to vLLM (Great for high-end GPUs)
-./aixcl config engine set vllm
+./aixcl engine set vllm
 
 # Manually switch to llama.cpp (Great for CPU/Apple Silicon)
-./aixcl config engine set llamacpp
+./aixcl engine set llamacpp
 
 # Restart to apply changes
 ./aixcl stack restart engine
