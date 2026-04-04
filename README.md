@@ -87,7 +87,6 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 | Model | Size | Command |
 |-------|------|---------|
 | Qwen2.5-Coder 0.5B | ~398 MB | `./aixcl models add qwen2.5-coder:0.5b` |
-| Qwen2.5-Coder 1.5B | ~986 MB | `./aixcl models add qwen2.5-coder:1.5b` |
 
 > Ollama models use the format `model:tag`. The `0.5b` tag indicates the smallest variant.
 
@@ -139,7 +138,9 @@ Manage your local library across any active engine:
 ```bash
 # Add from Ollama Registry
 ./aixcl models add llama3.2:3b
-./aixcl models add qwen2.5-coder:7b
+
+# Add multiple models
+./aixcl models add llama3.2:3b qwen2.5-coder:7b
 
 # List all local models
 ./aixcl models list
