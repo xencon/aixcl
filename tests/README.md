@@ -7,9 +7,6 @@ This directory contains all tests organized by type.
 ```
 tests/
 ├── README.md                      # This file
-├── unit/                          # Unit tests for library functions
-│   ├── test_color.sh              # Tests for lib/core/color.sh
-│   └── test_common.sh             # Tests for lib/core/common.sh
 ├── integration/                   # Integration tests for full stack
 │   └── platform-tests.sh          # Platform test suite
 └── security/                      # Security tests
@@ -18,18 +15,6 @@ tests/
 ```
 
 ## Test Categories
-
-### Unit Tests (`unit/`)
-Fast, isolated tests for individual library functions.
-
-- **test_color.sh** - Tests color output functions
-- **test_common.sh** - Tests common utility functions
-
-Run unit tests:
-```bash
-./tests/unit/test_color.sh
-./tests/unit/test_common.sh
-```
 
 ### Integration Tests (`integration/`)
 Full platform tests that require services to be running.
@@ -61,9 +46,6 @@ Run security tests:
 ## Running All Tests
 
 ```bash
-# Run unit tests only (fast, no services required)
-./tests/unit/*.sh
-
 # Run security tests
 ./tests/security/*.sh
 
@@ -72,11 +54,6 @@ Run security tests:
 ```
 
 ## Writing New Tests
-
-### Unit Tests
-- Test one function at a time
-- Mock external dependencies
-- Fast execution (< 1 second per test)
 
 ### Integration Tests
 - Test component interactions
