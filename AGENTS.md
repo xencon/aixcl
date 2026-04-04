@@ -39,24 +39,24 @@ In case of instruction conflicts, follow this order:
 1. Direct human instruction in active session
 2. This AGENTS.md file
 3. `DEVELOPMENT.md`
-4. `/ai/governance/*`
-5. `/ai/orchestration/*`
-6. `/ai/skills/*`
+4. `ai/governance/*`
+5. `ai/orchestration/*`
+6. `ai/skills/*`
 7. Other documentation
 
-If `/ai/` exists, it defines structured runtime guidance.
+If `ai/` exists, it defines structured runtime guidance.
 Never override higher authority with lower authority rules.
 
 ---
 
 # 3. AI DIRECTORY AWARENESS
 
-If an `/ai/` directory exists, you MUST treat it as structured runtime guidance.
+If an `ai/` directory exists, you MUST treat it as structured runtime guidance.
 
 Expected structure:
 
 ```
-/ai/
+ai/
   governance/
   skills/
   orchestration/

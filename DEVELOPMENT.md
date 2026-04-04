@@ -32,9 +32,9 @@ Read the following documents before beginning work:
 **Always create an issue before starting work.** Every code change, fix, or feature must be
 traceable to a GitHub issue. Do not begin modifying files until an issue exists.
 
-Select the correct template from `/ai/templates/issue/` based on the type of work:
+Select the correct template from `ai/templates/issue/` based on the type of work:
 
-### Bug report - `/ai/templates/issue/bug_report.md`
+### Bug report - `ai/templates/issue/bug_report.md`
 
 - Title prefix: `[BUG]`
 - Labels: `priority:medium`, `profile:dev`
@@ -43,7 +43,7 @@ Select the correct template from `/ai/templates/issue/` based on the type of wor
   Impact (component / severity / frequency), Root Cause Analysis, Remediation, Verification,
   Additional Context
 
-### Feature request - `/ai/templates/issue/feature_request.md`
+### Feature request - `ai/templates/issue/feature_request.md`
 
 - Title prefix: `[FEATURE]`
 - Labels: `enhancement`
@@ -51,7 +51,7 @@ Select the correct template from `/ai/templates/issue/` based on the type of wor
 - Required sections: Feature Overview, Problem Statement, Current Behavior, Proposed Solution,
   Design Considerations, Implementation Plan, Verification
 
-### Task / investigation - `/ai/templates/issue/task.md`
+### Task / investigation - `ai/templates/issue/task.md`
 
 - Title prefix: `[TASK]`
 - Labels: `maintenance`
@@ -192,10 +192,10 @@ When working via the OpenCode CLI:
 
 | Template | Path |
 |---|---|
-| Bug report | `/ai/templates/issue/bug_report.md` |
-| Feature request | `/ai/templates/issue/feature_request.md` |
-| Task / investigation | `/ai/templates/issue/task.md` |
-| Pull request | `/ai/templates/pr/pull_request.md` |
+| Bug report | `ai/templates/issue/bug_report.md` |
+| Feature request | `ai/templates/issue/feature_request.md` |
+| Task / investigation | `ai/templates/issue/task.md` |
+| Pull request | `ai/templates/pr/pull_request.md` |
 
 ---
 
