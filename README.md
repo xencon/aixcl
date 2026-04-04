@@ -97,7 +97,7 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 | Qwen2.5-Coder 0.5B | ~1 GB* | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct` |
 
 > *vLLM downloads the full HuggingFace model (safetensors format), which is larger than GGUF.
-> Requires `hf` (new) or `huggingface-cli` (deprecated) to be installed on the host.
+> Requires `hf` CLI to be installed on the host.
 
 ### llama.cpp
 
@@ -106,7 +106,7 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 | Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf` |
 
 > llama.cpp requires GGUF format models. The format is `username/repo/filename.gguf`.
-> Requires `hf` (new) or `huggingface-cli` (deprecated) to be installed on the host.
+> Requires `hf` CLI to be installed on the host.
 
 ---
 
