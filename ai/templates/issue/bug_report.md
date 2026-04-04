@@ -3,7 +3,7 @@ name: "Bug Report"
 about: "Report an unexpected behavior or problem"
 title: "[BUG] "
 labels: ["priority:medium","profile:dev"]
-assignees: ["sbadakhc"]
+assignees: ["<assignee>"]
 ---
 
 ## Bug Summary

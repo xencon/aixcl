@@ -3,7 +3,7 @@ name: "Task / Investigation"
 about: "Capture a task or investigation work"
 title: "[TASK] "
 labels: ["maintenance"]
-assignees: ["sbadakhc"]
+assignees: ["<assignee>"]
 ---
 
 ## Task Summary
