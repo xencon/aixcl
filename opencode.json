@@ -3,7 +3,8 @@
 
   "instructions": [
     "AGENTS.md",
-    "DEVELOPMENT.md"
+    "DEVELOPMENT.md",
+    "ai/skills/ascii_output.md"
   ],
 
   "permission": {
