@@ -85,7 +85,6 @@ function start() {
     # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Parse arguments for profile
-    local remaining_args=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
@@ -102,7 +101,6 @@ function start() {
                 shift 2
                 ;;
             *)
-                remaining_args+=("$1")
                 shift
                 ;;
         esac
@@ -437,7 +435,6 @@ function restart() {
     # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Parse arguments for profile and service names
-    local remaining_args=()
     local service_names=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -454,7 +451,7 @@ function restart() {
                 shift 2
                 ;;
             *)
-                remaining_args+=("$1")
+                service_names+=("$1")
                 shift
                 ;;
         esac
@@ -462,13 +459,13 @@ function restart() {
     
     # Check if remaining args are service names (not profile flags)
     # If they are valid service names, treat them as services to restart
-    if [ ${#remaining_args[@]} -gt 0 ]; then
+    if [ ${#service_names[@]} -gt 0 ]; then
         # Source common library for service validation
         # shellcheck disable=SC1091
         source "${SCRIPT_DIR}/lib/core/common.sh"
         
         # Check if any remaining args are valid service names
-        for arg in "${remaining_args[@]}"; do
+        for arg in "${service_names[@]}"; do
             # Resolve 'engine' alias to active INFERENCE_ENGINE
             local service_to_check="$arg"
             if [[ "$arg" == "engine" ]]; then
@@ -657,7 +654,7 @@ function start_service() {
     log_info "Starting service: $service..."
     
     # Check for .env file if needed (for services that require it)
-    if [ ! -f .env ] && [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; then
+    if [ ! -f .env ] && { [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; }; then
         if [ -f .env.example ]; then
             log_warning ".env file not found. Copying from .env.example..."
             cp .env.example .env
@@ -1145,7 +1142,6 @@ function status() {
         local container_name="$2"
         local health_check_type="$3"
         local health_check_arg="$4"
-        # Parameters 5 (is_critical) and 6 (is_runtime_core) are accepted but not currently utilized in this function
 
         
         # Check container status
@@ -1230,7 +1226,7 @@ function status() {
         if ! is_operational_in_profile "$profile_service_name"; then
             return
         fi
-        check_service_status "$display_name" "$container_name" "$health_check_type" "$health_check_arg" "false" "false"
+        check_service_status "$display_name" "$container_name" "$health_check_type" "$health_check_arg"
     }
     
     # Header section
@@ -1284,7 +1280,7 @@ function status() {
             suffix=" (Active Engine)"
         fi
         
-        check_service_status "$name$suffix" "$engine" "curl" "$url" "true" "true"
+        check_service_status "$name$suffix" "$engine" "curl" "$url"
     done
     
     # Report OpenCode status as part of runtime core
@@ -1335,7 +1331,7 @@ function status() {
         if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
             # shellcheck disable=SC2034
             NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
-            check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS" "false" "false"
+            check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS"
         else
             echo "  [ ] NVIDIA GPU Exporter"
             ((total_services++)) || true

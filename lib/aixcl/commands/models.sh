@@ -77,9 +77,6 @@ function add() {
         # Still update config for vLLM/llama.cpp as they are single-model engines
         if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
             echo "   Updating configuration to use existing model..."
-        else
-            # For Ollama, we still proceed to sync opencode.json
-            :
         fi
     else
         echo "Adding model: $model (Engine: $engine)"
