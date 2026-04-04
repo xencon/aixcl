@@ -5,8 +5,8 @@
 # shellcheck disable=SC1091
 source "${BASH_SOURCE%/*}/common.sh"
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Get script directory (repo root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVICES_DIR="${SCRIPT_DIR}/services"
 
 # Allow custom Docker Compose file via environment variable
