@@ -13,9 +13,9 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 # COMPOSE_FILE from .env is picked up during validation.
 # Source shared libraries
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/color.sh"
+source "${SCRIPT_DIR}/lib/core/color.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/core/common.sh"
 
 # Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
 if ! load_env_file ".env"; then
@@ -28,15 +28,15 @@ fi
 
 # docker_utils.sh validates COMPOSE_FILE and sets default COMPOSE_CMD/COMPOSE_WORKDIR
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/docker_utils.sh"
+source "${SCRIPT_DIR}/lib/core/docker_utils.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/logging.sh"
+source "${SCRIPT_DIR}/lib/core/logging.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/env_check.sh"
+source "${SCRIPT_DIR}/lib/core/env_check.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/lib/pgadmin_utils.sh"
+source "${SCRIPT_DIR}/lib/core/pgadmin_utils.sh"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/cli/lib/profile.sh"
+source "${SCRIPT_DIR}/lib/cli/profile.sh"
 
 # ── AIXCL-specific constants ─────────────────────────────────────────────────
 CONTAINER_NAME="open-webui"
@@ -131,7 +131,7 @@ function start() {
     local profile_specified
     profile_specified=false
     
-    # Profile library is sourced at script startup (cli/lib/profile.sh)
+    # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Parse arguments for profile
     local remaining_args=()
@@ -178,7 +178,7 @@ function start() {
             # Ensure VALID_PROFILES is defined
             if [ -z "${VALID_PROFILES+x}" ] || [ ${#VALID_PROFILES[@]} -eq 0 ]; then
                 echo "❌ Error: Profile definitions not loaded. VALID_PROFILES is not set." >&2
-                echo "   Expected profile library at: ${SCRIPT_DIR}/cli/lib/profile.sh" >&2
+                echo "   Expected profile library at: ${SCRIPT_DIR}/lib/cli/profile.sh" >&2
                 exit 1
             fi
             
@@ -483,7 +483,7 @@ function restart() {
     local profile_specified
     profile_specified=false
     
-    # Profile library is sourced at script startup (cli/lib/profile.sh)
+    # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Parse arguments for profile and service names
     local remaining_args=()
@@ -514,7 +514,7 @@ function restart() {
     if [ ${#remaining_args[@]} -gt 0 ]; then
         # Source common library for service validation
         # shellcheck disable=SC1091
-        source "${SCRIPT_DIR}/lib/common.sh"
+        source "${SCRIPT_DIR}/lib/core/common.sh"
         
         # Check if any remaining args are valid service names
         for arg in "${remaining_args[@]}"; do
@@ -1065,7 +1065,7 @@ function export_quadlet() {
     
     # Source profile lib to get services
     # shellcheck disable=SC1091
-    source "${SCRIPT_DIR}/cli/lib/profile.sh"
+    source "${SCRIPT_DIR}/lib/cli/profile.sh"
     
     local profile_services
     read -r -a profile_services <<< "$(get_profile_services "$profile")"
@@ -1151,7 +1151,7 @@ report_opencode_status() {
 }
 
 function status() {
-    # Profile library is sourced at script startup (cli/lib/profile.sh)
+    # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Get current profile from .env file
     local current_profile=""
