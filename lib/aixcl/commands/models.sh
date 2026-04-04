@@ -28,12 +28,15 @@ is_model_installed() {
             local volume_path
             volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
             if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
-                [ -f "${volume_path}/${model}" ]
-                return $?
+                local model_filename="$model"
+                [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
+                [ -f "${volume_path}/${model_filename}" ] && return 0
             fi
             # Fallback: check via container if volume path not available
             if [ -n "$container" ]; then
-                "${DOCKER_BIN:-docker}" exec "$container" ls "/models/$model" >/dev/null 2>&1
+                local model_filename="$model"
+                [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
+                "${DOCKER_BIN:-docker}" exec "$container" ls "/models/${model_filename}" >/dev/null 2>&1
                 return $?
             fi
             return 1
@@ -153,7 +156,7 @@ function add() {
                 
                 # Try hf first
                 if command -v hf >/dev/null 2>&1; then
-                    if hf download "$repo" "$filename" --local-dir "$temp_dir" --local-dir-use-symlinks False; then
+                    if hf download "$repo" "$filename" --local-dir "$temp_dir"; then
                         download_success=true
                     fi
                 fi
@@ -251,14 +254,15 @@ function add() {
         if command -v jq >/dev/null 2>&1; then
             local temp_json
             temp_json=$(mktemp)
-            # 1. Ensure the model exists in the dictionary (with a default name if missing)
+            # 1. Clear the models dictionary and add only the current model
             # 2. Update the active model pointer
-            jq ".provider.\"aixcl-local\".models.\"$model\" |= (. // {\"name\": \"$model\"}) | .model = \"aixcl-local/$model\"" "$opencode_config" > "$temp_json" && mv "$temp_json" "$opencode_config"
+            jq --arg model "$model" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$opencode_config" > "$temp_json" && mv "$temp_json" "$opencode_config"
             echo "[x] Successfully updated opencode.json"
         else
-            # Simple sed fallback if jq is missing (only updates active model)
+            # Simple sed fallback if jq is missing (only updates active model pointer)
             sed -i "s|\"model\": \"aixcl-local/.*\"|\"model\": \"aixcl-local/$model\"|" "$opencode_config"
-            echo "[x] Successfully updated opencode.json (via sed)"
+            echo "[x] Successfully updated opencode.json (via sed - model pointer only)"
+            echo "   Note: Install jq to fully sync model dictionary"
         fi
     fi
 
@@ -362,16 +366,27 @@ function list() {
         echo "Cached models on disk:"
         "${DOCKER_BIN:-docker}" exec "$container" find /root/.cache/huggingface/hub -maxdepth 1 -name "models--*" 2>/dev/null | sed 's|.*/models--||;s|--|/|g' | sort -u || echo "   No cached models found."
     elif [ "$engine" = "llamacpp" ]; then
-        # Show currently loaded model via API
-        local url
-        url="http://127.0.0.1:11434/v1/models"
-        echo "Currently loaded model (API):"
-        curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "   Could not retrieve loaded model via API."
+        # Show currently loaded model via API (if container is running)
+        if [ -n "$container" ]; then
+            local url
+            url="http://127.0.0.1:11434/v1/models"
+            echo "Currently loaded model (API):"
+            curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "   Could not retrieve loaded model via API."
+            echo ""
+        fi
         
-        # Show files in /models volume
-        echo ""
+        # Show files in /models volume (check directly via volume mount)
         echo "Available GGUF files in volume:"
-        "${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -printf "%f\n" 2>/dev/null | sort -u || echo "   No GGUF files found in volume."
+        local llamacpp_volume="services_llamacpp-data"
+        local volume_path
+        volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
+        if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
+            find "$volume_path" -name "*.gguf" -exec basename {} \; 2>/dev/null | sort -u || echo "   No GGUF files found in volume."
+        elif [ -n "$container" ]; then
+            "${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -printf "%f\n" 2>/dev/null | sort -u || echo "   No GGUF files found in volume."
+        else
+            echo "   Cannot access volume. Start llamacpp service to view available models."
+        fi
     else
         echo "   Model listing for $engine is not fully supported yet."
     fi

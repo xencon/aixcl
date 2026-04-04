@@ -113,7 +113,7 @@ is_container_running() {
 # Get the actual engine container name (handles hash-prefixed containers)
 get_engine_container() {
     local engine="$1"
-    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" | head -1
+    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" 2>/dev/null | head -1 || true
 }
 
 
