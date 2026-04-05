@@ -640,7 +640,7 @@ function start_service() {
     
     # Also remove hash-prefixed containers directly via docker (handles edge cases)
     local hash_prefixed
-    hash_prefixed=$("${DOCKER_BIN:-docker}" ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}')
+    hash_prefixed=$("${DOCKER_BIN:-docker}" ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}') || true
     if [ -n "$hash_prefixed" ]; then
         echo "Removing hash-prefixed containers to avoid docker-compose issues..."
         echo "$hash_prefixed" | while read -r container_id; do
