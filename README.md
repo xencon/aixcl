@@ -4,9 +4,9 @@
   </a>
 </p>
 
-<h1 align="center">AIXCL</h1>
+<h1>AIXCL</h1>
 
-<p align="center"><strong>A self-hosted, local-first AI stack for running and integrating LLMs.</strong></p>
+<p><strong>A self-hosted, local-first AI stack for running and integrating LLMs.</strong></p>
 
 AIXCL is a privacy-focused platform for individuals and teams who want full control over their models. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
 
