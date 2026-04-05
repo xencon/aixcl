@@ -55,35 +55,70 @@ AIXCL Test Runner - Run tests against specific engines and models
 
 Usage: ./tests/aixcl-test [OPTIONS]
 
-Options:
-    -e, --engine <engine>    Engine to use: ollama, vllm, llamacpp, all, current (default: current)
-    -m, --model <model>      Model name (optional, uses first available if not specified)
-    -t, --test <range>       Test range: 1, 1-5, 1,3,5, all (default: all)
-    -p, --profile <profile>  Stack profile: sys, usr (default: usr)
-    -v, --verbose            Verbose output
-    -h, --help               Show this help
+OPTIONS
 
-Examples:
-    # Run test 13 with current engine
+    -e, --engine <engine>
+        Engine to use: ollama, vllm, llamacpp, all, current
+        Default: current (uses configured engine from .env)
+
+    -m, --model <model>
+        Model name (optional)
+        Uses first available model if not specified
+
+    -t, --test <range>
+        Test range selection
+        Formats: 1 (single), 1-5 (range), 1,3,5 (list), all
+        Default: all
+
+    -p, --profile <profile>
+        Stack profile: sys, usr
+        Default: usr
+
+    -v, --verbose
+        Enable verbose output
+
+    -h, --help
+        Show this help message
+
+ENGINES
+
+    ollama      Ollama inference engine (default, CPU/GPU)
+    vllm        vLLM inference engine (requires GPU)
+    llamacpp    llama.cpp engine (GGUF models)
+    all         Run tests against all engines sequentially
+    current     Use currently configured engine
+
+PROFILES
+
+    usr     User runtime (minimal footprint)
+    sys     System runtime (full stack)
+
+EXAMPLES
+
     ./tests/aixcl-test --test 13
+        Run test 13 with current engine
 
-    # Run test 13 with specific engine and model
+    ./tests/aixcl-test --engine ollama --test 13
+        Run test 13 with ollama engine
+
     ./tests/aixcl-test --engine ollama --model qwen2.5-coder:0.5b --test 13
+        Run test 13 with specific engine and model
 
-    # Run tests 1-14 with vLLM
     ./tests/aixcl-test --engine vllm --test 1-14
+        Run tests 1 through 14 with vLLM
 
-    # Run test 13 against all engines (comparison mode)
     ./tests/aixcl-test --engine all --test 13
+        Run test 13 against all engines (comparison mode)
 
-    # Run all tests against all engines
     ./tests/aixcl-test --engine all --test all
+        Run all tests against all engines
 
-Notes:
-    - Tests run sequentially for safety
-    - When using --engine all, each engine runs independently
-    - Comparison report generated at tests/comparison-results.md
-    - vLLM tests auto-skip if no GPU detected
+NOTES
+
+    [*] Tests run sequentially for safety
+    [*] Comparison report at tests/comparison-results.md (when using --engine all)
+    [*] vLLM tests auto-skip if no GPU detected
+    [*] Each engine run is independent with cleanup between runs
 EOF
 }
 
