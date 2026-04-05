@@ -22,6 +22,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Pre-cleanup: Stop any existing containers
+log_info "Stopping any existing containers..."
+"${SCRIPT_DIR}/aixcl" stack stop > /dev/null 2>&1 || true
+sleep 2
+
 # Test: Stack starts successfully
 assert_command_success "${SCRIPT_DIR}/aixcl stack start --profile sys" "Stack starts with sys profile"
 
