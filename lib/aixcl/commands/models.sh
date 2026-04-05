@@ -119,16 +119,20 @@ function add() {
                 return 1
             fi
             echo "   Downloading model from Hugging Face for vLLM..."
-            if "${DOCKER_BIN:-docker}" exec "$container" bash -c "command -v hf" >/dev/null 2>&1; then
-                if "${DOCKER_BIN:-docker}" exec "$container" hf download "$model"; then
+            # vLLM container doesn't have hf CLI, download on host instead
+            # Host cache is shared with container via ~/.cache/huggingface
+            if command -v hf >/dev/null 2>&1; then
+                # Download to host cache (vLLM container will pick it up)
+                if hf download "$model"; then
                     echo "[x] Successfully downloaded model: $model"
+                    echo "   vLLM will load the model on next restart"
                 else
                     echo "[ ] Failed to download model: $model"
                     return 1
                 fi
             else
-                echo "[ ] 'hf' command not found in container"
-                echo "   Please ensure huggingface-hub is installed in the vLLM container"
+                echo "[ ] 'hf' command not found on host"
+                echo "   Install huggingface-hub: pip install huggingface-hub[cli]"
                 return 1
             fi
         elif [ "$engine" = "llamacpp" ]; then
