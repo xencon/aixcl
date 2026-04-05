@@ -22,10 +22,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Pre-cleanup: Stop any existing containers
+# Pre-cleanup: Stop any existing containers and set engine
 log_info "Stopping any existing containers..."
 "${SCRIPT_DIR}/aixcl" stack stop > /dev/null 2>&1 || true
 sleep 2
+
+# Ensure engine is set to ollama for this test
+log_info "Setting engine to ollama..."
+"${SCRIPT_DIR}/aixcl" engine set ollama > /dev/null 2>&1 || true
 
 # Test: Stack starts successfully
 assert_command_success "${SCRIPT_DIR}/aixcl stack start --profile sys" "Stack starts with sys profile"
