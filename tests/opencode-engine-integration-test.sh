@@ -128,7 +128,8 @@ test_engine() {
         echo ""
         
         # Record start time
-        local start_time=$(date +%s.%N)
+        local start_time
+        start_time=$(date +%s.%N)
         
         # Send request to OpenAI-compatible API
         local response
@@ -142,11 +143,14 @@ test_engine() {
             }" 2>/dev/null)
         
         # Record end time
-        local end_time=$(date +%s.%N)
-        local duration=$(echo "$end_time - $start_time" | bc)
+        local end_time
+        end_time=$(date +%s.%N)
+        local duration
+        duration=$(echo "$end_time - $start_time" | bc)
         
         # Extract completion
-        local completion=$(echo "$response" | grep -oP '"text":\s*"\K[^"]*' | head -1 | sed 's/\\n/\n/g')
+        local completion
+        completion=$(echo "$response" | grep -oP '"text":\s*"\K[^"]*' | head -1 | sed 's/\\n/\n/g')
         
         echo -e "${GREEN}Response received in ${duration}s${NC}"
         echo "Response preview:"
