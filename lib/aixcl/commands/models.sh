@@ -250,17 +250,22 @@ function add() {
     # Sync opencode.json if it exists
     local opencode_config="${SCRIPT_DIR}/opencode.json"
     if [ -f "$opencode_config" ]; then
-        echo "   Synchronizing $opencode_config with model: $model"
+        # For llama.cpp, extract just the filename for the model key
+        local opencode_model_key="$model"
+        if [[ "$engine" == "llamacpp" ]]; then
+            [[ "$model" =~ /([^/]+)$ ]] && opencode_model_key="${BASH_REMATCH[1]}"
+        fi
+        echo "   Synchronizing $opencode_config with model: $opencode_model_key"
         if command -v jq >/dev/null 2>&1; then
             local temp_json
             temp_json=$(mktemp)
             # 1. Clear the models dictionary and add only the current model
             # 2. Update the active model pointer
-            jq --arg model "$model" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$opencode_config" > "$temp_json" && mv "$temp_json" "$opencode_config"
+            jq --arg model "$opencode_model_key" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$opencode_config" > "$temp_json" && mv "$temp_json" "$opencode_config"
             echo "[x] Successfully updated opencode.json"
         else
             # Simple sed fallback if jq is missing (only updates active model pointer)
-            sed -i "s|\"model\": \"aixcl-local/.*\"|\"model\": \"aixcl-local/$model\"|" "$opencode_config"
+            sed -i "s|\"model\": \"aixcl-local/.*\"|\"model\": \"aixcl-local/$opencode_model_key\"|" "$opencode_config"
             echo "[x] Successfully updated opencode.json (via sed - model pointer only)"
             echo "   Note: Install jq to fully sync model dictionary"
         fi
