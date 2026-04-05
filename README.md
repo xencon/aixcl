@@ -76,11 +76,19 @@ Models are downloaded on-demand when you run `./aixcl models add`, not during in
 
 > **Note:** Times are estimates. Actual speeds depend on network conditions and HuggingFace/Ollama server load.
 
+### Engine-Specific Notes
+
+**vLLM Users:** The vLLM container does not include the `hf` CLI. Models must be pre-downloaded on the host before starting vLLM. See the [vLLM Workaround Guide](docs/operations/vllm-model-download-workaround.md) for details.
+
+**llama.cpp Users:** When switching to llama.cpp from another engine, the model configuration in `opencode.json` is cleared. You must re-add a GGUF model for llama.cpp.
+
 ---
 
 ## Quick Test Models
 
-These are the smallest viable models for testing your AIXCL setup with OpenCode:
+These are the smallest viable models for testing your AIXCL setup with OpenCode. **All models below have been tested and verified to work** with the current version of AIXCL.
+
+> **Note:** Using the exact model names shown below ensures compatibility. Other models may work but have not been tested.
 
 ### Ollama (Recommended for Beginners)
 
@@ -89,6 +97,8 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 | Qwen2.5-Coder 0.5B | ~398 MB | `./aixcl models add qwen2.5-coder:0.5b` |
 
 > Ollama models use the format `model:tag`. The `0.5b` tag indicates the smallest variant.
+> 
+> **✓ Tested:** Successfully tested with OpenCode integration
 
 ### vLLM
 
@@ -97,7 +107,10 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 | Qwen2.5-Coder 0.5B | ~1 GB* | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct` |
 
 > *vLLM downloads the full HuggingFace model (safetensors format), which is larger than GGUF.
-> Requires `hf` CLI to be installed on the host.
+> 
+> **Note:** vLLM container does not include `hf` CLI - see workaround guide.
+> 
+> **✓ Tested:** Successfully tested with OpenCode integration on RTX 4060
 
 ### llama.cpp
 
@@ -106,7 +119,10 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode:
 | Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf` |
 
 > llama.cpp requires GGUF format models. The format is `username/repo/filename.gguf`.
-> Requires `hf` CLI to be installed on the host.
+> 
+> **Note:** When switching engines, the model configuration is cleared. Re-add the GGUF model after switching.
+> 
+> **✓ Tested:** Successfully tested with OpenCode integration
 
 ---
 
@@ -120,7 +136,7 @@ AIXCL supports multiple backends. You can switch them instantly:
 # Auto-detect optimal engine based on your hardware
 ./aixcl engine auto
 
-# Manually switch to vLLM (Great for high-end GPUs)
+# Manually switch to vLLM (Great for high-end GPUs - see notes below)
 ./aixcl engine set vllm
 
 # Manually switch to llama.cpp (Great for CPU/Apple Silicon)
@@ -130,29 +146,33 @@ AIXCL supports multiple backends. You can switch them instantly:
 ./aixcl stack restart engine
 ```
 
+> **vLLM GPU Compatibility:** vLLM requires specific GPU tuning for different cards. If you encounter CUDA errors on startup, the default configuration includes optimizations for RTX 4060 and similar GPUs. For other GPUs, you may need to adjust `--gpu-memory-utilization` and `--max-model-len` in `services/docker-compose.yml`.
+
+> **Engine Testing:** All engines have been tested and validated. See the [Engine Switching Test Plan](docs/operations/engine-switching-test-plan.md) for comprehensive testing details.
+
 ### 2. Model Management
 
 Manage your local library across any active engine:
 
 **Ollama Engine:**
 ```bash
-# Add from Ollama Registry
-./aixcl models add llama3.2:3b
+# Add from Ollama Registry (tested model)
+./aixcl models add qwen2.5-coder:0.5b
 
 # Add multiple models
-./aixcl models add llama3.2:3b qwen2.5-coder:7b
+./aixcl models add qwen2.5-coder:0.5b llama3.2:3b
 
 # List all local models
 ./aixcl models list
 
 # Remove a model
-./aixcl models remove llama3.2:3b
+./aixcl models remove qwen2.5-coder:0.5b
 ```
 
 **vLLM Engine:**
 ```bash
-# Add from HuggingFace (full model path)
-./aixcl models add Qwen/Qwen2.5-Coder-1.5B-Instruct
+# Add from HuggingFace (full model path) - tested model
+./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct
 
 # List downloaded models
 ./aixcl models list
@@ -160,8 +180,8 @@ Manage your local library across any active engine:
 
 **llama.cpp Engine:**
 ```bash
-# Add GGUF from HuggingFace (requires full path with filename)
-./aixcl models add bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf
+# Add GGUF from HuggingFace (requires full path with filename) - tested model
+./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
 
 # List GGUF files in volume
 ./aixcl models list
