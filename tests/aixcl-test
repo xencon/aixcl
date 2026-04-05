@@ -427,6 +427,12 @@ EOF
 # ============================================================================
 
 main() {
+    # Show help if no arguments provided
+    if [[ $# -eq 0 ]]; then
+        show_help
+        exit 0
+    fi
+
     parse_arguments "$@"
 
     echo "=========================================="
