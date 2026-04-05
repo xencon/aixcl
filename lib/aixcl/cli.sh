@@ -5,44 +5,50 @@
 COMPLETION_SCRIPT="${SCRIPT_DIR}/completion/aixcl.bash"
 
 function help_menu() {
-    echo "Usage: ./aixcl <cmd> [options]"
-    echo ""
-    echo "Stack: stack <action> [options]"
-    echo "  stack start [--profile <profile>]    - Start services (uses PROFILE from .env if set)"
-    echo "  stack start -p <profile>            - Short form: Start with profile"
-    echo "  stack start                         - Start with profile from .env (or show profiles)"
-    echo "  stack stop                          - Stop all services"
-    echo "  stack restart [--profile <profile>] - Restart services (uses .env PROFILE if not specified)"
-    echo "  stack status                        - Show service status"
-    echo "  stack logs [service] [lines]        - Show logs"
-    echo "  stack export-quadlet                - Export services as Podman Quadlets (Systemd)"
-    echo ""
-    echo "  Profiles (usr, dev, ops, sys):"
-    echo "    usr   - User-oriented runtime (runtime core, PostgreSQL for persistence)"
-    echo "    dev   - Developer workstation (runtime core + UI + DB)"
-    echo "    ops   - Observability-focused (runtime core + monitoring/logging)"
-    echo "    sys   - System-oriented (complete stack with automation)"
-    echo ""
-    echo "Engine: engine <action> [engine]"
-    echo "  engine set <engine>                 - Set the inference engine (ollama, vllm, llamacpp)"
-    echo "  engine auto                         - Auto-detect optimal engine based on hardware"
-    echo ""
-    echo "Restart: restart [service]             - Short form for 'stack restart'"
-    echo ""
-    echo "Service: service <action> <name>"
-    echo "  Runtime Core (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
-    echo ""
-    echo "Models: models <action> [name]"
-    echo "  models add <name>                   - Add model(s) to Ollama/vLLM/llama.cpp"
-    echo "  models remove <name>                - Remove model(s) from active engine"
-    echo "  models list                         - List installed models"
-    echo ""
-    echo "Utils: utils <action>"
-    echo "  utils check-env                     - Verify environment setup"
-    echo "  utils bash-completion               - Install bash completion"
-    echo "  utils clean                         - Clean up unused Docker resources"
-    echo ""
-    echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
+    cat << 'EOF'
+./aixcl <command> [<args>]
+
+COMMANDS
+
+    stack <action> [options]
+        start [--profile <profile> | -p <profile>]    Start services
+        stop                                            Stop all services
+        restart [--profile <profile>]                   Restart services
+        status                                          Show service status
+        logs [<service>] [<lines>=50]                   Show service logs
+        export-quadlet                                  Export as Podman Quadlets
+
+    engine <action> [<engine>]
+        set {ollama|vllm|llamacpp}                      Set inference engine
+        auto                                            Auto-detect optimal engine
+
+    models <action> [<name>...]
+        add <model> [<model>...]                        Add model(s)
+        remove <model> [<model>...]                     Remove model(s)
+        list                                            List installed models
+
+    service <action> <name>
+        start <service>                                 Start a service
+        stop <service>                                  Stop a service
+        restart <service>                               Restart a service
+
+    utils <action>
+        check-env                                       Verify environment
+        bash-completion                                 Install bash completion
+        clean                                           Clean Docker resources
+
+PROFILES
+
+    usr     User runtime (minimal footprint)
+    dev     Developer workstation (UI + DB tools)
+    ops     Observability-focused (monitoring stack)
+    sys     Complete stack with automation
+
+NOTES
+
+    [*] ./aixcl restart is a shortcut for ./aixcl stack restart
+    [*] See docs/architecture/governance/02_profiles.md for profile details
+EOF
     exit 0
 }
 
