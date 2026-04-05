@@ -14,18 +14,31 @@ log_test_start "test-07-models-add-ollama"
 BACKUP_DIR=$(capture_state "test-07-models-add-ollama")
 export BACKUP_DIR
 
-# Cleanup function
+# Cleanup function - runs on exit
 cleanup() {
-    source "${SCRIPT_DIR}/tests/lib/cleanup.sh"
-    restore_state "$BACKUP_DIR"
-    cleanup_test_containers
+    local exit_code=$?
+    # Only cleanup if we actually ran some test steps
+    if [[ -n "$TEST_STARTED" ]]; then
+        source "${SCRIPT_DIR}/tests/lib/cleanup.sh"
+        restore_state "$BACKUP_DIR" || true
+        cleanup_test_containers || true
+    fi
+    exit $exit_code
 }
 trap cleanup EXIT
+
+# Setup: Stop any existing containers first
+log_info "Stopping any existing containers..."
+"${SCRIPT_DIR}/aixcl" stack stop > /dev/null 2>&1 || true
+sleep 2
 
 # Setup: Start stack and set engine
 log_info "Starting stack with ollama..."
 "${SCRIPT_DIR}/aixcl" engine set ollama > /dev/null 2>&1 || true
 "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+
+# Mark that test has started
+TEST_STARTED=1
 
 wait_for_container "ollama"
 wait_for_api "http://localhost:11434/v1/models" 60
