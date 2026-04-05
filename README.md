@@ -76,6 +76,12 @@ Models are downloaded on-demand when you run `./aixcl models add`, not during in
 
 > **Note:** Times are estimates. Actual speeds depend on network conditions and HuggingFace/Ollama server load.
 
+### Engine-Specific Notes
+
+**vLLM Users:** The vLLM container does not include the `hf` CLI. Models must be pre-downloaded on the host before starting vLLM. See the [vLLM Workaround Guide](docs/operations/vllm-model-download-workaround.md) for details.
+
+**llama.cpp Users:** When switching to llama.cpp from another engine, the model configuration in `opencode.json` is cleared. You must re-add a GGUF model for llama.cpp.
+
 ---
 
 ## Quick Test Models
@@ -120,7 +126,7 @@ AIXCL supports multiple backends. You can switch them instantly:
 # Auto-detect optimal engine based on your hardware
 ./aixcl engine auto
 
-# Manually switch to vLLM (Great for high-end GPUs)
+# Manually switch to vLLM (Great for high-end GPUs - see notes below)
 ./aixcl engine set vllm
 
 # Manually switch to llama.cpp (Great for CPU/Apple Silicon)
@@ -129,6 +135,10 @@ AIXCL supports multiple backends. You can switch them instantly:
 # Restart to apply changes
 ./aixcl stack restart engine
 ```
+
+> **vLLM GPU Compatibility:** vLLM requires specific GPU tuning for different cards. If you encounter CUDA errors on startup, the default configuration includes optimizations for RTX 4060 and similar GPUs. For other GPUs, you may need to adjust `--gpu-memory-utilization` and `--max-model-len` in `services/docker-compose.yml`.
+
+> **Engine Testing:** All engines have been tested and validated. See the [Engine Switching Test Plan](docs/operations/engine-switching-test-plan.md) for comprehensive testing details.
 
 ### 2. Model Management
 
