@@ -166,7 +166,7 @@ fi
 echo ""
 
 # Discover tests
-TESTS=($(discover_tests))
+mapfile -t TESTS < <(discover_tests)
 
 if [[ ${#TESTS[@]} -eq 0 ]]; then
     log_error "No tests found"

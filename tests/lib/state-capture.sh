@@ -61,7 +61,7 @@ cleanup_old_backups() {
     backup_count=$(find "$BACKUP_DIR" -maxdepth 1 -type d | wc -l)
     
     if [[ $backup_count -gt $max_backups ]]; then
-        find "$BACKUP_DIR" -maxdepth 1 -type d -printf '%T@ %p\n' | sort -n | head -n -$max_backups | cut -d' ' -f2- | xargs rm -rf
+        find "$BACKUP_DIR" -maxdepth 1 -type d -printf '%T@ %p\n' | sort -n | head -n -"${max_backups}" | cut -d' ' -f2- | xargs rm -rf
     fi
 }
 
