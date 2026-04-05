@@ -228,18 +228,23 @@ run_challenge() {
 verify_opencode || exit 1
 verify_model_loaded || exit 1
 
-# Ensure stack is running with ollama and model loaded
+# Ensure stack is running
 if ! docker ps | grep -qE "ollama|vllm|llamacpp"; then
     log_info "Starting stack..."
-    "${SCRIPT_DIR}/aixcl" engine set ollama > /dev/null 2>&1 || true
     "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
-    wait_for_container "ollama" 60
+fi
+
+# Wait for engine container
+CURRENT_ENGINE=$(grep "^ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
+CONTAINER_NAME=$(get_engine_container "$CURRENT_ENGINE")
+if [[ -n "$CONTAINER_NAME" ]]; then
+    wait_for_container "$CONTAINER_NAME" 60
 fi
 
 # Ensure model is loaded
 log_info "Ensuring model is loaded..."
 if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen|llama|gpt|codellama|deepseek"; then
-    log_info "Adding model for testing..."
+    log_info "Adding default model for testing..."
     "${SCRIPT_DIR}/aixcl" models add qwen2.5-coder:0.5b > /dev/null 2>&1 || {
         log_error "Failed to load model. Cannot run OpenCode test."
         exit 1
@@ -258,6 +263,10 @@ if [[ -f "$OPENCODE_CONFIG" ]]; then
     # Fallback using grep and awk
     if [[ -z "$MODEL_NAME" ]]; then
         MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)" | head -1 | awk '{print $1}')
+    fi
+    # Extract just the filename for GGUF models (llama.cpp uses filenames as keys)
+    if [[ "$CURRENT_ENGINE" == "llamacpp" ]] && [[ "$MODEL_NAME" == *"/"* ]]; then
+        MODEL_NAME=$(basename "$MODEL_NAME")
     fi
     if [[ -n "$MODEL_NAME" ]] && command -v jq >/dev/null 2>&1; then
         jq --arg model "$MODEL_NAME" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$OPENCODE_CONFIG" > /tmp/opencode_updated.json && mv /tmp/opencode_updated.json "$OPENCODE_CONFIG"
