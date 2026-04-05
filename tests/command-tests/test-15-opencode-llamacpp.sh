@@ -10,6 +10,13 @@ source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 
 log_test_start "test-15-opencode-llamacpp"
 
+# Skip if not running on llama.cpp engine
+CURRENT_ENGINE=$(grep "^ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
+if [[ "$CURRENT_ENGINE" != "llamacpp" ]]; then
+    log_test_skip "Test requires llama.cpp engine (current: $CURRENT_ENGINE)"
+    exit 0
+fi
+
 # Capture state before test
 BACKUP_DIR=$(capture_state "test-15-opencode-llamacpp")
 export BACKUP_DIR
