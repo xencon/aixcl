@@ -108,7 +108,7 @@ discover_tests() {
             for test in "${TEST_DIR}/command-tests"/test-*.sh; do
                 if [[ -f "$test" ]]; then
                     if [[ "$QUICK_MODE" == true ]] && [[ "$test" == *"models-add"* ]]; then
-                        log_warn "Skipping slow test: $(basename "$test") (--quick mode)"
+                        echo "Skipping slow test: $(basename "$test") (--quick mode)" >&2
                         continue
                     fi
                     tests+=("$test")
