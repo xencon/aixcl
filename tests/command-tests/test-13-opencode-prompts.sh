@@ -246,6 +246,24 @@ if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen|llama|gpt|co
     sleep 5
 fi
 
+# Update opencode.json with the model configuration
+OPENCODE_CONFIG="${SCRIPT_DIR}/opencode.json"
+if [[ -f "$OPENCODE_CONFIG" ]]; then
+    log_info "Configuring opencode.json for model access..."
+    # Get the first available model
+    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "qwen|llama|gpt|codellama|deepseek" | head -1 | tr -d '[:space:]')
+    if [[ -n "$MODEL_NAME" ]] && command -v jq >/dev/null 2>&1; then
+        jq --arg model "$MODEL_NAME" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$OPENCODE_CONFIG" > /tmp/opencode_updated.json && mv /tmp/opencode_updated.json "$OPENCODE_CONFIG"
+        log_info "Updated opencode.json with model: $MODEL_NAME"
+    elif [[ -n "$MODEL_NAME" ]]; then
+        # Fallback without jq
+        sed -i "s|\"model\": \"aixcl-local/.*\"|\"model\": \"aixcl-local/$MODEL_NAME\"|" "$OPENCODE_CONFIG"
+        log_info "Updated opencode.json (basic - install jq for full sync)"
+    fi
+else
+    log_warn "opencode.json not found. OpenCode may not work properly."
+fi
+
 # Capture session info before test
 log_info "Capturing session info..."
 capture_session_info "/tmp/opencode_session_before.txt"
