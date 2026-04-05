@@ -1027,22 +1027,6 @@ function export_quadlet() {
     echo "   To install: Copy to /etc/containers/systemd/ and run 'systemctl daemon-reload'"
 }
 
-# Report OpenCode (local-first IDE) status
-report_opencode_status() {
-    # Check if OpenCode is likely running/available
-    # For now, we'll check if the inference engine is healthy as a proxy
-    # but in the future this could check for a specific OpenCode port or config.
-    local engine="${INFERENCE_ENGINE:-ollama}"
-    local container
-    container=$(get_engine_container "$engine")
-    
-    if [ -n "$container" ]; then
-        echo "  [x] OpenCode (IDE)     Status: Active"
-    else
-        echo "  [ ] OpenCode (IDE)     Status: Offline (Engine down)"
-    fi
-}
-
 function status() {
     # Profile library is sourced at script startup (lib/cli/profile.sh)
     
@@ -1143,23 +1127,23 @@ function status() {
         fi
 
         # Determine final display status and health
-        local display_status="[ ]"
+        local display_status="${ICON_ERROR:-❌}"
         local is_healthy=false
-        
+
         if [ "$container_running" = "true" ]; then
             if [ -z "$health_check_type" ]; then
-                display_status="[x]"
+                display_status="${ICON_SUCCESS:-✅}"
                 is_healthy=true
             else
                 if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "307" ] || [ "$health_result" = "healthy" ]; then
-                    display_status="[x]"
+                    display_status="${ICON_SUCCESS:-✅}"
                     is_healthy=true
                 elif [ "$health_result" = "503" ] || [ "$health_result" = "starting" ] || [ "$health_result" = "000" ]; then
                     # 000 often means service is Up but not yet responding (e.g. pgAdmin starting)
-                    display_status="[/]"
+                    display_status="${ICON_WARNING:-⚠️}"
                     health_status=" (starting up)"
                 else
-                    display_status="[ ]"
+                    display_status="${ICON_ERROR:-❌}"
                     health_status=" (unhealthy)"
                 fi
             fi
@@ -1241,8 +1225,6 @@ function status() {
         check_service_status "$name$suffix" "$engine" "curl" "$url"
     done
     
-    # Report OpenCode status as part of runtime core
-    report_opencode_status
     echo ""
 
     # Operational Services
@@ -1291,7 +1273,7 @@ function status() {
             NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS"
         else
-            echo "  [ ] NVIDIA GPU Exporter"
+            echo "  ${ICON_ERROR:-❌} NVIDIA GPU Exporter"
             ((total_services++)) || true
         fi
     fi
@@ -1309,12 +1291,12 @@ function status() {
     if [ $total_services -gt 0 ]; then
         echo "Services: $healthy_services/$total_services healthy"
         if [ $healthy_services -eq $total_services ]; then
-            echo "Overall:  [x] All services healthy"
+            echo "Overall:  ${ICON_SUCCESS:-✅} All services healthy"
         else
-            echo "Overall:  [ ] Some services unhealthy"
+            echo "Overall:  ${ICON_ERROR:-❌} Some services unhealthy"
         fi
     else
-        echo "Overall:  [/] No services running"
+        echo "Overall:  ${ICON_WARNING:-⚠️} No services running"
     fi
     echo ""
 }

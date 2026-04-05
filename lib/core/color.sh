@@ -16,7 +16,7 @@ else
     NC=''
 fi
 
-# Icons
+# Icons (Unicode for consistent visual feedback)
 ICON_SUCCESS="✅"
 ICON_ERROR="❌"
 ICON_WARNING="⚠️"
