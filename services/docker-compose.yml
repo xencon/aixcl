@@ -55,7 +55,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      - LLAMACPP_MODEL=${LLAMACPP_MODEL:-qwen2.5-coder-1.5b-instruct-q4_k_m.gguf}
+      - INFERENCE_MODEL=${INFERENCE_MODEL:-qwen2.5-coder-1.5b-instruct-q4_k_m.gguf}
     entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
     command: ["--host", "0.0.0.0", "--port", "11434"]
     healthcheck:

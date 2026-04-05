@@ -230,18 +230,18 @@ function add() {
             # Update the environment variable in .env file
             local env_file="${SCRIPT_DIR}/.env"
             if [ -f "$env_file" ]; then
-                if grep -q "^LLAMACPP_MODEL=" "$env_file"; then
-                    # Update existing variable
-                    sed -i "s/^LLAMACPP_MODEL=.*/LLAMACPP_MODEL=$model_filename/" "$env_file"
+                if grep -qE "^[[:space:]]*#?INFERENCE_MODEL=" "$env_file"; then
+                    # Update existing variable (including commented ones)
+                    sed -i "s/^[[:space:]]*#*INFERENCE_MODEL=.*/INFERENCE_MODEL=$model_filename/" "$env_file"
                 else
                     # Add new variable
-                    echo "LLAMACPP_MODEL=$model_filename" >> "$env_file"
+                    echo "INFERENCE_MODEL=$model_filename" >> "$env_file"
                 fi
                 echo "[x] Configuration updated in .env. Restarting llamacpp container..."
                 # Restart the container to pick up the new model
                 ${DOCKER_BIN:-docker} restart llamacpp 2>/dev/null || true
             else
-                echo "   .env file not found. Please set LLAMACPP_MODEL=$model_filename manually."
+                echo "   .env file not found. Please set INFERENCE_MODEL=$model_filename manually."
             fi
         fi
         echo "[x] Configuration updated. Please restart the stack to apply changes: $0 stack restart"
