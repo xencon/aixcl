@@ -661,14 +661,17 @@ test_model_inference() {
 test_opencode_integration() {
     start_section "OpenCode Integration - IDE Connectivity"
     
-    # Check if OpenCode is reported as active by the CLI
-    echo "Checking OpenCode status from AIXCL CLI..."
-    if ./aixcl stack status | grep -q "OpenCode (IDE)     Status: Active"; then
-        print_success "AIXCL reports OpenCode as Active"
-        record_test "pass" "AIXCL reports OpenCode Active"
+    # Check if Runtime Core (inference engine) is healthy
+    # OpenCode is a VS Code plugin, not a containerized service
+    echo "Checking Runtime Core status for OpenCode connectivity..."
+    local engine_status
+    engine_status=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/api/version 2>/dev/null || echo "000")
+    if [ "$engine_status" = "200" ]; then
+        print_success "Runtime Core (Ollama) is healthy - OpenCode can connect"
+        record_test "pass" "Runtime Core healthy for OpenCode"
     else
-        print_error "AIXCL reports OpenCode as Offline"
-        record_test "fail" "AIXCL reports OpenCode Offline"
+        print_error "Runtime Core is not responding"
+        record_test "fail" "Runtime Core unreachable"
     fi
     
     # Check if we can reach the backend using OpenCode's expected configuration
