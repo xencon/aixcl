@@ -1,0 +1,9 @@
+# Test backup directory
+.backup/
+
+# Generated test results
+test-results.md
+
+# Temporary test output
+*.log
+/tmp/test_output.log
