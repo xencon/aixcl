@@ -166,7 +166,8 @@ fi
 echo ""
 
 # Discover tests
-mapfile -t TESTS < <(discover_tests)
+# shellcheck disable=SC2207
+TESTS=($(discover_tests))
 
 if [[ ${#TESTS[@]} -eq 0 ]]; then
     log_error "No tests found"
