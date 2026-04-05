@@ -29,6 +29,7 @@ source "${TEST_SCRIPT_DIR}/lib/cleanup.sh"
 SCRIPT_DIR="$TEST_SCRIPT_DIR"
 
 # Configuration
+# shellcheck disable=SC2034
 REPORT_FILE="${SCRIPT_DIR}/test-results.md"
 COMPARISON_FILE="${SCRIPT_DIR}/comparison-results.md"
 TEST_DIR="${SCRIPT_DIR}/command-tests"
@@ -38,10 +39,12 @@ ENGINE="current"  # current, ollama, vllm, llamacpp, all
 MODEL=""
 TEST_RANGE="all"
 PROFILE="usr"
+# shellcheck disable=SC2034
 VERBOSE=false
 
 # Results tracking
 declare -A ENGINE_RESULTS
+# shellcheck disable=SC2034
 declare -A ENGINE_SCORES
 declare -A ENGINE_DURATIONS
 
@@ -146,6 +149,7 @@ parse_arguments() {
                 shift 2
                 ;;
             -v|--verbose)
+                # shellcheck disable=SC2034
                 VERBOSE=true
                 shift
                 ;;
