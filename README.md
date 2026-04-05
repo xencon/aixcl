@@ -24,7 +24,7 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 ./aixcl utils check-env
 ```
 
-> Note: The check will warn if `hf` is missing. Install with `pip install huggingface-hub[cli]` if you plan to use llama.cpp or vLLM engines.
+> Note: The check will warn if `hf` is missing. Install with pip or brew if you plan to use llama.cpp or vLLM engines.
 
 **2. Start the Stack**
 
