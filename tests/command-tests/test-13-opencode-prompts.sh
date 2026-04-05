@@ -227,11 +227,23 @@ run_challenge() {
 verify_opencode || exit 1
 verify_model_loaded || exit 1
 
-# Ensure stack is running
+# Ensure stack is running with ollama and model loaded
 if ! docker ps | grep -qE "ollama|vllm|llamacpp"; then
     log_info "Starting stack..."
+    "${SCRIPT_DIR}/aixcl" engine set ollama > /dev/null 2>&1 || true
     "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
-    wait_for_container "$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | head -1)" 60
+    wait_for_container "ollama" 60
+fi
+
+# Ensure model is loaded
+log_info "Ensuring model is loaded..."
+if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen|llama|gpt|codellama|deepseek"; then
+    log_info "Adding model for testing..."
+    "${SCRIPT_DIR}/aixcl" models add qwen2.5-coder:0.5b > /dev/null 2>&1 || {
+        log_error "Failed to load model. Cannot run OpenCode test."
+        exit 1
+    }
+    sleep 5
 fi
 
 # Capture session info before test
