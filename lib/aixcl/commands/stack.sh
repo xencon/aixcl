@@ -939,7 +939,8 @@ function logs() {
         actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
         
         if [ -n "$actual_container" ]; then
-            "${DOCKER_BIN:-docker}" logs "$actual_container" --tail="$tail_count" --follow
+            # Fetch logs without --follow to avoid hanging in scripts/tests
+            "${DOCKER_BIN:-docker}" logs "$actual_container" --tail="$tail_count" 2>/dev/null || echo "  (no logs available)"
         else
             log_error "Container for service '$actual_service' not found"
             return 1
