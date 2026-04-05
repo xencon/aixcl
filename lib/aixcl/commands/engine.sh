@@ -25,8 +25,8 @@ function engine() {
             cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
         fi
         
-        if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
-            sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=$engine/" "${SCRIPT_DIR}/.env"
+        if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+            sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=$engine/" "${SCRIPT_DIR}/.env"
         else
             echo "INFERENCE_ENGINE=$engine" >> "${SCRIPT_DIR}/.env"
         fi
@@ -55,22 +55,22 @@ function engine() {
         
         if has_nvidia_container_toolkit; then
             echo "NVIDIA GPU and Container Toolkit detected. Setting engine to vLLM for optimized performance."
-            if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
-                sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=vllm/" "${SCRIPT_DIR}/.env"
+            if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=vllm/" "${SCRIPT_DIR}/.env"
             else
                 echo "INFERENCE_ENGINE=vllm" >> "${SCRIPT_DIR}/.env"
             fi
         elif is_arm64; then
             echo "Apple Silicon / ARM64 detected. Setting engine to llama.cpp for optimized performance."
-            if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
-                sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=llamacpp/" "${SCRIPT_DIR}/.env"
+            if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=llamacpp/" "${SCRIPT_DIR}/.env"
             else
                 echo "INFERENCE_ENGINE=llamacpp" >> "${SCRIPT_DIR}/.env"
             fi
         else
             echo "No dedicated GPU detected. Setting engine to Ollama."
-            if grep -q "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
-                sed -i "s/^INFERENCE_ENGINE=.*/INFERENCE_ENGINE=ollama/" "${SCRIPT_DIR}/.env"
+            if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=ollama/" "${SCRIPT_DIR}/.env"
             else
                 echo "INFERENCE_ENGINE=ollama" >> "${SCRIPT_DIR}/.env"
             fi

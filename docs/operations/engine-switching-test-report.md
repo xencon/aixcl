@@ -132,7 +132,7 @@ fi
 ```bash
 INFERENCE_ENGINE=llamacpp
 PROFILE=sys
-LLAMACPP_MODEL=qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
+INFERENCE_MODEL=qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
 ```
 
 ### opencode.json (Active Configuration)

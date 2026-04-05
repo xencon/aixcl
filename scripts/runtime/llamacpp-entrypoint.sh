@@ -5,10 +5,10 @@
 set -e
 
 # Get the model filename from environment or use a placeholder
-MODEL_FILE="${LLAMACPP_MODEL:-}"
+MODEL_FILE="${INFERENCE_MODEL:-}"
 
 if [ -z "$MODEL_FILE" ]; then
-    echo "⚠️  LLAMACPP_MODEL environment variable not set"
+    echo "⚠️  INFERENCE_MODEL environment variable not set"
     echo "   AIXCL will set this when you run: ./aixcl models add <model.gguf>"
     echo "   Container will exit gracefully and restart when model is available"
     exit 0
