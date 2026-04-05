@@ -173,6 +173,7 @@ run_challenge() {
     local prompt="$2"
     local response_file="$3"
     local result_file="$4"
+    local score_file="$5"
     
     log_info "Running Challenge $level..."
     log_info "Prompt: ${prompt:0:50}..."
@@ -201,6 +202,9 @@ run_challenge() {
     local score
     score=$(score_response "$response_file" "$level")
     
+    # Write score to file
+    echo "$score" > "$score_file"
+    
     # Log result
     {
         echo ""
@@ -214,9 +218,6 @@ run_challenge() {
     } >> "$result_file"
     
     log_info "Challenge $level: Score=$score/10, Duration=${duration}s"
-    
-    # Return score
-    echo "$score"
 }
 
 # ============================================================================
@@ -282,9 +283,16 @@ for i in "${!CHALLENGES[@]}"; do
     level=$((i + 1))
     prompt="${CHALLENGES[$i]}"
     response_file="/tmp/opencode_response_$level.txt"
+    score_file="/tmp/opencode_score_$level.txt"
     
-    # Run challenge and capture score (redirect stderr to avoid capturing log output)
-    score=$(run_challenge "$level" "$prompt" "$response_file" "$RESULTS_FILE" 2>/dev/null)
+    # Run challenge (writes score to score_file)
+    run_challenge "$level" "$prompt" "$response_file" "$RESULTS_FILE" "$score_file"
+    
+    # Read score from file
+    score=0
+    if [[ -f "$score_file" ]]; then
+        score=$(cat "$score_file" 2>/dev/null || echo "0")
+    fi
     # Ensure score is a number (default to 0 if empty or invalid)
     score=${score:-0}
     total_score=$((total_score + score))
