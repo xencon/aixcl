@@ -250,11 +250,13 @@ fi
 OPENCODE_CONFIG="${SCRIPT_DIR}/opencode.json"
 if [[ -f "$OPENCODE_CONFIG" ]]; then
     log_info "Configuring opencode.json for model access..."
-    # Get the first available model - filter out headers and descriptive text
-    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)[^:]*:" | head -1 | sed 's/^[[:space:]]*//' | cut -d: -f1 | tr -d '[:space:]')
-    # Fallback if no match with colon format
+    # Get the first available model - extract from the table format (NAME column)
+    # Format: "qwen2.5-coder:0.5b    4ff64a7f502a    397 MB    8 hours ago"
+    # The model name is the first column, which includes the tag (e.g., qwen2.5-coder:0.5b)
+    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | awk 'NR>2 && $1 ~ /^(qwen|llama|gpt|codellama|deepseek|mistral)/ {print $1; exit}')
+    # Fallback using grep and awk
     if [[ -z "$MODEL_NAME" ]]; then
-        MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)" | head -1 | sed 's/^[[:space:]]*//' | tr -d '[:space:]')
+        MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)" | head -1 | awk '{print $1}')
     fi
     if [[ -n "$MODEL_NAME" ]] && command -v jq >/dev/null 2>&1; then
         jq --arg model "$MODEL_NAME" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$OPENCODE_CONFIG" > /tmp/opencode_updated.json && mv /tmp/opencode_updated.json "$OPENCODE_CONFIG"
@@ -281,7 +283,10 @@ for i in "${!CHALLENGES[@]}"; do
     prompt="${CHALLENGES[$i]}"
     response_file="/tmp/opencode_response_$level.txt"
     
-    score=$(run_challenge "$level" "$prompt" "$response_file" "$RESULTS_FILE")
+    # Run challenge and capture score (redirect stderr to avoid capturing log output)
+    score=$(run_challenge "$level" "$prompt" "$response_file" "$RESULTS_FILE" 2>/dev/null)
+    # Ensure score is a number (default to 0 if empty or invalid)
+    score=${score:-0}
     total_score=$((total_score + score))
     challenge_count=$((challenge_count + 1))
     
