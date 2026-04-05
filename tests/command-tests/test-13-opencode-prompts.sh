@@ -250,8 +250,12 @@ fi
 OPENCODE_CONFIG="${SCRIPT_DIR}/opencode.json"
 if [[ -f "$OPENCODE_CONFIG" ]]; then
     log_info "Configuring opencode.json for model access..."
-    # Get the first available model
-    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "qwen|llama|gpt|codellama|deepseek" | head -1 | tr -d '[:space:]')
+    # Get the first available model - filter out headers and descriptive text
+    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)[^:]*:" | head -1 | sed 's/^[[:space:]]*//' | cut -d: -f1 | tr -d '[:space:]')
+    # Fallback if no match with colon format
+    if [[ -z "$MODEL_NAME" ]]; then
+        MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)" | head -1 | sed 's/^[[:space:]]*//' | tr -d '[:space:]')
+    fi
     if [[ -n "$MODEL_NAME" ]] && command -v jq >/dev/null 2>&1; then
         jq --arg model "$MODEL_NAME" '.provider."aixcl-local".models = {($model): {"name": $model}} | .model = "aixcl-local/\($model)"' "$OPENCODE_CONFIG" > /tmp/opencode_updated.json && mv /tmp/opencode_updated.json "$OPENCODE_CONFIG"
         log_info "Updated opencode.json with model: $MODEL_NAME"
