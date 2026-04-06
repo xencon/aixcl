@@ -226,9 +226,8 @@ run_challenge() {
 
 # Pre-flight checks
 verify_opencode || exit 1
-verify_model_loaded || exit 1
 
-# Ensure stack is running
+# Ensure stack is running BEFORE checking for models
 if ! docker ps | grep -qE "ollama|vllm|llamacpp"; then
     log_info "Starting stack..."
     "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
@@ -251,6 +250,9 @@ if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen"; then
     }
     sleep 5
 fi
+
+# Now check if model is loaded
+verify_model_loaded || exit 1
 
 # Update opencode.json with the model configuration
 OPENCODE_CONFIG="${SCRIPT_DIR}/opencode.json"
