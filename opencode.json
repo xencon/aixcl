@@ -3,31 +3,60 @@
   "instructions": [
     "AGENTS.md",
     "DEVELOPMENT.md",
-    "ai/skills/ascii_output.md"
+    "ai/governance/workflow-governance.md",
+    "docs/architecture/governance/00_invariants.md",
+    "docs/architecture/governance/01_ai_guidance.md",
+    "docs/developer/development-workflow.md",
+    "ai/actions/*.md"
   ],
+  "default_agent": "agent-context",
+  "agent": {
+    "agent-context": {
+      "mode": "primary",
+      "description": "AIXCL primary agent with full project context and Issue-First workflow governance",
+      "prompt": "{file:.opencode/agents/agent-context.md}",
+      "permission": {
+        "read": "allow",
+        "edit": "ask",
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git add*": "allow",
+          "ls*": "allow",
+          "cat*": "allow",
+          "grep*": "allow",
+          "gh repo*": "allow",
+          "gh issue*": "allow",
+          "git commit*": "ask",
+          "git push*": "ask",
+          "rm -rf*": "deny",
+          "git push --force*": "deny",
+          "./scripts/checks/check-agents.sh*": "allow"
+        },
+        "webfetch": "ask"
+      }
+    }
+  },
   "permission": {
+    "edit": "ask",
     "bash": {
       "*": "ask",
-      "git status": "allow",
-      "git diff *": "allow",
-      "git log *": "allow",
-      "git add *": "allow",
-      "git commit *": "ask",
-      "git push origin main": "deny",
-      "git push *": "ask",
-      "grep *": "allow",
-      "cat *": "allow",
-      "ls *": "allow",
-      "gh repo *": "allow",
-      "gh issue *": "allow",
-      "gh pr create *": "ask",
-      "gh pr edit *": "ask",
-      "gh pr merge *": "deny",
-      "gh pr close *": "ask",
-      "gh api *": "ask",
-      "./aixcl *": "ask"
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git add*": "allow",
+      "ls*": "allow",
+      "cat*": "allow",
+      "grep*": "allow",
+      "gh repo*": "allow",
+      "gh issue*": "allow",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "rm -rf*": "deny",
+      "git push --force*": "deny"
     },
-    "edit": "ask",
     "webfetch": "ask"
   },
   "provider": {
