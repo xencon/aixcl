@@ -164,7 +164,7 @@ Manage your local library across any active engine:
 ./aixcl models add qwen2.5-coder:0.5b
 
 # Add multiple models
-./aixcl models add qwen2.5-coder:0.5b llama3.2:3b
+./aixcl models add qwen2.5-coder:0.5b qwen2.5-coder:1.5b
 
 # List all local models
 ./aixcl models list
