@@ -48,20 +48,24 @@ restore_state() {
 cleanup_test_containers() {
     log_info "Cleaning up test containers..."
     
-    # Stop all aixcl-related containers
-    local containers
-    containers=$(docker ps -q --filter "name=ollama\|vllm\|llamacpp\|open-webui\|postgres" 2>/dev/null || true)
+    # Use aixcl stack stop for proper shutdown (not docker stop)
+    # This ensures proper signal handling and port release
+    "$AIXCL_BIN" stack stop > /dev/null 2>&1 || true
+    log_info "Executed: aixcl stack stop"
     
+    # Fallback: ensure containers are removed if stack stop didn't work
+    local containers
+    containers=$(docker ps -q --filter "name=ollama\|vllm\|llamacpp" 2>/dev/null || true)
     if [[ -n "$containers" ]]; then
         echo "$containers" | xargs -r docker stop > /dev/null 2>&1 || true
         echo "$containers" | xargs -r docker rm > /dev/null 2>&1 || true
-        log_info "Stopped and removed containers"
+        log_info "Force removed remaining containers"
     fi
     
     # Wait for port 11434 to be released with active polling
     log_info "Waiting for port 11434 to be released..."
     local waited=0
-    local max_wait=30
+    local max_wait=60
     while [[ $waited -lt $max_wait ]]; do
         if ! ss -tln | grep -q ":11434 "; then
             log_info "Port 11434 is free (released after ${waited}s)"
