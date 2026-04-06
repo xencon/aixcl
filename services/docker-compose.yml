@@ -3,7 +3,7 @@ services:
     volumes:
       - ollama:/root/.ollama
     environment:
-      - OLLAMA_HOST=127.0.0.1:11434
+      - OLLAMA_HOST=0.0.0.0:11434
       # Performance tuning for parallel model queries
       - OLLAMA_NUM_PARALLEL=8          # Handle concurrent model queries
       - OLLAMA_MAX_LOADED_MODELS=3     # Keep models loaded in GPU memory
