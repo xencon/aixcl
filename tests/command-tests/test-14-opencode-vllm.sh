@@ -11,7 +11,7 @@ source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 log_test_start "test-14-opencode-vllm"
 
 # Skip if not running on vLLM engine
-CURRENT_ENGINE=$(grep "^ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
+CURRENT_ENGINE=$(grep "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
 if [[ "$CURRENT_ENGINE" != "vllm" ]]; then
     log_test_skip "Test requires vLLM engine (current: $CURRENT_ENGINE)"
     exit 0

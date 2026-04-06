@@ -235,7 +235,7 @@ if ! docker ps | grep -qE "ollama|vllm|llamacpp"; then
 fi
 
 # Wait for engine container
-CURRENT_ENGINE=$(grep "^ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
+CURRENT_ENGINE=$(grep "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
 CONTAINER_NAME=$(get_engine_container "$CURRENT_ENGINE")
 if [[ -n "$CONTAINER_NAME" ]]; then
     wait_for_container "$CONTAINER_NAME" 60
