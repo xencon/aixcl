@@ -244,6 +244,17 @@ if [[ -n "$CONTAINER_NAME" ]]; then
     wait_for_container "$CONTAINER_NAME" 60
 fi
 
+# Wait for Ollama API to be ready
+log_info "Waiting for Ollama API..."
+sleep 5  # Give Ollama time to initialize
+for i in {1..30}; do
+    if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        log_info "Ollama API is ready"
+        break
+    fi
+    sleep 2
+done
+
 # Ensure model is loaded
 log_info "Ensuring model is loaded..."
 if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "^qwen"; then
