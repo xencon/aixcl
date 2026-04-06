@@ -244,16 +244,29 @@ if [[ -n "$CONTAINER_NAME" ]]; then
     wait_for_container "$CONTAINER_NAME" 60
 fi
 
-# Wait for Ollama API to be ready
-log_info "Waiting for Ollama API..."
-sleep 5  # Give Ollama time to initialize
-for i in {1..30}; do
+# Wait for Ollama to be fully healthy (not just started)
+log_info "Waiting for Ollama to be fully ready..."
+sleep 10  # Initial wait for Ollama to start initializing
+for i in {1..60}; do
+    # Check container health status
+    HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "none")
+    if [[ "$HEALTH_STATUS" == "healthy" ]]; then
+        log_info "Ollama container is healthy"
+        break
+    fi
+    # Also check if API responds
     if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-        log_info "Ollama API is ready"
+        log_info "Ollama API is responding"
         break
     fi
     sleep 2
 done
+
+# Final API check
+if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+    log_error "Ollama API failed to become ready after waiting"
+    exit 1
+fi
 
 # Ensure model is loaded
 log_info "Ensuring model is loaded..."
