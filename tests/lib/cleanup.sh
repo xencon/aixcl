@@ -58,21 +58,20 @@ cleanup_test_containers() {
         log_info "Stopped and removed containers"
     fi
     
-    # Wait for port 11434 to be released
+    # Wait for port 11434 to be released with active polling
     log_info "Waiting for port 11434 to be released..."
     local waited=0
-    while [[ $waited -lt 30 ]]; do
+    local max_wait=30
+    while [[ $waited -lt $max_wait ]]; do
         if ! ss -tln | grep -q ":11434 "; then
-            log_info "Port 11434 is free"
-            break
+            log_info "Port 11434 is free (released after ${waited}s)"
+            return 0
         fi
-        sleep 1
-        waited=$((waited + 1))
+        ((waited++))
     done
     
-    if [[ $waited -ge 30 ]]; then
-        log_warn "Port 11434 still in use after 30s"
-    fi
+    log_warn "Port 11434 still in use after ${max_wait}s"
+    return 1
 }
 
 cleanup_test_models() {

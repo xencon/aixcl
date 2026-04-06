@@ -273,8 +273,7 @@ wait_for_container_healthy() {
     while [[ $waited -lt $max_wait ]]; do
         # Check if container exists first
         if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
-            sleep 2
-            waited=$((waited + 2))
+            ((waited++))
             continue
         fi
         
@@ -283,7 +282,7 @@ wait_for_container_healthy() {
         health_status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "none")
         
         if [[ "$health_status" == "healthy" ]]; then
-            log_success "Container healthy: $container"
+            log_success "Container healthy: $container (ready after ${waited}s)"
             return 0
         fi
         
@@ -292,17 +291,31 @@ wait_for_container_healthy() {
             local state
             state=$(docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null || echo "unknown")
             if [[ "$state" == "running" ]]; then
-                log_success "Container running: $container (no healthcheck)"
+                log_success "Container running: $container (no healthcheck, ready after ${waited}s)"
                 return 0
             fi
         fi
         
-        sleep 2
-        waited=$((waited + 2))
-        echo -n "."
+        ((waited++))
     done
-    echo ""
     log_error "Timeout waiting for container healthy: $container"
+    return 1
+}
+
+wait_for_api() {
+    local url="$1"
+    local max_wait="${2:-60}"
+    local waited=0
+    
+    log_info "Waiting for API: $url (max ${max_wait}s)"
+    while [[ $waited -lt $max_wait ]]; do
+        if curl -sf "$url" --max-time 5 > /dev/null 2>&1; then
+            log_success "API ready: $url (after ${waited}s)"
+            return 0
+        fi
+        ((waited++))
+    done
+    log_error "Timeout waiting for API: $url"
     return 1
 }
 
