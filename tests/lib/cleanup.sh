@@ -57,6 +57,22 @@ cleanup_test_containers() {
         echo "$containers" | xargs -r docker rm > /dev/null 2>&1 || true
         log_info "Stopped and removed containers"
     fi
+    
+    # Wait for port 11434 to be released
+    log_info "Waiting for port 11434 to be released..."
+    local waited=0
+    while [[ $waited -lt 30 ]]; do
+        if ! ss -tln | grep -q ":11434 "; then
+            log_info "Port 11434 is free"
+            break
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    
+    if [[ $waited -ge 30 ]]; then
+        log_warn "Port 11434 still in use after 30s"
+    fi
 }
 
 cleanup_test_models() {
