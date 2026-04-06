@@ -27,8 +27,8 @@ OK opencode        Active     Connected (VS Code plugin)
 
 Configured Models
 -----------------
-  ✅ OpenCode (VS Code) Models: llama3.2, codellama
-  ✅ OpenCode CLI       Config: AIXCL CLI (Ollama)   Model: llama3.2
+  ✅ OpenCode (VS Code) Models: qwen2.5-coder:1.5b, qwen2.5-coder:3b
+  ✅ OpenCode CLI       Config: AIXCL CLI (Ollama)   Model: qwen2.5-coder:1.5b
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------

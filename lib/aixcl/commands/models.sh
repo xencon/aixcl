@@ -406,8 +406,8 @@ function models() {
         echo "Error: Models action is required"
         echo "Usage: $0 models {add|remove|list} [<model-name> ...]"
         echo "Examples:"
-        echo "  $0 models add starcoder2:latest"
-        echo "  $0 models remove starcoder2:latest nomic-embed-text:latest"
+        echo "  $0 models add qwen2.5-coder:0.5b"
+        echo "  $0 models remove qwen2.5-coder:0.5b qwen2.5-coder:1.5b"
         echo "  $0 models list"
         return 1
     fi
