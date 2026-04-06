@@ -244,7 +244,22 @@ fi
 log_info "Ensuring model is loaded..."
 if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen"; then
     log_info "Adding default model for testing..."
-    "${SCRIPT_DIR}/aixcl" models add qwen2.5-coder:0.5b > /dev/null 2>&1 || {
+    # Add model based on engine type
+    case "$CURRENT_ENGINE" in
+        ollama)
+            MODEL="qwen2.5-coder:0.5b"
+            ;;
+        vllm)
+            MODEL="Qwen/Qwen2.5-Coder-0.5B-Instruct"
+            ;;
+        llamacpp)
+            MODEL="Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf"
+            ;;
+        *)
+            MODEL="qwen2.5-coder:0.5b"
+            ;;
+    esac
+    "${SCRIPT_DIR}/aixcl" models add "$MODEL" > /dev/null 2>&1 || {
         log_error "Failed to load model. Cannot run OpenCode test."
         exit 1
     }
