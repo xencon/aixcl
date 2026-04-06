@@ -151,6 +151,16 @@ echo "AIXCL Platform Test Suite"
 echo "=========================================="
 echo ""
 
+# Clean up old backup files before starting
+log_info "Cleaning up old test backup files..."
+if [[ -d "${SCRIPT_DIR}/tests/.backup" ]]; then
+    # Remove backup directories older than 1 day (to preserve recent runs but clean up cruft)
+    find "${SCRIPT_DIR}/tests/.backup" -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+    # Count remaining backups
+    backup_count=$(find "${SCRIPT_DIR}/tests/.backup" -type d | wc -l)
+    log_info "Backup directory cleaned. Current backups: $((backup_count - 1))"
+fi
+
 # Pre-flight check
 echo "Running pre-flight check..."
 if [[ "$DRY_RUN" == false ]]; then
