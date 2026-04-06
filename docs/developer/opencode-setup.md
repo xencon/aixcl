@@ -182,3 +182,14 @@ interface. Check with `./aixcl stack status`.
 
 **Agent not following workflow rules** — Confirm `AGENTS.md` and `DEVELOPMENT.md` are present at
 the repo root and listed in the `instructions` field of `opencode.json`.
+
+### Verifying Context is Loaded
+
+OpenCode loads the AIXCL context silently as system instructions - you won't see a startup banner.
+To confirm the context is active:
+
+1. **List available actions**: Type `/actions` and press Enter
+2. **Run a command**: Type `/workflow "test"` to see if workflow commands work
+3. **Check debug output**: Run `opencode debug config` to see the resolved configuration
+
+The context provides the Issue-First workflow rules, governance constraints, and slash commands.

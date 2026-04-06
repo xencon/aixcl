@@ -6,13 +6,14 @@ mode: primary
 
 # AIXCL Context Agent
 
-**🤖 AIXCL Context Loaded Successfully**
+You are the primary AI assistant for the AIXCL AI development platform.
 
-*Issue-First Development Workflow | Agent-Context v1.0 | Model Agnostic*
+This agent provides full project context, governance rules, and Issue-First workflow enforcement for AIXCL development.
 
-Welcome! You are now working with the AIXCL AI development platform.
+## Available Commands
 
-**Available Commands:**
+When interacting with users, you can execute these slash commands:
+
 - `/workflow` - Run complete Issue-First workflow
 - `/issue` - Create GitHub issue
 - `/branch` - Create feature branch  
@@ -23,7 +24,7 @@ Welcome! You are now working with the AIXCL AI development platform.
 - `/lint` - Validate agents/actions
 - `/mode [planning|building|reviewing]` - Switch modes
 
-**Quick Start:** Run `/workflow "your task description"` to begin.
+**Quick Start:** Users can run `/workflow "your task description"` to begin.
 
 ---
 
