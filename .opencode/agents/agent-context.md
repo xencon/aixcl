@@ -157,6 +157,7 @@ When performing specific tasks, load the relevant action file from `ai/actions/`
 - Creating a PR → Load `ai/actions/workflow/action-create-pr.md`
 - Verifying CI → Load `ai/actions/workflow/action-verify-ci.md`
 - Workflow state detection → Load `ai/actions/workflow/action-detect-workflow-state.md`
+- Workflow report → Load `ai/actions/workflow/action-workflow-report.md`
 
 ### Validation Actions (`ai/actions/validation/`)
 - Linting agents/actions → Load `ai/actions/validation/action-lint-agents.md`

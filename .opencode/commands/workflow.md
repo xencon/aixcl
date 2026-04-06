@@ -55,6 +55,7 @@ This command orchestrates the entire Issue-First workflow:
 19. Monitors CI status
 20. Waits for all checks to pass
 21. Confirms workflow completion
+22. Generates visual workflow report
 
 ## Workflow Steps Summary
 
@@ -90,6 +91,43 @@ The workflow will:
 - Ask for confirmation before creating resources
 - Provide options to skip steps if already done
 - Handle errors gracefully
+
+## Workflow Report
+
+At the end of the workflow, a visual report is generated showing:
+
+```
+════════════════════════════════════════════════════════════════
+  Issue-First Workflow Complete! ✅
+════════════════════════════════════════════════════════════════
+
+Workflow Steps Completed
+
+| Step | Action | Result |
+|------|--------|--------|
+| 1. Create Issue | gh issue create | ✅ #661 |
+| 2. Create Branch | git checkout -b | ✅ issue-661/... |
+| 3. Make Changes | Implementation | ✅ Complete |
+| 4. Commit | git commit | ✅ abc1234 |
+| 5. Create PR | gh pr create | ✅ #662 |
+| 6. Verify CI | gh pr checks | ✅ Passing |
+
+CI Status
+
+| Check | Status |
+|-------|--------|
+| Dependency Review | ✅ pass |
+| Validate Shell Scripts | ✅ pass |
+| ... | ... |
+
+Summary
+- Issue: #661
+- Branch: issue-661/...
+- Pull Request: #662
+- Status: ✅ Ready to merge
+
+The feature is complete and ready for review! 🚀
+```
 
 ## Next Steps After Workflow
 
