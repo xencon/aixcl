@@ -228,13 +228,17 @@ run_challenge() {
 verify_opencode || exit 1
 
 # Ensure stack is running BEFORE checking for models
-if ! docker ps | grep -qE "ollama|vllm|llamacpp"; then
-    log_info "Starting stack..."
+# Force Ollama for OpenCode tests as it's the most reliable
+CURRENT_ENGINE="ollama"
+"${SCRIPT_DIR}/aixcl" engine set ollama > /dev/null 2>&1 || true
+
+if ! docker ps | grep -qE "ollama"; then
+    log_info "Starting stack with Ollama..."
     "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
 fi
 
-# Wait for engine container
-CURRENT_ENGINE=$(grep "^INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null | cut -d'=' -f2 || echo "ollama")
+# Wait for Ollama container (forced above)
+CURRENT_ENGINE="ollama"
 CONTAINER_NAME=$(get_engine_container "$CURRENT_ENGINE")
 if [[ -n "$CONTAINER_NAME" ]]; then
     wait_for_container "$CONTAINER_NAME" 60
@@ -242,27 +246,16 @@ fi
 
 # Ensure model is loaded
 log_info "Ensuring model is loaded..."
-if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen"; then
+if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "^qwen"; then
     log_info "Adding default model for testing..."
-    # Add model based on engine type
-    case "$CURRENT_ENGINE" in
-        ollama)
-            MODEL="qwen2.5-coder:0.5b"
-            ;;
-        vllm)
-            MODEL="Qwen/Qwen2.5-Coder-0.5B-Instruct"
-            ;;
-        llamacpp)
-            MODEL="Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf"
-            ;;
-        *)
-            MODEL="qwen2.5-coder:0.5b"
-            ;;
-    esac
-    "${SCRIPT_DIR}/aixcl" models add "$MODEL" > /dev/null 2>&1 || {
-        log_error "Failed to load model. Cannot run OpenCode test."
+    MODEL="qwen2.5-coder:0.5b"
+    log_info "Adding model: $MODEL"
+    if ! "${SCRIPT_DIR}/aixcl" models add "$MODEL" 2>&1; then
+        log_error "Failed to add model: $MODEL"
+        log_info "Checking if Ollama is still running..."
+        docker ps | grep -E "ollama" || log_warn "Ollama container not running"
         exit 1
-    }
+    fi
     sleep 5
 fi
 
