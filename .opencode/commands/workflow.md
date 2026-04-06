@@ -70,19 +70,31 @@ This command orchestrates the entire Issue-First workflow:
 - Valid GitHub repository
 - User has push access
 
-## Example
+## Examples
 
+### Feature Development
 ```
 /workflow Add support for PostgreSQL database
 ```
+Creates a [FEATURE] issue, branches, implements, commits, and creates PR.
 
-This will:
-- Create [FEATURE] issue with appropriate labels
-- Create branch issue-<number>/add-postgresql-support
-- Guide through implementation
-- Commit with proper format
-- Create PR with proper format
-- Verify CI passes
+### Bug Fix
+```
+/workflow Fix memory leak in connection pooling
+```
+Creates a [BUG] issue with Fix label, branches from main, implements fix.
+
+### Refactoring Task
+```
+/workflow Refactor database abstraction layer
+```
+Creates a [TASK] issue with Refactor label, restructures code without changing behavior.
+
+### Documentation Update
+```
+/workflow Update API documentation for v2 endpoints
+```
+Creates issue for docs changes, updates documentation files.
 
 ## Interactive Mode
 
@@ -128,6 +140,43 @@ Summary
 
 The feature is complete and ready for review! 🚀
 ```
+
+## Resuming or Interrupting Workflows
+
+### Resuming After Interruption
+
+If the workflow is interrupted (e.g., network issue, system restart), you can resume:
+
+1. **Check current status**: Run `/report` to see which phase you're in
+2. **Skip completed phases**: Use individual commands to skip completed steps:
+   - Issue already created? Use `/branch` instead of `/workflow`
+   - Branch exists? Use `/commit` directly
+   - Commits ready? Use `/pr` to create PR
+   - PR exists? Use `/verify` to check CI status
+
+### Starting from Mid-Workflow
+
+If you've manually completed some steps:
+
+```
+# If issue #123 exists and branch created
+/commit feat: Add authentication
+
+# If branch pushed with commits
+/pr Add user authentication feature
+
+# If PR #124 exists
+/verify 124
+```
+
+### Error Recovery
+
+If a step fails:
+1. **Issue creation failed**: Check `gh auth status`, fix error, re-run `/issue`
+2. **Branch creation failed**: Ensure clean git status, resolve conflicts, re-run `/branch`
+3. **Push failed**: Check remote access, resolve merge conflicts manually
+4. **PR creation failed**: Verify issue exists, ensure branch is pushed
+5. **CI failing**: Fix code locally, commit, push, re-run `/verify`
 
 ## Next Steps After Workflow
 
