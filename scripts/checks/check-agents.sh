@@ -103,25 +103,42 @@ check_agents() {
     done
 }
 
-# Check skill files
-check_skills() {
-    local skills_dir="ai/skills"
-    if [[ ! -d "$skills_dir" ]]; then
-        return 0  # Skills directory is optional
+# Check action files
+check_actions() {
+    local actions_dir="ai/actions"
+    if [[ ! -d "$actions_dir" ]]; then
+        return 0  # Actions directory is optional
     fi
 
-    local skill_files=("$skills_dir"/skill-*.md)
-    if [[ ! -e "${skill_files[0]}" ]]; then
-        return 0  # No skills yet
+    # Check for action files in subdirectories
+    local action_files=()
+    while IFS= read -r -d '' file; do
+        action_files+=("$file")
+    done < <(find "$actions_dir" -name "action-*.md" -type f -print0 2>/dev/null || true)
+    
+    if [[ ${#action_files[@]} -eq 0 ]]; then
+        warn "No action files found matching action-*.md pattern in $actions_dir"
+        return 0
     fi
 
-    for skill_file in "${skill_files[@]}"; do
+    for action_file in "${action_files[@]}"; do
         local basename
-        basename=$(basename "$skill_file")
-        info "Checking skill: $basename"
+        basename=$(basename "$action_file")
+        local category
+        category=$(basename "$(dirname "$action_file")")
+        if [[ "$category" == "actions" ]]; then
+            info "Checking action: $basename"
+        else
+            info "Checking action: $category/$basename"
+        fi
 
-        if [[ ! "$basename" =~ ^skill-.*\.md$ ]]; then
-            error "$basename does not match skill-*.md naming convention"
+        if [[ ! "$basename" =~ ^action-.*\.md$ ]]; then
+            error "$basename does not match action-*.md naming convention"
+        fi
+
+        # Check YAML frontmatter presence (optional but recommended)
+        if ! grep -q "^---$" "$action_file"; then
+            warn "$basename: Missing YAML frontmatter (no --- delimiter) - recommended but not required"
         fi
     done
 }
@@ -151,11 +168,11 @@ check_reports() {
 
 # Main execution
 main() {
-    echo "Checking AI agents, skills, and reports..."
+    echo "Checking AI agents, actions, and reports..."
     echo ""
 
     check_agents
-    check_skills
+    check_actions
     check_reports
 
     echo ""
