@@ -118,7 +118,7 @@ After successful setup:
 
 1. **Add Models** (recommended defaults):
    ```bash
-   ./aixcl models add deepseek-coder:1.3b codegemma:2b qwen2.5-coder:3b
+   ./aixcl models add qwen2.5-coder:0.5b qwen2.5-coder:1.5b qwen2.5-coder:3b
    ```
 2. **Access Web UIs**:
    - Open WebUI: http://localhost:8080

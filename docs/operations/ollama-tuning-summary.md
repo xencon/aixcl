@@ -32,8 +32,8 @@ Based on analysis of parallel model performance and Ollama research, here are th
 ### Balanced Configuration (Recommended for 8GB GPUs)
 
 - **Primary Model**: `qwen2.5-coder:7b` (4.7GB)
-- **Secondary Models**: `deepseek-coder:1.3b` (776MB), `codegemma:2b` (1.6GB)
-- **Total VRAM**: ~7.1GB
+- **Secondary Models**: `qwen2.5-coder:1.5b` (~1GB), `qwen2.5-coder:3b` (~2GB)
+- **Total VRAM**: ~7.7GB
 - **Performance**: High throughput, low switching latency.
 
 ### For Larger GPUs (16GB+)

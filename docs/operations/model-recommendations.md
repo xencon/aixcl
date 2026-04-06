@@ -1,104 +1,142 @@
-# Model Size Recommendations for Performance
+# Model Recommendations
 
-## Current Configuration
+AIXCL uses Qwen 2.5 Coder instruct models across all three supported inference engines (Ollama, vLLM, llama.cpp).
 
-**Balanced Configuration (Recommended):**
-- **Primary Model**: `qwen2.5-coder:7b` (4.7GB)
-- **Secondary Models**: `deepseek-coder:1.3b` (776MB), `codegemma:2b` (1.6GB)
-- **Total VRAM**: ~7.1GB
-- **Performance**: High throughput, low switching latency
+## Qwen 2.5 Coder Model Series
 
-This configuration provides:
-- Excellent keep-alive performance
-- Manageable VRAM usage for 8GB+ GPUs
-- Good response times
-- Reliable performance for concurrent queries
+The Qwen 2.5 Coder series is optimized for coding tasks with excellent performance across all sizes.
 
-## Performance Analysis
+### Available Sizes
 
-**Problem**: Large models (8GB+) can cause:
-- Slow loading times (30-60+ seconds)
-- GPU memory pressure
-- Inability to keep multiple models loaded simultaneously
-- Poor performance due to frequent model swapping
+| Model | Size | VRAM* | Best For | Ollama | vLLM | llama.cpp |
+|-------|------|-------|----------|--------|------|-----------|
+| `0.5b` | ~400MB | ~1GB | Ultra-lightweight, IoT, edge devices | ✅ | ✅ | ✅ |
+| `1.5b` | ~1GB | ~2.5GB | Lightweight, fast responses | ✅ | ✅ | ✅ |
+| `3b` | ~2GB | ~5GB | Balanced performance | ✅ | ✅ | ✅ |
+| `7b` | ~4.5GB | ~9GB | Higher quality, more capacity | ✅ | ✅ | ✅ |
+| `14b` | ~9GB | ~18GB | Best quality, larger GPUs | ✅ | ✅ | ✅ |
+| `32b` | ~20GB | ~40GB | Maximum quality, professional workstations | ✅ | ✅ | ✅ |
 
-**Solution**: Use a mix of one primary model and smaller auxiliary models to stay within VRAM limits.
+\* VRAM estimates are for inference with default context length. Actual usage varies by batch size and context.
 
-## Alternative Model Configurations
+### Engine-Specific Naming
 
-### Option 1: Ultra-Lightweight Setup
-
-**Best for**: Maximum speed, minimal VRAM usage, older hardware
-
-- `codegemma:2b` (1.6GB)
-- `qwen2.5-coder:3b` (1.9GB)
-- `deepseek-coder:1.3b` (776MB)
-
-**Total VRAM**: ~4.3GB
-**Performance**: Extremely fast, fits in 6GB VRAM GPUs
-
-### Option 2: Balanced Coding Setup (CURRENT DEFAULT)
-
-**Best for**: High-quality code assistance with good performance
-
-- `qwen2.5-coder:7b` (4.7GB)
-- `deepseek-coder:1.3b` (776MB)
-- `codegemma:2b` (1.6GB)
-
-**Total VRAM**: ~7.1GB
-**Performance**: Best balance of quality and speed for 8GB+ GPUs
-
-### Option 3: High-Quality Setup (12GB+ VRAM required)
-
-**Best for**: Maximum quality across multiple models
-
-- `qwen2.5-coder:7b` (4.7GB)
-- `llama3.1:8b` (4.7GB)
-- `ministral-3:3b` (3.0GB)
-
-**Total VRAM**: ~12.4GB
-**Note**: Requires 16GB+ GPU for optimal performance with multiple models loaded.
-
-## Model Size Comparison
-
-| Model | Size | Use Case | Speed |
-|-------|------|----------|-------|
-| `deepseek-coder:1.3b` | 776MB | Fast auxiliary | Very fast |
-| `codegemma:2b` | 1.6GB | Fast auxiliary | Very fast |
-| `qwen2.5-coder:3b` | 1.9GB | Balanced | Fast |
-| `llama3.2:3b` | 2.0GB | Balanced | Fast |
-| `phi3:mini` | 2.2GB | Balanced | Fast |
-| `codellama:7b` | 3.8GB | High quality | Medium |
-| `deepseek-coder:6.7b` | 3.8GB | High quality | Medium |
-| `qwen2.5-coder:7b` | 4.7GB | High quality | Medium |
-
-## Why Smaller Models?
-
-1. **Faster Loading**: Small models load in seconds vs minutes.
-2. **Better Memory Management**: Multiple small models can stay loaded simultaneously.
-3. **Parallel Execution**: Smaller models enable true parallel processing without GPU swapping.
-4. **Consistent Performance**: Less variation in response times.
-
-## Implementation Steps
-
-1. **Pull Recommended Models**:
-   ```bash
-   ./aixcl models add qwen2.5-coder:7b deepseek-coder:1.3b codegemma:2b
-   ```
-2. **Configure Engine**: Ensure `OLLAMA_MAX_LOADED_MODELS` is set correctly in `docker-compose.yml`.
-3. **Monitor GPU memory** with `nvidia-smi` during use.
-
-## Additional Optimizations
-
-Ensure your engine is optimized for multi-model use:
-
-```yaml
-# In docker-compose.yml
-environment:
-  - OLLAMA_NUM_PARALLEL=8
-  - OLLAMA_MAX_LOADED_MODELS=3
-  - OLLAMA_KEEP_ALIVE=1800
-  - OLLAMA_NUM_GPU=1
+**Ollama:**
+```bash
+./aixcl models add qwen2.5-coder:0.5b
+./aixcl models add qwen2.5-coder:1.5b
+./aixcl models add qwen2.5-coder:3b
 ```
 
-See [`ollama-performance-tuning.md`](./ollama-performance-tuning.md) for complete optimization guide.
+**vLLM:**
+```bash
+./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct
+./aixcl models add Qwen/Qwen2.5-Coder-1.5B-Instruct
+./aixcl models add Qwen/Qwen2.5-Coder-3B-Instruct
+```
+
+**llama.cpp (GGUF):**
+```bash
+./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
+./aixcl models add Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
+./aixcl models add Qwen/Qwen2.5-Coder-3B-Instruct-GGUF/qwen2.5-coder-3b-instruct-q4_k_m.gguf
+```
+
+## Recommended Configurations
+
+### Configuration 1: Development Workstation (8-12GB VRAM)
+
+Best for: Daily coding with OpenCode, Open WebUI, and concurrent queries
+
+```bash
+./aixcl models add qwen2.5-coder:1.5b
+./aixcl models add qwen2.5-coder:3b
+./aixcl models add qwen2.5-coder:7b
+```
+
+- **Primary**: 7B for complex tasks
+- **Fast**: 1.5B for quick autocomplete
+- **Balanced**: 3B for general queries
+- **Total**: ~7.5GB VRAM loaded together
+
+### Configuration 2: Lightweight/Laptop (4-8GB VRAM)
+
+Best for: Running on integrated GPUs, older hardware, or when VRAM is shared with display
+
+```bash
+./aixcl models add qwen2.5-coder:0.5b
+./aixcl models add qwen2.5-coder:1.5b
+./aixcl models add qwen2.5-coder:3b
+```
+
+- **Total**: ~3.5GB VRAM
+- All three can stay resident simultaneously
+
+### Configuration 3: High-Performance (16GB+ VRAM)
+
+Best for: Maximum quality, long context, batch processing
+
+```bash
+./aixcl models add qwen2.5-coder:7b
+./aixcl models add qwen2.5-coder:14b
+```
+
+- **Total**: ~13.5GB VRAM
+- 14B for highest quality responses
+- 7B for faster fallback
+
+### Configuration 4: Minimal/Edge (2-4GB VRAM)
+
+Best for: Single model use, resource-constrained environments
+
+```bash
+./aixcl models add qwen2.5-coder:0.5b
+```
+
+- Surprisingly capable for 0.5B parameters
+- Fits in nearly any modern GPU
+- Good for testing and demos
+
+## Model Selection Guidelines
+
+| Scenario | Recommended | Why |
+|----------|-------------|-----|
+| OpenCode autocomplete | 0.5B or 1.5B | Fast, low latency |
+| OpenCode chat/agent | 1.5B or 3B | Balance of speed and quality |
+| Code review/analysis | 3B or 7B | Better reasoning capabilities |
+| Documentation generation | 3B or 7B | Longer coherent outputs |
+| Complex refactoring | 7B or 14B | Deeper understanding |
+| Learning/tutorials | 0.5B or 1.5B | Fast experimentation |
+| Production CI/CD | 1.5B or 3B | Reliable, consistent |
+
+## Performance Notes
+
+1. **Model Loading**: Larger models take longer to load (seconds vs minutes for 14B+)
+2. **Memory Management**: Multiple small models often outperform single large model with swapping
+3. **Context Length**: All Qwen 2.5 Coder models support 32K context (configurable per engine)
+4. **Quantization**: GGUF models use Q4_K_M by default for best speed/quality balance
+5. **Concurrent Use**: Smaller models enable true parallel processing
+
+## Implementation
+
+Add models one by one or in batch:
+
+```bash
+# Single model
+./aixcl models add qwen2.5-coder:1.5b
+
+# Multiple models
+./aixcl models add qwen2.5-coder:0.5b qwen2.5-coder:1.5b qwen2.5-coder:3b
+
+# List installed models
+./aixcl models list
+
+# Remove a model
+./aixcl models remove qwen2.5-coder:3b
+```
+
+## See Also
+
+- [`ollama-performance-tuning.md`](./ollama-performance-tuning.md) - Engine-specific optimizations
+- [Qwen 2.5 Coder on Hugging Face](https://huggingface.co/Qwen) - Official model cards
+- [`../user/usage.md`](../user/usage.md) - Adding and managing models

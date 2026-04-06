@@ -76,13 +76,13 @@ This will:
 ### 4. Add Models
 
 ```bash
-# Recommended default models (optimized for performance)
-./aixcl models add deepseek-coder:1.3b
-./aixcl models add codegemma:2b
+# Recommended default models (Qwen 2.5 Coder - optimized for coding tasks)
+./aixcl models add qwen2.5-coder:0.5b
+./aixcl models add qwen2.5-coder:1.5b
 ./aixcl models add qwen2.5-coder:3b
 
 # Add models directly from Hugging Face (GGUF supported via hf.co/ prefix)
-./aixcl models add hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M
+./aixcl models add hf.co/bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF:Q4_K_M
 ```
 
 ### 5. Check Status
@@ -115,22 +115,30 @@ Shows:
 # List current models
 ./aixcl models list
 
-# Add example starter models
-./aixcl models add deepseek-coder:1.3b
-./aixcl models add codegemma:2b
+# Add example starter models (Qwen 2.5 Coder series)
+./aixcl models add qwen2.5-coder:0.5b
+./aixcl models add qwen2.5-coder:1.5b
 ./aixcl models add qwen2.5-coder:3b
 
 # For larger GPUs (16GB+), you can use larger models:
 ./aixcl models add qwen2.5-coder:7b
-./aixcl models add ministral-3:3b
+./aixcl models add qwen2.5-coder:14b
 ```
 
 You can add or remove multiple models in one command: `./aixcl models add a b c`, `./aixcl models remove a b`.
 
-**Recommended Models by Use Case:**
-- **Ultra-lightweight** (default): `deepseek-coder:1.3b`, `codegemma:2b`, `qwen2.5-coder:3b`
-- **Balanced**: `ministral-3:3b`, `codegemma:2b`, `deepseek-coder:1.3b`
-- **Medium**: `qwen2.5-coder:7b`, `codegemma:2b`, `deepseek-coder:1.3b`
+**Recommended Models by Size:**
+
+AIXCL supports Qwen 2.5 Coder instruct models across three engines (Ollama, vLLM, llama.cpp).
+All sizes are optimized for coding tasks with excellent performance characteristics.
+
+| Model | Size | Use Case | Download |
+|-------|------|----------|----------|
+| `qwen2.5-coder:0.5b` | ~400MB | Ultra-lightweight, default | `./aixcl models add qwen2.5-coder:0.5b` |
+| `qwen2.5-coder:1.5b` | ~1GB | Lightweight, OpenCode recommended | `./aixcl models add qwen2.5-coder:1.5b` |
+| `qwen2.5-coder:3b` | ~2GB | Balanced performance | `./aixcl models add qwen2.5-coder:3b` |
+| `qwen2.5-coder:7b` | ~4.5GB | Medium, higher quality | `./aixcl models add qwen2.5-coder:7b` |
+| `qwen2.5-coder:14b` | ~9GB | Large, best quality | `./aixcl models add qwen2.5-coder:14b` |
 
 See [`docs/operations/model-recommendations.md`](../operations/model-recommendations.md) for complete details.
 

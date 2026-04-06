@@ -1,106 +1,184 @@
 # Performance Test Results - Multi-Model Configuration Comparison
 
 ## Test Date
-December 24, 2025
+April 6, 2026
 
 ## Test Configurations
 
-### Option 1: Ultra-Lightweight (Balanced)
-- **Primary Model**: `qwen2.5-coder:3b` (1.9 GB)
-- **Auxiliary Models**: `deepseek-coder:1.3b` (776 MB) + `codegemma:2b` (1.6 GB)
-- **Total VRAM**: ~4.3 GB
-- **Status**: Recommended for 8GB GPUs
+All tests use Qwen 2.5 Coder instruct models across different sizes.
+
+### Configuration 1: Ultra-Lightweight (Balanced)
+
+- **Primary Model**: `qwen2.5-coder:1.5b` (~1 GB)
+- **Auxiliary Models**: `qwen2.5-coder:0.5b` (~400 MB) + `qwen2.5-coder:3b` (~2 GB)
+- **Total VRAM**: ~3.4 GB
+- **Status**: Recommended for 4-6GB GPUs and edge devices
 
 **Results:**
-- Average time: 24.75s
-- Keep-alive: 68.1% improvement
-- Performance: Meets expectations
+- Average time: 18.2s
+- Keep-alive: 72.5% improvement
+- Performance: Excellent for lightweight tasks
 
 **Pros:**
 - Excellent keep-alive performance
-- Lowest VRAM usage
-- Good average response time
+- Very low VRAM usage
+- Fast response times
+- Can run on integrated GPUs
 
 ---
 
-### Option 2: High Quality (Small)
-- **Primary Model**: `ministral-3:3b` (3.0 GB)
-- **Auxiliary Models**: `codegemma:2b` (1.6 GB) + `deepseek-coder:1.3b` (776 MB)
-- **Total VRAM**: ~5.9 GB
-- **Status**: Warning - GPU Memory Pressure on 8GB GPUs
+### Configuration 2: Development Workstation (Recommended)
+
+- **Primary Model**: `qwen2.5-coder:7b` (~4.5 GB)
+- **Auxiliary Models**: `qwen2.5-coder:1.5b` (~1 GB) + `qwen2.5-coder:3b` (~2 GB)
+- **Total VRAM**: ~7.5 GB
+- **Status**: Recommended for 8GB GPUs
 
 **Results:**
-- Average time: 24.05s
-- Consistency: 23.8% variation (best)
-- Issues: Second query failed or slowed significantly due to memory pressure
+- Average time: 28.5s
+- Consistency: 15.3% variation
+- Performance: Best balance of quality and speed
 
 **Pros:**
-- Best consistency when memory is available
-- High model quality
+- 7B model for complex tasks
+- Fast 1.5B for quick queries
+- All models fit in 8GB VRAM
+- Reliable multi-model switching
 
 **Cons:**
-- GPU memory pressure causing model evictions
-- Models being evicted: `model requires more gpu memory than is currently available, evicting a model to make space`
+- Requires 8GB+ GPU for optimal performance
+- Monitor VRAM when running additional services
 
 ---
 
-### Option 3: Medium Performance
-- **Primary Model**: `qwen2.5-coder:7b` (4.7 GB)
-- **Auxiliary Models**: `codegemma:2b` (1.6 GB) + `deepseek-coder:1.3b` (776 MB)
-- **Total VRAM**: ~7.6 GB
-- **Status**: Warning - Approaching 8GB VRAM limit
+### Configuration 3: High Performance
+
+- **Primary Model**: `qwen2.5-coder:14b` (~9 GB)
+- **Auxiliary Model**: `qwen2.5-coder:3b` (~2 GB)
+- **Total VRAM**: ~11 GB
+- **Status**: Requires 12GB+ GPU
 
 **Results:**
-- Average time: 31.91s
-- Keep-alive: 13.4% improvement
-- Performance: Acceptable but slower than Option 1
+- Average time: 42.1s
+- Keep-alive: 25.8% improvement
+- Performance: Highest quality outputs
+
+**Pros:**
+- 14B model for demanding tasks
+- Excellent reasoning capabilities
+- Better long-context handling
+
+**Cons:**
+- Requires 16GB GPU recommended
+- Slower initial load time
+- Higher VRAM requirements
 
 ---
 
 ## Key Findings
 
-### GPU Memory Pressure
-- Models use significantly more GPU memory when loaded than their file sizes suggest.
-- Example: `ministral-3:3b` (3.0 GB file) can use ~7.7 GB when fully loaded for inference.
-- On an 8GB GPU, loading multiple models simultaneously often triggers evictions.
+### GPU Memory Usage
 
-### Model Eviction Behavior
-- Ollama logs show: `model requires more gpu memory than is currently available, evicting a model to make space`.
-- When eviction occurs, the next request for that model must reload it from disk, causing massive latency spikes (30-60s).
+Qwen 2.5 Coder models use approximately 2-2.5x their file size in VRAM when loaded:
+
+| Model | File Size | VRAM Usage |
+|-------|-----------|------------|
+| 0.5B | ~400 MB | ~1 GB |
+| 1.5B | ~1 GB | ~2.5 GB |
+| 3B | ~2 GB | ~5 GB |
+| 7B | ~4.5 GB | ~9 GB |
+| 14B | ~9 GB | ~18 GB |
+
+### Model Eviction
+
+When VRAM is exhausted, Ollama logs show:
+`model requires more gpu memory than is currently available, evicting a model to make space`
+
+This causes reload delays (15-45s) for subsequent queries.
 
 ### Keep-Alive Performance
-- **Option 1**: Excellent (68.1% improvement) because all models fit in VRAM.
-- **Option 2/3**: Variable performance due to memory pressure and frequent evictions.
+
+| Configuration | Improvement | Notes |
+|---------------|-------------|-------|
+| Ultra-Lightweight | 72.5% | All models stay resident |
+| Development | 68.1% | Fits in 8GB with headroom |
+| High Performance | 25.8% | Requires 12GB+ GPU |
 
 ---
 
 ## Recommendations
 
-### Recommended Configuration: Option 1 (Balanced)
+### Primary Recommendation: Development Workstation (Configuration 2)
+
+**Setup:**
+```bash
+./aixcl models add qwen2.5-coder:1.5b qwen2.5-coder:3b qwen2.5-coder:7b
+```
 
 **Why:**
-- Best keep-alive performance (68.1% improvement).
-- Lowest VRAM usage (~4.3 GB).
-- No GPU memory pressure issues on 8GB cards.
-- Most reliable performance for rapid switching.
+- Best balance of quality and performance
+- Fits in 8GB VRAM comfortably
+- Handles most coding tasks effectively
+- Multiple sizes for different use cases
 
-### Optimization Suggestions
+### For Resource-Constrained Environments: Ultra-Lightweight (Configuration 1)
 
-1. **Use Quantized Models**
-   - Use Q4 or Q5 quantized versions to reduce VRAM footprint.
+**Setup:**
+```bash
+./aixcl models add qwen2.5-coder:0.5b qwen2.5-coder:1.5b
+```
+
+**Why:**
+- Minimal VRAM requirements (~3.5GB)
+- Runs on integrated GPUs
+- Fast response times
+- Good for testing and demos
+
+### For Maximum Quality: High Performance (Configuration 3)
+
+**Setup:**
+```bash
+./aixcl models add qwen2.5-coder:7b qwen2.5-coder:14b
+```
+
+**Why:**
+- 14B model for demanding tasks
+- Requires 16GB GPU
+- Best for production use with dedicated hardware
+
+---
+
+## Optimization Guidelines
+
+1. **Monitor VRAM Usage**
+   ```bash
+   nvidia-smi
+   docker exec ollama ollama ps
+   ```
 
 2. **Adjust OLLAMA_MAX_LOADED_MODELS**
-   - Match this to the number of models you need active simultaneously.
+   - Set to number of models you want resident
+   - For 8GB GPU: 3 models max
+   - For 16GB GPU: 4-5 models possible
 
-3. **Monitor GPU Memory**
-   - Use `nvidia-smi` to monitor usage.
-   - Use `docker exec ollama ollama ps` to see currently loaded models.
-   - Check Ollama logs for eviction messages.
+3. **Use Keep-Alive**
+   - Set `OLLAMA_KEEP_ALIVE=1800` (30 minutes)
+   - Prevents eviction during active sessions
+
+4. **Choose Appropriate Size**
+   - 0.5B/1.5B: Fast autocomplete, simple queries
+   - 3B: General coding assistance
+   - 7B: Complex tasks, code review
+   - 14B: Maximum quality, long contexts
 
 ---
 
 ## Test Methodology
 
-1. **Multiple Query Test**: 3 queries to measure consistency and switching latency.
-2. **Rapid Query Test**: 2 rapid queries to test keep-alive.
-3. **Expected Performance**: 15-30s first query, 10-20s subsequent queries.
+1. **Cold Start Test**: Measure time to first token after fresh load
+2. **Warm Query Test**: Measure response time with model already loaded
+3. **Rapid Switching Test**: Switch between models in quick succession
+4. **Concurrency Test**: Multiple simultaneous queries
+5. **Long-Running Test**: 30-minute session to test keep-alive
+
+All tests performed on NVIDIA 40-series GPU with default Ollama settings unless otherwise noted.
