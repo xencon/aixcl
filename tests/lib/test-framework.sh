@@ -264,6 +264,48 @@ wait_for_container() {
     return 1
 }
 
+wait_for_container_healthy() {
+    local container="$1"
+    local max_wait="${2:-120}"
+    local waited=0
+    
+    log_info "Waiting for container healthy: $container (max ${max_wait}s)"
+    while [[ $waited -lt $max_wait ]]; do
+        # Check if container exists first
+        if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
+            sleep 2
+            waited=$((waited + 2))
+            continue
+        fi
+        
+        # Check health status
+        local health_status
+        health_status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "none")
+        
+        if [[ "$health_status" == "healthy" ]]; then
+            log_success "Container healthy: $container"
+            return 0
+        fi
+        
+        # If no healthcheck configured, check if running
+        if [[ "$health_status" == "none" ]]; then
+            local state
+            state=$(docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null || echo "unknown")
+            if [[ "$state" == "running" ]]; then
+                log_success "Container running: $container (no healthcheck)"
+                return 0
+            fi
+        fi
+        
+        sleep 2
+        waited=$((waited + 2))
+        echo -n "."
+    done
+    echo ""
+    log_error "Timeout waiting for container healthy: $container"
+    return 1
+}
+
 wait_for_api() {
     local url="$1"
     local max_wait="${2:-60}"

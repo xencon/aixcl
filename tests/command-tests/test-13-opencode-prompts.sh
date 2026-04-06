@@ -241,20 +241,13 @@ fi
 CURRENT_ENGINE="ollama"
 CONTAINER_NAME=$(get_engine_container "$CURRENT_ENGINE")
 if [[ -n "$CONTAINER_NAME" ]]; then
-    wait_for_container "$CONTAINER_NAME" 60
+    wait_for_container_healthy "$CONTAINER_NAME" 120
 fi
 
-# Wait for Ollama to be fully healthy (not just started)
-log_info "Waiting for Ollama to be fully ready..."
-sleep 10  # Initial wait for Ollama to start initializing
-for i in {1..60}; do
-    # Check container health status
-    HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "none")
-    if [[ "$HEALTH_STATUS" == "healthy" ]]; then
-        log_info "Ollama container is healthy"
-        break
-    fi
-    # Also check if API responds
+# Wait for Ollama API to be ready
+log_info "Waiting for Ollama API..."
+sleep 2  # Brief pause after container reports healthy
+for i in {1..30}; do
     if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
         log_info "Ollama API is responding"
         break
@@ -274,12 +267,28 @@ if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "^qwen"; then
     log_info "Adding default model for testing..."
     MODEL="qwen2.5-coder:0.5b"
     log_info "Adding model: $MODEL"
-    if ! "${SCRIPT_DIR}/aixcl" models add "$MODEL" 2>&1; then
-        log_error "Failed to add model: $MODEL"
-        log_info "Checking if Ollama is still running..."
-        docker ps | grep -E "ollama" || log_warn "Ollama container not running"
+    
+    # Retry model add up to 3 times (container may be restarting)
+    for attempt in 1 2 3; do
+        if "${SCRIPT_DIR}/aixcl" models add "$MODEL" 2>&1; then
+            log_info "Model added successfully on attempt $attempt"
+            break
+        fi
+        log_warn "Model add failed on attempt $attempt, retrying..."
+        sleep 5
+        # Check if container is still running
+        if ! docker ps | grep -q "ollama"; then
+            log_warn "Ollama container not running, waiting..."
+            sleep 10
+        fi
+    done
+    
+    # Verify model was added
+    if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "^qwen"; then
+        log_error "Failed to add model after 3 attempts: $MODEL"
         exit 1
     fi
+fi
     sleep 5
 fi
 
