@@ -59,7 +59,7 @@ verify_opencode() {
 
 verify_model_loaded() {
     log_info "Verifying model is loaded..."
-    if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen|llama|gpt|codellama|deepseek"; then
+    if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "^qwen"; then
         log_error "No model appears to be loaded. Run './aixcl models add' first."
         return 1
     fi
@@ -243,7 +243,7 @@ fi
 
 # Ensure model is loaded
 log_info "Ensuring model is loaded..."
-if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen|llama|gpt|codellama|deepseek"; then
+if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "qwen"; then
     log_info "Adding default model for testing..."
     "${SCRIPT_DIR}/aixcl" models add qwen2.5-coder:0.5b > /dev/null 2>&1 || {
         log_error "Failed to load model. Cannot run OpenCode test."
@@ -259,10 +259,10 @@ if [[ -f "$OPENCODE_CONFIG" ]]; then
     # Get the first available model - extract from the table format (NAME column)
     # Format: "qwen2.5-coder:0.5b    4ff64a7f502a    397 MB    8 hours ago"
     # The model name is the first column, which includes the tag (e.g., qwen2.5-coder:0.5b)
-    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | awk 'NR>2 && $1 ~ /^(qwen|llama|gpt|codellama|deepseek|mistral)/ {print $1; exit}')
+    MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | awk 'NR>2 && $1 ~ /^(qwen|mistral)/ {print $1; exit}')
     # Fallback using grep and awk
     if [[ -z "$MODEL_NAME" ]]; then
-        MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|llama|gpt|codellama|deepseek|mistral)" | head -1 | awk '{print $1}')
+        MODEL_NAME=$("${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -E "^\s*(qwen|mistral)" | head -1 | awk '{print $1}')
     fi
     # Extract just the filename for GGUF models (llama.cpp uses filenames as keys)
     if [[ "$CURRENT_ENGINE" == "llamacpp" ]] && [[ "$MODEL_NAME" == *"/"* ]]; then
