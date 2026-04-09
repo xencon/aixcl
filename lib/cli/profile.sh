@@ -12,7 +12,14 @@ if [[ "$INFERENCE_ENGINE" != "ollama" && "$INFERENCE_ENGINE" != "vllm" && "$INFE
 fi
 
 # Runtime core services managed by Docker Compose (always present in all profiles).
-RUNTIME_CORE_SERVICES=("$INFERENCE_ENGINE")
+# NOTE: Use get_runtime_core_services() to get current value after .env loading
+# shellcheck disable=SC2034
+RUNTIME_CORE_SERVICES=("${INFERENCE_ENGINE:-ollama}")
+
+# Get current runtime core services (respects INFERENCE_ENGINE from .env)
+get_runtime_core_services() {
+    echo "${INFERENCE_ENGINE:-ollama}"
+}
 
 # Profile descriptions
 declare -A PROFILE_DESCRIPTIONS=(
@@ -24,11 +31,40 @@ declare -A PROFILE_DESCRIPTIONS=(
 
 # Profile service mappings (Docker-managed services only)
 # Each profile includes runtime core services plus profile-specific services.
+# NOTE: This is now a function to ensure INFERENCE_ENGINE is read after .env loading
+get_profile_services_for_profile() {
+    local profile="$1"
+    # Use current INFERENCE_ENGINE value (may have been updated after .env loading)
+    local engine="${INFERENCE_ENGINE:-ollama}"
+    
+    case "$profile" in
+        usr)
+            echo "$engine postgres"
+            ;;
+        dev)
+            echo "$engine open-webui postgres pgadmin"
+            ;;
+        ops)
+            echo "$engine postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            ;;
+        sys)
+            echo "$engine open-webui postgres pgadmin prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            ;;
+        *)
+            echo ""
+            return 1
+            ;;
+    esac
+}
+
+# Deprecated: Static array kept for backward compatibility
+# Use get_profile_services_for_profile() or get_profile_services() instead
+# shellcheck disable=SC2034
 declare -A PROFILE_SERVICES=(
-    [usr]="$INFERENCE_ENGINE postgres"
-    [dev]="$INFERENCE_ENGINE open-webui postgres pgadmin"
-    [ops]="$INFERENCE_ENGINE postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="$INFERENCE_ENGINE open-webui postgres pgadmin prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
+    [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
+    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
 )
 
 # Profile database storage settings
@@ -65,14 +101,15 @@ get_profile_description() {
 }
 
 # Get services for a profile
+# Uses current INFERENCE_ENGINE value from environment
 get_profile_services() {
     local profile="$1"
-    if [ -z "${PROFILE_SERVICES[$profile]}" ]; then
-        echo ""
+    local services
+    services=$(get_profile_services_for_profile "$profile")
+    
+    if [[ -z "$services" ]]; then
         return 1
     fi
-    
-    local services="${PROFILE_SERVICES[$profile]}"
     
     # Exclude GPU exporter if NVIDIA Container Toolkit is not available
     # (even if hardware exists, we need the toolkit for container GPU access)
@@ -115,6 +152,10 @@ print_profile_info() {
         return 1
     fi
     
+    # Get current runtime core service (respects INFERENCE_ENGINE from .env)
+    local current_engine
+    current_engine=$(get_runtime_core_services)
+    
     echo ""
     echo "Profile: $profile"
     echo "=================="
@@ -126,12 +167,9 @@ print_profile_info() {
     for service in "${services[@]}"; do
         # Check if it's a runtime core service
         local is_core=false
-        for core_service in "${RUNTIME_CORE_SERVICES[@]}"; do
-            if [ "$service" = "$core_service" ]; then
-                is_core=true
-                break
-            fi
-        done
+        if [ "$service" = "$current_engine" ]; then
+            is_core=true
+        fi
         
         if [ "$is_core" = true ]; then
             echo "  - $service (runtime core)"
@@ -143,4 +181,9 @@ print_profile_info() {
     echo "Database storage: $(get_profile_db_storage_enabled "$profile")"
     echo ""
 }
+
+# Export functions for use in other modules
+export -f is_valid_profile get_profile_description get_profile_services
+export -f get_profile_db_storage_enabled list_profiles print_profile_info
+export -f get_profile_services_for_profile get_runtime_core_services
 
