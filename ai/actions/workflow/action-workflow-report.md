@@ -18,43 +18,72 @@ This action is automatically invoked at the end of the `/workflow` command, or c
 
 ## Report Format
 
-The report displays:
+The report displays using consistent markdown tables:
 
-```
-════════════════════════════════════════════════════════════════
-  Issue-First Workflow Complete! ✅
-════════════════════════════════════════════════════════════════
+```markdown
+## 📊 Issue-First Workflow Report
 
-Workflow Steps Completed
+### Workflow Steps
 
-| Step | Action | Result |
-|------|--------|--------|
-| 1. Create Issue | gh issue create | ✅ #661 created |
-| 2. Create Branch | git checkout -b ... | ✅ issue-661/... |
-| 3. Make Changes | Implementation | ✅ 38 files changed |
-| 4. Commit | git commit | ✅ abc1234 |
-| 5. Create PR | gh pr create | ✅ #662 opened |
-| 6. Verify CI | gh pr checks | ✅ All passing |
+| Step | Status |
+|:---|:---|
+| 1. Create Issue | ✅ #<number> - [TYPE] Description |
+| 2. Create Branch | ✅ issue-<number>/short-description |
+| 3. Make Changes | ✅ <N> files changed, <M> insertions(+), <P> deletions(-) |
+| 4. Commit | ✅ <short-hash> |
+| 5. Create PR | ✅ #<pr-number> - PR Title |
+| 6. Verify CI | ✅ All checks passing |
 
-CI Status
+### CI Status (PR #<number>)
 
-| Check | Status | Duration |
-|-------|--------|----------|
-| Dependency Review | ✅ pass | 7s |
-| Validate Shell Scripts | ✅ pass | 5s |
-| Analyze (actions) | ✅ pass | 40s |
-| Security Tests | ✅ pass | 4s |
-| check-agents | ✅ pass | 5s |
-| check-env | ✅ pass | 10s |
+| Check | Status |
+|:---|:---|
+| Dependency Review | ✅ SUCCESS |
+| Shell Script Linting | ✅ SUCCESS |
+| Security Tests | ✅ SUCCESS |
+| check-env | ✅ SUCCESS |
+| Analyze (actions) | ✅ SUCCESS |
+| check-line-endings | ✅ SUCCESS |
+| Validate Shell Scripts | ✅ SUCCESS |
+| CodeQL | ⏭️ NEUTRAL |
+| **Total** | **<N>/<N> checks completed** |
 
-Summary
+### Summary
 
-- Issue: #661 - Feature Request (https://...)
-- Branch: issue-661/implement-opencode-agent-template
-- Pull Request: #662 - Implement OpenCode agent template (https://...)
-- Status: ✅ Ready to merge (all CI checks green)
+| Field | Value |
+|:---|:---|
+| Issue | #<number> - [TYPE] Issue title |
+| Issue URL | https://github.com/<owner>/<repo>/issues/<number> |
+| Branch | issue-<number>/short-description |
+| Pull Request | #<pr-number> - PR title |
+| PR Status | MERGED ✅ / OPEN 🟡 / CLOSED ❌ |
+| Commit | <hash> |
+| Labels | label1 \| label2 \| label3 |
 
-The feature is complete and ready for review! 🚀
+### Repository State
+
+| Field | Value |
+|:---|:---|
+| Current Branch | <branch-name> |
+| Working Tree | Clean ✅ / Dirty ❌ |
+| Last Commit | <hash> - Commit message |
+
+### Key Highlights
+
+| Metric | Value |
+|:---|:---|
+| Workflow Status | ✅ Complete / ❌ Incomplete |
+| CI Checks | <passing>/<total> Passing |
+| PR Status | Merged / Open / Closed |
+| Issue Status | Closed / Open |
+| Repository | Clean on <branch> |
+
+### Next Steps
+
+| Field | Value |
+|:---|:---|
+| Status | This workflow cycle is COMPLETE ✅ |
+| Action | Run `/workflow "description"` to start next task |
 ```
 
 ## Generating the Report
@@ -163,40 +192,106 @@ git diff --stat <base-branch>..<current-branch>
 
 ```bash
 #!/bin/bash
-# Generate workflow report
+# Generate workflow report in consistent table format
 
 ISSUE_NUMBER="$1"
 PR_NUMBER="$2"
 
-echo "════════════════════════════════════════════════════════════════"
-echo "  Issue-First Workflow Complete! ✅"
-echo "════════════════════════════════════════════════════════════════"
+# Fetch data
+ISSUE_DATA=$(gh issue view "$ISSUE_NUMBER" --json number,title,state,url,labels 2>/dev/null)
+PR_DATA=$(gh pr view "$PR_NUMBER" --json number,title,state,url,headRefName,merged 2>/dev/null)
+CI_DATA=$(gh pr checks "$PR_NUMBER" --json name,state 2>/dev/null)
+
+echo "## 📊 Issue-First Workflow Report"
 echo ""
-echo "Workflow Steps Completed"
+echo "### Workflow Steps"
 echo ""
-echo "| Step | Action | Result |"
-echo "|------|--------|--------|"
-echo "| 1. Create Issue | gh issue create | ✅ #$ISSUE_NUMBER |"
-echo "| 2. Create Branch | git checkout -b | ✅ $(git branch --show-current) |"
-echo "| 3. Make Changes | Implementation | ✅ Complete |"
-echo "| 4. Commit | git commit | ✅ $(git log -1 --format=%h) |"
-echo "| 5. Create PR | gh pr create | ✅ #$PR_NUMBER |"
-echo "| 6. Verify CI | gh pr checks | ✅ Passing |"
+echo "| Step | Status |"
+echo "|:---|:---|"
+echo "| 1. Create Issue | ✅ #$ISSUE_NUMBER - $(echo "$ISSUE_DATA" | jq -r '.title') |"
+echo "| 2. Create Branch | ✅ $(git branch --show-current) |"
+echo "| 3. Make Changes | ✅ $(git diff --stat main...HEAD 2>/dev/null | tail -1 || echo 'Complete') |"
+echo "| 4. Commit | ✅ $(git log -1 --format=%h) |"
+echo "| 5. Create PR | ✅ #$PR_NUMBER - $(echo "$PR_DATA" | jq -r '.title') |"
+echo "| 6. Verify CI | ✅ $(echo "$CI_DATA" | jq -r '[.[] | select(.state == "SUCCESS")] | length')/$(echo "$CI_DATA" | jq '. | length') checks passing |"
 echo ""
-echo "CI Status"
+
+echo "### CI Status (PR #$PR_NUMBER)"
 echo ""
 echo "| Check | Status |"
-echo "|-------|--------|"
-gh pr checks "$PR_NUMBER" --json name,state -q '.[] | "| \(.name) | \(.state) |"'
+echo "|:---|:---|"
+echo "$CI_DATA" | jq -r '.[] | "| \(.name) | \(.state) |"' | sed 's/SUCCESS/✅ SUCCESS/g; s/FAILED/❌ FAILED/g; s/PENDING/⏳ PENDING/g; s/NEUTRAL/⏭️ NEUTRAL/g'
+echo "| **Total** | **$(echo "$CI_DATA" | jq -r '[.[] | select(.state == "SUCCESS")] | length')/$(echo "$CI_DATA" | jq '. | length') checks completed** |"
 echo ""
-echo "Summary"
+
+echo "### Summary"
 echo ""
-echo "- Issue: #$ISSUE_NUMBER"
-echo "- Branch: $(git branch --show-current)"
-echo "- Pull Request: #$PR_NUMBER"
-echo "- Status: ✅ Ready to merge"
+echo "| Field | Value |"
+echo "|:---|:---|"
+echo "| Issue | #$ISSUE_NUMBER - $(echo "$ISSUE_DATA" | jq -r '.title') |"
+echo "| Issue URL | $(echo "$ISSUE_DATA" | jq -r '.url') |"
+echo "| Branch | $(echo "$PR_DATA" | jq -r '.headRefName') |"
+echo "| Pull Request | #$PR_NUMBER - $(echo "$PR_DATA" | jq -r '.title') |"
+PR_STATE=$(echo "$PR_DATA" | jq -r '.state')
+if [ "$PR_STATE" = "MERGED" ]; then
+  echo "| PR Status | MERGED ✅ |"
+elif [ "$PR_STATE" = "OPEN" ]; then
+  echo "| PR Status | OPEN 🟡 |"
+else
+  echo "| PR Status | CLOSED ❌ |"
+fi
+echo "| Commit | $(git log -1 --format=%h) |"
+LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels | map(.name) | join(" | ")')
+echo "| Labels | $LABELS |"
 echo ""
-echo "The feature is complete and ready for review! 🚀"
+
+echo "### Repository State"
+echo ""
+echo "| Field | Value |"
+echo "|:---|:---|"
+echo "| Current Branch | $(git branch --show-current) |"
+if [ -z "$(git status --porcelain)" ]; then
+  echo "| Working Tree | Clean ✅ |"
+else
+  echo "| Working Tree | Dirty ❌ |"
+fi
+echo "| Last Commit | $(git log -1 --oneline) |"
+echo ""
+
+echo "### Key Highlights"
+echo ""
+echo "| Metric | Value |"
+echo "|:---|:---|"
+echo "| Workflow Status | ✅ Complete |"
+SUCCESS_COUNT=$(echo "$CI_DATA" | jq -r '[.[] | select(.state == "SUCCESS")] | length')
+TOTAL_COUNT=$(echo "$CI_DATA" | jq '. | length')
+echo "| CI Checks | $SUCCESS_COUNT/$TOTAL_COUNT Passing |"
+PR_MERGED=$(echo "$PR_DATA" | jq -r '.merged')
+if [ "$PR_MERGED" = "true" ]; then
+  echo "| PR Status | Merged |"
+else
+  echo "| PR Status | $PR_STATE |"
+fi
+ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r '.state')
+echo "| Issue Status | $ISSUE_STATE |"
+if [ -z "$(git status --porcelain)" ]; then
+  echo "| Repository | Clean on $(git branch --show-current) |"
+else
+  echo "| Repository | Dirty on $(git branch --show-current) |"
+fi
+echo ""
+
+echo "### Next Steps"
+echo ""
+echo "| Field | Value |"
+echo "|:---|:---|"
+if [ "$PR_MERGED" = "true" ] && [ "$SUCCESS_COUNT" -eq "$TOTAL_COUNT" ]; then
+  echo "| Status | This workflow cycle is COMPLETE ✅ |"
+  echo "| Action | Run \`/workflow \"description\"\` to start next task |"
+else
+  echo "| Status | Workflow in progress |"
+  echo "| Action | Complete remaining steps |"
+fi
 ```
 
 ## Verification
