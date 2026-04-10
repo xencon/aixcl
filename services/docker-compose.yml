@@ -40,7 +40,7 @@ services:
       - VLLM_CUDA_GRAPH_CAPTURE=0
       - HF_HOME=/root/.cache/huggingface
       - TRANSFORMERS_CACHE=/root/.cache/huggingface
-    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes"]
+    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes", "--enforce-eager"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
