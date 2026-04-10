@@ -246,8 +246,8 @@ fi
 
 # Wait for Ollama API to be ready
 log_info "Waiting for Ollama API..."
-local api_waited=0
-local api_max_wait=60
+api_waited=0
+api_max_wait=60
 while [[ $api_waited -lt $api_max_wait ]]; do
     if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
         log_info "Ollama API is responding (ready after ${api_waited}s)"
@@ -278,7 +278,7 @@ if ! "${SCRIPT_DIR}/aixcl" models list 2>/dev/null | grep -qE "^qwen"; then
         log_warn "Model add failed on attempt $attempt, retrying..."
         
         # Check if container is still running
-        local container_wait=0
+        container_wait=0
         while [[ $container_wait -lt 30 ]]; do
             if docker ps | grep -q "ollama"; then
                 break
