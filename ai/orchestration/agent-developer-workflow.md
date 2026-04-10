@@ -51,6 +51,7 @@ You orchestrate the full AIXCL Issue-First development workflow from this reposi
 5. **Push and Create PR**: Push the branch and create a PR using `gh pr create` that references the issue.
 6. **Assign and Label**: Ensure the PR is correctly assigned and labeled.
 7. **Verify CI**: Check GitHub Actions status (e.g., `gh run list` or `gh pr view`) and ensure all status checks are passing before considering the task complete.
+8. **Generate Report**: At workflow completion, generate a visual report using consistent markdown tables showing all 6 workflow steps, CI status, and key highlights.
 
 ## Safety
 
@@ -61,3 +62,74 @@ You orchestrate the full AIXCL Issue-First development workflow from this reposi
 - When in doubt:
   - Prefer documenting concerns in issues or PR descriptions.
   - Avoid changing behavior if it might violate invariants.
+
+## Workflow Report Format
+
+At the end of a successful workflow, generate a visual report using this consistent markdown table format:
+
+```markdown
+## 📊 Issue-First Workflow Report
+
+### Workflow Steps
+
+| Step | Status |
+|:---|:---|
+| 1. Create Issue | ✅ #<number> - [TYPE] Description |
+| 2. Create Branch | ✅ issue-<number>/short-description |
+| 3. Make Changes | ✅ <N> files changed, <M> insertions(+), <P> deletions(-) |
+| 4. Commit | ✅ <short-hash> |
+| 5. Create PR | ✅ #<pr-number> - PR Title |
+| 6. Verify CI | ✅ <N>/<N> checks passing |
+
+### CI Status (PR #<number>)
+
+| Check | Status |
+|:---|:---|
+| <check-name> | ✅ SUCCESS / ❌ FAILED / ⏭️ NEUTRAL |
+| ... | ... |
+| **Total** | **<passing>/<total> checks completed** |
+
+### Summary
+
+| Field | Value |
+|:---|:---|
+| Issue | #<number> - [TYPE] Issue title |
+| Issue URL | https://github.com/<owner>/<repo>/issues/<number> |
+| Branch | issue-<number>/short-description |
+| Pull Request | #<pr-number> - PR title |
+| PR Status | MERGED ✅ / OPEN 🟡 / CLOSED ❌ |
+| Commit | <hash> |
+| Labels | label1 \| label2 \| label3 |
+
+### Repository State
+
+| Field | Value |
+|:---|:---|
+| Current Branch | <branch-name> |
+| Working Tree | Clean ✅ / Dirty ❌ |
+| Last Commit | <hash> - Commit message |
+
+### Key Highlights
+
+| Metric | Value |
+|:---|:---|
+| Workflow Status | ✅ Complete / ❌ Incomplete |
+| CI Checks | <passing>/<total> Passing |
+| PR Status | Merged / Open / Closed |
+| Issue Status | Closed / Open |
+| Repository | Clean on <branch> |
+
+### Next Steps
+
+| Field | Value |
+|:---|:---|
+| Status | This workflow cycle is COMPLETE ✅ |
+| Action | Run `/workflow "description"` to start next task |
+```
+
+**Formatting Rules:**
+- Use `|:---|:---|` for left-aligned headers
+- Status emojis: ✅ (success), ❌ (failed), ⏭️ (neutral/skip), 🟡 (open/pending), ⏳ (pending)
+- All sections must use consistent table format
+- Include total row for CI status section
+- End with next steps guidance
