@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [v1.0.0-rc3] - 2026-04-10
+
+### Summary
+
+Release Candidate 3 for v1.0.0. This release includes 35+ commits since RC2 focusing on rootless/Podman support, multi-registry model pulls, vLLM stability fixes, and infrastructure improvements.
+
 ### Added
 
 - **Rootless & Podman Support**: Full support for running AIXCL in rootless environments with both Docker and Podman. Includes automated socket detection and permission handling for volumes (Fixes #498).
@@ -16,8 +24,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Renamed service/container from `orchestrator` to `orchestrator` across codebase and documentation (Fixes #433). Directory `orchestrator/` and volume path `orchestrator-data/`; display name "orchestrator". Service contract file `orchestrator.md` renamed to `orchestrator.md`; script `build_and_push_llm_orchestrator.sh` renamed to `build_and_push_orchestrator.sh`.
+- Renamed service/container from `openwebui` to `webui` across codebase and documentation (Fixes #433). Directory `webui/` and volume path `webui-data/`; display name "Open WebUI". Service contract file `webui.md` renamed to `webui.md`; script `build_and_push_openwebui.sh` renamed to `build_and_push_webui.sh`.
 - Updated Open WebUI to v0.8.0 (Fixes #454)
+- Updated Grafana to 12.4.2 (latest stable) (Fixes #680)
+- Updated various service container images to latest versions (Fixes #677)
+
+### Fixed
+
+- **vLLM Token Limit Error**: Fixed vLLM compatibility issues with OpenCode using `--enforce-eager` flag to disable CUDA graph capture (Fixes #685, #682, #682)
+- **ShellCheck SC2168**: Resolved ShellCheck errors in test infrastructure (Fixes #678)
+- **Profile Services**: Fixed PROFILE_SERVICES to use current INFERENCE_ENGINE from .env (Fixes #675)
+- **Grafana Version**: Corrected Grafana image tag to use valid stable version
+
+### Infrastructure
+
+- Added HuggingFace cache volume to vLLM service
+- Improved vLLM test error handling for long startup times
+- Enhanced workflow documentation with plain text formatting guidelines
+- Added assignee requirements to issue and PR templates
+
+### Documentation
+
+- Updated workflow report format with consistent markdown tables (Fixes #688)
+- Added documentation for test suite fixes (Fixes #670)
 
 ---
 
