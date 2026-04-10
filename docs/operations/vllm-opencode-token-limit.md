@@ -2,7 +2,7 @@
 
 ## Problem
 
-When using vLLM with smaller models like Qwen 0.5B (Qwen2.5-Coder-0.5B-Instruct), you may encounter the following error:
+When using vLLM with models like Qwen 0.5B (Qwen2.5-Coder-0.5B-Instruct), you may encounter the following error:
 
 ```
 This model's maximum context length is 32768 tokens. However, you requested 32000
@@ -12,72 +12,106 @@ least 32769 tokens.
 
 ## Root Cause
 
-1. **Model Architecture Limit**: The Qwen 0.5B model has `max_position_embeddings=32768` in its architecture. This is a hard limit that cannot be exceeded without causing CUDA errors (positions beyond this cause NaN with RoPE encoding).
+**vLLM strictly enforces token limits**, unlike Ollama or llama.cpp which handle limits internally:
 
-2. **OpenCode Token Request**: OpenCode has a hardcoded default of 32000 output tokens for requests. Combined with input context (~769 tokens in the error example), this exceeds the model's 32768 limit.
+1. **vLLM validation**: vLLM checks `input_tokens + output_tokens <= max_model_len` and **rejects** the request if exceeded
+2. **Model architecture**: Qwen 0.5B has `max_position_embeddings=32768` hardcoded in its architecture (RoPE encoding)
+3. **OpenCode defaults**: OpenCode requests 32000 output tokens by default
+4. **The math**: 32000 + ~769 input = 32769 > 32768 = **ERROR**
 
-3. **No Configuration Available**: OpenCode's OpenAI-compatible provider does not support configuring `max_tokens` at the provider or model level.
+## Why Only vLLM?
 
-## Solutions
+| Engine | Token Limit Handling |
+|--------|---------------------|
+| **Ollama** | No strict enforcement - handles internally, truncates when needed |
+| **llama.cpp** | Uses native limit without explicit validation |
+| **vLLM** | **Strict validation** - rejects requests exceeding limit |
 
-### Option 1: Use a Larger Model (Recommended)
+## Solution
 
-Use a model variant with a larger native context window:
+Set the `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX` environment variable to limit OpenCode's output token requests.
 
-- **Qwen 7B or 14B variants**: Support 32K-128K context windows
-- **Configure vLLM**:
-  ```bash
-  ./aixcl engine set vllm
-  ./aixcl models add Qwen/Qwen2.5-Coder-7B-Instruct
-  ```
+### Configuration
 
-### Option 2: Use Ollama Instead
+The `.env` file now includes this setting:
 
-Ollama handles token limits differently and may work better with smaller models:
+```bash
+# OpenCode Token Limit Configuration (for vLLM compatibility)
+OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=10000
+```
+
+### Recommended Values
+
+| Model Context | Recommended OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX |
+|--------------|---------------------------------------------------|
+| 32K models (Qwen 0.5B) | 10000 - 15000 |
+| 64K+ models | 20000 - 30000 |
+
+**Calculation**: `max_model_len - typical_input_context - safety_buffer = output_token_limit`
+
+For Qwen 0.5B (32K): `32768 - 7000 (typical) - 1000 (buffer) ≈ 24768` → use **10000-15000** to be safe
+
+### Usage
+
+Set the environment variable before running OpenCode:
+
+```bash
+export OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=10000
+opencode run "Your prompt here"
+```
+
+Or make it permanent by adding to your shell profile:
+
+```bash
+echo 'export OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=10000' >> ~/.bashrc
+```
+
+## Alternative Solutions
+
+### Option 1: Use Ollama (Recommended for Smaller Models)
+
+Ollama handles token limits internally without rejecting requests:
 
 ```bash
 ./aixcl engine set ollama
 ./aixcl models add qwen2.5-coder:0.5b
 ```
 
+### Option 2: Use Larger Model with Bigger Context
+
+Use a model variant with a larger native context window:
+
+```bash
+./aixcl engine set vllm
+./aixcl models add Qwen/Qwen2.5-Coder-7B-Instruct  # Supports 128K context
+```
+
 ### Option 3: Wait for OpenCode Update
 
-OpenCode may add support for configurable `max_tokens` in a future release. Monitor the [OpenCode repository](https://github.com/anomalyco/opencode) for updates.
+OpenCode may add native `max_tokens` configuration in a future release. Track progress at:
+- https://github.com/anomalyco/opencode/issues/1735
 
 ## Technical Details
 
-### vLLM Configuration
+### Why Can't We Increase max-model-len?
 
-The vLLM service is configured with `--max-model-len 32768` which is the maximum supported by the Qwen 0.5B model:
+The model's `max_position_embeddings` is baked into the model weights. Exceeding it causes:
+- RoPE (Rotary Position Embedding) index out of bounds
+- NaN outputs for positions beyond the limit
+- CUDA errors
 
-```yaml
-# services/docker-compose.yml
-command: [
-  "--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct",
-  "--max-model-len", "32768",
-  ...
-]
-```
+### Why Not Remove --max-model-len?
 
-### Why Not Increase max-model-len?
+vLLM automatically uses the model's native limit when `--max-model-len` is not specified. For Qwen 0.5B, this defaults to 32768 - the same limit.
 
-Increasing `--max-model-len` beyond 32768 causes vLLM to fail with:
-- CUDA array out-of-bounds errors (for absolute position encoding)
-- NaN outputs (for RoPE/relative position encoding)
+### Environment Variable Source
 
-The model's `max_position_embeddings` is baked into the model weights and cannot be changed.
-
-### Why Not Configure max_tokens in OpenCode?
-
-OpenCode's configuration schema for the OpenAI-compatible provider (`@ai-sdk/openai-compatible`) does not support:
-- `max_tokens` at the provider level
-- `max_tokens` at the model level
-- Per-request token limits
-
-The 32000 token default appears to be hardcoded in OpenCode's AI SDK integration.
+The `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX` variable was discovered in OpenCode's experimental features:
+- https://github.com/anomalyco/opencode/issues/1735
 
 ## References
 
+- [OpenCode Issue #1735](https://github.com/anomalyco/opencode/issues/1735)
 - [OpenCode Configuration Docs](https://opencode.ai/docs/config/)
 - [Qwen2.5 Model Card](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct)
 - [vLLM Documentation](https://docs.vllm.ai/)
