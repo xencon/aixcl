@@ -224,8 +224,18 @@ function add() {
         
         echo "   Updating $engine configuration in $compose_file to use model: $model"
         if [[ "$engine" == "vllm" ]]; then
+            # Build vLLM command with optional enforce-eager flag
+            local vllm_command="[\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"32768\", \"--port\", \"11434\", \"--enable-auto-tool-choice\", \"--tool-call-parser\", \"hermes\"]"
+            
+            # Add enforce-eager flag if enabled
+            local enforce_eager="${VLLM_ENFORCE_EAGER:-true}"
+            if [[ "$enforce_eager" == "true" ]]; then
+                vllm_command="[\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"32768\", \"--port\", \"11434\", \"--enable-auto-tool-choice\", \"--tool-call-parser\", \"hermes\", \"--enforce-eager\"]"
+                echo "   Adding --enforce-eager flag for WSL2 compatibility"
+            fi
+            
             # Update vllm model specifically on the command line
-            sed -i "/vllm:/,/healthcheck:/s|command:.*|command: [\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"32768\", \"--port\", \"11434\", \"--enable-auto-tool-choice\", \"--tool-call-parser\", \"hermes\"]|" "$compose_file"
+            sed -i "/vllm:/,/healthcheck:/s|command:.*|command: $vllm_command|" "$compose_file"
         elif [[ "$engine" == "llamacpp" ]]; then
             # Update llamacpp model via environment variable
             local model_filename="$model"
