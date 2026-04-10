@@ -15,7 +15,7 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-    image: docker.io/ollama/ollama:0.20.2
+    image: docker.io/ollama/ollama:0.20.5
     # GPU resources are configured in docker-compose.gpu.yml when available
     # ARM64 platform is configured in docker-compose.arm.yml when detected
     healthcheck:
@@ -40,7 +40,7 @@ services:
       - VLLM_CUDA_GRAPH_CAPTURE=0
       - HF_HOME=/root/.cache/huggingface
       - TRANSFORMERS_CACHE=/root/.cache/huggingface
-    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes", "--enforce-eager"]
+    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
@@ -105,7 +105,7 @@ services:
       start_period: 60s
 
   postgres:
-    image: postgres:17.2
+    image: postgres:17.9
     container_name: postgres
     pull_policy: if_not_present
     environment:
@@ -137,7 +137,7 @@ services:
       retries: 3
   
   pgadmin:
-    image: dpage/pgadmin4:9.13
+    image: dpage/pgadmin4:9.14.0
     container_name: pgadmin
     pull_policy: if_not_present
     environment:
@@ -177,7 +177,7 @@ services:
         exec /entrypoint.sh
 
   prometheus:
-    image: prom/prometheus:v2.54.0
+    image: prom/prometheus:v3.11.1
     container_name: prometheus
     pull_policy: if_not_present
     volumes:
@@ -200,7 +200,7 @@ services:
       retries: 3
 
   grafana:
-    image: grafana/grafana:11.3.0
+    image: grafana/grafana:13.1.0
     container_name: grafana
     pull_policy: if_not_present
     volumes:
@@ -243,7 +243,7 @@ services:
       - '--docker_only=true'
 
   node-exporter:
-    image: prom/node-exporter:v1.8.2
+    image: prom/node-exporter:v1.11.1
     container_name: node-exporter
     pull_policy: if_not_present
     volumes:
@@ -259,7 +259,7 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.16.0
+    image: prometheuscommunity/postgres-exporter:v0.19.1
     container_name: postgres-exporter
     pull_policy: if_not_present
     environment:
@@ -270,7 +270,7 @@ services:
     restart: unless-stopped
 
   nvidia-gpu-exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
     container_name: nvidia-gpu-exporter
     pull_policy: if_not_present
     network_mode: host
@@ -301,7 +301,7 @@ services:
   # This is equivalent to root access on the host. See docs/reference/security.md
   # section 6 for details and mitigation options.
   alloy:
-    image: grafana/alloy:v1.5.0
+    image: grafana/alloy:v1.15.0
     container_name: alloy
     pull_policy: if_not_present
     volumes:
