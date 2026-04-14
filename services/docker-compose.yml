@@ -260,6 +260,7 @@ services:
     image: prom/node-exporter:v1.11.1
     container_name: node-exporter
     pull_policy: if_not_present
+    user: "65534:65534"  # nobody user - official image default
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
