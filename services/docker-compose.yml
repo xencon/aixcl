@@ -167,7 +167,6 @@ services:
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-data:/var/lib/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
-    user: "0:0"
     network_mode: host
     depends_on:
       - postgres
