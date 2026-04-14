@@ -66,10 +66,11 @@ services:
   llamacpp:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
     container_name: llamacpp
+    pull_policy: if_not_present
+    user: "1000:1000"  # Run as non-root user for security
     volumes:
       - llamacpp-data:/models
       - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
-    pull_policy: if_not_present
     tty: true
     network_mode: host
     restart: unless-stopped
