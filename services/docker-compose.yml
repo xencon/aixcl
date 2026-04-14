@@ -33,15 +33,19 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
-      - huggingface-cache:/root/.cache/huggingface
+      - huggingface-cache:/home/vllm/.cache/huggingface
+      - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
     environment:
       # vLLM runtime configuration (configured via .env)
       - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
       - PYTORCH_NO_CUDA_MEMORY_CACHING=1
       - CUDA_LAUNCH_BLOCKING=0
       - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
-      - HF_HOME=/root/.cache/huggingface
-      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - HF_HOME=/home/vllm/.cache/huggingface
+      - TRANSFORMERS_CACHE=/home/vllm/.cache/huggingface
+      - HOME=/home/vllm
+    # Use custom entrypoint to run as non-root user
+    entrypoint: ["/vllm-entrypoint.sh"]
     # vLLM startup command with configurable model and memory settings
     command:
       - "--model"
