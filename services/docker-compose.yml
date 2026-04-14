@@ -314,7 +314,9 @@ services:
   # Docker socket access grants full root access on the host. Security mitigations applied:
   # - Runs as root within container (required for Docker socket access)
   # - Uses no-new-privileges to prevent privilege escalation
-  # - Read-only bind mounts for configuration files
+  # - Read-only root filesystem prevents runtime modifications
+  # - Writable data volume for Alloy state, tmpfs for temporary files
+  # - All bind mounts are read-only (:ro suffix)
   # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
   # See docs/operations/security.md section 6 for details.
   alloy:
@@ -324,6 +326,9 @@ services:
     user: "0:0"  # root required for Docker socket access
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
     volumes:
       - ../alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloy-data:/data-alloy
