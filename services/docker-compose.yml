@@ -4,12 +4,12 @@ services:
       - ollama:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
-      # Performance tuning for parallel model queries
-      - OLLAMA_NUM_PARALLEL=8          # Handle concurrent model queries
-      - OLLAMA_MAX_LOADED_MODELS=3     # Keep models loaded in GPU memory
-      - OLLAMA_KEEP_ALIVE=1800         # 30 min keep-alive to prevent model unloading
-      - OLLAMA_NUM_GPU=1               # Explicit single GPU usage
-      - OLLAMA_NUM_THREAD=8            # Match CPU cores (adjust based on your CPU)
+      # Performance tuning for parallel model queries (configured via .env)
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-8}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-3}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-1800}
+      - OLLAMA_NUM_GPU=${OLLAMA_NUM_GPU:-1}
+      - OLLAMA_NUM_THREAD=${OLLAMA_NUM_THREAD:-8}
     container_name: ollama
     pull_policy: if_not_present
     tty: true
@@ -34,13 +34,26 @@ services:
     volumes:
       - ~/.cache/huggingface:/root/.cache/huggingface
     environment:
-      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
+      # vLLM runtime configuration (configured via .env)
+      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
       - PYTORCH_NO_CUDA_MEMORY_CACHING=1
       - CUDA_LAUNCH_BLOCKING=0
-      - VLLM_CUDA_GRAPH_CAPTURE=0
+      - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
       - HF_HOME=/root/.cache/huggingface
       - TRANSFORMERS_CACHE=/root/.cache/huggingface
-    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes", "--enforce-eager"]
+    # vLLM startup command with configurable model and memory settings
+    command:
+      - "--model"
+      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}"
+      - "--gpu-memory-utilization"
+      - "${VLLM_GPU_MEMORY_UTILIZATION:-0.8}"
+      - "--max-model-len"
+      - "${VLLM_MAX_MODEL_LEN:-32768}"
+      - "--port"
+      - "11434"
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "hermes"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
@@ -59,7 +72,8 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      - INFERENCE_MODEL=${INFERENCE_MODEL:-qwen2.5-coder-1.5b-instruct-q4_k_m.gguf}
+      # llama.cpp model configuration (configured via .env)
+      - INFERENCE_MODEL=${LLAMACPP_MODEL:-${INFERENCE_MODEL:-qwen2.5-coder-1.5b-instruct-q4_k_m.gguf}}
     entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
     command: ["--host", "0.0.0.0", "--port", "11434"]
     healthcheck:
