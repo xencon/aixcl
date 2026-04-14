@@ -123,6 +123,7 @@ services:
     image: postgres:17.9
     container_name: postgres
     pull_policy: if_not_present
+    user: "999:999"  # Run as postgres user (official image default)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
