@@ -275,6 +275,7 @@ services:
     image: prometheuscommunity/postgres-exporter:v0.19.1
     container_name: postgres-exporter
     pull_policy: if_not_present
+    user: "65534:65534"  # nobody user - official image default
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
     network_mode: host
