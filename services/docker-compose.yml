@@ -54,6 +54,7 @@ services:
       - "--enable-auto-tool-choice"
       - "--tool-call-parser"
       - "hermes"
+      - "--enforce-eager"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
       interval: 10s
