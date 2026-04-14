@@ -19,7 +19,7 @@ MODEL_PATH="/models/${MODEL_FILE}"
 if [ ! -f "$MODEL_PATH" ]; then
     echo "⚠️  Model file not found: ${MODEL_PATH}"
     echo "   Download a model using: ./aixcl models add <path/to/model.gguf>"
-    echo "   Example: ./aixcl models add bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf"
+    echo "   Example: ./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf"
     echo ""
     echo "   Container will exit gracefully (no crash-loop)"
     echo "   Run models add, then the container will auto-restart with the model"
