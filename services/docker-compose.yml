@@ -310,18 +310,26 @@ services:
       timeout: 10s
       retries: 3
 
-  # SECURITY NOTE: alloy requires Docker socket access for container log discovery.
-  # This is equivalent to root access on the host. See docs/reference/security.md
-  # section 6 for details and mitigation options.
+  # SECURITY NOTE: Alloy requires Docker socket access for container log discovery.
+  # Docker socket access grants full root access on the host. Security mitigations applied:
+  # - Runs as root within container (required for Docker socket access)
+  # - Uses no-new-privileges to prevent privilege escalation
+  # - Read-only bind mounts for configuration files
+  # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
+  # See docs/operations/security.md section 6 for details.
   alloy:
     image: grafana/alloy:v1.15.0
     container_name: alloy
     pull_policy: if_not_present
+    user: "0:0"  # root required for Docker socket access
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - ../alloy/config.alloy:/etc/alloy/config.alloy
+      - ../alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy-data:/data-alloy
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     command: run /etc/alloy/config.alloy
     network_mode: host
     depends_on:
@@ -339,3 +347,4 @@ volumes:
   prometheus-data:
   grafana-data:
   loki-data:
+  alloy-data:
