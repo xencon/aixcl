@@ -301,7 +301,6 @@ services:
     volumes:
       - ../loki/loki-config.yml:/etc/loki/loki-config.yml
       - loki-data:/loki
-    user: root
     command: -config.file=/etc/loki/loki-config.yml
     network_mode: host
     restart: unless-stopped
