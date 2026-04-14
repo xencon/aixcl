@@ -200,7 +200,6 @@ services:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ../prometheus/alerts.yml:/etc/prometheus/alerts.yml
       - prometheus-data:/prometheus
-    user: root
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
