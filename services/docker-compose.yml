@@ -289,6 +289,7 @@ services:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
     container_name: nvidia-gpu-exporter
     pull_policy: if_not_present
+    user: "999:999"  # nvidia-dcgm user - official image default for GPU metrics
     network_mode: host
     restart: unless-stopped
     environment:
