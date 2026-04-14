@@ -1,6 +1,6 @@
 # AIXCL Test Comparison Report
 
-**Generated**: 2026-04-06T00:20:28+01:00
+**Generated**: 2026-04-14T16:16:22+01:00
 **Test Range**: all
 **Profile**: usr
 
@@ -8,9 +8,9 @@
 
 | Engine | Tests Passed | Duration | Status |
 |--------|--------------|----------|--------|
-| ollama | 15/16 | 110s | ❌ FAILED |
-| vllm | 15/16 | 424s | ❌ FAILED |
-| llamacpp | 15/16 | 113s | ❌ FAILED |
+| ollama | 10/16 | 119s | ❌ FAILED |
+| vllm | 8/16 | 15s | ❌ FAILED |
+| llamacpp | 8/16 | 78s | ❌ FAILED |
 
 ---
 

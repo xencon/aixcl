@@ -49,7 +49,7 @@ services:
     # vLLM startup command with configurable model and memory settings
     command:
       - "--model"
-      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}"
+      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
       - "--gpu-memory-utilization"
       - "${VLLM_GPU_MEMORY_UTILIZATION:-0.8}"
       - "--max-model-len"
