@@ -32,7 +32,7 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
-      - ~/.cache/huggingface:/root/.cache/huggingface
+      - huggingface-cache:/root/.cache/huggingface
     environment:
       # vLLM runtime configuration (configured via .env)
       - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
@@ -332,6 +332,7 @@ services:
 
 volumes:
   ollama:
+  huggingface-cache:
   vllm-data:
   llamacpp-data:
   open-webui:
