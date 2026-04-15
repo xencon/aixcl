@@ -250,7 +250,7 @@ function add() {
             if [ -f "$compose_file" ]; then
                 # Use a more specific sed pattern that only replaces the model value in the command array
                 sed -i "/vllm:/,/healthcheck:/s|\"--model\",$|\"--model\",|" "$compose_file"
-                sed -i "/vllm:/,/healthcheck:/s|\"\${VLLM_MODEL:.*}|\"$model\"|" "$compose_file"
+                sed -i "/vllm:/,/healthcheck:/s|\"\${VLLM_MODEL[^\"]*}\"|\"$model\"|" "$compose_file"
                 echo "   Updated $compose_file command to use model: $model"
             fi
         elif [[ "$engine" == "llamacpp" ]]; then
