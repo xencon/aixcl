@@ -49,7 +49,7 @@ services:
     # Use custom entrypoint to run as non-root user
     entrypoint: ["/vllm-entrypoint.sh"]
     # vLLM startup command with configurable model and memory settings
-    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes", "--enforce-eager"]
+    command:
       - "--model"
       - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
       - "--gpu-memory-utilization"
