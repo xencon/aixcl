@@ -32,10 +32,10 @@ if [ "$(id -u)" = "0" ]; then
         fi
     done
     
-    # Ensure the startup script is executable
+    # Ensure the startup script is executable (ignore errors if read-only mount)
     if [ -f "/app/backend/openwebui.sh" ]; then
-        chmod +x /app/backend/openwebui.sh
-        chown "$USER_ID:$GROUP_ID" /app/backend/openwebui.sh
+        chmod +x /app/backend/openwebui.sh 2>/dev/null || true
+        chown "$USER_ID:$GROUP_ID" /app/backend/openwebui.sh 2>/dev/null || true
     fi
     
     # Ensure the entrypoint can write to /tmp (uvicorn needs this)
