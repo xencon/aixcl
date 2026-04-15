@@ -69,7 +69,18 @@ function engine() {
             fi
         fi
         
-        echo "Note: Stop and start the stack for the change to take effect."
+        # Clear Open WebUI model cache to force re-discovery with new API settings
+        echo "[x] Clearing Open WebUI model cache..."
+        if docker ps --filter name=open-webui --format "{{.Names}}" | grep -q open-webui 2>/dev/null; then
+            # Open WebUI is running - clear its model cache via API
+            docker exec open-webui rm -f /app/backend/data/webui.db 2>/dev/null || true
+            echo "   Note: Open WebUI model cache cleared. Database will be recreated on next start."
+        else
+            echo "   Note: Open WebUI not running. Model cache will be cleared on next start."
+        fi
+        
+        echo "Note: Stop and start the stack for the change to take effect:"
+        echo "  ./aixcl stack stop && ./aixcl stack start"
     elif [ "$action" = "auto" ]; then
         # Check if .env exists, if not use .env.example
         if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
@@ -106,6 +117,16 @@ function engine() {
             echo "[x] Open WebUI Ollama API disabled (using OpenAI-compatible API)"
         fi
         
+        # Clear Open WebUI model cache to force re-discovery with new API settings
+        echo "[x] Clearing Open WebUI model cache..."
+        if docker ps --filter name=open-webui --format "{{.Names}}" | grep -q open-webui 2>/dev/null; then
+            # Open WebUI is running - clear its model cache via API
+            docker exec open-webui rm -f /app/backend/data/webui.db 2>/dev/null || true
+            echo "   Note: Open WebUI model cache cleared. Database will be recreated on next start."
+        else
+            echo "   Note: Open WebUI not running. Model cache will be cleared on next start."
+        fi
+        
         # Clear opencode.json model when engine changes (model will need to be re-added)
         local opencode_config="${SCRIPT_DIR}/opencode.json"
         if [ -f "$opencode_config" ]; then
@@ -120,7 +141,8 @@ function engine() {
             fi
         fi
         
-        echo "Note: Stop and start the stack for the change to take effect."
+        echo "Note: Stop and start the stack for the change to take effect:"
+        echo "  ./aixcl stack stop \u0026\u0026 ./aixcl stack start"
     else
         echo "Usage: ./aixcl engine {set <engine>|auto}"
         echo "  set   - Manually set engine (ollama, vllm, llamacpp)"
