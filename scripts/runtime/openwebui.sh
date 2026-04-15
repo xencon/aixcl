@@ -2,7 +2,9 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR" || exit
 
-KEY_FILE=.webui_secret_key
+# Store secret key in data directory (writable by non-root user)
+DATA_DIR="${DATA_DIR:-/app/backend/data}"
+KEY_FILE="$DATA_DIR/.webui_secret_key"
 PORT="${PORT:-8080}"
 HOST="${HOST:-127.0.0.1}"
 if test "$WEBUI_SECRET_KEY $WEBUI_JWT_SECRET_KEY" = " "; then

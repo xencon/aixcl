@@ -54,8 +54,16 @@ CURRENT_UID="$(id -u)"
 CURRENT_GID="$(id -g)"
 echo "Running as user: $CURRENT_UID:$CURRENT_GID"
 
-# Change to backend directory
-cd /app/backend || exit 1
+# Ensure data directory exists and is writable
+DATA_DIR="/app/backend/data"
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Error: Data directory $DATA_DIR does not exist"
+    exit 1
+fi
+
+# Change to data directory where the secret key will be stored
+cd "$DATA_DIR" || exit 1
+echo "Working directory: $(pwd)"
 
 # Execute the original Open WebUI startup script
 echo "Starting Open WebUI..."
