@@ -45,10 +45,9 @@ ENABLE_OLLAMA_API=false      # Use OpenAI-compatible API
 - `VLLM_MAX_MODEL_LEN`: Maximum context length (default 32768)
 
 **OpenCode Configuration**:
-```bash
-OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=8192
-```
-This prevents vLLM token limit errors. Recommended: 8192 for 32K context models.
+When using vLLM, the CLI automatically exports `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=8192` to prevent vLLM token limit errors. This is handled programmatically by `./aixcl engine set vllm` and does not need to be set manually in `.env`.
+
+Recommended: 8192 output tokens for 32K context models (leaves room for ~7000 input tokens).
 
 **Model Management**:
 - vLLM downloads models automatically on first start
@@ -112,10 +111,11 @@ Used when profile includes Open WebUI (dev, ops, sys).
 
 **Error**: `Token limit exceeded` or OpenCode generates indefinitely
 
-**Fix**: Ensure `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX` is set:
-```bash
-OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=8192
-```
+**Fix**: This is automatically handled when using `./aixcl engine set vllm`. The CLI exports `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=8192` to limit output tokens. If you still see issues:
+
+1. Verify you're using the AIXCL CLI: `./aixcl` instead of running containers directly
+2. Check the engine is set: `./aixcl engine set vllm`
+3. Restart services: `./aixcl stack restart engine`
 
 ### Model Not Found After Engine Switch
 
