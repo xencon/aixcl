@@ -179,7 +179,6 @@ services:
     image: dpage/pgadmin4:9.14.0
     container_name: pgadmin
     pull_policy: if_not_present
-    user: "0:0"  # Start as root to set permissions, entrypoint switches to pgadmin user
     environment:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
       PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
@@ -191,7 +190,6 @@ services:
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-data:/var/lib/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
-      - ../scripts/runtime/pgadmin-entrypoint.sh:/pgadmin-entrypoint.sh:ro
     network_mode: host
     depends_on:
       - postgres
@@ -202,7 +200,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    entrypoint: ["/pgadmin-entrypoint.sh"]
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        # In rootless mode, the container root maps to the host user.
+        # We ensure the directories are owned by the user pgAdmin runs as (5050).
+        chown -R 5050:5050 /var/lib/pgadmin/storage /var/lib/pgadmin
+        chmod -R 755 /var/lib/pgadmin/storage /var/lib/pgadmin
+        find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \;
+        find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \;
+        find /var/lib/pgadmin -type d -exec chmod 755 {} \;
+        find /var/lib/pgadmin -type f -exec chmod 644 {} \;
+        exec /entrypoint.sh
 
   prometheus:
     image: prom/prometheus:v3.11.1
