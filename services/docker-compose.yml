@@ -3,9 +3,11 @@ services:
     image: docker.io/ollama/ollama:0.20.5
     container_name: ollama
     pull_policy: if_not_present
-    user: "1000:1000"  # Run as ubuntu user (official image default)
+    user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
     volumes:
       - ollama:/home/ubuntu/.ollama
+      - ../scripts/runtime/ollama-entrypoint.sh:/ollama-entrypoint.sh:ro
+    entrypoint: ["/ollama-entrypoint.sh"]
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
       # Performance tuning for parallel model queries (configured via .env)
