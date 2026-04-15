@@ -24,9 +24,14 @@ if [ "$(id -u)" = "0" ]; then
     
     # Ensure data directories exist and have correct ownership
     # These are the volumes mounted from docker-compose
-    for dir in /app/backend/data /app/data; do
+    for dir in /app/backend/data /app/data /app/backend/data/static; do
         if [ -d "$dir" ]; then
             echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
+            chown -R "$USER_ID:$GROUP_ID" "$dir" 2>/dev/null || true
+            chmod 755 "$dir" 2>/dev/null || true
+        else
+            echo "Creating directory $dir"
+            mkdir -p "$dir" 2>/dev/null || true
             chown -R "$USER_ID:$GROUP_ID" "$dir" 2>/dev/null || true
             chmod 755 "$dir" 2>/dev/null || true
         fi

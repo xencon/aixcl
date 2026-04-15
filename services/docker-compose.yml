@@ -103,6 +103,7 @@ services:
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
     environment:
       - DATA_DIR=/app/data
+      - STATIC_DIR=/app/backend/data/static
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}
       - WEBUI_NAME=AIXCL
       - OLLAMA_BASE_URL=http://127.0.0.1:11434
