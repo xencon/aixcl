@@ -106,15 +106,24 @@ services:
       - STATIC_DIR=/app/backend/data/static
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}
       - WEBUI_NAME=AIXCL
-      - OLLAMA_BASE_URL=http://127.0.0.1:11434
+      # Use OpenAI-compatible API for all engines (Ollama, llama.cpp, vLLM all support this)
       - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
       - OPENAI_API_KEY=dummy
+      # Enable OpenAI API for model discovery (uses OpenAI-compatible endpoint at OLLAMA_BASE_URL)
+      # This ensures models are discovered with owned_by='openai' instead of 'ollama'
+      - ENABLE_OPENAI_API=true
+      # Conditionally enable Ollama API based on engine selection
+      # Set ENABLE_OLLAMA_API=false in .env when using llamacpp or vllm to disable Ollama-specific features
+      - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
+      - OLLAMA_BASE_URL=http://127.0.0.1:11434
       - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
       - RAG_EMBEDDING_ENGINE=ollama
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - USER_ID=1000
       - GROUP_ID=1000
+      # Enable signup for initial admin user creation
+      - ENABLE_SIGNUP=true
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
