@@ -95,10 +95,12 @@ services:
     image: ghcr.io/open-webui/open-webui:v0.8.12
     container_name: open-webui
     pull_policy: if_not_present
+    user: "0:0"  # Start as root for permission setup, entrypoint switches to non-root
     volumes:
       - open-webui:/app/backend/data
       - open-webui-data:/app/data
       - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
+      - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
     environment:
       - DATA_DIR=/app/data
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}
@@ -110,13 +112,16 @@ services:
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
       - RAG_EMBEDDING_ENGINE=ollama
       - RAG_EMBEDDING_MODEL=nomic-embed-text
+      - USER_ID=1000
+      - GROUP_ID=1000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
     network_mode: host
     restart: always
-    command: ["/bin/bash", "-c", "chmod +x openwebui.sh && bash openwebui.sh"]
+    entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
+    command: []
     healthcheck:
       # Try /health first, fallback to root endpoint if /health doesn't exist
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
