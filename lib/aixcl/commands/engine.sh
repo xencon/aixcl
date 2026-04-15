@@ -60,6 +60,19 @@ function engine() {
             fi
             echo "[x] vLLM enforce-eager flag set to: $enforce_eager"
             echo "   Note: This improves compatibility with WSL2 and systems with limited GPU resources."
+
+            # Set OpenCode token limit to prevent vLLM token limit errors
+            local opencode_token_limit="8192"
+            if grep -qE "^[[:space:]]*#?OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+                sed -i "s/^[[:space:]]*#*OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=.*/OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=$opencode_token_limit/" "${SCRIPT_DIR}/.env"
+            else
+                echo "OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=$opencode_token_limit" >> "${SCRIPT_DIR}/.env"
+            fi
+            echo "[x] OpenCode output token limit set to: $opencode_token_limit"
+            echo "   This prevents OpenCode from exceeding vLLM token limits."
+            
+            # Export for current session
+            export OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX="$opencode_token_limit"
             
             # Set default model for vLLM to Qwen2.5-Coder-0.5B-Instruct
             local vllm_default_model="Qwen/Qwen2.5-Coder-0.5B-Instruct"
