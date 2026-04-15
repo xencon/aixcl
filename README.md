@@ -1,8 +1,7 @@
-<p align="center">
-  <a href="https://youtu.be/YaBABt0TsPI">
-    <img src="https://github.com/xencon/aixcl/raw/main/AIXCL.png" alt="AIXCL Introduction Video" width="600"/>
-  </a>
-</p>
+## 💖 Support this project
+
+Donations help keep this project alive:
+https://paypal.me/salimbadakhchani
 
 <h1>AIXCL</h1>
 
