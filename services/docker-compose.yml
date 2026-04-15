@@ -49,7 +49,7 @@ services:
     # Use custom entrypoint to run as non-root user
     entrypoint: ["/vllm-entrypoint.sh"]
     # vLLM startup command with configurable model and memory settings
-    command:
+    command: ["--model", "Qwen/Qwen2.5-Coder-0.5B-Instruct", "--gpu-memory-utilization", "0.8", "--max-model-len", "32768", "--port", "11434", "--enable-auto-tool-choice", "--tool-call-parser", "hermes", "--enforce-eager"]
       - "--model"
       - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
       - "--gpu-memory-utilization"
@@ -82,7 +82,7 @@ services:
     restart: unless-stopped
     environment:
       # llama.cpp model configuration (configured via .env)
-      - INFERENCE_MODEL=${LLAMACPP_MODEL:-${INFERENCE_MODEL:-qwen2.5-coder-1.5b-instruct-q4_k_m.gguf}}
+      - INFERENCE_MODEL=${INFERENCE_MODEL:-qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
     entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
     command: ["--host", "0.0.0.0", "--port", "11434"]
     healthcheck:
