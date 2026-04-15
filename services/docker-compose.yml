@@ -122,6 +122,8 @@ services:
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - USER_ID=1000
       - GROUP_ID=1000
+      # Enable signup for initial admin user creation
+      - ENABLE_SIGNUP=true
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
