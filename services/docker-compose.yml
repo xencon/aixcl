@@ -185,13 +185,10 @@ services:
       PGADMIN_LISTEN_PORT: 5050
       PGADMIN_LISTEN_ADDRESS: 127.0.0.1
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
-      # Use /tmp for sessions to avoid permission issues with persistent volumes
-      PGADMIN_CONFIG_SESSION_DB_PATH: /tmp/pgadmin_sessions
-      PGADMIN_CONFIG_SQLITE_PATH: /tmp/pgadmin.db
     volumes:
-      - ../pg-backup:/var/lib/pgadmin/storage
+      - pgadmin-storage:/var/lib/pgadmin/storage
+      - pgadmin-data:/var/lib/pgadmin
       - ../logs/pgadmin:/var/log/pgadmin
-      - ../pgadmin-data:/var/lib/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
     network_mode: host
     depends_on:
@@ -207,20 +204,9 @@ services:
       - /bin/bash
       - -c
       - |
-        # In rootless mode, the container root maps to the host user.
-        # We ensure the directories are owned by the user pgAdmin runs as (5050).
-        # If chown fails (e.g., in rootless mode), we still try to ensure directories exist.
-        
+        # With named volumes, Docker handles permissions automatically
         # Ensure session directory exists (required for pgAdmin to start)
-        mkdir -p /var/lib/pgadmin/sessions 2>/dev/null || true
-        
-        # Try to set ownership - may fail in some environments but that's ok
-        chown -R 5050:5050 /var/lib/pgadmin/storage /var/lib/pgadmin 2>/dev/null || true
-        chmod -R 755 /var/lib/pgadmin/storage /var/lib/pgadmin 2>/dev/null || true
-        find /var/lib/pgadmin/storage -type d -exec chmod 755 {} \; 2>/dev/null || true
-        find /var/lib/pgadmin/storage -type f -exec chmod 644 {} \; 2>/dev/null || true
-        find /var/lib/pgadmin -type d -exec chmod 755 {} \; 2>/dev/null || true
-        find /var/lib/pgadmin -type f -exec chmod 644 {} \; 2>/dev/null || true
+        mkdir -p /var/lib/pgadmin/sessions
         
         exec /entrypoint.sh
 
@@ -388,3 +374,5 @@ volumes:
   grafana-data:
   loki-data:
   alloy-data:
+  pgadmin-storage:
+  pgadmin-data:
