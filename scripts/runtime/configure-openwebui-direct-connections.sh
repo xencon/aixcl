@@ -9,12 +9,14 @@ echo "=== Open WebUI Direct Connections Auto-Configuration ==="
 
 # Wait for Open WebUI to be ready
 echo "Waiting for Open WebUI to start..."
-for i in {1..30}; do
+i=1
+while [ $i -le 30 ]; do
     if curl -s http://127.0.0.1:8080/api/version >/dev/null 2>&1; then
         echo "Open WebUI is ready"
         break
     fi
     sleep 2
+    i=$((i + 1))
 done
 
 # Check if Direct Connections are already configured

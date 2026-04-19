@@ -185,6 +185,7 @@ services:
     image: dpage/pgadmin4:9.14.0
     container_name: pgadmin
     pull_policy: if_not_present
+    network_mode: host
     environment:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
       PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
@@ -198,12 +199,17 @@ services:
       - pgadmin-data:/var/lib/pgadmin
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
+    user: "0:0"  # Start as root to fix permissions
     entrypoint:
       - /bin/bash
       - -c
       - |
         # Ensure session directory exists (required for pgAdmin to start)
         mkdir -p /var/lib/pgadmin/sessions
+        
+        # Fix permissions on storage directories (pgadmin runs as UID 1000)
+        chown -R 1000:1000 /var/lib/pgadmin || true
+        chown -R 1000:1000 /var/log/pgadmin || true
         
         exec /entrypoint.sh
 
