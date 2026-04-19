@@ -37,6 +37,16 @@ if [ "$(id -u)" = "0" ]; then
         fi
     done
     
+    # Open WebUI also uses /app/backend/open_webui for static files
+    # This directory must be writable by the non-root user
+    for dir in /app/backend/open_webui /app/backend/open_webui/static; do
+        if [ -d "$dir" ]; then
+            echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
+            chown -R "$USER_ID:$GROUP_ID" "$dir" 2>/dev/null || true
+            chmod 755 "$dir" 2>/dev/null || true
+        fi
+    done
+    
     # Ensure the startup script is executable (ignore errors if read-only mount)
     if [ -f "/app/backend/openwebui.sh" ]; then
         chmod +x /app/backend/openwebui.sh 2>/dev/null || true
