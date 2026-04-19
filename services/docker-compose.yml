@@ -109,15 +109,21 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}
       - WEBUI_NAME=AIXCL
       # Use OpenAI-compatible API for all engines (Ollama, llama.cpp, vLLM all support this)
+      # Use OPENAI_API_BASE_URLS (plural) which is the correct variable name
+      - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
       - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
-      - OPENAI_API_KEY=dummy
+      # OpenAI API key - left empty for local models as they don't require authentication
+      # This prevents "Missing bearer authentication" errors with vLLM and other local engines
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       # Enable OpenAI API for model discovery (uses OpenAI-compatible endpoint at OLLAMA_BASE_URL)
       # This ensures models are discovered with owned_by='openai' instead of 'ollama'
       - ENABLE_OPENAI_API=true
       # Conditionally enable Ollama API based on engine selection
       # Set ENABLE_OLLAMA_API=false in .env when using llamacpp or vllm to disable Ollama-specific features
       - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
-      - OLLAMA_BASE_URL=http://127.0.0.1:11434
+      # Only set OLLAMA_BASE_URL when Ollama engine is active
+      # This prevents Open WebUI from trying to query Ollama API when using vLLM or llamacpp
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
       - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
       - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
       - RAG_EMBEDDING_ENGINE=ollama
