@@ -12,6 +12,35 @@ echo "=== Open WebUI Non-Root Entrypoint ==="
 echo "Target UID: $USER_ID"
 echo "Target GID: $GROUP_ID"
 
+# Wait for PostgreSQL to be ready before starting Open WebUI
+# This prevents Open WebUI from falling back to SQLite
+if [ -n "${DATABASE_URL:-}" ]; then
+    echo "Waiting for PostgreSQL to be ready..."
+    # Extract host and port from DATABASE_URL
+    # Format: postgresql://user:pass@host:port/dbname
+    # Use '#' as delimiter to avoid conflict with '/' in URL
+    pg_host=$(echo "$DATABASE_URL" | sed -n 's#.*@\([^:]*\):.*#\1#p')
+    pg_port=$(echo "$DATABASE_URL" | sed -n 's#.*:\([0-9]*\)/.*#\1#p')
+    pg_host="${pg_host:-127.0.0.1}"
+    pg_port="${pg_port:-5432}"
+
+    # Wait for PostgreSQL with timeout (60 seconds)
+    pg_ready=false
+    for i in {1..30}; do
+        if timeout 2 bash -c "echo > /dev/tcp/$pg_host/$pg_port" 2>/dev/null; then
+            pg_ready=true
+            echo "PostgreSQL is ready!"
+            break
+        fi
+        echo "Waiting for PostgreSQL... ($i/30)"
+        sleep 2
+    done
+
+    if [ "$pg_ready" = false ]; then
+        echo "Warning: PostgreSQL did not become ready, Open WebUI may fall back to SQLite"
+    fi
+fi
+
 # Check if running as root (required for permission setup)
 if [ "$(id -u)" = "0" ]; then
     echo "Running as root - setting up permissions..."
