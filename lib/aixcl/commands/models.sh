@@ -244,15 +244,6 @@ function add() {
                 fi
             fi
             echo "   Updated VLLM_MODEL in .env to: $model"
-            
-            # Also update docker-compose.yml for immediate effect on next restart
-            # This updates the command line to use the specific model
-            if [ -f "$compose_file" ]; then
-                # Use a more specific sed pattern that only replaces the model value in the command array
-                sed -i "/vllm:/,/healthcheck:/s|\"--model\",$|\"--model\",|" "$compose_file"
-                sed -i "/vllm:/,/healthcheck:/s|\"\${VLLM_MODEL[^\"]*}\"|\"$model\"|" "$compose_file"
-                echo "   Updated $compose_file command to use model: $model"
-            fi
         elif [[ "$engine" == "llamacpp" ]]; then
             # Update llamacpp model via environment variable
             local model_filename="$model"
