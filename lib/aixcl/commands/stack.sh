@@ -285,6 +285,19 @@ function start() {
         fi
     fi
     
+    # Pre-create logs directory with correct ownership to prevent root-owned directories
+    # Docker creates host directories for bind mounts using the container's user (root)
+    # which causes permission issues. By pre-creating with current user, we avoid this.
+    local logs_dir="${SCRIPT_DIR}/logs"
+    if [ ! -d "$logs_dir" ]; then
+        echo "Creating logs directory with current user ownership..."
+        mkdir -p "$logs_dir"
+        # Set ownership to current user
+        chown "$(id -u):$(id -g)" "$logs_dir" 2>/dev/null || true
+        chmod 755 "$logs_dir"
+        echo "   Created logs directory"
+    fi
+    
     # Get services for this profile
     local profile_services
     read -r -a profile_services <<< "$(get_profile_services "$profile")"
