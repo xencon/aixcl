@@ -1099,12 +1099,12 @@ function status() {
         if [ "$container_running" = "true" ] && [ -n "$health_check_type" ]; then
             case "$health_check_type" in
                 curl)
-                    health_result=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$health_check_arg" 2>/dev/null || echo "000")
+                    health_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$health_check_arg" 2>/dev/null || echo "000")
                     if [ "$health_result" = "404" ] || [ "$health_result" = "000" ]; then
                         local base_url="${health_check_arg%/health}"
                         base_url="${base_url%/}"
                         local root_result
-                        root_result=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$base_url/" 2>/dev/null || echo "000")
+                        root_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$base_url/" 2>/dev/null || echo "000")
                         if [ "$root_result" = "200" ] || [ "$root_result" = "302" ] || [ "$root_result" = "307" ]; then
                             health_result="$root_result"
                         fi
