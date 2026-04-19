@@ -225,15 +225,6 @@ function add() {
         echo "   Updating $engine configuration in $compose_file to use model: $model"
         if [[ "$engine" == "vllm" ]]; then
             # Build vLLM command with optional enforce-eager flag
-            local vllm_command="[\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"32768\", \"--port\", \"11434\", \"--enable-auto-tool-choice\", \"--tool-call-parser\", \"hermes\"]"
-            
-            # Add enforce-eager flag if enabled
-            local enforce_eager="${VLLM_ENFORCE_EAGER:-true}"
-            if [[ "$enforce_eager" == "true" ]]; then
-                vllm_command="[\"--model\", \"$model\", \"--gpu-memory-utilization\", \"0.8\", \"--max-model-len\", \"32768\", \"--port\", \"11434\", \"--enable-auto-tool-choice\", \"--tool-call-parser\", \"hermes\", \"--enforce-eager\"]"
-                echo "   Adding --enforce-eager flag for WSL2 compatibility"
-            fi
-            
             # Update VLLM_MODEL in .env file
             local env_file="${SCRIPT_DIR}/.env"
             if [ -f "$env_file" ]; then
@@ -244,15 +235,6 @@ function add() {
                 fi
             fi
             echo "   Updated VLLM_MODEL in .env to: $model"
-            
-            # Also update docker-compose.yml for immediate effect on next restart
-            # This updates the command line to use the specific model
-            if [ -f "$compose_file" ]; then
-                # Use a more specific sed pattern that only replaces the model value in the command array
-                sed -i "/vllm:/,/healthcheck:/s|\"--model\",$|\"--model\",|" "$compose_file"
-                sed -i "/vllm:/,/healthcheck:/s|\"\${VLLM_MODEL[^\"]*}\"|\"$model\"|" "$compose_file"
-                echo "   Updated $compose_file command to use model: $model"
-            fi
         elif [[ "$engine" == "llamacpp" ]]; then
             # Update llamacpp model via environment variable
             local model_filename="$model"
