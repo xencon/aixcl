@@ -144,6 +144,22 @@ See [`docs/operations/model-recommendations.md`](../operations/model-recommendat
 
 ### Troubleshooting
 
+**Models Not Appearing in Open WebUI (vLLM/llama.cpp)**
+
+When using vLLM or llama.cpp engines with Open WebUI v0.8.12+, models must be manually configured via Direct Connections:
+
+| Step | Action |
+|------|--------|
+| 1 | Go to Open WebUI → Settings → Connections |
+| 2 | Scroll to "Direct Connections" section |
+| 3 | Click "Add Connection" |
+| 4 | Set URL: `http://127.0.0.1:11434/v1` |
+| 5 | Leave API Key empty (for local models) |
+| 6 | Enable "Direct Connections" toggle |
+| 7 | Save and refresh the page |
+
+**Note:** This is required because Open WebUI v0.8.12 changed how models are discovered. Ollama engine users don't need this step.
+
 ```bash
 # Check service logs for the engine
 ./aixcl stack logs engine 50

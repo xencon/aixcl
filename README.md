@@ -63,6 +63,14 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 ./opencode
 ```
 
+> **Note for Open WebUI Users (vLLM/llama.cpp):** When using vLLM or llama.cpp engines, models must be manually configured in Open WebUI:
+> 1. Go to Settings → Connections → Direct Connections
+> 2. Add URL: `http://127.0.0.1:11434/v1` (leave API key empty)
+> 3. Enable "Direct Connections" toggle
+> 4. Save and refresh the page
+>
+> See [Open WebUI Configuration Guide](docs/user/openwebui-setup.md) for detailed instructions.
+
 ---
 
 ## Understanding Model Downloads
