@@ -34,8 +34,8 @@ generate_pgadmin_config() {
 }
 EOF
     
-    # Set restrictive file permissions (read/write for owner only)
-    chmod 600 "${SCRIPT_DIR}/pgadmin-servers.json"
+    # Set file permissions (read/write for owner, read for others - needed for container)
+    chmod 644 "${SCRIPT_DIR}/pgadmin-servers.json"
     
     echo "✅ Generated pgadmin-servers.json with populated values and secure permissions"
 }
