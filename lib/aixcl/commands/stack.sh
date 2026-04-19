@@ -253,6 +253,27 @@ function start() {
                 echo "   .env file not found. Copying from .env.example..."
                 cp "$env_example" "$env_file"
                 echo "[x] Created .env file from .env.example"
+                
+                # If profile was specified via CLI, update .env to match
+                if [ "$profile_specified" = true ] && [ -n "$profile" ]; then
+                    if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
+                        # Update existing PROFILE line
+                        if [[ "$(uname)" == "Darwin" ]]; then
+                            sed -i '' "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
+                        else
+                            sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
+                        fi
+                    else
+                        # Add PROFILE line at the end
+                        {
+                            echo ""
+                            echo "# Default profile for stack commands"
+                            echo "PROFILE=$profile"
+                        } >> "$env_file"
+                    fi
+                    echo "   Updated PROFILE in .env to match CLI: $profile"
+                fi
+                
                 # Reload environment variables after creating .env file
                 load_env_file "$env_file"
             else
