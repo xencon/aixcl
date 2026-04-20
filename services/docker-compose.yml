@@ -277,6 +277,8 @@ services:
     container_name: node-exporter
     pull_policy: if_not_present
     user: "65534:65534"  # node-exporter user (official image default) - avoids 'nobody' ambiguity
+    cap_drop:
+      - ALL
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -335,9 +337,10 @@ services:
 
   # SECURITY NOTE: Alloy requires Docker socket access for container log discovery.
   # Docker socket access grants full root access on the host. Security mitigations applied:
-  # - Runs as root within container (required for Docker socket access)
+  # - Runs as alloy user (UID 12345) via entrypoint with docker group membership
   # - Uses no-new-privileges to prevent privilege escalation
   # - Read-only root filesystem prevents runtime modifications
+  # - cap_drop: ALL with no cap_add (access via group membership)
   # - Writable data volume for Alloy state, tmpfs for temporary files
   # - All bind mounts are read-only (:ro suffix)
   # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
@@ -346,7 +349,9 @@ services:
     image: grafana/alloy:v1.15.0
     container_name: alloy
     pull_policy: if_not_present
-    user: "0:0"  # Start as root, entrypoint drops to alloy user
+    user: "0:0"  # Start as root, entrypoint drops to alloy user (12345) with docker group
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     read_only: true
