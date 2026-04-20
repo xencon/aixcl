@@ -11,7 +11,7 @@ USER_ID="${USER_ID:-12345}"
 GROUP_ID="${GROUP_ID:-12345}"
 
 # Get the Docker group ID from the socket (if available)
-DOCKER_GID="${DOCKER_GID:-$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo '999')}
+DOCKER_GID="${DOCKER_GID:-$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo '999')}"
 
 echo "Target UID: $USER_ID"
 echo "Target GID: $GROUP_ID"
@@ -78,11 +78,11 @@ echo "Running as user: $(id -u):$(id -g)"
 
 # Verify we can read the Docker socket
 if [ -r "/var/run/docker.sock" ]; then
-    echo "✅ Docker socket is readable"
+    echo "OK: Docker socket is readable"
 else
-    echo "⚠️  Warning: Docker socket not readable (may affect container log collection)"
+    echo "WARNING: Docker socket not readable"
 fi
 
 # Start Alloy with the provided config
-echo "🚀 Starting Alloy..."
+echo "Starting Alloy..."
 exec /bin/alloy run /etc/alloy/config.alloy
