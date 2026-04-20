@@ -208,6 +208,8 @@ services:
     image: prom/prometheus:v3.11.1
     container_name: prometheus
     pull_policy: if_not_present
+    cap_drop:
+      - ALL
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ../prometheus/alerts.yml:/etc/prometheus/alerts.yml
@@ -230,6 +232,8 @@ services:
     image: grafana/grafana:12.4.2
     container_name: grafana
     pull_policy: if_not_present
+    cap_drop:
+      - ALL
     volumes:
       - grafana-data:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning
@@ -290,6 +294,8 @@ services:
     container_name: postgres-exporter
     pull_policy: if_not_present
     user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
+    cap_drop:
+      - ALL
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
     network_mode: host
@@ -313,6 +319,8 @@ services:
     image: grafana/loki:3.3.0
     container_name: loki
     pull_policy: if_not_present
+    cap_drop:
+      - ALL
     volumes:
       - ../loki/loki-config.yml:/etc/loki/loki-config.yml
       - loki-data:/loki
