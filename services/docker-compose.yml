@@ -359,16 +359,30 @@ services:
 
 volumes:
   ollama:
+    external: true
   huggingface-cache:
+    external: true
   vllm-data:
+    external: true
   llamacpp-data:
+    external: true
   open-webui:
+    external: true
   open-webui-data:
+    external: true
   postgres-data:
+    external: true
   prometheus-data:
+    external: true
   grafana-data:
+    external: true
   loki-data:
+    external: true
   alloy-data:
+    external: true
   pgadmin-storage:
+    external: true
   pgadmin-data:
+    external: true
   pgadmin-config:
+    external: true
