@@ -11,7 +11,7 @@ USER_ID="${USER_ID:-12345}"
 GROUP_ID="${GROUP_ID:-12345}"
 
 # Get the Docker group ID from the socket (if available)
-DOCKER_GID="${DOCKER_GID:-$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo '999')}"
+DOCKER_GID="${DOCKER_GID:-$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo '999')}
 
 echo "Target UID: $USER_ID"
 echo "Target GID: $GROUP_ID"
@@ -21,21 +21,37 @@ echo "Docker GID: $DOCKER_GID"
 if [ "$(id -u)" = "0" ]; then
     echo "Running as root - setting up permissions..."
     
-    # Create alloy group if it doesn't exist
-    if ! getent group alloy >/dev/null 2>&1; then
-        groupadd -g "$GROUP_ID" alloy 2>/dev/null || groupadd alloy 2>/dev/null || true
+    # Remove existing alloy user if it has wrong UID (image has alloy:473)
+    if id "alloy" >/dev/null 2>&1; then
+        CURRENT_UID=$(id -u alloy 2>/dev/null)
+        if [ "$CURRENT_UID" != "$USER_ID" ]; then
+            echo "Removing existing alloy user (UID: $CURRENT_UID) to recreate with UID: $USER_ID"
+            userdel alloy 2>/dev/null || true
+            # Remove the group too if it exists
+            groupdel alloy 2>/dev/null || true
+        fi
     fi
     
-    # Create alloy user if it doesn't exist
-    if ! id "alloy" >/dev/null 2>&1; then
-        useradd -u "$USER_ID" -g "$GROUP_ID" -G "$DOCKER_GID" -s /bin/false -M alloy 2>/dev/null || \
-        useradd -u "$USER_ID" -g "$GROUP_ID" -s /bin/false -M alloy 2>/dev/null || true
+    # Create alloy group
+    if ! getent group alloy >/dev/null 2>&1; then
+        groupadd -g "$GROUP_ID" alloy 2>/dev/null || true
     fi
+    
+    # Create alloy user with our target UID
+    if ! id "alloy" >/dev/null 2>&1; then
+        useradd -u "$USER_ID" -g "$GROUP_ID" -G "$DOCKER_GID" -s /bin/bash -M alloy 2>/dev/null || true
+    fi
+    
+    # Get the actual UID/GID of the alloy user (may differ from requested if user already existed)
+    ACTUAL_UID=$(id -u alloy 2>/dev/null || echo "$USER_ID")
+    ACTUAL_GID=$(id -g alloy 2>/dev/null || echo "$GROUP_ID")
+    
+    echo "Actual alloy user UID: $ACTUAL_UID, GID: $ACTUAL_GID"
     
     # Ensure data directory exists and is writable
     if [ -d "/data-alloy" ]; then
-        echo "Setting ownership of /data-alloy to $USER_ID:$GROUP_ID"
-        chown -R "$USER_ID:$GROUP_ID" /data-alloy 2>/dev/null || true
+        echo "Setting ownership of /data-alloy to $ACTUAL_UID:$ACTUAL_GID"
+        chown -R "$ACTUAL_UID:$ACTUAL_GID" /data-alloy 2>/dev/null || true
         chmod 755 /data-alloy 2>/dev/null || true
     fi
     
@@ -52,7 +68,7 @@ if [ "$(id -u)" = "0" ]; then
         chmod +x /bin/alloy 2>/dev/null || true
     fi
     
-    echo "Switching to alloy user (UID: $USER_ID)..."
+    echo "Switching to alloy user (UID: $ACTUAL_UID)..."
     # Re-run this script as the non-root user
     exec su -s /bin/bash alloy -c 'exec /usr/local/bin/alloy-entrypoint.sh'
 fi
