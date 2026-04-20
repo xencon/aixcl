@@ -347,7 +347,7 @@ services:
     image: grafana/alloy:v1.15.0
     container_name: alloy
     pull_policy: if_not_present
-    user: "0:0"  # root required for Docker socket access
+    user: "0:0"  # Start as root, entrypoint drops to alloy user
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -359,7 +359,8 @@ services:
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
-    command: run /etc/alloy/config.alloy
+      - ../scripts/runtime/alloy-entrypoint.sh:/usr/local/bin/alloy-entrypoint.sh:ro
+    command: /usr/local/bin/alloy-entrypoint.sh
     network_mode: host
     depends_on:
       - loki
