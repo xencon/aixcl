@@ -285,6 +285,48 @@ function start() {
         fi
     fi
     
+    # Check if llamacpp engine is selected and verify model exists
+    # This prevents container restart loops when no model is configured
+    if [ "${INFERENCE_ENGINE:-ollama}" = "llamacpp" ]; then
+        echo "Checking llamacpp model configuration..."
+        local llama_model="${INFERENCE_MODEL:-}"
+        
+        if [ -z "$llama_model" ]; then
+            echo "[ ] Error: No model configured for llamacpp engine"
+            echo "   INFERENCE_MODEL is not set in .env file"
+            echo ""
+            echo "   To add a model, run:"
+            echo "      ./aixcl models add <path/to/model.gguf>"
+            echo ""
+            echo "   Example:"
+            echo "      ./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf"
+            echo ""
+            exit 1
+        fi
+        
+        # Check if model file exists in the llamacpp-data volume
+        local model_basename
+        model_basename=$(basename "$llama_model")
+        local llamacpp_volume="${SCRIPT_DIR}/services/llamacpp-data"
+        
+        # Check if llamacpp-data volume exists (Docker named volume)
+        if "${DOCKER_BIN:-docker}" volume ls --format "{{.Name}}" | grep -q "^services_llamacpp-data$"; then
+            # Check if model exists in the Docker volume
+            if ! "${DOCKER_BIN:-docker}" run --rm -v "services_llamacpp-data:/models" alpine test -f "/models/${model_basename}" 2>/dev/null; then
+                echo "[ ] Error: Model file not found: ${model_basename}"
+                echo "   Model configured: ${llama_model}"
+                echo ""
+                echo "   The model must be downloaded before starting the stack."
+                echo "   To add the model, run:"
+                echo "      ./aixcl models add ${llama_model}"
+                echo ""
+                exit 1
+            fi
+        fi
+        
+        echo "[x] Llamacpp model verified: ${model_basename}"
+    fi
+    
     # Pre-create logs directory with correct ownership to prevent root-owned directories
     # Docker creates host directories for bind mounts using the container's user (root)
     # which causes permission issues. By pre-creating with current user, we avoid this.
