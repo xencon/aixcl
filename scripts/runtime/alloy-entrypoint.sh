@@ -25,7 +25,7 @@ if [ "$(id -u)" = "0" ]; then
     if id "alloy" >/dev/null 2>&1; then
         CURRENT_UID=$(id -u alloy 2>/dev/null)
         if [ "$CURRENT_UID" != "$USER_ID" ]; then
-            echo "Removing existing alloy user (UID: $CURRENT_UID) to recreate with UID: $USER_ID"
+            echo "Removing existing alloy user UID: $CURRENT_UID to recreate with UID: $USER_ID"
             userdel alloy 2>/dev/null || true
             # Remove the group too if it exists
             groupdel alloy 2>/dev/null || true
