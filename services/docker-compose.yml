@@ -351,7 +351,7 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
       - ../scripts/runtime/alloy-entrypoint.sh:/usr/local/bin/alloy-entrypoint.sh:ro
-    command: /usr/local/bin/alloy-entrypoint.sh
+    entrypoint: /usr/local/bin/alloy-entrypoint.sh
     network_mode: host
     depends_on:
       - loki
