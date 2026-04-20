@@ -307,7 +307,6 @@ function start() {
         # Check if model file exists in the llamacpp-data volume
         local model_basename
         model_basename=$(basename "$llama_model")
-        local llamacpp_volume="${SCRIPT_DIR}/services/llamacpp-data"
         
         # Check if llamacpp-data volume exists (Docker named volume)
         if "${DOCKER_BIN:-docker}" volume ls --format "{{.Name}}" | grep -q "^services_llamacpp-data$"; then
