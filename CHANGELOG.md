@@ -2,10 +2,141 @@
 
 All notable changes to the AIXCL project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
+
+---
+
+## [v1.0.0-rc6] - 2026-04-20
+
+### Summary
+
+Release Candidate 6 for v1.0.0. This release includes 15+ commits since RC5 focusing on container security hardening with Linux capability restrictions and defense-in-depth controls for all observability services.
+
+### Security
+
+- **Container Capability Restrictions**: Implemented comprehensive security hardening for 6 observability services (prometheus, grafana, loki, postgres-exporter, node-exporter, alloy) with the following controls:
+  - `cap_drop: ALL` - Remove all Linux capabilities
+  - `security_opt: no-new-privileges:true` - Prevent privilege escalation
+  - `read_only: true` - Read-only root filesystem (where applicable)
+  - `tmpfs` mounts - Writable temporary space with noexec,nosuid
+  - `:ro` bind mounts - Read-only configuration mounts
+  
+- **Service Security Matrix**: Each hardened service now runs with minimal privileges:
+  | Service | User | cap_drop | no-new-priv | read_only |
+  |---------|------|----------|-------------|-----------|
+  | prometheus | default | ALL | ✅ | ✅ |
+  | grafana | default | ALL | ✅ | ❌* |
+  | loki | default | ALL | ✅ | ❌* |
+  | postgres-exporter | 65534:65534 | ALL | ✅ | ✅ |
+  | node-exporter | 65534:65534 | ALL | ✅ | ✅ |
+  | alloy | 12345:12345 | ALL | ✅ | ✅ |
+  
+  *\*Requires data volume writes*
+
+- **Security Documentation**: Added comprehensive Section 6 to `docs/operations/security.md` covering:
+  - Container security hardening overview
+  - Service security matrix with all 9 services
+  - Verification commands for container inspection
+  - Troubleshooting guide for restricted containers
+
+### Added
+
+- Capability restrictions Phase 1: prometheus, grafana, loki, postgres-exporter (#784, #785)
+- Capability restrictions Phase 2: node-exporter, alloy (#786, #787)
+- Security options Phase 3: no-new-privileges, read_only, tmpfs mounts (#788, #789)
+- Documentation Phase 4: Complete security hardening documentation (#790, #791)
+- AGENTS.md output formatting guidance for consistent tabular reports (#782, #783)
+
+### Related Issues
+
+- Fixes #705 - Container Capability Restrictions Implementation (all 4 phases complete)
+- Part of #698 - Container Security Hardening Initiative
+
+---
+
+## [v1.0.0-rc5] - 2026-04-20
+
+### Summary
+
+Release Candidate 5 for v1.0.0. This release includes 27 commits since RC4 with critical bug fixes, llamacpp model pre-flight checks, and continued non-root container migrations.
+
+### Added
+
+- **Llamacpp Pre-flight Check**: Added validation to prevent stack start when no llamacpp model is configured (#775)
+
+### Changed
+
+- Preserved DATABASE_URL environment variable when Open WebUI switches to non-root user (#773)
+- Moved PostgreSQL wait logic to entrypoint script for better startup handling (#771)
+- Pre-created logs directory to prevent root ownership issues (#770)
+- Added PostgreSQL readiness check to Open WebUI startup sequence (#768)
+- Ensured CLI profile flag updates .env on fresh installations (#766)
+
+### Fixed
+
+- Added network_mode and fixed permissions for pgAdmin container (#764)
+- Fixed pgAdmin servers.json import permission issues (#759)
+- Fixed docker-compose.yml corruption from models add command (#744)
+- Fixed three critical issues: model selection, pgadmin connection, OpenCode token limit (#740)
+- Fixed pgAdmin permission errors with entrypoint script (#737)
+- Removed database deletion from engine switch command (#736)
+- Fixed environment variable consistency issues (#733)
+- Fixed vLLM command syntax in docker-compose.yml (#732)
+- Fixed llamacpp model name handling for full HF path API calls (#729)
+- Fixed Ollama volume permissions with entrypoint script (#728)
+- Fixed Open WebUI configuration for non-Ollama engines (#723)
+- Fixed llama.cpp model configuration synchronization (#720)
+
+### Security
+
+- Run Open WebUI as non-root user (#721)
+- Run vLLM as non-root user via entrypoint script
+- Run llama.cpp as non-root user
+- Run nvidia-gpu-exporter as non-root user
+- Run node-exporter as non-root user (#718)
+- Run Ollama as non-root user (#717)
+- Hardened Alloy container security configuration with read_only and tmpfs (#716, #715)
+- Run postgres-exporter as non-root user (#714)
+- Run pgAdmin container as non-root user (#703)
+- Run Loki container as non-root user (#702)
+- Run Grafana container as non-root user (#701)
+- Run Prometheus container as non-root user (#700)
+- Run PostgreSQL container as non-root user (#699)
+
+---
+
+## [v1.0.0-rc4] - 2026-04-20
+
+### Summary
+
+Release Candidate 4 for v1.0.0. This release includes critical bug fixes for Open WebUI PostgreSQL support, pgAdmin integration, and engine management.
+
+### Added
+
+- PostgreSQL readiness check to Open WebUI entrypoint
+- Pre-create logs directory with correct ownership
+- Environment configuration documentation
+
+### Changed
+
+- Improved pgAdmin servers.json import handling
+- Enhanced CLI profile flag behavior on fresh install
+- Updated default vLLM model from 7B to 0.5B
+
+### Fixed
+
+- Fixed pgAdmin connection and permission issues
+- Fixed Open WebUI SQLite fallback when PostgreSQL unavailable
+- Fixed root-owned logs directory creation
+- Fixed CLI profile persistence
+- Fixed docker-compose.yml corruption from models add
+- Fixed vLLM command syntax
+- Fixed llamacpp model validation
+
+### Documentation
+
+- Added Open WebUI Direct Connections documentation for vLLM/llama.cpp setup
+- Updated environment configuration guide
 
 ---
 
