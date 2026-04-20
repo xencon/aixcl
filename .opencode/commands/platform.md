@@ -140,6 +140,7 @@ Platform Status: ✅ FULLY OPERATIONAL
 - `/report` - Issue-First workflow report
 - `/verify` - Check CI status
 - `/workflow` - Run development workflow
+- `/status` - Quick stack status (if implemented)
 
 ## See Also
 
