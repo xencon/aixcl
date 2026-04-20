@@ -68,7 +68,7 @@ if [ "$(id -u)" = "0" ]; then
         chmod +x /bin/alloy 2>/dev/null || true
     fi
     
-    echo "Switching to alloy user (UID: $ACTUAL_UID)..."
+    echo "Switching to alloy user UID: $ACTUAL_UID..."
     # Re-run this script as the non-root user
     exec su -s /bin/bash alloy -c 'exec /usr/local/bin/alloy-entrypoint.sh'
 fi
