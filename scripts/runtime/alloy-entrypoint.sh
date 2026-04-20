@@ -69,8 +69,8 @@ if [ "$(id -u)" = "0" ]; then
     fi
     
     echo "Switching to alloy user UID: $ACTUAL_UID..."
-    # Re-run this script as the non-root user
-    exec su -s /bin/bash alloy -c 'exec /usr/local/bin/alloy-entrypoint.sh'
+    # Re-run this script as the non-root user using setpriv (works with no-new-privileges)
+    exec setpriv --reuid="$ACTUAL_UID" --regid="$ACTUAL_GID" --clear-groups --groups="$DOCKER_GID" /usr/local/bin/alloy-entrypoint.sh
 fi
 
 # At this point, we should be running as non-root
