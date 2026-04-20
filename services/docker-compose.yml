@@ -192,26 +192,17 @@ services:
       PGADMIN_LISTEN_PORT: 5050
       PGADMIN_LISTEN_ADDRESS: 127.0.0.1
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
-      # Force re-import of servers.json on every startup (needed when database already exists)
       PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+      PGADMIN_USER_ID: "5050"
+      PGADMIN_GROUP_ID: "5050"
     volumes:
       - pgadmin-storage:/var/lib/pgadmin/storage
       - pgadmin-data:/var/lib/pgadmin
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
-    user: "0:0"  # Start as root to fix permissions
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        # Ensure session directory exists (required for pgAdmin to start)
-        mkdir -p /var/lib/pgadmin/sessions
-        
-        # Fix permissions on storage directories (pgadmin runs as UID 1000)
-        chown -R 1000:1000 /var/lib/pgadmin || true
-        chown -R 1000:1000 /var/log/pgadmin || true
-        
-        exec /entrypoint.sh
+      - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
+    user: "0:0"  # Start as root, entrypoint drops to pgadmin user
+    entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
     image: prom/prometheus:v3.11.1
