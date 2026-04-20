@@ -34,7 +34,14 @@ if [ "$(id -u)" = "0" ]; then
     
     # Ensure data directory exists and is writable
     if [ -d "/data-alloy" ]; then
+        echo "Setting ownership of /data-alloy to $USER_ID:$GROUP_ID"
         chown -R "$USER_ID:$GROUP_ID" /data-alloy 2>/dev/null || true
+        chmod 755 /data-alloy 2>/dev/null || true
+    fi
+    
+    # Also ensure the parent directory is accessible
+    if [ -d "/data" ]; then
+        chmod 755 /data 2>/dev/null || true
     fi
     
     # Ensure tmp directory is writable
