@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.0.0-rc6] - 2026-04-20
+
+### Summary
+
+Release Candidate 6 for v1.0.0. This release includes 15+ commits focusing on container security hardening with Linux capability restrictions and defense-in-depth controls for all observability services.
+
+### Security
+
+- **Container Capability Restrictions**: Implemented comprehensive security hardening for 6 observability services (prometheus, grafana, loki, postgres-exporter, node-exporter, alloy) with the following controls:
+  - `cap_drop: ALL` - Remove all Linux capabilities
+  - `security_opt: no-new-privileges:true` - Prevent privilege escalation
+  - `read_only: true` - Read-only root filesystem (where applicable)
+  - `tmpfs` mounts - Writable temporary space with noexec,nosuid
+  - `:ro` bind mounts - Read-only configuration mounts
+  
+- **Service Security Matrix**: Each hardened service now runs with minimal privileges:
+  | Service | User | cap_drop | no-new-priv | read_only |
+  |---------|------|----------|-------------|-----------|
+  | prometheus | default | ALL | ✅ | ✅ |
+  | grafana | default | ALL | ✅ | ❌* |
+  | loki | default | ALL | ✅ | ❌* |
+  | postgres-exporter | 65534:65534 | ALL | ✅ | ✅ |
+  | node-exporter | 65534:65534 | ALL | ✅ | ✅ |
+  | alloy | 12345:12345 | ALL | ✅ | ✅ |
+  
+  *\*Requires data volume writes*
+
+- **Security Documentation**: Added comprehensive Section 6 to `docs/operations/security.md` covering:
+  - Container security hardening overview
+  - Service security matrix with all 9 services
+  - Verification commands for container inspection
+  - Troubleshooting guide for restricted containers
+
+### Added
+
+- Capability restrictions Phase 1: prometheus, grafana, loki, postgres-exporter (#784, #785)
+- Capability restrictions Phase 2: node-exporter, alloy (#786, #787)
+- Security options Phase 3: no-new-privileges, read_only, tmpfs mounts (#788, #789)
+- Documentation Phase 4: Complete security hardening documentation (#790, #791)
+- AGENTS.md output formatting guidance for consistent tabular reports (#782, #783)
+
+### Related Issues
+
+- Fixes #705 - Container Capability Restrictions Implementation (all 4 phases complete)
+- Part of #698 - Container Security Hardening Initiative
+
+---
+
 ## [v1.0.0-rc3] - 2026-04-10
 
 ### Summary
