@@ -15,6 +15,9 @@ generate_pgadmin_config() {
         return 1
     fi
     
+    # Remove old file if it exists (may have wrong permissions from container)
+    rm -f "${SCRIPT_DIR}/pgadmin-servers.json" 2>/dev/null || true
+    
     # Create pgadmin-servers.json with populated environment values
     cat > "${SCRIPT_DIR}/pgadmin-servers.json" << EOF
 {
