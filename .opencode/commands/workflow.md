@@ -110,35 +110,35 @@ At the end of the workflow, a visual report is generated showing:
 
 ```
 ════════════════════════════════════════════════════════════════
-  Issue-First Workflow Complete! ✅
+  Issue-First Workflow Complete! pass
 ════════════════════════════════════════════════════════════════
 
 Workflow Steps Completed
 
 | Step | Action | Result |
 |------|--------|--------|
-| 1. Create Issue | gh issue create | ✅ #661 |
-| 2. Create Branch | git checkout -b | ✅ issue-661/... |
-| 3. Make Changes | Implementation | ✅ Complete |
-| 4. Commit | git commit | ✅ abc1234 |
-| 5. Create PR | gh pr create | ✅ #662 |
-| 6. Verify CI | gh pr checks | ✅ Passing |
+| 1. Create Issue | gh issue create | pass #661 |
+| 2. Create Branch | git checkout -b | pass issue-661/... |
+| 3. Make Changes | Implementation | pass Complete |
+| 4. Commit | git commit | pass abc1234 |
+| 5. Create PR | gh pr create | pass #662 |
+| 6. Verify CI | gh pr checks | pass Passing |
 
 CI Status
 
 | Check | Status |
 |-------|--------|
-| Dependency Review | ✅ pass |
-| Validate Shell Scripts | ✅ pass |
+| Dependency Review | pass pass |
+| Validate Shell Scripts | pass pass |
 | ... | ... |
 
 Summary
 - Issue: #661
 - Branch: issue-661/...
 - Pull Request: #662
-- Status: ✅ Ready to merge
+- Status: pass Ready to merge
 
-The feature is complete and ready for review! 🚀
+The feature is complete and ready for review! 
 ```
 
 ## Resuming or Interrupting Workflows

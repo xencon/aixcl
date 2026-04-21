@@ -21,15 +21,14 @@ Or with description:
 
 ## What It Does
 
-1. Ensures branch is pushed to remote
-2. Creates PR with proper title format: `<Description> (#<number>)`
-3. Includes PR body with:
-   - Issue reference (Fixes #<number>)
-   - Summary of changes
-   - Checklist of changes
-   - Testing notes
-4. Assigns PR to author
-5. Adds matching labels from issue
+1. Reads the PR template from `ai/templates/pr/pull_request.md` first
+2. Drafts PR body using the template's exact section headings (Summary, Description of Changes, Change Checklist, Testing Notes, Verification, Related Issues)
+3. Ensures branch is pushed to remote
+4. Creates PR with proper title format: `<Description> (#<number>)`
+5. Enforces assignee and labels after creation:
+   ```bash
+   gh pr edit <number> --add-label "component:cli,Maintenance" --add-assignee <username>
+   ```
 6. Notes PR number
 7. Verifies CI status
 
