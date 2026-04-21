@@ -33,9 +33,36 @@ Fixes #217
 
 ## What It Does
 
+With no arguments, the command is **context-aware**:
+1. Detects current branch and extracts issue number from `issue-<number>/*`
+2. Stages all changes (`git add .`)
+3. Auto-appends `Fixes #<number>` to the commit message footer
+4. If branch does not match convention, prompts user for issue number
+
+With arguments, the command uses the provided message and still auto-appends the issue reference if the branch matches.
+
+## Context-Aware Execution (No Arguments)
+
+When called without a message, the command inspects the branch:
+
+```bash
+# Detect branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Extract issue number from branch name
+if [[ "$BRANCH" =~ ^issue-([0-9]+)/ ]]; then
+    ISSUE="${BASH_REMATCH[1]}"
+    echo "Detected issue #$ISSUE from branch '$BRANCH'"
+fi
+```
+
+Then appends `Fixes #<n>` to any message the user provides.
+
+## Full Behavior
+
 1. Stages all changes (`git add .`)
 2. Formats commit message per conventional commit standard
-3. Includes issue reference (Fixes #<number>)
+3. Includes issue reference (Fixes #<number>) — auto-detected from branch if not provided
 4. Creates commit
 5. Confirms successful commit
 
