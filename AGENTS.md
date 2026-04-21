@@ -1,7 +1,7 @@
 | field | value |
 |-------|-------|
 | file | AGENTS.md |
-| version | 1.4 |
+| version | 1.5 |
 | purpose | agent_bootstrap |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
@@ -40,7 +40,7 @@ When conflicts arise, follow this order:
 
 **Issue format:**
 - Title: `[TYPE] Description` (NO colons in title, e.g. `[TASK] Setup agent`, not `[TASK]: Setup agent`)
-- Body: Use templates from `ai/templates/issue/`
+- Body: **Read the template file first**, then use its exact section headings
 - Labels: `component:*` required; `P1/P2/P3` optional; `profile:*` optional
 - Assignee: Required (use `<assignee>` placeholder in templates; never hardcode usernames)
 
@@ -62,6 +62,21 @@ Title: <description> (#<number>) (NO colons)
 Body: Fixes #<number>
 Labels: Must match issue
 Assignee: Required
+```
+
+**Post-creation label and assignee enforcement**
+```bash
+gh issue edit <number> --add-label "component:cli" --add-assignee <username>
+gh pr edit <number> --add-label "component:cli" --add-assignee <username>
+```
+
+**Template loading (MANDATORY before composing any issue/PR body)**
+```bash
+# Read the template first, then compose the body using its exact headings
+cat ai/templates/issue/task.md
+cat ai/templates/issue/bug_report.md
+cat ai/templates/issue/feature_request.md
+cat ai/templates/pr/pull_request.md
 ```
 
 ### Formatting Rules (NON-NEGOTIABLE)
