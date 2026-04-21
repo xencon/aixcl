@@ -19,7 +19,53 @@ Or with description:
 /workflow Implement user authentication feature
 ```
 
-## What It Does
+## Context-Aware Execution (No Arguments)
+
+When `/workflow` is called **without a description**, it inspects the repository state and acts based on what it finds:
+
+### State Detection
+
+Run these commands automatically to determine the current state:
+
+```bash
+# Current branch
+git rev-parse --abbrev-ref HEAD
+
+# Uncommitted changes
+git status --short
+
+# Commits not on main
+git log --oneline main..HEAD
+
+# Open PR for this branch
+gh pr list --head $(git rev-parse --abbrev-ref HEAD) --json number,state
+```
+
+### Decision Tree
+
+| State | Action |
+|-------|--------|
+| **On `main` with no changes** | Prompt user: `What would you like to work on?` Then proceed with Phase 1 |
+| **On `main` with changes** | Block: `Create an issue first. Use: /issue \u003cdescription\u003e` |
+| **On `issue-\u003cn\u003e/*` branch, no commits, no changes** | Fetch issue #n, prompt user to begin implementation |
+| **On `issue-\u003cn\u003e/*` branch, uncommitted changes** | Stage, commit, push, create PR if none exists, verify CI |
+| **On `issue-\u003cn\u003e/*` branch, commits exist, no PR** | Push, create PR with `gh pr create`, assign/label, verify CI |
+| **On any branch with existing PR** | Verify CI status and report |
+
+### Example: Running `/workflow` from Mid-Workflow
+
+```
+# You are on issue-42/fix-login, have uncommitted changes
+/workflow
+```
+
+This will:
+1. Detect branch `issue-42/fix-login` → extract issue #42
+2. See uncommitted changes → stage all (`git add .`)
+3. Draft commit message referencing issue #42
+4. Commit, push, create PR, assign/label, verify CI
+
+## What It Does (With Arguments)
 
 This command orchestrates the entire Issue-First workflow:
 
