@@ -34,6 +34,7 @@ These services define whether AIXCL functions as a product. Checked first.
 | Service | Check | Command |
 |---------|-------|---------|
 | Inference Engine | API models endpoint | `curl -sf http://127.0.0.1:11434/v1/models` |
+| Inference Engine | Models loaded | `curl -s http://127.0.0.1:11434/v1/models \| jq ".data[].id"` |
 | Inference Engine | Engine type / active model | `docker logs ollama --tail 5` or `docker logs vllm --tail 5` |
 | Open WebUI (dev/sys) | HTTP health | `curl -sf http://127.0.0.1:8080/health` |
 | PostgreSQL | TCP readiness | `pg_isready -U $POSTGRES_USER -h 127.0.0.1` |
@@ -55,9 +56,10 @@ Pass criteria: all returned data within 5 seconds.
 | Service | Check | Command |
 |---------|-------|---------|
 | Prometheus | HTTP health | `curl -sf http://127.0.0.1:9090/-/healthy` |
-| Prometheus | Scrape targets | `curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets[""] | length'` |
-| Prometheus | Targets down | `curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets[""] | map(select(.health == "down")) | length'` |
-| Prometheus | Active alerts | `curl -s http://127.0.0.1:9090/api/v1/rules | jq '.data.groups | length'` |
+| Prometheus | Scrape targets | `curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets | length'` |
+| Prometheus | Targets down | `curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets | map(select(.health == "down")) | length'` |
+| Prometheus | Firing alerts | `curl -s http://127.0.0.1:9090/api/v1/alerts | jq ".data.alerts | length"` |
+| Prometheus | Rules configured | `curl -s http://127.0.0.1:9090/api/v1/rules | jq '.data.groups | length'` |
 | Grafana | HTTP health | `curl -sf http://127.0.0.1:3000/api/health` |
 | Loki | HTTP ready | `curl -sf http://127.0.0.1:3100/ready` |
 | Alloy | HTTP metrics | `curl -sf http://127.0.0.1:12345` |
@@ -76,8 +78,10 @@ Pass criteria: health endpoint returns 2xx within 5 seconds; target down count i
 | Host memory | node-exporter | `curl -s http://127.0.0.1:9100/metrics | grep node_memory_MemAvailable_bytes` |
 | Host disk | node-exporter | `curl -s http://127.0.0.1:9100/metrics | grep node_filesystem_avail_bytes` |
 | GPU metrics (if present) | nvidia-gpu-exporter | `curl -s http://127.0.0.1:9835/metrics | grep dcgm_gpu_utilization` |
+| Port bindings | `ss` / `netstat` | `ss -tlnp | grep -E "11434|8080|5432|9090|3000|3100|5050|8081"` |
+| Volume disk usage | Docker / `df` | `docker system df -v` or `df -h | grep -E "overlay|/var/lib/docker"` |
 
-Pass criteria: host CPU usage under 80%, host memory under 90%, disk under 90%.
+Pass criteria: host CPU usage under 80%, host memory under 90%, disk under 90%. Expected ports are bound; volume usage under 90%.
 
 ### P2 — Security / Logs
 
@@ -95,12 +99,13 @@ Pass criteria: no auth failures in last 5 minutes; all containers have `cap_drop
 
 | Check | Command |
 |-------|---------|
-| Prometheus high-latency targets | `curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets[""] | map(select(.lastScrapeDuration > 5))'` |
+| Prometheus high-latency targets | `curl -s http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets | map(select(.lastScrapeDuration > 5))'` |
 | Inference queue depth | `docker logs ollama --tail 50` or `nvidia-smi` (if GPU) |
 | Disk I/O wait | `iostat -x 1 3` (if available) or `top -bn1 | grep "wa"` |
 | Swap usage | `free -h` |
+| Container restart count | `docker inspect -f "{{.Name}}: restarts={{.RestartCount}} error={{.State.Error}}" $(docker ps -q)` |
 
-Pass criteria: scrape latency under 5s; swap near 0.
+Pass criteria: scrape latency under 5s; swap near 0; restart count stable (no recent restarts).
 
 ### P3 — Exposed Endpoints
 
