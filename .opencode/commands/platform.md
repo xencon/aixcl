@@ -32,53 +32,53 @@ Generates a comprehensive AIXCL platform status report showing service health, o
 Stack Overview
 | Component | Status | Details |
 |-----------|--------|---------|
-| Profile   | ✅ sys | Complete stack |
-| Services  | ✅ 12/12 | All healthy |
-| Release   | v1.0.0-rc5 | Latest |
-| Engine    | ✅ Active | Current inference |
+| Profile   | pass sys | Complete stack |
+| Services  | pass 12/12 | All healthy |
+| Release   | v1.0.0-rc6 | Latest |
+| Engine    | pass Active | Current inference |
 
 Runtime Core Services
 | Service | Status | Health Check |
 |---------|--------|--------------|
-| Ollama  | ✅ Available | Standby |
-| vLLM    | ✅ Available | Standby |
-| llama.cpp | ✅ Active | Running |
+| Ollama  | pass Available | Standby |
+| vLLM    | pass Available | Standby |
+| llama.cpp | pass Active | Running |
 
 Operational Services
 | Service | Status | Endpoint |
 |---------|--------|----------|
-| Open WebUI | ✅ Healthy | localhost:8080 |
-| PostgreSQL | ✅ Healthy | localhost:5432 |
-| pgAdmin    | ✅ Healthy | localhost:5050 |
-| Prometheus | ✅ Healthy | localhost:9090 |
-| Grafana    | ✅ Healthy | localhost:3000 |
-| Loki       | ✅ Healthy | localhost:3100 |
-| Alloy      | ✅ Healthy | localhost:12345 |
+| Open WebUI | pass Healthy | localhost:8080 |
+| PostgreSQL | pass Healthy | localhost:5432 |
+| pgAdmin    | pass Healthy | localhost:5050 |
+| Prometheus | pass Healthy | localhost:9090 |
+| Grafana    | pass Healthy | localhost:3000 |
+| Loki       | pass Healthy | localhost:3100 |
+| Alloy      | pass Healthy | localhost:12345 |
 
 Prometheus Targets
 | Target | Job | Status |
 |--------|-----|--------|
-| Alloy | alloy | ✅ up |
-| cAdvisor | cadvisor | ✅ up |
-| Node Exporter | node-exporter | ✅ up |
+| Alloy | alloy | pass up |
+| cAdvisor | cadvisor | pass up |
+| Node Exporter | node-exporter | pass up |
 
 Grafana Dashboards
 | Dashboard | Status |
 |-----------|--------|
-| PostgreSQL Performance | ✅ Provisioned |
-| System Overview | ✅ Provisioned |
-| Logs Dashboard | ✅ Provisioned |
-| GPU Metrics | ✅ Provisioned |
-| Docker Containers | ✅ Provisioned |
+| PostgreSQL Performance | pass Provisioned |
+| System Overview | pass Provisioned |
+| Logs Dashboard | pass Provisioned |
+| GPU Metrics | pass Provisioned |
+| Docker Containers | pass Provisioned |
 
 Alerting Rules
 | Category | File | Status |
 |----------|------|--------|
-| GPU Alerts | gpu-alerts.yml | ✅ Configured |
-| Log Alerts | log-alerts.yml | ✅ Configured |
-| Docker Alerts | docker-alerts.yml | ✅ Configured |
-| System Alerts | system-alerts.yml | ✅ Configured |
-| PostgreSQL Alerts | postgresql-alerts.yml | ✅ Configured |
+| GPU Alerts | gpu-alerts.yml | pass Configured |
+| Log Alerts | log-alerts.yml | pass Configured |
+| Docker Alerts | docker-alerts.yml | pass Configured |
+| System Alerts | system-alerts.yml | pass Configured |
+| PostgreSQL Alerts | postgresql-alerts.yml | pass Configured |
 
 Access URLs
 | Service | URL | Credentials |
@@ -92,13 +92,13 @@ Platform Health Summary
 | Metric | Status |
 |--------|--------|
 | Services Healthy | 12/12 (100%) |
-| Observability Stack | ✅ Fully Operational |
-| Alerting Configured | ✅ 6 Rule Files |
-| Dashboards Available | ✅ 5 Dashboards |
-| Database Persistence | ✅ PostgreSQL Active |
-| Logs Collection | ✅ Loki + Alloy |
+| Observability Stack | pass Fully Operational |
+| Alerting Configured | pass 6 Rule Files |
+| Dashboards Available | pass 5 Dashboards |
+| Database Persistence | pass PostgreSQL Active |
+| Logs Collection | pass Loki + Alloy |
 
-Platform Status: ✅ FULLY OPERATIONAL
+Platform Status: pass FULLY OPERATIONAL
 ```
 
 ## When to Use
@@ -123,10 +123,10 @@ Platform Status: ✅ FULLY OPERATIONAL
 ## Output Details
 
 ### Service Status Indicators
-- ✅ Healthy - Service responding normally
-- ⚠️ Warning - Service running with issues
-- ❌ Down - Service not responding
-- ⏸️ Standby - Available but not active
+- pass Healthy - Service responding normally
+- warn Warning - Service running with issues
+- FAIL Down - Service not responding
+- standby Standby - Available but not active
 
 ### Health Check Endpoints
 - Open WebUI: `http://localhost:8080/health`
@@ -140,7 +140,6 @@ Platform Status: ✅ FULLY OPERATIONAL
 - `/report` - Issue-First workflow report
 - `/verify` - Check CI status
 - `/workflow` - Run development workflow
-- `/status` - Quick stack status (if implemented)
 
 ## See Also
 

@@ -49,9 +49,9 @@ gh pr checks <number>
 All checks were successful
 0 failing, 3 successful, 0 pending
 
-✓ lint (successful)           3m ago  2m
-✓ test (successful)           3m ago  5m
-✓ security-scan (successful)  3m ago  1m
+lint (successful)           3m ago  2m
+test (successful)           3m ago  5m
+security-scan (successful)  3m ago  1m
 ```
 
 ## Handling Failures
