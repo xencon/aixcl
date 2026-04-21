@@ -21,6 +21,46 @@ Or with description:
 
 ## What It Does
 
+With no arguments, the command is **context-aware**:
+1. Detects current branch and extracts issue number from `issue-<number>/*`
+2. Fetches issue title and body via `gh issue view <n> --json title,body`
+3. Drafts PR title: `<Issue Title> (#<n>)`
+4. Reads PR template from `ai/templates/pr/pull_request.md`
+5. Maps issue body sections to template sections (Summary, Description, etc.)
+6. Ensures branch is pushed to remote
+7. Creates PR with proper title format and pre-filled body
+8. Enforces assignee and labels after creation
+9. Verifies CI status
+
+With arguments, the command uses the provided description as the PR title and falls back to template defaults for the body.
+
+## Context-Aware Execution (No Arguments)
+
+### State Detection
+
+```bash
+# Detect branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Extract issue number
+if [[ "$BRANCH" =~ ^issue-([0-9]+)/ ]]; then
+    ISSUE="${BASH_REMATCH[1]}"
+    gh issue view "$ISSUE" --json title,body,labels,assignees
+fi
+```
+
+### Mapping Issue to PR Template
+
+| Issue Section | PR Template Section |
+|---------------|---------------------|
+| Task Summary / Feature Overview / Bug Summary | Summary |
+| Description / Deliverables | Description of Changes |
+| Verification | Verification |
+
+If the issue body does not contain template sections, the agent drafts the PR body manually using the issue title as the summary.
+
+## Full Behavior
+
 1. Reads the PR template from `ai/templates/pr/pull_request.md` first
 2. Drafts PR body using the template's exact section headings (Summary, Description of Changes, Change Checklist, Testing Notes, Verification, Related Issues)
 3. Ensures branch is pushed to remote
