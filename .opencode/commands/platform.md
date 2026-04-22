@@ -37,9 +37,9 @@ These services define whether AIXCL functions as a product. Checked first.
 | Inference Engine | Models loaded | `curl -s http://127.0.0.1:11434/v1/models \| jq ".data[].id"` |
 | Inference Engine | Engine type / active model | `docker logs ollama --tail 5` or `docker logs vllm --tail 5` |
 | Open WebUI (dev/sys) | HTTP health | `curl -sf http://127.0.0.1:8080/health` |
-| PostgreSQL | TCP readiness | `pg_isready -U $POSTGRES_USER -h 127.0.0.1` |
-| PostgreSQL | Active connections | `psql -U $POSTGRES_USER -h 127.0.0.1 -c "SELECT count(*) FROM pg_stat_activity;"` |
-| PostgreSQL | Storage size | `psql -U $POSTGRES_USER -h 127.0.0.1 -c "SELECT pg_database_size('webui');"` |
+| PostgreSQL | TCP readiness | `docker exec postgres pg_isready -U $POSTGRES_USER --timeout=5` |
+| PostgreSQL | Active connections | `docker exec postgres psql -U $POSTGRES_USER -c "SELECT count(*) FROM pg_stat_activity;"` |
+| PostgreSQL | Storage size | `docker exec postgres psql -U $POSTGRES_USER -c "SELECT pg_database_size('webui');"` |
 
 Pass criteria: all returned data within 5 seconds.
 
@@ -47,7 +47,7 @@ Pass criteria: all returned data within 5 seconds.
 
 | Service | Check | Command |
 |---------|-------|---------|
-| PostgreSQL | Query latency | `time psql -U $POSTGRES_USER -h 127.0.0.1 -c "SELECT version();"` |
+| PostgreSQL | Query latency | `docker exec postgres time psql -U $POSTGRES_USER -c "SELECT version();"` |
 | PostgreSQL | Slow query log | `docker logs postgres --tail 20` |
 | pgAdmin (dev/sys) | HTTP ping | `curl -sf http://127.0.0.1:5050/misc/ping` |
 
@@ -171,6 +171,7 @@ If a check fails:
 
 ## Related
 
-- `./aixcl stack status` — Quick stack status
+- `/status` — Quick triage command (inference, postgres, webui, docker ps)
+- `./aixcl stack status` — Quick stack status from CLI
 - `./aixcl stack logs <service>` — View service logs
 - `/report` — Issue-First workflow report
