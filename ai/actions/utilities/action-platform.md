@@ -16,12 +16,12 @@ Runs real-time queries against the live AIXCL stack and reports on health, resou
 
 ## Usage
 
+Run this slash command:
 ```
 /platform
 ```
 
-Or manually:
-
+Or manually from CLI:
 ```bash
 ./aixcl stack status
 ```

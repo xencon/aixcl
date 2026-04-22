@@ -9,6 +9,7 @@ Verifies GitHub Actions CI status and ensures all checks pass before considering
 
 ## Usage
 
+Run this slash command:
 ```
 /verify
 ```

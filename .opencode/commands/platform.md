@@ -6,10 +6,18 @@ agent: agent-context
 
 # /platform Command
 
-Runs **real-time queries** against the live AIXCL stack and reports on health, resource utilization, errors, security posture, and bottlenecks. Services are grouped by priority (P1 = critical, P2 = operational health, P3 = diagnostics).
+Runs real-time queries against the live AIXCL stack and reports on health, resource utilization, errors, security posture, and bottlenecks. Services are grouped by priority (P1 = critical, P2 = operational health, P3 = diagnostics).
 
 ## Usage
 
+Run this slash command:
+```
+/platform
+```
+
+Or manually from CLI:
+```bash
+./aixcl stack status
 ```
 /platform
 ```

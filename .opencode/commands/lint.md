@@ -9,6 +9,7 @@ Validates AI agent files and action files for compliance with naming conventions
 
 ## Usage
 
+Run this slash command:
 ```
 /lint
 ```

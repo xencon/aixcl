@@ -9,6 +9,7 @@ Generates a visual workflow completion report showing Issue-First workflow progr
 
 ## Usage
 
+Run this slash command:
 ```
 /report
 ```

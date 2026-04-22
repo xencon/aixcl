@@ -9,6 +9,7 @@ Creates a GitHub issue following the AIXCL Issue-First workflow.
 
 ## Usage
 
+Run this slash command:
 ```
 /issue
 ```

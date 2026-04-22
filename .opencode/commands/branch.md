@@ -9,6 +9,7 @@ Creates a feature branch from main following the AIXCL branch naming convention.
 
 ## Usage
 
+Run this slash command:
 ```
 /branch
 ```

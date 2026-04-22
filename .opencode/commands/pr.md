@@ -9,6 +9,7 @@ Creates a GitHub pull request following the AIXCL PR format and workflow.
 
 ## Usage
 
+Run this slash command:
 ```
 /pr
 ```
