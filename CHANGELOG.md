@@ -198,9 +198,9 @@ Release Candidate 3 for v1.0.0. This release includes 35+ commits since RC2 focu
 
 ### Added
 
-- **Rootless & Podman Support**: Full support for running AIXCL in rootless environments with both Docker and Podman. Includes automated socket detection and permission handling for volumes (Fixes #498).
+- **Rootless & Podman Support**: Code support for running AIXCL in rootless environments with both Docker and Podman. Docker rootless is verified; Podman support is implemented but experimental. Includes automated socket detection and permission handling for volumes (Fixes #498).
 - **Native Multi-Registry Pulls**: Support for `hf.co/` and `huggingface.co/` URIs in the `models add` command, enabling direct pulls from Hugging Face for all supported engines (Fixes #497).
-- **Podman Quadlet Generation**: New `stack export-quadlet` command to generate native Systemd unit files for robust, headless deployments (Fixes #499).
+- **Podman Quadlet Generation**: New `stack export-quadlet` command to generate native Systemd unit files for robust, headless deployments. Note: Quadlet generation is functional but not fully tested with Podman (Fixes #499).
 - **Integrated Model Inference Testing**: Merged prompt/response verification into the main `platform-tests.sh` suite for end-to-end reliability.
 
 ### Changed

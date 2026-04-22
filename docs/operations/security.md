@@ -1,6 +1,9 @@
 # Rootless Container Operations
 
-AIXCL supports running on rootless container engines (Podman or Docker) to provide enhanced security isolation. This document outlines the operational considerations, benefits, and configuration details for rootless deployments.
+> **Podman Support Status**: Experimental/Beta
+> Podman support is implemented in code but has not been fully tested. Docker rootless mode is verified and recommended. See [#864](https://github.com/xencon/aixcl/issues/864) for current status.
+
+AIXCL supports running on rootless container engines (Docker fully verified, Podman experimental) to provide enhanced security isolation. This document outlines the operational considerations, benefits, and configuration details for rootless deployments.
 
 ## 1. Overview
 
@@ -24,9 +27,10 @@ If rootless mode is detected, the CLI will prioritize appropriate configurations
 ## 3. Operational Considerations
 
 ### 3.1 Socket Paths
-In rootless mode, the Docker/Podman socket is located in a user-writable directory rather than `/var/run/docker.sock`. AIXCL automatically detects these paths:
-- **Podman**: `${XDG_RUNTIME_DIR}/podman/podman.sock`
-- **Docker**: `${XDG_RUNTIME_DIR}/docker.sock`
+
+In rootless mode, the Docker socket is located in a user-writable directory rather than `/var/run/docker.sock`. AIXCL automatically detects these paths:
+- **Docker** (verified): `${XDG_RUNTIME_DIR}/docker.sock`
+- **Podman** (experimental): `${XDG_RUNTIME_DIR}/podman/podman.sock`
 
 The CLI exports this as `DOCKER_SOCK` for use within the container stack.
 
@@ -50,12 +54,17 @@ These services are configured to run as `user: root` within their containers. In
 
 ## 4. Migration Guide
 
-### 4.1 From Rootful Docker to Rootless Podman
+> **Podman Migration**: The following guide is theoretical and has not been tested end-to-end. Use with caution and report issues to [#864](https://github.com/xencon/aixcl/issues/864).
+
+### 4.1 From Rootful Docker to Rootless Podman (Experimental)
+
 1. Stop the existing stack: `./aixcl stack stop`
-2. Install Podman and `podman-compose`.
-3. Ensure your user is configured for rootless (check `/etc/subuid`).
-4. Run `./aixcl utils check-env` to verify detection.
+2. Install Podman and `podman-compose` (see [Podman installation guide](https://podman.io/getting-started/installation))
+3. Ensure your user is configured for rootless (check `/etc/subuid`)
+4. Run `./aixcl utils check-env` to verify detection
 5. Start the stack: `./aixcl stack start`
+
+**Note**: Podman support is experimental. Some features may not work as expected.
 
 **Note**: Volumes created in rootful Docker are owned by host root and will not be accessible to rootless Podman without manual `chown`. It is recommended to start with a clean stack or manually adjust permissions:
 ```bash

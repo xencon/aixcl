@@ -231,7 +231,9 @@ Note: Runtime core services (Inference Engine) health is critical. Operational s
 
 ### Exporting for Systemd (Headless)
 
-For production or headless environments running Podman, you can export your AIXCL stack as native Systemd Quadlet files:
+> **Note**: Podman Quadlet support is experimental. The `export-quadlet` command generates files but has not been fully tested with Podman. See [#864](https://github.com/xencon/aixcl/issues/864) for current status.
+
+For production or headless environments, you can export your AIXCL stack as native Systemd Quadlet files:
 
 ```bash
 ./aixcl stack export-quadlet
