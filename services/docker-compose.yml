@@ -233,6 +233,32 @@ services:
       timeout: 10s
       retries: 3
 
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: alertmanager
+    pull_policy: if_not_present
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    volumes:
+      - ../prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.listen-address=127.0.0.1:9093'
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   grafana:
     image: grafana/grafana:12.4.2
     container_name: grafana
@@ -401,6 +427,7 @@ volumes:
   grafana-data:
   loki-data:
   alloy-data:
+  alertmanager-data:
   pgadmin-storage:
   pgadmin-data:
   pgadmin-config:
