@@ -48,7 +48,7 @@ get_profile_services_for_profile() {
             echo "$engine postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
             ;;
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
             ;;
         *)
             echo ""
@@ -64,7 +64,7 @@ declare -A PROFILE_SERVICES=(
     [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
     [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
     [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
 )
 
 # Profile database storage settings
