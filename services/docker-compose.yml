@@ -202,6 +202,17 @@ services:
       - ../pgadmin-servers.json:/pgadmin4/servers.json
       - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
     user: "0:0"  # Start as root, entrypoint drops to pgadmin user
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
+      - /var/lib/pgadmin/sessions:noexec,nosuid,size=50m
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
