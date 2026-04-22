@@ -6,7 +6,7 @@ These conventions complement the development workflow in `docs/developer/develop
 
 ### Agents
 
-- **Location**: `/ai/orchestration/` or `/ai/governance/`
+- **Location**: `ai/orchestration/` or `ai/governance/`
 - **Filename pattern**: `agent-<domain>.md`
   - Examples:
     - `agent-developer-workflow.md`
@@ -19,14 +19,18 @@ Agent files:
 - Encode AIXCL-specific constraints (Issue-First workflow, governance rules, plain ASCII markdown).
 - Are intended to be used by multiple AI tools (e.g., OpenCode CLI, Cursor, Copilot-style agents).
 
-### Skills
+### Skills (Optional)
 
-- **Location**: `/ai/skills/`
+Skills are optional narrowly scoped capabilities. If used:
+
+- **Location**: `ai/skills/` (create this directory only if needed)
 - **Filename pattern**: `skill-<verb-noun>.md`
   - Examples:
     - `skill-normalize-issue-labels.md`
     - `skill-updateopencode-config.md`
     - `skill-run-platform-tests.md`
+
+**Note**: The `ai/skills/` directory does not currently exist in this repository. Skills are an optional extension to the agent system. Agents in `ai/orchestration/` are self-contained and do not require skills to function.
 
 Skill files define narrowly scoped capabilities that agents can rely on, such as a specific refactoring or check.
 
@@ -34,7 +38,7 @@ Skill files define narrowly scoped capabilities that agents can rely on, such as
 
 If MCP servers or tools are documented in markdown prompts or specs:
 
-- **Location**: `/ai/mcp/`
+- **Location**: `ai/mcp/`
 - **Filename patterns**:
   - MCP servers: `mcp-server-<name>.md`
   - MCP tools: `mcp-tool-<name>.md`
