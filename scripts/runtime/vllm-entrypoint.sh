@@ -1,35 +1,45 @@
 #!/bin/bash
-# vLLM entrypoint wrapper - runs server as non-root user with GPU access
+# vLLM entrypoint wrapper - compatible with security hardening
+# Runs vLLM server directly without user switching
 
 set -e
 
-# Configuration
-VLLM_USER="vllm"
-VLLM_UID="1000"
-VLLM_HOME="/home/vllm"
+echo "=== vLLM Entrypoint (Security-Hardened Compatible) ==="
 
-# Create vllm user if it doesn't exist
-if ! id "$VLLM_USER" &>/dev/null; then
-    echo "Creating $VLLM_USER user (UID: $VLLM_UID)..."
-    useradd -m -u "$VLLM_UID" "$VLLM_USER"
-    
-    # Add to groups for GPU access (if they exist)
-    usermod -aG video,render "$VLLM_USER" 2>/dev/null || true
+# Get current user info
+CURRENT_USER=$(id -un)
+CURRENT_UID=$(id -u)
+echo "Running as user: $CURRENT_USER (UID: $CURRENT_UID)"
+
+# Ensure home directory exists
+VLLM_HOME="/home/vllm"
+mkdir -p "$VLLM_HOME"
+
+# Create cache directory if needed (container may be running as non-root)
+mkdir -p "$VLLM_HOME/.cache/huggingface"
+
+# If we have write access, ensure proper ownership of home directory
+if [ -w "$VLLM_HOME" ]; then
+    echo "Ensuring cache directory permissions..."
+    chown -R "$(id -u):$(id -g)" "$VLLM_HOME/.cache" 2>/dev/null || true
 fi
 
-# Ensure home directory exists with correct ownership
-mkdir -p "$VLLM_HOME"
-chown -R "$VLLM_USER:$VLLM_USER" "$VLLM_HOME"
+# Set home environment variable
+export HOME="$VLLM_HOME"
+export HF_HOME="$VLLM_HOME/.cache/huggingface"
+export TRANSFORMERS_CACHE="$VLLM_HOME/.cache/huggingface"
 
-# Create cache directory
-mkdir -p "$VLLM_HOME/.cache/huggingface"
-chown -R "$VLLM_USER:$VLLM_USER" "$VLLM_HOME/.cache"
+echo "Home directory: $HOME"
+echo "Cache directory: $HF_HOME"
 
-# Set password for su
-echo "$VLLM_USER:$VLLM_USER" | chpasswd
+# Verify cache directory is writable
+if [ ! -w "$HF_HOME" ]; then
+    echo "Warning: Cache directory may not be writable. Model downloads may fail."
+fi
 
-echo "Starting vLLM as $VLLM_USER user..."
+echo "Starting vLLM server..."
+echo "Model: ${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
 
-# Switch to vllm user and execute the vllm server
-# Use su to preserve environment variables
-exec su - "$VLLM_USER" -c "exec python3 -m vllm.entrypoints.openai.api_server $*"
+# Start vLLM server directly
+# Do not use 'su' - it requires privileges incompatible with security hardening
+exec python3 -m vllm.entrypoints.openai.api_server "$@"
