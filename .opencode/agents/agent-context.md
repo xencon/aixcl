@@ -22,6 +22,9 @@ When interacting with users, you can execute these slash commands:
 - `/verify` - Check CI status
 - `/actions` - List all actions
 - `/lint` - Validate agents/actions
+- `/platform` - Live platform health report
+- `/status` - Quick triage command (inference, postgres, webui, docker)
+- `/report` - Workflow progress report
 - `/mode [planning|building|reviewing]` - Switch modes
 
 **Quick Start:** Users can run `/workflow "your task description"` to begin.
