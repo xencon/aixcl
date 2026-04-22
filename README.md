@@ -210,9 +210,15 @@ Agent workflow rules and permissions are configured automatically via `opencode.
 | Command | Description |
 | --- | --- |
 | `./aixcl utils check-env` | Validate environment and dependencies |
+| `./aixcl stack start --profile sys` | Start all services with sys profile |
 | `./aixcl stack status` | Check service health and OpenCode connectivity |
 | `./aixcl stack logs engine` | View real-time inference logs |
 | `./aixcl stack stop` | Stop all services gracefully |
+| `./aixcl restart` | Restart services (shorthand for stack restart) |
+| `./aixcl service restart engine` | Restart a specific service |
+| `./aixcl models add <model>` | Add a model (e.g., `qwen2.5-coder:0.5b`) |
+| `./aixcl models remove <model>` | Remove a model |
+| `./aixcl models list` | List installed models |
 | `./aixcl utils clean` | Wipe unused containers and volumes (Fresh start) |
 
 ---
