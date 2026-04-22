@@ -1,8 +1,3 @@
-## 💖 Support this project
-
-Donations help keep this project alive:
-https://paypal.me/salimbadakhchani
-
 <h1>AIXCL</h1>
 
 <p><strong>A self-hosted, local-first AI stack for running and integrating LLMs.</strong></p>
