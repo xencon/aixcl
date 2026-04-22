@@ -64,7 +64,7 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 > 3. Enable "Direct Connections" toggle
 > 4. Save and refresh the page
 >
-> See [Open WebUI Configuration Guide](docs/user/openwebui-setup.md) for detailed instructions.
+> The basic configuration is shown above. For additional Open WebUI settings, refer to the Settings page in the Open WebUI interface.
 
 ---
 
