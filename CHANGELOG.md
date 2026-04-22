@@ -4,7 +4,33 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Documentation**: Corrected Podman support claims to reflect experimental status (#864)
+- **Documentation**: Added missing CLI commands to README.md (#862)
+- **Documentation**: Updated skill file references to clarify optional status (#861)
+- **Documentation**: Updated agents.md to reflect actual configuration approach (#860)
+- **Documentation**: Fixed check-agents.sh path references (#859)
+- **Documentation**: Removed hardcoded usernames and Unicode checkmarks (#858)
+- **Documentation**: Fixed orphaned links and broken references (#857)
+
 ---
+
+## [v1.0.0-rc8] - 2026-04-22
+
+### Summary
+
+Release Candidate 8 for v1.0.0. This release includes 12 commits since RC7 with focus on documentation accuracy and transparency. Major improvements include correcting Podman support claims, fixing documentation inconsistencies, and enhancing README completeness.
+
+### Documentation
+
+- **Podman Support**: Corrected claims to reflect experimental status (#864)
+- **README**: Added missing CLI commands to Quick Start table (#862)
+- **Documentation**: Fixed orphaned links, outdated paths, and formatting issues (#857-#861)
+
+### Contributors
+
+Thanks to all contributors who helped improve documentation clarity and accuracy.
 
 ## [v1.0.0-rc7] - 2026-04-22
 
