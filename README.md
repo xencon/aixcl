@@ -1,6 +1,6 @@
-<h1>AIXCL</h1>
+# AIXCL
 
-<p><strong>A self-hosted, local-first AI stack for running and integrating LLMs.</strong></p>
+**A self-hosted, local-first AI stack for running and integrating LLMs.**
 
 AIXCL is a privacy-focused platform for individuals and teams who want full control over their models. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
 
@@ -103,8 +103,8 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode.
 | Qwen2.5-Coder 0.5B | ~398 MB | `./aixcl models add qwen2.5-coder:0.5b` |
 
 > Ollama models use the format `model:tag`. The `0.5b` tag indicates the smallest variant.
-> 
-> **✓ Tested:** Successfully tested with OpenCode integration
+>
+> - [x] Tested: Successfully tested with OpenCode integration ([Test Plan](docs/operations/engine-switching-test-plan.md))
 
 ### vLLM
 
@@ -116,7 +116,7 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode.
 > 
 > **Note:** vLLM container does not include `hf` CLI - see workaround guide.
 > 
-> **✓ Tested:** Successfully tested with OpenCode integration on RTX 4060
+> - [x] Tested: Successfully tested with OpenCode integration on RTX 4060 ([Test Report](docs/operations/engine-switching-test-report.md))
 
 ### llama.cpp
 
@@ -125,14 +125,14 @@ These are the smallest viable models for testing your AIXCL setup with OpenCode.
 | Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf` |
 
 > llama.cpp requires GGUF format models. The format is `username/repo/filename.gguf`.
-> 
+>
 > **Note:** When switching engines, the model configuration is cleared. Re-add the GGUF model after switching.
-> 
-> **✓ Tested:** Successfully tested with OpenCode integration
+>
+> - [x] Tested: Successfully tested with OpenCode integration ([Test Plan](docs/operations/engine-switching-test-plan.md))
 
 ---
 
-## 🛠 Management Examples
+## Management Examples
 
 ### 1. Engine Management
 
@@ -205,7 +205,7 @@ Agent workflow rules and permissions are configured automatically via `opencode.
 
 ---
 
-## 🚀 Common Commands
+## Common Commands
 
 | Command | Description |
 | --- | --- |
@@ -217,7 +217,7 @@ Agent workflow rules and permissions are configured automatically via `opencode.
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 * [User Guide](https://github.com/xencon/aixcl/blob/main/docs/user/usage.md) - Detailed workflows and tips.
 * [Architecture](https://github.com/xencon/aixcl/blob/main/docs/architecture/governance) - Profiles and service contracts.
