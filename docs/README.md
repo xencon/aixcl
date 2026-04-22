@@ -13,6 +13,7 @@ Documentation for end users and operators:
 Documentation for contributors and developers:
 - [`contributing.md`](developer/contributing.md) - Contribution guidelines
 - [`development-workflow.md`](developer/development-workflow.md) - Development workflow and best practices
+- [`adding-services.md`](developer/adding-services.md) - Checklist for adding new services to the stack
 - [`opencode-setup.md`](developer/opencode-setup.md) - OpenCode CLI (cn) with Ollama and agentic mode
 - **Moved to docs/developer/**: `AGENTS.md` and `DEVELOPMENT.md` - Agent operating contracts and workflow rules
 

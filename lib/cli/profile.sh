@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Profile management library for AIXCL
 # Defines profiles and provides functions to query profile information
+#
+# IMPORTANT: When adding a new service, you MUST update both:
+#   1. This file (lib/cli/profile.sh) - service mappings for each profile
+#   2. services/docker-compose.yml - service definition
+# See: docs/developer/adding-services.md for complete checklist
 
 # Valid profiles array
 VALID_PROFILES=(usr dev ops sys)
