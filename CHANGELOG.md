@@ -6,6 +6,56 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ---
 
+## [v1.0.0-rc7] - 2026-04-22
+
+### Summary
+
+Release Candidate 7 for v1.0.0. This release includes 35 commits since RC6 with significant additions including the new `/release` automation command, improved slash command infrastructure with context-aware execution, Alertmanager service integration, Open WebUI upgrade to v0.9.1, and enhanced Grafana dashboards.
+
+### Added
+
+- **Release Automation**: New `/release` slash command to automate the complete release process from version detection to GitHub Release publication (#845)
+- **Release Templates**: Standardized release note templates in `ai/templates/release/` and `.github/RELEASE_TEMPLATE.md` (#843)
+- **Alertmanager Service**: Integrated Alertmanager for observability stack alerting (#822)
+- **Platform Commands**: New slash commands for comprehensive platform health reporting:
+  - `/platform` - Live platform health report with models, ports, volumes, firing alerts
+  - `/status` - Quick triage command for inference, postgres, webui, docker
+  - `/report` - Workflow progress reporting
+- **Context-Aware Execution**: Enhanced `/workflow`, `/commit`, `/pr`, `/branch` commands with automatic state detection
+
+### Changed
+
+- **Open WebUI Upgrade**: Updated from v0.8.12 to v0.9.1 incorporating latest security fixes and features (#839)
+- **Grafana Dashboard**: Updated docker-containers dashboard to include all 13 services including vllm, alertmanager, nvidia-gpu-exporter, alloy, loki, cadvisor, node-exporter, postgres-exporter (#841)
+
+### Fixed
+
+- Security hardening compatibility fixes for vLLM entrypoint (#836)
+- Removed security hardening from pgAdmin due to su authentication failure (#837)
+- Added security hardening to postgres container (#835)
+- Added security hardening to nvidia-gpu-exporter container (#825)
+
+### Documentation
+
+- Service addition checklist and references documentation
+- AGENTS.md v1.5 alignment and output formatting guidance
+- Comprehensive security hardening documentation
+
+### Related Issues
+
+- Fixes #844 - Release automation command
+- Fixes #842 - Release note templates
+- Fixes #840 - Grafana dashboard updates
+- Fixes #838 - Open WebUI upgrade
+- Fixes #836 - vLLM security hardening compatibility
+- Fixes #837 - pgAdmin security reversion
+- Fixes #835 - PostgreSQL container security
+- Fixes #825 - nvidia-gpu-exporter security
+- Fixes #822 - Alertmanager service
+- Part of #802 - Context-aware slash commands
+
+---
+
 ## [v1.0.0-rc6] - 2026-04-20
 
 ### Summary
