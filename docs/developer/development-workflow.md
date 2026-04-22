@@ -330,14 +330,18 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), skill files (`ai/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+<<<<<<< HEAD
+When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+
+**Note**: Skill files (`ai/skills/skill-*.md`) are optional. The `ai/skills/` directory does not currently exist and should only be created if skills are actually needed.
 
 ```bash
 ./scripts/checks/check-agents.sh
 ```
 
 This script validates:
-- Naming conventions (`agent-*.md`, `skill-*.md`, `ai-report-*.md`)
+- Naming conventions (`agent-*.md`, `ai-report-*.md`)
+- Skill files (`skill-*.md`) if ai/skills/ directory exists
 - Required YAML frontmatter fields (`name`, `description`, `role: system`)
 - Required sections (Purpose, Canonical references, Global rules, Tool usage, Workflow steps, Safety/governance)
 - References to core documentation (`development-workflow.md`, `01_ai_guidance.md`)

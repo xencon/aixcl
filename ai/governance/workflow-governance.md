@@ -54,5 +54,7 @@ If automated PRs bypass issue-first:
 2. Create retrospective issue documenting PR numbers
 
 ## Lint Requirement
-If modifying agent-*.md, skill-*.md, or ai-report-*.md:
+If modifying agent-*.md, or ai-report-*.md:
+
+**Note**: Skill files (skill-*.md) are optional. The ai/skills/ directory does not currently exist.
 MD files are the sole governance artifacts. No external script is required.
