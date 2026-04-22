@@ -55,9 +55,7 @@ services:
       - SETGID
     security_opt:
       - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
+    # Note: read_only cannot be applied - entrypoint creates vllm user with useradd
     # vLLM startup command with configurable model and memory settings
     command:
       - "--model"
