@@ -15,15 +15,15 @@
 
 ### Issue #451: Security - Sanitize Database Inputs
 
-**Status:** ✅ Updated and Compliant
+**Status:** - [x] Updated and Compliant
 
 **Details:**
 - **Title:** Updated from "Security: Sanitize Database Inputs" to "Security - Sanitize Database Inputs" (removed colon per workflow)
-- **Labels:** `component:cli`, `P2`, `Fix`, `security` ✅
-- **Assignee:** sbadakhc ✅
+- **Labels:** `component:cli`, `P2`, `Fix`, `security` - [x]
+- **Assignee:** `<assignee>` - [x]
 - **Issue Type:** Should be set to **Bug** (requires manual setting in GitHub UI)
 - **Priority:** Medium (P2)
-- **Actionability:** ✅ **YES - Should be actioned**
+- **Actionability:** - [x] **YES - Should be actioned**
   - Security vulnerability: SQL injection risk in `ensure_databases` function
   - Affects CLI component
   - Requires input validation/sanitization
@@ -34,15 +34,15 @@
 
 ### Issue #450: Security - Harden Docker Socket Mounts
 
-**Status:** ✅ Updated and Compliant
+**Status:** - [x] Updated and Compliant
 
 **Details:**
 - **Title:** Updated from "Security: Harden Docker Socket Mounts" to "Security - Harden Docker Socket Mounts" (removed colon per workflow)
-- **Labels:** `component:infrastructure`, `P1`, `Fix`, `security` ✅ (added Fix label)
-- **Assignee:** sbadakhc ✅
+- **Labels:** `component:infrastructure`, `P1`, `Fix`, `security` - [x] (added Fix label)
+- **Assignee:** `<assignee>` - [x]
 - **Issue Type:** Should be set to **Bug** (requires manual setting in GitHub UI)
 - **Priority:** High (P1)
-- **Actionability:** ✅ **YES - Should be actioned immediately**
+- **Actionability:** - [x] **YES - Should be actioned immediately**
   - High-priority security issue
   - Docker socket mounts pose security risk
   - Affects alloy service
@@ -54,15 +54,15 @@
 
 ### Issue #449: Security - Reduce Docker Network Exposure
 
-**Status:** ✅ Updated and Compliant
+**Status:** - [x] Updated and Compliant
 
 **Details:**
 - **Title:** Updated from "Security: Reduce Docker Network Exposure" to "Security - Reduce Docker Network Exposure" (removed colon per workflow)
-- **Labels:** `component:infrastructure`, `P1`, `Fix`, `security` ✅ (added Fix label)
-- **Assignee:** sbadakhc ✅
+- **Labels:** `component:infrastructure`, `P1`, `Fix`, `security` - [x] (added Fix label)
+- **Assignee:** `<assignee>` - [x]
 - **Issue Type:** Should be set to **Bug** (requires manual setting in GitHub UI)
 - **Priority:** High (P1)
-- **Actionability:** ✅ **YES - Should be actioned immediately**
+- **Actionability:** - [x] **YES - Should be actioned immediately**
   - High-priority security issue
   - `network_mode: host` bypasses Docker network isolation
   - Affects infrastructure security posture
@@ -75,20 +75,20 @@
 ## Compliance Updates Made
 
 ### Title Formatting
-- ✅ Removed colons from all issue titles (per workflow guideline: "Both issue titles and PR titles should NOT use colons")
+- - [x] Removed colons from all issue titles (per workflow guideline: "Both issue titles and PR titles should NOT use colons")
 - Changed format from "Security: ..." to "Security - ..."
 
 ### Labels
-- ✅ Added missing `Fix` label to issues #450 and #449
-- ✅ All issues now have proper component labels
-- ✅ All issues have priority labels (P1 or P2)
-- ✅ All issues have security label
+- - [x] Added missing `Fix` label to issues #450 and #449
+- - [x] All issues now have proper component labels
+- - [x] All issues have priority labels (P1 or P2)
+- - [x] All issues have security label
 
 ### Assignees
-- ✅ All issues have assignees (sbadakhc)
+- - [x] All issues have assignees (`<assignee>`)
 
 ### Issue Types
-- ⚠️ **Manual Action Required:** All three issues need their GitHub issue type set to **Bug** in the GitHub web interface
+- [WARNING] **Manual Action Required:** All three issues need their GitHub issue type set to **Bug** in the GitHub web interface
   - GitHub CLI does not support setting issue types directly
   - Issue types (Bug/Feature/Task) are separate from labels
   - These are security bugs and should be marked as "Bug" type
@@ -97,9 +97,9 @@
 
 | Issue | Title Format | Component Label | Priority Label | Category Label | Assignee | Issue Type |
 |-------|-------------|----------------|----------------|----------------|----------|------------|
-| #451 | ✅ Fixed | ✅ component:cli | ✅ P2 | ✅ Fix | ✅ Yes | ⚠️ Needs Bug |
-| #450 | ✅ Fixed | ✅ component:infrastructure | ✅ P1 | ✅ Fix | ✅ Yes | ⚠️ Needs Bug |
-| #449 | ✅ Fixed | ✅ component:infrastructure | ✅ P1 | ✅ Fix | ✅ Yes | ⚠️ Needs Bug |
+| #451 | - [x] Fixed | - [x] component:cli | - [x] P2 | - [x] Fix | - [x] Yes | [WARNING] Needs Bug |
+| #450 | - [x] Fixed | - [x] component:infrastructure | - [x] P1 | - [x] Fix | - [x] Yes | [WARNING] Needs Bug |
+| #449 | - [x] Fixed | - [x] component:infrastructure | - [x] P1 | - [x] Fix | - [x] Yes | [WARNING] Needs Bug |
 
 ## Discrepancies Found
 
@@ -146,18 +146,18 @@
 
 ## Next Steps
 
-1. ✅ **Completed:** Updated issue titles to remove colons
-2. ✅ **Completed:** Added missing `Fix` labels
-3. ⚠️ **Manual Action Required:** Set issue types to "Bug" in GitHub UI for all three issues
+1. - [x] **Completed:** Updated issue titles to remove colons
+2. - [x] **Completed:** Added missing `Fix` labels
+3. [WARNING] **Manual Action Required:** Set issue types to "Bug" in GitHub UI for all three issues
 4. 📋 **Recommendation:** Address security issues in priority order (#450, #449, #451)
 5. 📋 **Recommendation:** Resolve label naming inconsistency (P1/P2/P3 vs priority:high/medium/low)
 
 ## Summary
 
 All three open issues are security-related and should be actioned. They have been updated to comply with the developer workflow guidelines:
-- ✅ Titles fixed (no colons)
-- ✅ Proper labels applied
-- ✅ Assignees present
-- ⚠️ Issue types need manual setting in GitHub UI
+- - [x] Titles fixed (no colons)
+- - [x] Proper labels applied
+- - [x] Assignees present
+- [WARNING] Issue types need manual setting in GitHub UI
 
 The issues are well-documented, have clear scope, and are ready for implementation work to begin.
