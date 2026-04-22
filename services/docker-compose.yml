@@ -415,23 +415,26 @@ services:
     image: grafana/alloy:v1.15.0
     container_name: alloy
     pull_policy: if_not_present
-    user: "0:0"  # Start as root, entrypoint drops to alloy user (12345) with docker group
+    # Run as root to read protected log files and access docker socket
+    user: "0:0"
     cap_drop:
       - ALL
     cap_add:
       - SETUID
       - SETGID
-    read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
+      # Use tmpfs for Alloy data to avoid permission issues with named volumes
+      - /data-alloy:noexec,nosuid,size=100m
     volumes:
       - ../alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - alloy-data:/data-alloy
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
       - ../scripts/runtime/alloy-entrypoint.sh:/usr/local/bin/alloy-entrypoint.sh:ro
     entrypoint: /usr/local/bin/alloy-entrypoint.sh
+    environment:
+      - DOCKER_GID=${DOCKER_GID:-989}
     network_mode: host
     depends_on:
       - loki
