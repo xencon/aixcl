@@ -266,10 +266,10 @@ The CI workflow automatically checks for CRLF line endings and will fail the bui
 A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with OpenCode CLI and approve `gh`/`git` tool calls when prompted:
 
 ```bash
-cn --config "$(pwd)/opencode/cli-ollama.yaml" --agent /ai/orchestration/agent-developer-workflow.md
+opencode --agent ai/orchestration/agent-developer-workflow.md
 ```
 
-See opencode-cli-setup.md](.opencode-cli-setup.md) for install and config.
+See [opencode-setup.md](./opencode-setup.md) for installation and configuration instructions.
 
 ## AI Assistant Instructions
 
@@ -330,10 +330,10 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying AI agent files (`/ai/orchestration/agent-*.md`), skill files (`/ai/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), skill files (`ai/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
-./scripts/check-agents.sh
+./scripts/checks/check-agents.sh
 ```
 
 This script validates:
