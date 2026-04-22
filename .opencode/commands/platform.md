@@ -153,6 +153,86 @@ Services not in the active profile must be skipped with status `N/A (profile: <p
 | `N/A` | Service not included in current profile |
 | `standby` | Service present but not the active inference engine |
 
+## Report Output Template
+
+When presenting results to the user, the agent must produce a **single consolidated report** with all checks grouped by priority. Use this exact structure. Replace every `<placeholder>` with live data from the commands above.
+
+```
+AIXCL Platform Health Report
+Profile: <profile>  |  Engine: <engine>  |  Total checks: <count>
+
+P1 — Critical / Runtime Core
+| Service           | Status   | Latency | Detail                          |
+|-------------------|----------|---------|---------------------------------|
+| Inference Engine  | <status> | <ms>    | <model_name>                    |
+| Open WebUI        | <status> | <ms>    | <status_bool>                   |
+| PostgreSQL        | <status> | <ms>    | <connections> / <storage_size>  |
+
+P1 — Critical / Data Persistence
+| Service      | Status   | Latency | Detail                |
+|--------------|----------|---------|-----------------------|
+| PostgreSQL   | <status> | <ms>    | version: <version>    |
+| pgAdmin      | <status> | <ms>    | ping: <status>        |
+
+P2 — Health / Observability Stack
+| Service       | Status   | Latency | Detail                              |
+|---------------|----------|---------|-------------------------------------|
+| Prometheus    | <status> | <ms>    | targets: <up>/<total>, alerts: <n>  |
+| Grafana       | <status> | <ms>    | database: <status>                  |
+| Loki          | <status> | <ms>    | ready: <status>                     |
+| Alloy         | <status> | <ms>    | <http_status>                       |
+| Alertmanager  | <status> | <ms>    | <http_status>                       |
+
+P2 — Health / Container and Host Resources
+| Metric            | Status   | Value                    |
+|-------------------|----------|--------------------------|
+| Containers running| <status> | <count>                  |
+| Container CPU     | <status> | <percentage>             |
+| Container memory  | <status> | <percentage>             |
+| Host CPU          | <status> | <percentage>             |
+| Host memory       | <status> | <percentage>             |
+| Host disk         | <status> | <percentage>             |
+| GPU metrics       | <status> | <percentage>             |
+| Port bindings     | <status> | <ports_bound>/<expected> |
+| Volume disk usage | <status> | <percentage>             |
+
+P2 — Security / Logs
+| Check                    | Status   | Detail                      |
+|--------------------------|----------|-----------------------------|
+| Container security       | <status> | violations: <count>           |
+| PostgreSQL auth errors   | <status> | errors_last_5m: <count>     |
+| Open WebUI auth errors | <status> | errors_last_5m: <count>     |
+| Alloy pipeline failures  | <status> | errors_last_5m: <count>     |
+| Loki errors              | <status> | logs_last_5m: <count>       |
+
+P3 — Performance / Bottlenecks
+| Metric              | Status   | Detail                    |
+|---------------------|----------|---------------------------|
+| High-latency targets| <status> | count: <n>                |
+| Inference queue     | <status> | <queue_depth>             |
+| Disk I/O wait       | <status> | <percentage>              |
+| Swap usage          | <status> | <size>                    |
+| Container restarts  | <status> | restarts: <count>         |
+
+P3 — Exposed Endpoints
+| Service      | Endpoint                        | Status   |
+|--------------|---------------------------------|----------|
+| Inference API| http://127.0.0.1:11434          | <status> |
+| Open WebUI   | http://127.0.0.1:8080            | <status> |
+| pgAdmin      | http://127.0.0.1:5050            | <status> |
+| Grafana      | http://127.0.0.1:3000            | <status> |
+| Prometheus   | http://127.0.0.1:9090            | <status> |
+| Loki         | http://127.0.0.1:3100            | <status> |
+| cAdvisor     | http://127.0.0.1:8081            | <status> |
+| Alertmanager | http://127.0.0.1:9093            | <status> |
+
+Summary
+- Highest priority issue: <summary>
+- Next: <highest-priority_failing_check>
+```
+
+Show **P1 first, then P2, then P3**. Skip any section where every row is `N/A`. If all P1 is green, show P2. If P2 is green, show P3. If any check in a tier fails, stop after that tier and print the summary — unless the user explicitly asks for full output.
+
 ## When to Use
 
 - After `./aixcl stack start` to verify services came up
