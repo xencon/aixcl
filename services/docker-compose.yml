@@ -215,15 +215,8 @@ services:
       - ../pgadmin-servers.json:/pgadmin4/servers.json
       - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
     user: "0:0"  # Start as root, entrypoint drops to pgadmin user
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    # Note: read_only cannot be applied to pgAdmin as it writes to multiple
-    # locations including /pgadmin4/servers.json during startup
+    # Note: Security hardening removed - cap_drop/no-new-privileges breaks su authentication
+    # The entrypoint requires privilege escalation to switch from root to pgadmin user
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
