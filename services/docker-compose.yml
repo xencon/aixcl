@@ -102,7 +102,7 @@ services:
 
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.8.12
+    image: ghcr.io/open-webui/open-webui:v0.9.1
     container_name: open-webui
     pull_policy: if_not_present
     user: "0:0"  # Start as root for permission setup, entrypoint switches to non-root
