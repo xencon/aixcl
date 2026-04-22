@@ -227,7 +227,7 @@ Agent workflow rules and permissions are configured automatically via `opencode.
 
 * [User Guide](https://github.com/xencon/aixcl/blob/main/docs/user/usage.md) - Detailed workflows and tips.
 * [Architecture](https://github.com/xencon/aixcl/blob/main/docs/architecture/governance) - Profiles and service contracts.
-* [Security](https://github.com/xencon/aixcl/blob/main/docs/operations/security.md) - Rootless Podman/Docker operations.
+* [Security](https://github.com/xencon/aixcl/blob/main/docs/operations/security.md) - Rootless Docker operations (Podman support: experimental).
 * [OpenCode Setup](https://github.com/xencon/aixcl/blob/main/docs/developer/opencode-setup.md) - CLI configuration and agent workflow.
 * [Contributing](https://github.com/xencon/aixcl/blob/main/DEVELOPMENT.md) - Issue-first workflow, templates, and PR requirements.
 
