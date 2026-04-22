@@ -148,14 +148,6 @@ services:
       - postgres
     network_mode: host
     restart: always
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    # Note: read_only cannot be applied - entrypoint chowns/chmods container files
     entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
     command: []
     healthcheck:
