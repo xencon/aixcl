@@ -16,10 +16,11 @@ When interacting with users, you can execute these slash commands:
 
 - `/workflow` - Run complete Issue-First workflow
 - `/issue` - Create GitHub issue
-- `/branch` - Create feature branch  
+- `/branch` - Create feature branch
 - `/commit` - Commit changes
 - `/pr` - Create pull request
 - `/verify` - Check CI status
+- `/release` - Create GitHub release (automates version detection, CHANGELOG update, tagging, and release publication)
 - `/actions` - List all actions
 - `/lint` - Validate agents/actions
 - `/platform` - Live platform health report
