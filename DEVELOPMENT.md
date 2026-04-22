@@ -148,7 +148,7 @@ Additional PR rules:
 
 ```bash
 gh pr create --title "<description> (#<number>)" --body "Fixes #<number>"
-gh pr edit <number> --add-assignee sbadakhc --add-label "component:..."
+gh pr edit <number> --add-assignee <your-github-username> --add-label "component:..."
 ```
 
 ---
