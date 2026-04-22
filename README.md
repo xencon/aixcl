@@ -2,12 +2,12 @@
 
 **A self-hosted, local-first AI stack for running and integrating LLMs.**
 
-AIXCL is a privacy-focused platform for individuals and teams who want full control over their models. It provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
+AIXCL provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
 
 ## Prerequisites
 
 * **Docker & Docker Compose** installed.
-* **8 GB VRAM** (minimum recommended).
+* **8 GB VRAM** (for GPU compatible LLM's). 
 * **32 GB RAM** (minimum recommended).
 * **128 GB Disk Space** (for models and images).
 
