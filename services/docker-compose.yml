@@ -353,6 +353,13 @@ services:
     container_name: nvidia-gpu-exporter
     pull_policy: if_not_present
     user: "999:999"  # nvidia-dcgm user - official image default for GPU metrics
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=10m
     network_mode: host
     restart: unless-stopped
     environment:
