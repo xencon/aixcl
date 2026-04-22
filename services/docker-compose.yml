@@ -209,10 +209,8 @@ services:
       - SETGID
     security_opt:
       - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=50m
-      - /var/lib/pgadmin/sessions:noexec,nosuid,size=50m
+    # Note: read_only cannot be applied to pgAdmin as it writes to multiple
+    # locations including /pgadmin4/servers.json during startup
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
