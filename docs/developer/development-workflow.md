@@ -330,10 +330,10 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying AI agent files (`/ai/orchestration/agent-*.md`), skill files (`/ai/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), skill files (`ai/skills/skill-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
-./scripts/check-agents.sh
+./scripts/checks/check-agents.sh
 ```
 
 This script validates:
