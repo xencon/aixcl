@@ -15,7 +15,7 @@ This test verifies that OpenCode can successfully connect to and use each infere
 ### Step 1: Prepare Environment
 
 ```bash
-cd /home/sbadakhc/src/github.com/xencon/aixcl
+cd aixcl
 ```
 
 ### Step 2: Test Each Engine
