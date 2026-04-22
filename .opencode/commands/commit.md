@@ -9,6 +9,7 @@ Commits changes using conventional commit format with proper issue reference.
 
 ## Usage
 
+Run this slash command:
 ```
 /commit
 ```

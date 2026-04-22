@@ -9,6 +9,7 @@ Runs the complete AIXCL Issue-First development workflow end-to-end.
 
 ## Usage
 
+Run this slash command:
 ```
 /workflow
 ```

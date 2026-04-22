@@ -9,6 +9,7 @@ Lists all available actions in the ai/actions/ directory with descriptions.
 
 ## Usage
 
+Run this slash command:
 ```
 /actions
 ```

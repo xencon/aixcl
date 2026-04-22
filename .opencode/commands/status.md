@@ -10,6 +10,7 @@ Quick triage command. No logs, no security, no Prometheus — just the four thin
 
 ## Usage
 
+Run this slash command:
 ```
 /status
 ```
