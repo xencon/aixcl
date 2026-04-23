@@ -1,0 +1,63 @@
+# Docker-in-Docker Fix for AIXCL Dev Container
+# This file overrides entrypoint mounts that fail in DinD
+
+services:
+  ollama:
+    # Override: Use default entrypoint, skip custom script
+    entrypoint: ["/usr/bin/ollama"]
+    command: ["serve"]
+    user: "1000:1000"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - HOME=/home/ubuntu
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-8}
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-3}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-1800}
+      - OLLAMA_NUM_GPU=${OLLAMA_NUM_GPU:-1}
+      - OLLAMA_NUM_THREAD=${OLLAMA_NUM_THREAD:-8}
+    volumes:
+      - ollama:/home/ubuntu/.ollama
+
+  vllm:
+    # Override: Use default entrypoint with args, not custom script
+    entrypoint: ["python", "-m", "vllm.entrypoints.openai.api_server"]
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "11434"
+      - "--model"
+      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
+      - "--trust-remote-code"
+    volumes:
+      - huggingface-cache:/home/vllm/.cache/huggingface
+
+  llamacpp:
+    # Override: Use direct command instead of entrypoint script
+    entrypoint: ["/server"]
+    command:
+      - "--model"
+      - "/models/${INFERENCE_MODEL:-model.gguf}"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "11434"
+    volumes:
+      - llamacpp-data:/models
+
+  alloy:
+    # Use default alloy entrypoint
+    entrypoint: ["/usr/bin/alloy"]
+    command:
+      - "run"
+      - "/etc/alloy/config.alloy"
+      - "--storage.path"
+      - "/var/lib/alloy/data"
+
+volumes:
+  ollama:
+    driver: local
+  huggingface-cache:
+    driver: local
+  llamacpp-data:
+    driver: local
