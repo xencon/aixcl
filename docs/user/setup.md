@@ -4,6 +4,8 @@ This document verifies that AIXCL works out of the box for fresh deployments.
 
 > **Note**: AIXCL follows a governance model separating Runtime Core (always enabled) from Operational Services (profile-dependent). See [`architecture/governance/`](../architecture/governance/) for architectural documentation.
 
+> **New**: AIXCL now supports [Dev Containers](../../.devcontainer/) for a consistent, pre-configured development environment. See the [Dev Container Guide](../../.devcontainer/README.md) for containerized setup options.
+
 ## Fresh Installation Checklist
 
 ### 1. Prerequisites

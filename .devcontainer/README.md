@@ -8,8 +8,7 @@ Before using the dev container, ensure you have:
 
 1. **Docker** installed and running
 2. **Docker Compose** (V2 plugin preferred)
-3. **VS Code** with the [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-4. **NVIDIA GPU** (optional but recommended for vLLM/llama.cpp)
+3. **NVIDIA GPU** (optional but recommended for vLLM/llama.cpp)
 
 ### For GPU Support
 
@@ -26,30 +25,90 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
+---
+
 ## Quick Start
 
-### Option 1: VS Code Remote-Containers (Recommended)
+### Option 1: Docker Compose (Recommended)
 
-1. Open VS Code in this repository
+**Best for:** Direct control, familiar Docker workflow, minimal dependencies.
+
+```bash
+# 1. Navigate to repository
+cd ~/projects/aixcl
+
+# 2. Build and start the dev container
+docker compose -f .devcontainer/docker-compose.dev.yml up -d
+
+# 3. Enter the container
+docker exec -it aixcl-devcontainer-devcontainer-1 /bin/bash
+
+# 4. Switch to vscode user (recommended)
+su - vscode
+
+# 5. Navigate to workspace
+cd /workspace
+
+# 6. Start AIXCL
+./aixcl stack start --profile usr
+
+# 7. Verify services
+./aixcl stack status
+```
+
+**Cleanup:**
+```bash
+# Stop the dev container
+docker compose -f .devcontainer/docker-compose.dev.yml down
+
+# Or stop and remove volumes
+docker compose -f .devcontainer/docker-compose.dev.yml down -v
+```
+
+---
+
+### Option 2: VS Code Remote-Containers
+
+**Best for:** IDE integration and GUI tooling.
+
+1. Open repository in VS Code
 2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
 3. Type "Remote-Containers: Reopen in Container"
 4. Wait for the container to build and start (first time may take 5-10 minutes)
+5. VS Code reconnects inside the container automatically
 
-### Option 2: Command Line
+---
+
+### Option 3: Dev Container CLI
+
+**Best for:** Command-line users who want full spec support.
 
 ```bash
 # Install devcontainer CLI
 npm install -g @devcontainers/cli
 
-# Open the dev container
-devcontainer open
+# Build and start
+devcontainer up --workspace-folder .
+
+# Enter container
+devcontainer exec --workspace-folder . /bin/bash
+
+# Stop
+devcontainer down --workspace-folder .
 ```
 
-### Option 3: GitHub Codespaces
+---
+
+### Option 4: GitHub Codespaces
+
+**Best for:** Cloud-based development, no local setup required.
 
 1. Push this repository to GitHub
-2. Click "Code" → "Codespaces" → "Create codespace on main"
-3. Wait for the environment to start
+2. Click "Code" → "Codespaces" → "Create codespace"
+3. Wait for the environment to start (2-3 minutes)
+4. Use VS Code in browser or connect via SSH
+
+---
 
 ## What's Included
 
@@ -65,21 +124,19 @@ The dev container provides:
 | **jq** | JSON processing |
 | **zsh + Oh My Zsh** | Enhanced shell |
 | **OpenCode CLI** | AI-powered code assistant |
+| **GitHub CLI** | GitHub integration |
+
+---
 
 ## OpenCode Integration
 
-The dev container comes with [OpenCode CLI](https://opencode.ai/) pre-installed, allowing you to use AI-powered coding assistance directly in the container.
+The dev container comes with [OpenCode CLI](https://opencode.ai/) pre-installed, connecting to the AIXCL inference engine.
 
 ### Using OpenCode CLI
 
-OpenCode CLI is available in the dev container and connects to the AIXCL inference engine:
-
 ```bash
-# Start OpenCode CLI (connects to AIXCL inference engine)
+# Start OpenCode CLI (connects to AIXCL inference engine at localhost:11434)
 opencode
-
-# Or with the local provider (uses localhost:11434)
-opencode --provider aixcl-local
 
 # In OpenCode, you can use commands like:
 # /explain - Explain code
@@ -88,25 +145,19 @@ opencode --provider aixcl-local
 # /doc - Generate documentation
 ```
 
-### OpenCode VS Code Extension
-
-The dev container includes the OpenCode VS Code extension with pre-configured settings:
-
-- **API Endpoint**: `http://localhost:11434/v1`
-- **Default Model**: `aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct`
-- **Provider**: AIXCL local inference engine
-
 ### Starting OpenCode
 
 1. Ensure AIXCL services are running: `./aixcl stack status`
-2. OpenCode will automatically connect to `http://localhost:11434/v1`
-3. Start OpenCode: `opencode` or use the VS Code extension
+2. OpenCode automatically connects to `http://localhost:11434/v1`
+3. Start OpenCode: `opencode`
+
+---
 
 ## Usage
 
 ### Starting AIXCL
 
-Once the dev container is running:
+Once in the dev container:
 
 ```bash
 # Check environment
@@ -148,6 +199,8 @@ Once the dev container is running:
 ./tests/run-tests.sh --quick
 ```
 
+---
+
 ## Configuration
 
 ### Environment Variables
@@ -171,6 +224,8 @@ The following data persists across container restarts:
 | `aixcl-llamacpp-data` | `/models` | llama.cpp models |
 | `aixcl-pgdata` | `/var/lib/postgresql/data` | PostgreSQL data |
 
+---
+
 ## Troubleshooting
 
 ### Docker Daemon Not Available
@@ -181,8 +236,8 @@ If you see "Docker daemon not available" inside the container:
 # Check if Docker socket is mounted
 ls -la /var/run/docker.sock
 
-# If not, restart the container
-# In VS Code: Command Palette → "Remote-Containers: Rebuild Container"
+# If using Docker Compose method, ensure container has access:
+docker compose -f .devcontainer/docker-compose.dev.yml ps
 ```
 
 ### GPU Not Detected
@@ -194,9 +249,11 @@ If GPU is not available inside the container:
 nvidia-smi
 
 # Check container GPU
-docker run --rm --gpus=all nvidia/cuda:12.0-base nvidia-smi
+docker exec aixcl-devcontainer-devcontainer-1 nvidia-smi
 
-# If working, rebuild dev container
+# If not working, rebuild with GPU support
+docker compose -f .devcontainer/docker-compose.dev.yml down
+docker compose -f .devcontainer/docker-compose.dev.yml up -d
 ```
 
 ### Port Conflicts
@@ -210,50 +267,86 @@ lsof -i :11434
 # Kill the process or change AIXCL ports in .env
 ```
 
+---
+
 ## File Structure
 
 ```
 .devcontainer/
-├── devcontainer.json          # Main configuration
-├── docker-compose.dev.yml     # Dev-specific compose overrides
-├── Dockerfile                 # Dev container image
+├── devcontainer.json          # Main configuration (supports all methods)
+├── docker-compose.dev.yml     # Docker Compose method (recommended)
+├── Dockerfile                 # Dev container image definition
 ├── scripts/
-│   ├── entrypoint.sh         # Container entrypoint
+│   ├── entrypoint.sh         # Container startup
 │   ├── initialize.sh         # Host initialization
 │   ├── post-create.sh        # First-time setup
-│   └── post-start.sh         # Container start
+│   └── post-start.sh         # Container resume
 └── README.md                 # This file
 ```
 
-## Development Workflow
+---
 
-1. **Open in Container**: VS Code will automatically build and start the dev container
-2. **Wait for Setup**: The post-create script runs automatically
-3. **Start AIXCL**: Run `./aixcl stack start --profile usr`
-4. **Develop**: Make changes to code, test with AIXCL running
-5. **Commit**: Git works normally inside the container
+## Development Workflow (Docker Compose Method)
 
-## Updating the Dev Container
+1. **Start container:**
+   ```bash
+   docker compose -f .devcontainer/docker-compose.dev.yml up -d
+   ```
 
-If you modify any files in `.devcontainer/`:
+2. **Enter container:**
+   ```bash
+   docker exec -it aixcl-devcontainer-devcontainer-1 /bin/bash
+   su - vscode
+   cd /workspace
+   ```
 
-```bash
-# In VS Code
-Ctrl+Shift+P → "Remote-Containers: Rebuild Container"
+3. **Start AIXCL:**
+   ```bash
+   ./aixcl stack start --profile usr
+   ```
 
-# Or command line
-devcontainer build --workspace-folder .
-```
+4. **Use OpenCode:**
+   ```bash
+   opencode
+   ```
+
+5. **Develop:** Edit files on host or in container (changes sync automatically)
+
+6. **Commit:** Git works normally inside container
+
+7. **Stop when done:**
+   ```bash
+   ./aixcl stack stop
+   exit
+   docker compose -f .devcontainer/docker-compose.dev.yml down
+   ```
+
+---
+
+## Method Comparison
+
+| Method | Best For | Learning Curve | Features |
+|--------|----------|----------------|----------|
+| **Docker Compose** | Direct control, CI/CD | Low | Full control, familiar syntax |
+| **VS Code** | IDE integration | Medium | Port forwarding, debugging |
+| **Dev Container CLI** | Spec compliance | Medium | Full lifecycle management |
+| **Codespaces** | Cloud development | Low | No local setup needed |
+
+---
 
 ## Resources
 
 - [Dev Container Specification](https://containers.dev/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview)
 - [AIXCL Documentation](../docs/)
+
+---
 
 ## Support
 
 For issues related to:
-- **Dev container setup**: Check this README and logs
-- **AIXCL usage**: See main project documentation
-- **Docker issues**: Verify Docker is running on host
+- **Dev container setup:** Check this README and logs
+- **AIXCL usage:** See main project documentation  
+- **Docker issues:** Verify Docker is running on host
+- **GPU issues:** Verify NVIDIA Container Toolkit is installed

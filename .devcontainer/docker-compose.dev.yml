@@ -1,12 +1,10 @@
-version: '3.8'
-
 # Development container specific overrides for AIXCL
 # This file extends the main docker-compose.yml with dev container configuration
 
 services:
   devcontainer:
     build:
-      context: .
+      context: ..  # Parent directory (repo root)
       dockerfile: .devcontainer/Dockerfile
     network_mode: host
     privileged: true
@@ -22,6 +20,8 @@ services:
       - ..:/workspace:cached
       # Docker socket for DinD
       - /var/run/docker.sock:/var/run/docker.sock
+      # Entrypoint scripts - mount entire scripts directory to avoid DinD file mount issue
+      - ../scripts/runtime:/scripts/runtime:ro
       # Persistence volumes
       - aixcl-ollama-data:/home/vscode/.ollama
       - aixcl-hf-cache:/home/vscode/.cache/huggingface
@@ -39,6 +39,8 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - HUGGINGFACE_HUB_CACHE=/home/vscode/.cache/huggingface
       - OLLAMA_HOST=127.0.0.1:11434
+      # Tell AIXCL where entrypoint scripts are (for DinD compatibility)
+      - AIXCL_ENTRYPOINT_DIR=/scripts/runtime
     working_dir: /workspace
     command: sleep infinity
     
