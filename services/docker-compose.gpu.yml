@@ -31,7 +31,7 @@ services:
               count: all
               capabilities: [gpu]
     # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
-    entrypoint: ["python", "-m", "vllm.entrypoints.openai.api_server"]
+    entrypoint: ["/usr/bin/python3", "-m", "vllm.entrypoints.openai.api_server"]
     command:
       - "--host"
       - "0.0.0.0"
