@@ -79,8 +79,6 @@ test_engine_model() {
     local engine="$1"
     local model="$2"
     local expected_key="$3"
-    local test_name="${engine}-${model//\//-}"
-    
     log_info "=========================================="
     log_info "Testing: Engine=$engine, Model=$model"
     log_info "=========================================="
