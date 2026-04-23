@@ -2,6 +2,8 @@
 
 Get up and running with the AIXCL Issue-First development workflow in minutes.
 
+> **New to Dev Containers?** AIXCL provides a [Dev Container](.devcontainer/) setup for a fully pre-configured development environment. See [.devcontainer/README.md](.devcontainer/README.md) for details.
+
 ## Prerequisites
 
 - [Git](https://git-scm.com/) installed
