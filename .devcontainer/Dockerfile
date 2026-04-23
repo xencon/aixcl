@@ -51,6 +51,10 @@ RUN pip3 install --no-cache-dir huggingface-hub[cli]
 RUN apt-get update && apt-get install -y shellcheck \
     && rm -rf /var/lib/apt/lists/*
 
+# Install OpenCode CLI
+RUN curl -fsSL https://opencode.ai/install.sh | bash \
+    && ln -sf /root/.local/bin/opencode /usr/local/bin/opencode || true
+
 # Install nvidia-smi wrapper for GPU monitoring
 RUN echo '#!/bin/bash\nif [ -x /usr/bin/nvidia-smi ]; then\n    /usr/bin/nvidia-smi "$@"\nelse\n    echo "NVIDIA tools not available in this environment"\n    exit 1\nfi' > /usr/local/bin/nvidia-smi-check \
     && chmod +x /usr/local/bin/nvidia-smi-check
@@ -60,7 +64,7 @@ RUN mkdir -p /home/vscode/.ollama /home/vscode/.cache/huggingface /models \
     && chown -R vscode:vscode /home/vscode/.ollama /home/vscode/.cache /models
 
 # Set up environment variables
-ENV PATH="/usr/local/bin:${PATH}"
+ENV PATH="/usr/local/bin:/root/.local/bin:${PATH}"
 ENV OLLAMA_HOST=127.0.0.1:11434
 ENV HUGGINGFACE_HUB_CACHE=/home/vscode/.cache/huggingface
 
@@ -82,6 +86,12 @@ RUN if [ -d "$HOME/.oh-my-zsh" ]; then \
     git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions \
     && git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting 2>/dev/null || true; \
     fi
+
+# Install OpenCode CLI for vscode user
+RUN curl -fsSL https://opencode.ai/install.sh | bash
+
+# Ensure opencode is in PATH for vscode user
+ENV PATH="/home/vscode/.local/bin:${PATH}"
 
 # Switch back to root for entrypoint
 USER root

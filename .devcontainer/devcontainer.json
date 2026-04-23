@@ -112,7 +112,8 @@
         "redhat.vscode-yaml",
         "ms-python.python",
         "eamodio.gitlens",
-        "streetsidesoftware.code-spell-checker"
+        "streetsidesoftware.code-spell-checker",
+        "opencode.opencode-vscode"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
@@ -124,7 +125,9 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "files.eol": "\n",
-        "files.trimTrailingWhitespace": true
+        "files.trimTrailingWhitespace": true,
+        "opencode.apiUrl": "http://localhost:11434/v1",
+        "opencode.defaultModel": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
       }
     }
   }

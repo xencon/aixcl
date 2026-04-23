@@ -64,20 +64,43 @@ The dev container provides:
 | **huggingface-hub** | HuggingFace model downloads |
 | **jq** | JSON processing |
 | **zsh + Oh My Zsh** | Enhanced shell |
-| **Pre-configured VS Code** | Extensions and settings |
+| **OpenCode CLI** | AI-powered code assistant |
 
-## Available Services
+## OpenCode Integration
 
-When you start AIXCL services, they will be available at:
+The dev container comes with [OpenCode CLI](https://opencode.ai/) pre-installed, allowing you to use AI-powered coding assistance directly in the container.
 
-| Service | Port | URL |
-|---------|------|-----|
-| Inference API | 11434 | http://localhost:11434 |
-| Open WebUI | 8080 | http://localhost:8080 |
-| Grafana | 3000 | http://localhost:3000 |
-| Prometheus | 9090 | http://localhost:9090 |
-| PostgreSQL | 5432 | localhost:5432 |
-| pgAdmin | 5050 | http://localhost:5050 |
+### Using OpenCode CLI
+
+OpenCode CLI is available in the dev container and connects to the AIXCL inference engine:
+
+```bash
+# Start OpenCode CLI (connects to AIXCL inference engine)
+opencode
+
+# Or with the local provider (uses localhost:11434)
+opencode --provider aixcl-local
+
+# In OpenCode, you can use commands like:
+# /explain - Explain code
+# /fix - Fix issues
+# /test - Generate tests
+# /doc - Generate documentation
+```
+
+### OpenCode VS Code Extension
+
+The dev container includes the OpenCode VS Code extension with pre-configured settings:
+
+- **API Endpoint**: `http://localhost:11434/v1`
+- **Default Model**: `aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct`
+- **Provider**: AIXCL local inference engine
+
+### Starting OpenCode
+
+1. Ensure AIXCL services are running: `./aixcl stack status`
+2. OpenCode will automatically connect to `http://localhost:11434/v1`
+3. Start OpenCode: `opencode` or use the VS Code extension
 
 ## Usage
 
