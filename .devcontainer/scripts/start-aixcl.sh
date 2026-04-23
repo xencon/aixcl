@@ -27,5 +27,5 @@ cd /workspace
 
 # Run the actual aixcl command
 echo ""
-echo "Running: ./aixcl stack start $@"
+echo "Running: ./aixcl stack start $*"
 ./aixcl stack start "$@"
