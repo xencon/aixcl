@@ -12,10 +12,16 @@ services:
               count: all
               capabilities: [gpu]
     # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
-    entrypoint: ["/usr/bin/ollama"]
-    command: ["serve"]
-    user: "1000:1000"
-  
+    # Include permission setup that the original entrypoint provided
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Setup permissions like original entrypoint
+        mkdir -p /home/ubuntu/.ollama
+        chown -R ubuntu:ubuntu /home/ubuntu
+        # Run ollama as ubuntu user
+        exec su - ubuntu -c "ollama serve"
+
   vllm:
     deploy:
       resources:
@@ -34,7 +40,7 @@ services:
       - "--model"
       - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
       - "--trust-remote-code"
-  
+
   llamacpp:
     deploy:
       resources:
