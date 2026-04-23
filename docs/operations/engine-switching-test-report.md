@@ -1,8 +1,11 @@
 # AIXCL Engine Switching Test Report
 
 **Test Date**: 2025-01-20  
+**Last Updated**: 2026-04-23  
 **Tester**: Automated via OpenCode  
 **Environment**: Local GPU (NVIDIA RTX 4060 Laptop - 8GB VRAM)
+
+> **Note**: This report covers the original engine switching tests. For the most recent platform test results including fixes and improvements, see [Platform Test Report - Consolidated](platform-test-report-consolidated-2026-04-23.md).
 
 ---
 
