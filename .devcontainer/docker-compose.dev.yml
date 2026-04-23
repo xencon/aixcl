@@ -1,0 +1,71 @@
+version: '3.8'
+
+# Development container specific overrides for AIXCL
+# This file extends the main docker-compose.yml with dev container configuration
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    network_mode: host
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      # Workspace
+      - ..:/workspace:cached
+      # Docker socket for DinD
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persistence volumes
+      - aixcl-ollama-data:/home/vscode/.ollama
+      - aixcl-hf-cache:/home/vscode/.cache/huggingface
+      - aixcl-llamacpp-data:/models
+      - aixcl-pgdata:/var/lib/postgresql/data
+      - aixcl-pgadmin:/var/lib/pgadmin
+      - aixcl-grafana:/var/lib/grafana
+      - aixcl-prometheus:/prometheus
+      - aixcl-loki:/loki
+      - aixcl-alloy-data:/var/lib/alloy
+    environment:
+      - DOCKER_BUILDKIT=1
+      - COMPOSE_DOCKER_CLI_BUILD=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HUGGINGFACE_HUB_CACHE=/home/vscode/.cache/huggingface
+      - OLLAMA_HOST=127.0.0.1:11434
+    working_dir: /workspace
+    command: sleep infinity
+    
+    # Health check to ensure dev container is ready
+    healthcheck:
+      test: ["CMD-SHELL", "docker info || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  aixcl-ollama-data:
+    driver: local
+  aixcl-hf-cache:
+    driver: local
+  aixcl-llamacpp-data:
+    driver: local
+  aixcl-pgdata:
+    driver: local
+  aixcl-pgadmin:
+    driver: local
+  aixcl-grafana:
+    driver: local
+  aixcl-prometheus:
+    driver: local
+  aixcl-loki:
+    driver: local
+  aixcl-alloy-data:
+    driver: local
