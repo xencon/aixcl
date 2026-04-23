@@ -49,12 +49,19 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
-    entrypoint: ["/server"]
+    # Docker-in-Docker fix: Use inline entrypoint script
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - "--model"
-      - "/models/${INFERENCE_MODEL:-model.gguf}"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "11434"
+      - |
+        MODEL_FILE="${INFERENCE_MODEL:-qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}"
+        MODEL_BASENAME="$(basename "$MODEL_FILE")"
+        MODEL_PATH="/models/${MODEL_BASENAME}"
+        
+        if [ ! -f "$MODEL_PATH" ]; then
+          echo "⚠️ Model not found: ${MODEL_PATH}"
+          echo "   Add a model using: ./aixcl models add <model.gguf>"
+          exit 0
+        fi
+        
+        echo "✅ Starting llama.cpp server with: ${MODEL_BASENAME}"
+        exec /app/llama-server -m "$MODEL_PATH" --host 0.0.0.0 --port 11434
