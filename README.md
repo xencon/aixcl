@@ -4,6 +4,8 @@
 
 AIXCL provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
 
+> **New:** AIXCL now supports [Dev Containers](.devcontainer/) for a consistent, pre-configured development environment. See the [Dev Container Guide](.devcontainer/README.md) for details.
+
 ## Prerequisites
 
 * **Docker & Docker Compose** installed.

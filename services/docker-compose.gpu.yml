@@ -1,3 +1,7 @@
+# GPU support configuration for AIXCL
+# Automatically loaded when NVIDIA GPU and Container Toolkit are detected
+# Also includes Docker-in-Docker fixes for entrypoint scripts
+
 services:
   ollama:
     deploy:
@@ -7,7 +11,17 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  
+    # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
+    # Include permission setup that the original entrypoint provided
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Setup permissions like original entrypoint
+        mkdir -p /home/ubuntu/.ollama
+        chown -R ubuntu:ubuntu /home/ubuntu
+        # Run ollama as ubuntu user
+        exec su - ubuntu -c "ollama serve"
+
   vllm:
     deploy:
       resources:
@@ -16,6 +30,16 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
+    entrypoint: ["python", "-m", "vllm.entrypoints.openai.api_server"]
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "11434"
+      - "--model"
+      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
+      - "--trust-remote-code"
 
   llamacpp:
     deploy:
@@ -25,12 +49,12 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
-  nvidia-gpu-exporter:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
+    entrypoint: ["/server"]
+    command:
+      - "--model"
+      - "/models/${INFERENCE_MODEL:-model.gguf}"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "11434"

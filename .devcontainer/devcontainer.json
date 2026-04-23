@@ -1,0 +1,134 @@
+{
+  "name": "AIXCL Platform Dev",
+  "dockerComposeFile": [
+    "services/docker-compose.yml",
+    ".devcontainer/docker-compose.dev.yml"
+  ],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+  "runServices": [],
+  "forwardPorts": [
+    11434,
+    8080,
+    3000,
+    9090,
+    5432,
+    5050
+  ],
+  "portsAttributes": {
+    "11434": {
+      "label": "AIXCL Inference API (Ollama/vLLM/llama.cpp)",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Open WebUI",
+      "onAutoForward": "openPreview"
+    },
+    "3000": {
+      "label": "Grafana",
+      "onAutoForward": "silent"
+    },
+    "9090": {
+      "label": "Prometheus",
+      "onAutoForward": "silent"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    },
+    "5050": {
+      "label": "pgAdmin",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": ".devcontainer/scripts/post-create.sh",
+  "postStartCommand": ".devcontainer/scripts/post-start.sh",
+  "initializeCommand": ".devcontainer/scripts/initialize.sh",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "updateRemoteUserUID": true,
+  "overrideCommand": false,
+  "privileged": true,
+  "securityOpt": ["seccomp=unconfined"],
+  "capAdd": ["SYS_PTRACE", "SYS_ADMIN"],
+  "mounts": [
+    {
+      "type": "bind",
+      "source": "/var/run/docker.sock",
+      "target": "/var/run/docker.sock"
+    },
+    {
+      "type": "volume",
+      "source": "aixcl-ollama-data",
+      "target": "/home/vscode/.ollama"
+    },
+    {
+      "type": "volume",
+      "source": "aixcl-hf-cache",
+      "target": "/home/vscode/.cache/huggingface"
+    },
+    {
+      "type": "volume",
+      "source": "aixcl-llamacpp-data",
+      "target": "/models"
+    },
+    {
+      "type": "volume",
+      "source": "aixcl-pgdata",
+      "target": "/var/lib/postgresql/data"
+    }
+  ],
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb",
+    "gpu": "optional"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/nvidia-cuda:1": {
+      "installCudnn": false,
+      "installNvtx": false,
+      "installToolkit": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "ms-python.python",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "opencode.opencode-vscode"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/usr/bin/zsh"
+          }
+        },
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "files.eol": "\n",
+        "files.trimTrailingWhitespace": true,
+        "opencode.apiUrl": "http://localhost:11434/v1",
+        "opencode.defaultModel": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
+      }
+    }
+  }
+}
