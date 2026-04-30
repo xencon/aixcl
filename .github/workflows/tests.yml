@@ -74,8 +74,24 @@ jobs:
           docker system prune -af --volumes
           df -h
 
-      - name: Initialize AIXCL volumes
+      - name: Initialize AIXCL environment
         run: |
+          echo "Creating .env file..."
+          # Copy from example and add required test values
+          cp config/.env.example .env 2>/dev/null || cp .env.example .env 2>/dev/null || echo "Creating from scratch"
+          
+          # Set required values for CI testing
+          echo "POSTGRES_PASSWORD=test-password-ci" >> .env
+          echo "OPENWEBUI_PASSWORD=test-password-ci" >> .env
+          echo "GRAFANA_ADMIN_PASSWORD=test-password-ci" >> .env
+          echo "ENABLE_OLLAMA_API=true" >> .env
+          echo "OLLAMA_BASE_URL=" >> .env
+          echo "OPENAI_API_KEY=" >> .env
+          echo "PROFILE=usr" >> .env
+          
+          echo ".env file created:"
+          cat .env | grep -v PASSWORD | head -20
+          echo ""
           echo "Creating external volumes..."
           chmod +x ./scripts/utils/init-volumes.sh
           ./scripts/utils/init-volumes.sh
@@ -89,6 +105,9 @@ jobs:
           echo "=========================================="
           echo "Testing Ollama Engine"
           echo "=========================================="
+          
+          # Ensure .env exists
+          test -f .env || (echo ".env file missing!" && exit 1)
           
           # Set engine
           ./aixcl engine set ollama
