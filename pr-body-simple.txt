@@ -1,0 +1,29 @@
+## Summary
+
+Adds automated checks to enforce PR formatting standards from AGENTS.md.
+
+## Problem Statement
+
+Recent audit found formatting compliance issues in last 10 PRs:
+- 70% Missing issue reference in title
+- 50% Missing assignee
+- 50% Missing component labels
+
+## Solution
+
+New GitHub workflow .github/workflows/pr-validation.yml with 3 jobs:
+- validate-pr-title: Ends with (#number) and no colons
+- validate-pr-assignee: Has at least one assignee
+- validate-pr-labels: Has component label
+
+## Verification
+
+- Workflow syntax validated
+- Checks match AGENTS.md requirements
+- Runs on PR open, edit, sync, reopen
+
+## Impact
+
+Future PRs will be blocked at CI time if they do not comply with formatting standards.
+
+Fixes #908
