@@ -1,10 +1,10 @@
 # Default owner for the entire repository
-* @akerberganders
+* @sbadakhc
 
 # Specific owners for certain directories or files
-/scripts/ @akerberganders
+/scripts/ @sbadakhc
 docker-compose.yml @sbadakhc
 
 # Owners for specific file types
-*.sh @akerberganders
+*.sh @sbadakhc
 *.yml @sbadakhc
