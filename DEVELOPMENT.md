@@ -73,30 +73,63 @@ gh issue create --title "[TASK] <title>" --label "maintenance" --assignee <assig
 
 ### Main vs Dev Branches
 
-This repository uses a **two-branch strategy**:
+This repository uses a **two-branch strategy** with clear promotion flow:
 
 | Branch | Purpose | When to Use |
 |--------|---------|-------------|
-| `main` | Production-ready code | Only for releases and hotfixes |
-| `dev` | Active development | All new features, fixes, and PRs |
+| `main` | Production-ready code | Final releases only |
+| `dev` | Active development, feature integration | All feature development |
 
-### Workflow
+### Correct Workflow (Feature → Dev → Main)
 
-1. **Create feature branches from `dev`:**
+**ALWAYS follow this path:**
+
+```
+Feature Branch → Dev → Main
+      ↑            ↑       ↑
+   create        PR      PR
+   from         merge   merge
+   dev          (test)  (final test)
+```
+
+#### Step-by-Step
+
+1. **Create feature branch FROM `dev`:**
    ```bash
    git checkout dev
    git pull origin dev
    git checkout -b issue-<number>/<description>
    ```
 
-2. **Push to `dev` via PR:**
+2. **Develop and quick test locally**
+
+3. **Create PR to `dev`:**
    ```bash
    gh pr create --title "Description (#<issue>)" --base dev
+   # Merge to dev after CODEOWNERS review
    ```
 
-3. **Merge to `main` when ready:**
-   - Create PR from `dev` → `main` for releases
-   - Or cherry-pick hotfixes directly to `main`
+4. **Create PR from `dev` to `main` when ready for release:**
+   ```bash
+   gh pr create --title "Release X.Y.Z" --base main --head dev
+   # Merge to main after final testing
+   ```
+
+### ❌ INCORRECT Workflows
+
+| Workflow | Status | Why |
+|----------|--------|-----|
+| `feature → main` | ❌ **WRONG** | Bypasses dev testing |
+| `main → feature` | ❌ **WRONG** | Wrong base branch |
+| `main → dev` | ❌ **WRONG** | Dev feeds main, not vice versa |
+
+### Emergency Hotfixes
+
+For critical production fixes:
+1. Create hotfix branch from `main`
+2. Apply fix
+3. Create PR to `main`
+4. **Also** cherry-pick/cherry-pick to `dev` to keep branches synchronized
 
 ### Protected Branches
 

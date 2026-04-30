@@ -1,59 +1,120 @@
 # AIXCL Branch Workflow Policy
-## Strict Compliance Guidelines
+## Two-Branch Development Strategy
 
-### Effective Immediately: All Changes via PR
+### Branch Purpose
 
-#### Main Branch
-- ❌ NO direct pushes allowed
-- ✅ ALL changes must go through Pull Request
+| Branch | Purpose | When to Use |
+|--------|---------|-------------|
+| **dev** | Active development, feature integration | Create feature branches from here |
+| **main** | Production-ready code, releases | Only merge tested features from dev |
+
+### Correct Workflow (REQUIRED)
+
+```
+Feature Branch → Dev → Main
+      ↑            ↑       ↑
+   create        PR      PR
+   from         merge   merge
+   dev          (test)  (final test)
+```
+
+#### Step-by-Step Process
+
+1. **Create feature branch FROM dev:**
+   ```bash
+   git checkout dev
+   git pull origin dev
+   git checkout -b issue-<number>/<description>
+   ```
+
+2. **Develop and quick test:**
+   - Make changes
+   - Test locally/quickly
+   - Commit with conventional format
+
+3. **Create PR to dev:**
+   ```bash
+   git push -u origin issue-<number>/<description>
+   gh pr create --base dev --title "Description (#<issue>)"
+   ```
+
+4. **Merge to dev after review:**
+   - Requires CODEOWNERS review
+   - All checks must pass
+   - Use regular merge (preserves history)
+
+5. **Create PR from dev to main:**
+   ```bash
+   gh pr create --base main --head dev --title "Release description"
+   ```
+
+6. **Final testing on PR to main:**
+   - More comprehensive testing
+   - All checks must pass
+   - Requires 1 review + CODEOWNERS
+
+7. **Merge to main:**
+   - Use squash merge for clean history
+   - Tag releases from main
+
+### Branch Rules
+
+#### Main Branch (Protected)
+- ❌ NO direct pushes
+- ✅ PR from dev only
 - ✅ Requires 1 approving review
 - ✅ Requires CODEOWNERS review (@sbadakhc)
 - ✅ All status checks must pass
-- ✅ Use squash merge for clean history
+- ✅ Use **squash merge**
 
-#### Dev Branch  
-- ❌ NO direct pushes allowed
-- ✅ ALL changes must go through Pull Request
+#### Dev Branch (Protected)
+- ❌ NO direct pushes
+- ✅ PR from feature branches only
 - ✅ Requires CODEOWNERS review
 - ✅ All status checks must pass
-- ✅ Can use regular merge (preserves dev history)
+- ✅ Use **regular merge** (preserves feature history)
+
+### ❌ INCORRECT Workflows
+
+**DON'T: Merge feature directly to main**
+```
+feature → main  ❌ WRONG
+```
+
+**DON'T: Create feature from main**
+```
+main → feature → dev  ❌ WRONG
+```
+
+**DON'T: Sync main back to dev via PR**
+```
+main → dev  ❌ WRONG (dev should feed main, not vice versa)
+```
 
 ### Emergency Procedures
 
 If bypass is absolutely necessary:
-1. Document reason in commit message: "[EMERGENCY] Brief explanation"
-2. Create retrospective issue explaining the bypass
-3. Return to PR workflow immediately after
+1. Document reason: `[EMERGENCY] Brief explanation`
+2. Create retrospective issue
+3. Return to PR workflow immediately
 
-### Sync Workflow (Main <-> Dev)
+### Historical Context
 
-To sync main changes to dev:
-```bash
-# Create PR from main to dev
-gh pr create --base dev --head main --title "Sync main into dev"
-# Merge via PR (not direct push)
-```
+**v1.0.0 Release Issues:**
+- Initial releases merged features directly to main
+- Created circular sync problems
+- Workflow policy established post-v1.0.0 to prevent recurrence
 
-To promote dev to main:
-```bash
-# Create PR from dev to main
-gh pr create --base main --head dev --title "Release X.Y.Z"
-# Merge via PR with squash
-```
-
-### Current Status Acknowledgment
-
-As of v1.0.0 release:
-- Main and dev branches were directly pushed for release
-- This was an exception due to release timing
-- Going forward: ZERO exceptions without documented emergency justification
+**Corrected as of:** Workflow policy update
 
 ### Enforcement
 
-Branch protection rules are active:
-- Ruleset: main (active)
-- Ruleset: dev (active)
+Branch protection active:
+- Ruleset: main (active) - PR required
+- Ruleset: dev (active) - PR required
 - CODEOWNERS: @sbadakhc
-- Required reviews: 1 (main), CODEOWNERS (both)
 
-Last updated: 2026-04-30
+---
+
+**Last updated:** 2026-04-30
+**Version:** 2.0 (corrected two-branch workflow)
