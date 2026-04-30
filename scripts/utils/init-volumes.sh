@@ -70,12 +70,12 @@ EXISTING_COUNT=0
 for volume in "${VOLUMES[@]}"; do
   if $DOCKER_BIN volume inspect "$volume" &> /dev/null; then
     echo -e "${GREEN}[✓]${NC} Volume exists: $volume"
-    ((EXISTING_COUNT++))
+    EXISTING_COUNT=$((EXISTING_COUNT + 1))
   else
     echo -e "${YELLOW}[ ]${NC} Creating volume: $volume"
     if $DOCKER_BIN volume create "$volume" &> /dev/null; then
       echo -e "${GREEN}[✓]${NC} Created volume: $volume"
-      ((CREATED_COUNT++))
+      CREATED_COUNT=$((CREATED_COUNT + 1))
     else
       echo -e "${RED}[✗]${NC} Failed to create volume: $volume"
       exit 1
