@@ -4,6 +4,44 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.0] - 2026-04-30
+
+### Summary
+
+**Official v1.0.0 Release** - Production-ready AIXCL platform. This release finalizes 9 release candidates with comprehensive infrastructure improvements, devcontainer fixes, and repository governance. Key achievements include complete Codespaces compatibility, proper CODEOWNERS configuration, and robust branch protection.
+
+### Added
+
+- **Devcontainer Simplification**: Consolidated lifecycle scripts and fixed Codespaces compatibility (#888)
+  - Merged 4 scripts into 1 post-attach script with first-run detection
+  - Removed external volume requirement for automatic Codespaces provisioning
+  - Renamed devcontainer to 'codespace devcontainer' for clarity
+  - Fixed docker-compose paths for correct file resolution
+
+### Changed
+
+- **CODEOWNERS Configuration**: Updated to reflect sole maintainer ownership (#893)
+  - Set @sbadakhc as default owner for entire repository
+  - Simplified from 10-line multi-owner to 3-line single-owner configuration
+  - Added documentation comment explaining ownership model
+
+### Infrastructure
+
+- **Branch Protection**: Configured active rulesets for main and dev branches
+  - Main: Requires 1 review + CODEOWNERS approval
+  - Dev: Requires PR with CODEOWNERS approval (0 reviews for flexibility)
+  - Code scanning and quality checks enforced on both branches
+
+- **CI/CD Improvements**: Split tests into quick and integration workflows
+  - Updated docker/setup-buildx-action to v4 for Node.js 24 compatibility
+  - All CI checks passing consistently
+
+### Contributors
+
+Special thanks to all contributors across 9 release candidates who helped achieve this production-ready release.
+
+---
+
 ## [v1.0.0-rc9] - 2026-04-30
 
 ### Summary
