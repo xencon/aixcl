@@ -35,8 +35,8 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 # Uncommitted changes (empty = clean)
 UNSTAGED=$(git status --short)
 
-# Commits not on main (empty = no commits)
-COMMITS=$(git log --oneline main..HEAD)
+# Commits not on dev (empty = no commits)
+COMMITS=$(git log --oneline dev..HEAD)
 
 # Open PR for this branch
 PR_JSON=$(gh pr list --head "$BRANCH" --json state,number --jq '.[0]')
@@ -60,14 +60,14 @@ fi
 
 | Branch Pattern | Unstaged Changes | Commits on Branch | PR State | Current Phase | Next Action |
 |---------------|-------------------|-------------------|----------|---------------|-------------|
-| `main` | any | — | none | No active workflow | Start with `/workflow` or `/issue` |
-| `main` | yes | — | none | Working on main (blocked) | Create issue first, then switch to `/branch` |
+| `dev` | any | — | none | No active workflow | Start with `/workflow` or `/issue` |
+| `dev` | yes | — | none | Working on dev (blocked) | Create issue first, then switch to `/branch` |
 | `issue-<n>` branch | yes | none or old | none | **Phase 3: Work in progress** | `Add .` then `/commit` to stage and commit |
 | `issue-<n>` branch | no | none | none | **Phase 3: Work pending** | Begin implementation or `/commit` |
 | `issue-<n>` branch | no | 1+ commits | none | **Phase 5: PR needed** | `/pr` to create pull request |
 | `issue-<n>` branch | no | 1+ commits | OPEN | **Phase 6: CI pending** | `/verify` to check or continue monitoring |
 | `issue-<n>` branch | no | 1+ commits | OPEN + CI green | Ready to merge | `/merge` or `gh pr merge` |
-| `issue-<n>` branch | no | 1+ commits | MERGED | Completed | `git checkout main` |
+| `issue-<n>` branch | no | 1+ commits | MERGED | Completed | `git checkout dev` |
 
 ### Report Format
 

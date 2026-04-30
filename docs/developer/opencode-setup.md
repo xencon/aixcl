@@ -32,7 +32,7 @@ Ensure your AIXCL stack is running and your preferred inference engine is health
 From the repo root:
 
 ```bash
-./opencode
+opencode
 ```
 
 OpenCode will connect to the AIXCL local provider defined in `opencode.json` and load the

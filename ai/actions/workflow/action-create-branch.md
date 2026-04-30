@@ -1,6 +1,6 @@
 ---
 name: Create Branch
-description: Creates a feature branch from main following the branch naming convention
+description: Creates a feature branch from dev following the branch naming convention
 category: workflow
 tool: git
 requires:
@@ -11,14 +11,14 @@ requires:
 
 # Action: Create Branch
 
-Creates a feature branch from `main` following AIXCL branch naming conventions.
+Creates a feature branch from `dev` following AIXCL branch naming conventions.
 
 ## Commands
 
 ```bash
-# Checkout main and pull latest
-git checkout main
-git pull origin main
+# Checkout dev and pull latest
+git checkout dev
+git pull origin dev
 
 # Create branch
 git checkout -b issue-<number>/<short-description>
@@ -43,7 +43,7 @@ issue-<number>/<short-description>
 ## Process
 
 1. Verify issue exists and is assigned
-2. Ensure you're on main and it's up to date
+2. Ensure you're on dev and it's up to date
 3. Create branch with correct naming format
 4. Confirm branch creation
 5. Ready to make changes
@@ -53,7 +53,7 @@ issue-<number>/<short-description>
 After creation:
 - [ ] Branch name includes issue number
 - [ ] Branch name is lowercase with hyphens
-- [ ] Branch is based on latest main
+- [ ] Branch is based on latest dev
 - [ ] Issue number matches exactly
 
 ## Alternative Patterns
