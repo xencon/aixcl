@@ -1,5 +1,5 @@
 {
-  "name": "AIXCL Platform Dev",
+  "name": "codespace devcontainer",
   "dockerComposeFile": [
     "../services/docker-compose.yml",
     "docker-compose.dev.yml"
