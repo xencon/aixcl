@@ -69,7 +69,41 @@ gh issue create --title "[TASK] <title>" --label "maintenance" --assignee <assig
 
 ---
 
-## 3. Branch naming
+## 3. Branch Strategy
+
+### Main vs Dev Branches
+
+This repository uses a **two-branch strategy**:
+
+| Branch | Purpose | When to Use |
+|--------|---------|-------------|
+| `main` | Production-ready code | Only for releases and hotfixes |
+| `dev` | Active development | All new features, fixes, and PRs |
+
+### Workflow
+
+1. **Create feature branches from `dev`:**
+   ```bash
+   git checkout dev
+   git pull origin dev
+   git checkout -b issue-<number>/<description>
+   ```
+
+2. **Push to `dev` via PR:**
+   ```bash
+   gh pr create --title "Description (#<issue>)" --base dev
+   ```
+
+3. **Merge to `main` when ready:**
+   - Create PR from `dev` → `main` for releases
+   - Or cherry-pick hotfixes directly to `main`
+
+### Protected Branches
+
+- `main`: Requires PR review, status checks pass
+- `dev`: Requires status checks, PR recommended
+
+### Branch naming
 
 ```
 issue-<number>/<short-description>

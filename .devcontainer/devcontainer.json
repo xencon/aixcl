@@ -1,8 +1,8 @@
 {
-  "name": "AIXCL Platform Dev",
+  "name": "codespace devcontainer",
   "dockerComposeFile": [
-    "services/docker-compose.yml",
-    ".devcontainer/docker-compose.dev.yml"
+    "../services/docker-compose.yml",
+    "docker-compose.dev.yml"
   ],
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
@@ -41,9 +41,8 @@
       "onAutoForward": "silent"
     }
   },
-  "postCreateCommand": ".devcontainer/scripts/post-create.sh",
-  "postStartCommand": ".devcontainer/scripts/post-start.sh",
   "initializeCommand": ".devcontainer/scripts/initialize.sh",
+  "postAttachCommand": ".devcontainer/scripts/post-attach.sh",
   "shutdownAction": "stopCompose",
   "remoteUser": "vscode",
   "containerUser": "vscode",
@@ -52,6 +51,9 @@
   "privileged": true,
   "securityOpt": ["seccomp=unconfined"],
   "capAdd": ["SYS_PTRACE", "SYS_ADMIN"],
+  "containerEnv": {
+    "COMPOSE_FILE": "/workspace/services/docker-compose.yml:/workspace/.devcontainer/docker-compose.dev.yml"
+  },
   "mounts": [
     {
       "type": "bind",
@@ -77,6 +79,12 @@
       "type": "volume",
       "source": "aixcl-pgdata",
       "target": "/var/lib/postgresql/data"
+    },
+    {
+      "type": "bind",
+      "source": "${localWorkspaceFolder}/scripts/runtime",
+      "target": "/workspace/scripts/runtime",
+      "consistency": "cached"
     }
   ],
   "hostRequirements": {
