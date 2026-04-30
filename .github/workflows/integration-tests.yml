@@ -1,4 +1,4 @@
-name: Tests
+name: Integration Tests
 
 on:
   push:
@@ -6,55 +6,53 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+  schedule:
+    # Run nightly at 2 AM UTC (off-peak hours)
+    - cron: '0 2 * * *'
 
 permissions:
   contents: read
 
 jobs:
-  security-tests:
-    name: Security Tests
+  check-env:
+    name: Check Environment
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run security tests
-        run: |
-          echo "Running security tests..."
-          chmod +x tests/security/*.sh
-          for test in tests/security/*.sh; do
-            echo "Running: $test"
-            bash "$test" || exit 1
-          done
-          echo "All security tests passed!"
+      - name: Make aixcl executable
+        run: chmod +x ./aixcl
 
-  script-validation:
-    name: Validate Shell Scripts
+      - name: Run aixcl check-env
+        run: ./aixcl utils check-env
+
+  check-line-endings:
+    name: Check Line Endings
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Check script syntax
+      - name: Check for Windows line endings (CRLF)
         run: |
-          echo "Checking shell script syntax..."
-          find . -type f -name "*.sh" ! -path "./.git/*" -exec bash -n {} \; 2>&1 | tee /tmp/syntax_errors.txt
-          if [ -s /tmp/syntax_errors.txt ]; then
-            echo "Syntax errors found!"
+          echo "Checking for CRLF line endings..."
+          CRLF_FILES=$(find . -type f -not -path "./.git/*" -not -path "./pgadmin-data/*" -not -path "./logs/*" -exec file {} \; 2>/dev/null | grep -i "with CRLF" | cut -d: -f1 | sed 's|^\./||')
+          if [ -n "$CRLF_FILES" ]; then
+            echo "ERROR: Found files with Windows line endings (CRLF):"
+            echo "$CRLF_FILES"
+            echo ""
+            echo "Please convert these files to Unix line endings (LF) before committing."
+            echo "You can use: sed -i 's/\\r$//' <file>"
             exit 1
+          else
+            echo "✓ No CRLF files found - all line endings are Unix style (LF)"
           fi
-          echo "All scripts have valid syntax!"
-
-      - name: Test script execution
-        run: |
-          echo "Testing critical scripts can be sourced..."
-          chmod +x ./aixcl
-          ./aixcl --help > /dev/null || exit 1
-          echo "Scripts are executable!"
 
   devcontainer-engine-tests:
     name: Devcontainer Engine Tests (CPU-only)
     runs-on: ubuntu-latest
+    needs: [check-env, check-line-endings]
     # Note: Tests run in CPU-only mode since GitHub Actions doesn't provide GPU
     # GPU functionality is tested via compose file validation
     steps:
