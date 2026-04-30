@@ -27,17 +27,17 @@
 
 All work in this session adheres to:
 
-- **Invariants**: [`docs/architecture/governance/00_invariants.md`](../architecture/governance/00_invariants.md)
-- **Agentic Guidance**: [`docs/architecture/governance/01_ai_guidance.md`](../architecture/governance/01_ai_guidance.md)
-- **Profiles**: [`docs/architecture/governance/02_profiles.md`](../architecture/governance/02_profiles.md)
-- **Development Workflow**: [`docs/developer/development-workflow.md`](../developer/development-workflow.md)
-- **Service Contracts**: [`docs/architecture/governance/service_contracts/`](../architecture/governance/service_contracts/)
+- **Invariants**: [`00_invariants.md`](00_invariants.md)
+- **Agentic Guidance**: [`01_ai_guidance.md`](01_ai_guidance.md)
+- **Profiles**: [`02_profiles.md`](02_profiles.md)
+- **Development Workflow**: [`../../developer/development-workflow.md`](../../developer/development-workflow.md)
+- **Service Contracts**: [`service_contracts/`](service_contracts/)
 
 ## Quick Reference
 
 **Before starting work:**
-1. Review [`docs/developer/development-workflow.md`](../developer/development-workflow.md)
-2. Review [`docs/architecture/governance/00_invariants.md`](../architecture/governance/00_invariants.md)
+1. Review [`../../developer/development-workflow.md`](../../developer/development-workflow.md)
+2. Review [`00_invariants.md`](00_invariants.md)
 3. Review relevant service contracts if making architectural changes
 
 **When making changes:**
