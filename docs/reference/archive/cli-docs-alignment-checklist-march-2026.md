@@ -2,7 +2,7 @@
 
 This checklist tracks the alignment between the **aixcl** CLI implementation and its documentation.
 
-Reference: [Consistency Gap Report (2026)](./consistency-gap-report-2026.md)
+Reference: [Consistency Gap Report (2026)](../consistency-gap-report-2026.md)
 
 ---
 
