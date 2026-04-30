@@ -4,15 +4,45 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.0-rc9] - 2026-04-30
+
+### Summary
+
+Release Candidate 9 for v1.0.0. This release includes 25+ commits since RC8 with major improvements to engine stability, volume management, and CI/CD infrastructure. Key highlights include GPU startup fixes for llama.cpp, standardized volume naming across contexts, and comprehensive CI tests for all three inference engines.
+
+### Added
+
+- **CI/CD Testing**: Comprehensive devcontainer engine tests for all three engines (Ollama, llama.cpp, vLLM) (#882)
+  - Automated testing in CPU-only mode for GitHub Actions
+  - Volume persistence validation
+  - Engine switching tests
+  - Volume consistency validation script
+
 ### Fixed
 
-- **Documentation**: Corrected Podman support claims to reflect experimental status (#864)
-- **Documentation**: Added missing CLI commands to README.md (#862)
-- **Documentation**: Updated skill file references to clarify optional status (#861)
-- **Documentation**: Updated agents.md to reflect actual configuration approach (#860)
-- **Documentation**: Fixed check-agents.sh path references (#859)
-- **Documentation**: Removed hardcoded usernames and Unicode checkmarks (#858)
-- **Documentation**: Fixed orphaned links and broken references (#857)
+- **llama.cpp GPU Support**: Fixed container startup error by properly configuring volumes and entrypoint in GPU compose (#884)
+  - Removed broken shell entrypoint override
+  - Added proper volume mounts for models and entrypoint script
+  - Container now starts successfully with GPU support
+
+### Changed
+
+- **Volume Management**: Standardized volume naming across local Docker, devcontainer, and GitHub Codespaces (#883)
+  - Renamed all volumes to use `aixcl-*` prefix (e.g., `aixcl-ollama-data`, `aixcl-llamacpp-data`)
+  - Volumes now marked as `external: true` for persistence across contexts
+  - Added `init-volumes.sh` script for one-time volume initialization
+  - Stack start automatically checks and initializes volumes
+
+### Infrastructure
+
+- **llama.cpp Model Format**: Fixed default INFERENCE_MODEL to use full HuggingFace path format (#879)
+  - Changed from filename-only to full path: `Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf`
+  - Aligns with README documentation
+  - Fixes model download issues in devcontainer workflows
+
+### Contributors
+
+Thanks to all contributors who helped improve engine stability, volume management, and testing infrastructure.
 
 ---
 
