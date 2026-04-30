@@ -37,19 +37,22 @@ sudo systemctl restart docker
 # 1. Navigate to repository
 cd ~/src/github.com/xencon/aixcl
 
-# 2. Build and start the dev container
+# 2. Initialize external volumes (first time only)
+./scripts/utils/init-volumes.sh
+
+# 3. Build and start the dev container
 docker compose -f .devcontainer/docker-compose.dev.yml up -d
 
-# 3. Enter the container
+# 4. Enter the container
 docker exec -it devcontainer-devcontainer-1 /bin/bash
 
-# 4. Switch to vscode user (recommended)
+# 5. Switch to vscode user (recommended)
 su vscode
 
-# 5. Start AIXCL
+# 6. Start AIXCL
 ./aixcl stack start --profile usr
 
-# 6. Verify services
+# 7. Verify services
 ./aixcl stack status
 ```
 
@@ -220,6 +223,19 @@ The following data persists across container restarts:
 | `aixcl-hf-cache` | `/home/vscode/.cache/huggingface` | HF models |
 | `aixcl-llamacpp-data` | `/models` | llama.cpp models |
 | `aixcl-pgdata` | `/var/lib/postgresql/data` | PostgreSQL data |
+
+> **Note:** These volumes are shared with standard Docker workflows. Models downloaded via devcontainer are available in local Docker and vice versa.
+
+### First-Time Setup
+
+Before starting AIXCL for the first time (in devcontainer or locally), initialize the external volumes:
+
+```bash
+# Initialize volumes (creates them if they don't exist)
+./scripts/utils/init-volumes.sh
+```
+
+This ensures volumes are created as external named volumes, enabling data sharing across contexts.
 
 ---
 

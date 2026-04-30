@@ -5,7 +5,7 @@ services:
     pull_policy: if_not_present
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
     volumes:
-      - ollama:/home/ubuntu/.ollama
+      - aixcl-ollama-data:/home/ubuntu/.ollama
       - ../scripts/runtime/ollama-entrypoint.sh:/ollama-entrypoint.sh:ro
     entrypoint: ["/ollama-entrypoint.sh"]
     environment:
@@ -35,7 +35,7 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
-      - huggingface-cache:/home/vllm/.cache/huggingface
+      - aixcl-hf-cache:/home/vllm/.cache/huggingface
       - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
     environment:
       # vLLM runtime configuration (configured via .env)
@@ -83,7 +83,7 @@ services:
     pull_policy: if_not_present
     user: "1000:1000"  # Run as non-root user for security
     volumes:
-      - llamacpp-data:/models
+      - aixcl-llamacpp-data:/models
       - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
     tty: true
     network_mode: host
@@ -107,8 +107,8 @@ services:
     pull_policy: if_not_present
     user: "0:0"  # Start as root for permission setup, entrypoint switches to non-root
     volumes:
-      - open-webui:/app/backend/data
-      - open-webui-data:/app/data
+      - aixcl-open-webui:/app/backend/data
+      - aixcl-open-webui-data:/app/data
       - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
     environment:
@@ -168,7 +168,7 @@ services:
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - aixcl-pgdata:/var/lib/postgresql/data
       - ../scripts/db/init:/docker-entrypoint-initdb.d:ro
     network_mode: host
     restart: always
@@ -209,8 +209,8 @@ services:
       PGADMIN_USER_ID: "5050"
       PGADMIN_GROUP_ID: "5050"
     volumes:
-      - pgadmin-storage:/var/lib/pgadmin/storage
-      - pgadmin-data:/var/lib/pgadmin
+      - aixcl-pgadmin-storage:/var/lib/pgadmin/storage
+      - aixcl-pgadmin:/var/lib/pgadmin
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
       - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
@@ -233,7 +233,7 @@ services:
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ../prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus-data:/prometheus
+      - aixcl-prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -261,7 +261,7 @@ services:
       - /tmp:noexec,nosuid,size=100m
     volumes:
       - ../prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
+      - aixcl-alertmanager-data:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
@@ -283,7 +283,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - grafana-data:/var/lib/grafana
+      - aixcl-grafana:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
@@ -392,7 +392,7 @@ services:
       - no-new-privileges:true
     volumes:
       - ../loki/loki-config.yml:/etc/loki/loki-config.yml:ro
-      - loki-data:/loki
+      - aixcl-loki:/loki
     command: -config.file=/etc/loki/loki-config.yml
     network_mode: host
     restart: unless-stopped
@@ -440,19 +440,37 @@ services:
       - loki
     restart: unless-stopped
 
+# External named volumes for persistence across contexts
+# These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
+# Using external: true ensures volumes are created once and reused
 volumes:
-  ollama:
-  huggingface-cache:
-  vllm-data:
-  llamacpp-data:
-  open-webui:
-  open-webui-data:
-  postgres-data:
-  prometheus-data:
-  grafana-data:
-  loki-data:
-  alloy-data:
-  alertmanager-data:
-  pgadmin-storage:
-  pgadmin-data:
-  pgadmin-config:
+  aixcl-ollama-data:
+    external: true
+  aixcl-hf-cache:
+    external: true
+  aixcl-vllm-data:
+    external: true
+  aixcl-llamacpp-data:
+    external: true
+  aixcl-open-webui:
+    external: true
+  aixcl-open-webui-data:
+    external: true
+  aixcl-pgdata:
+    external: true
+  aixcl-prometheus:
+    external: true
+  aixcl-grafana:
+    external: true
+  aixcl-loki:
+    external: true
+  aixcl-alloy-data:
+    external: true
+  aixcl-alertmanager-data:
+    external: true
+  aixcl-pgadmin-storage:
+    external: true
+  aixcl-pgadmin:
+    external: true
+  aixcl-pgadmin-config:
+    external: true

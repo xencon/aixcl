@@ -383,6 +383,18 @@ function start() {
     echo "Pulling latest images..."
     run_compose pull
     
+    # Initialize external volumes if they don't exist
+    # This ensures volumes are created before services try to use them
+    if [ -f "${SCRIPT_DIR}/scripts/utils/init-volumes.sh" ]; then
+        echo "Checking external volumes..."
+        # Run the volume init script but suppress most output for clean UX
+        if bash "${SCRIPT_DIR}/scripts/utils/init-volumes.sh" 2>&1 | grep -E "(Created:|Error:|Summary)"; then
+            :  # Already showing the relevant lines
+        else
+            echo "[x] All external volumes ready"
+        fi
+    fi
+    
     if [ "$profile" = "usr" ]; then
         echo "Note: Usr profile includes PostgreSQL for database persistence (minimal footprint)"
     fi
