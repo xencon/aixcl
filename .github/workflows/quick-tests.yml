@@ -2,8 +2,8 @@ name: Quick Tests
 
 on:
   push:
-    branches-ignore:
-      - 'main'
+    branches:
+      - 'dev'
     paths:
       - '**.sh'
       - 'aixcl'
