@@ -51,7 +51,7 @@ services:
               capabilities: [gpu]
     # Docker-in-Docker fix: Use multi-line command format for proper YAML parsing
     environment:
-      - INFERENCE_MODEL=${INFERENCE_MODEL:-qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
+      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
