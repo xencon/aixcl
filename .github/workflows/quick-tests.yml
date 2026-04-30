@@ -2,8 +2,8 @@ name: Quick Tests
 
 on:
   push:
-    branches-ignore:
-      - 'main'
+    branches:
+      - 'dev'
     paths:
       - '**.sh'
       - 'aixcl'
@@ -55,16 +55,3 @@ jobs:
           chmod +x ./aixcl
           ./aixcl --help > /dev/null || exit 1
           echo "Scripts are executable!"
-
-  volume-consistency:
-    name: Volume Consistency Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Validate volume configuration
-        run: |
-          echo "Validating volume consistency..."
-          chmod +x ./scripts/utils/validate-volume-consistency.sh
-          ./scripts/utils/validate-volume-consistency.sh

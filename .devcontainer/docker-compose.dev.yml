@@ -54,23 +54,14 @@ services:
       start_period: 10s
 
 volumes:
-  # External named volumes for persistence across contexts (local, devcontainer, Codespaces)
-  # These volumes are created once and reused, ensuring data consistency
+  # Named volumes for persistence across contexts (local, devcontainer, Codespaces)
+  # These volumes are created automatically when first used
   aixcl-ollama-data:
-    external: true
   aixcl-hf-cache:
-    external: true
   aixcl-llamacpp-data:
-    external: true
   aixcl-pgdata:
-    external: true
   aixcl-pgadmin:
-    external: true
   aixcl-grafana:
-    external: true
   aixcl-prometheus:
-    external: true
   aixcl-loki:
-    external: true
   aixcl-alloy-data:
-    external: true
