@@ -35,7 +35,7 @@ git rev-parse --abbrev-ref HEAD
 # Uncommitted changes
 git status --short
 
-# Commits not on main
+# Commits not on dev
 git log --oneline main..HEAD
 
 # Open PR for this branch
@@ -78,7 +78,7 @@ This command orchestrates the entire Issue-First workflow:
 5. Notes issue number
 
 ### Phase 2: Branch Creation
-6. Checks out main branch
+6. Checks out dev branch
 7. Pulls latest changes
 8. Creates feature branch: `issue-<number>/<description>`
 9. Switches to new branch
@@ -129,7 +129,7 @@ Creates a [FEATURE] issue, branches, implements, commits, and creates PR.
 ```
 /workflow Fix memory leak in connection pooling
 ```
-Creates a [BUG] issue with Fix label, branches from main, implements fix.
+Creates a [BUG] issue with Fix label, branches from dev, implements fix.
 
 ### Refactoring Task
 ```

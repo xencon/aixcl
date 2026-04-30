@@ -73,7 +73,7 @@ gh pr list --state=open --head="$(git branch --show-current)" 2>/dev/null
 | Current State | Detected | Suggested Next Step |
 |--------------|----------|---------------------|
 | No issue | `gh issue list` empty | `/issue` - Create issue |
-| Issue exists, no branch | On `main` | `/branch <number>` - Create branch |
+| Issue exists, no branch | On `dev` | `/branch <number>` - Create branch |
 | On feature branch, no changes | Clean git status | Ready to work or `/commit` |
 | On feature branch, has changes | Modified files | `/commit` - Commit changes |
 | Branch pushed, no PR | `gh pr list` empty | `/pr` - Create PR |
@@ -133,7 +133,7 @@ When running `/workflow`, the agent should:
    ```
    Current state detected:
    - Open issues: #217, #218
-   - Current branch: main
+   - Current branch: dev
    - Working directory: clean
    - No existing PR for this branch
    
@@ -172,7 +172,7 @@ Agent:
 
 Found:
 ✓ 2 open issues by you: #220, #221
-✓ Currently on branch: main
+✓ Currently on branch: dev
 ✓ Working directory: clean
 ✓ No PR exists yet
 

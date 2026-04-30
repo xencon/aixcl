@@ -29,7 +29,7 @@ Available Actions:
 
 Workflow Actions:
 - create-issue: Creates a GitHub issue following the Issue-First workflow
-- create-branch: Creates a feature branch from main
+- create-branch: Creates a feature branch from dev
 - commit: Commits changes using conventional commit format
 - create-pr: Creates a GitHub pull request
 - verify-ci: Verifies CI status and ensures all checks pass
