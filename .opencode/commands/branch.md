@@ -1,11 +1,11 @@
 ---
-description: Creates a feature branch from main following the branch naming convention
+description: Creates a feature branch from dev following the branch naming convention
 agent: agent-context
 ---
 
 # /branch Command
 
-Creates a feature branch from main following the AIXCL branch naming convention.
+Creates a feature branch from dev following the AIXCL branch naming convention.
 
 ## Usage
 

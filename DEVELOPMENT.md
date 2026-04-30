@@ -32,9 +32,9 @@ Read the following documents before beginning work:
 **Always create an issue before starting work.** Every code change, fix, or feature must be
 traceable to a GitHub issue. Do not begin modifying files until an issue exists.
 
-Select the correct template from `ai/templates/issue/` based on the type of work:
+Select the correct template from `.github/ISSUE_TEMPLATE/` based on the type of work:
 
-### Bug report - `ai/templates/issue/bug_report.md`
+### Bug report - `.github/ISSUE_TEMPLATE/bug_report.md`
 
 - Title prefix: `[BUG]`
 - Labels: `priority:medium`, `profile:dev`
@@ -43,7 +43,7 @@ Select the correct template from `ai/templates/issue/` based on the type of work
   Impact (component / severity / frequency), Root Cause Analysis, Remediation, Verification,
   Additional Context
 
-### Feature request - `ai/templates/issue/feature_request.md`
+### Feature request - `.github/ISSUE_TEMPLATE/feature_request.md`
 
 - Title prefix: `[FEATURE]`
 - Labels: `enhancement`
@@ -51,7 +51,7 @@ Select the correct template from `ai/templates/issue/` based on the type of work
 - Required sections: Feature Overview, Problem Statement, Current Behavior, Proposed Solution,
   Design Considerations, Implementation Plan, Verification
 
-### Task / investigation - `ai/templates/issue/task.md`
+### Task / investigation - `.github/ISSUE_TEMPLATE/task.md`
 
 - Title prefix: `[TASK]`
 - Labels: `maintenance`
@@ -164,7 +164,7 @@ Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
 
 ---
 
-## 5. Pull request format — `ai/templates/pr/pull_request.md`
+## 5. Pull request format — `.github/PULL_REQUEST_TEMPLATE.md`
 
 All PRs must follow this structure exactly:
 
@@ -259,10 +259,10 @@ When working via the OpenCode CLI:
 
 | Template | Path |
 |---|---|
-| Bug report | `ai/templates/issue/bug_report.md` |
-| Feature request | `ai/templates/issue/feature_request.md` |
-| Task / investigation | `ai/templates/issue/task.md` |
-| Pull request | `ai/templates/pr/pull_request.md` |
+| Bug report | `.github/ISSUE_TEMPLATE/bug_report.md` |
+| Feature request | `.github/ISSUE_TEMPLATE/feature_request.md` |
+| Task / investigation | `.github/ISSUE_TEMPLATE/task.md` |
+| Pull request | `.github/PULL_REQUEST_TEMPLATE.md` |
 
 ---
 

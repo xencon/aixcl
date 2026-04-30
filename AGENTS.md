@@ -28,7 +28,7 @@ When conflicts arise, follow this order:
 3. **DEVELOPMENT.md** (workflow rules, templates)
 4. **ai/governance/** (behavioral constraints)
 5. **ai/actions/** (executable workflow actions)
-6. **ai/templates/** (structured output templates)
+6. **ai/templates/** (release templates; issue/PR templates in `.github/`)
 7. **docs/architecture/governance/** (platform invariants)
 8. **docs/developer/** (developer guides)
 
@@ -73,10 +73,10 @@ gh pr edit <number> --add-label "component:cli" --add-assignee <username>
 **Template loading (MANDATORY before composing any issue/PR body)**
 ```bash
 # Read the template first, then compose the body using its exact headings
-cat ai/templates/issue/task.md
-cat ai/templates/issue/bug_report.md
-cat ai/templates/issue/feature_request.md
-cat ai/templates/pr/pull_request.md
+cat .github/ISSUE_TEMPLATE/task.md
+cat .github/ISSUE_TEMPLATE/bug_report.md
+cat .github/ISSUE_TEMPLATE/feature_request.md
+cat .github/PULL_REQUEST_TEMPLATE.md
 ```
 
 ### Formatting Rules (NON-NEGOTIABLE)

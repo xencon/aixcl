@@ -35,7 +35,7 @@ git rev-parse --abbrev-ref HEAD
 # Uncommitted changes
 git status --short
 
-# Commits not on main
+# Commits not on dev
 git log --oneline main..HEAD
 
 # Open PR for this branch

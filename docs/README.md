@@ -43,7 +43,7 @@ Configuration templates and profiles:
 ### GitHub Templates (`.github/`)
 GitHub-specific templates:
 - `PULL_REQUEST_TEMPLATE.md` - Pull request template
-- Issue templates are in `ai/templates/issue/`
+- `ISSUE_TEMPLATE/` - Issue templates (bug report, feature request, task)
 
 ## Component-Specific Documentation
 
