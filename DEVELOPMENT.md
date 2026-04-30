@@ -3,12 +3,12 @@
 | field         | value                                                                      |
 |---------------|----------------------------------------------------------------------------|
 | file          | DEVELOPMENT.md                                                             |
-| version       | 2.0 (tracks workflow evolution; subordinate to AGENTS.md v1.2)             |
-| scope         | all agents and AI assistants                                               |
+| version       | 2.0 (tracks workflow evolution; subordinate to AGENTS.md v1.5)             |
+| scope         | all agents                                                                 |
 | priority      | high                                                                       |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, any MCP-compatible agent           |
 
-Agents and AI assistants MUST read this file before performing any development work in this repository.
+Agents MUST read this file before performing any development work in this repository.
 This file is the single source of truth for workflow, formatting, and contribution rules.
 It complements `AGENTS.md` (the operating contract) and `ai/governance/` (behavioral constraints).
 
@@ -268,7 +268,7 @@ When working via the OpenCode CLI:
 
 ## 10. Agent Compliance
 
-Agents must confirm they've read AGENTS.md and verified compliance with its security model before starting any task.
+Agents must confirm they've read AGENTS.md and verified compliance with its agent governance model before starting any task.
 
 ---
 

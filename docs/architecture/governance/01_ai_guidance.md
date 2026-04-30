@@ -1,6 +1,6 @@
-# AI Guidance for the AIXCL Repository
+# Agentic Guidance for the AIXCL Repository
 
-This document provides **normative guidance** for AI assistants (and humans using AI tools) working with the AIXCL codebase.
+This document provides **normative guidance** for agents (and humans using agentic tools) working with the AIXCL codebase.
 
 Its purpose is to prevent well-intentioned but harmful changes and to preserve architectural integrity as the platform evolves.
 
@@ -19,7 +19,7 @@ Do **not** attempt to generalize or abstract the runtime core.
 
 ## 2. Non-Negotiable Rules (Strict)
 
-AI assistants **must not**:
+Agents **must not**:
 
 - Remove, replace, or conditionally disable runtime core components
 - Introduce dependencies from runtime core → operational services
@@ -31,7 +31,7 @@ AI assistants **must not**:
 
 ## 3. Safe Areas for Refactoring and Contribution
 
-AI assistants **may** safely operate in:
+Agents **may** safely operate in:
 
 - Operational services (monitoring, logging, automation)
 - Documentation improvements
@@ -53,7 +53,7 @@ AI assistants **may** safely operate in:
 
 ## 5. How to Handle Uncertainty
 
-If an AI assistant encounters ambiguity:
+If an agent encounters ambiguity:
 
 1. Assume runtime invariants must be preserved
 2. Avoid introducing new dependencies

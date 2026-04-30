@@ -1,6 +1,6 @@
-# AI Agentic Workflow Drop-in Folder
+# Agentic Workflow Drop-in Folder
 
-This directory contains AI workflow artifacts for the AIXCL project.
+This directory contains agentic workflow artifacts for the AIXCL project.
 
 ## Structure
 
@@ -89,7 +89,7 @@ Structured output templates for GitHub:
 
 ## Authority Hierarchy
 
-When conflicts arise, AI assistants follow this order:
+When conflicts arise, agents follow this order:
 
 1. **AGENTS.md** (root) - Operating contract and authority hierarchy
 2. **DEVELOPMENT.md** (root) - Development workflow rules
