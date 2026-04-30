@@ -66,12 +66,15 @@ If the issue body does not contain template sections, the agent drafts the PR bo
 2. Drafts PR body using the template's exact section headings (Summary, Description of Changes, Change Checklist, Testing Notes, Verification, Related Issues)
 3. Ensures branch is pushed to remote
 4. Creates PR with proper title format: `<Description> (#<number>)`
-5. Enforces assignee and labels after creation:
+5. **Uses correct base branch:**
+   - Feature branches (issue-\*/\*) → `gh pr create --base dev`
+   - Dev to main releases → `gh pr create --base main --head dev`
+6. Enforces assignee and labels after creation:
    ```bash
    gh pr edit <number> --add-label "component:cli,Maintenance" --add-assignee <username>
    ```
-6. Notes PR number
-7. Verifies CI status
+7. Notes PR number
+8. Verifies CI status
 
 ## PR Title Format
 
@@ -124,8 +127,29 @@ This will:
 - Push branch if not already
 - Create PR with title "Fix encoding in PR descriptions (#218)"
 - Include body with Fixes #218
+- Target `dev` branch (correct for feature branches)
 - Assign to you
 - Add matching labels
+
+## PR Creation Commands
+
+### Feature Branch to Dev (Standard Workflow)
+```bash
+# From feature branch issue-<n>/<description>
+gh pr create --base dev --title "Description (#<number>)" --body "Fixes #<number>"
+```
+
+### Dev to Main (Release Workflow)
+```bash
+# From dev branch when releasing
+gh pr create --base main --head dev --title "Release vX.Y.Z"
+```
+
+### Emergency Hotfix to Main
+```bash
+# From hotfix branch issue-<n>/hotfix-*
+gh pr create --base main --title "Hotfix: Description (#<number>)"
+```
 
 ## Related
 
