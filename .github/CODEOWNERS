@@ -1,10 +1,3 @@
 # Default owner for the entire repository
+# @sbadakhc is the sole maintainer and owner of all code
 * @sbadakhc
-
-# Specific owners for certain directories or files
-/scripts/ @sbadakhc
-docker-compose.yml @sbadakhc
-
-# Owners for specific file types
-*.sh @sbadakhc
-*.yml @sbadakhc
