@@ -44,15 +44,12 @@ docker compose -f .devcontainer/docker-compose.dev.yml up -d
 docker exec -it devcontainer-devcontainer-1 /bin/bash
 
 # 4. Switch to vscode user (recommended)
-su - vscode
+su vscode
 
-# 5. Navigate to workspace
-cd /workspace
-
-# 6. Start AIXCL
+# 5. Start AIXCL
 ./aixcl stack start --profile usr
 
-# 7. Verify services
+# 6. Verify services
 ./aixcl stack status
 ```
 
