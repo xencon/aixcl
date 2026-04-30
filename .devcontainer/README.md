@@ -35,7 +35,7 @@ sudo systemctl restart docker
 
 ```bash
 # 1. Navigate to repository
-cd ~/projects/aixcl
+cd ~/src/github.com/xencon/aixcl
 
 # 2. Build and start the dev container
 docker compose -f .devcontainer/docker-compose.dev.yml up -d
