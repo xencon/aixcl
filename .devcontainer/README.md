@@ -41,7 +41,7 @@ cd ~/projects/aixcl
 docker compose -f .devcontainer/docker-compose.dev.yml up -d
 
 # 3. Enter the container
-docker exec -it aixcl-devcontainer-devcontainer-1 /bin/bash
+docker exec -it devcontainer-devcontainer-1 /bin/bash
 
 # 4. Switch to vscode user (recommended)
 su - vscode
