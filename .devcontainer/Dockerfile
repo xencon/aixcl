@@ -93,12 +93,9 @@ RUN curl -fsSL https://opencode.ai/install.sh | bash
 # Ensure opencode is in PATH for vscode user
 ENV PATH="/home/vscode/.local/bin:${PATH}"
 
-# Switch back to root for entrypoint
+# Switch back to root for DinD setup
 USER root
 
-# Custom entrypoint to ensure docker daemon is available
-COPY .devcontainer/scripts/entrypoint.sh /usr/local/bin/devcontainer-entrypoint
-RUN chmod +x /usr/local/bin/devcontainer-entrypoint
-
-ENTRYPOINT ["/usr/local/bin/devcontainer-entrypoint"]
-CMD ["sleep", "infinity"]
+# Simple entrypoint for DinD support
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["sleep infinity"]
