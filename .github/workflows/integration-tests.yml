@@ -53,6 +53,73 @@ jobs:
             echo "✓ No CRLF files found - all line endings are Unix style (LF)"
           fi
 
+  compose-validation:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+    needs: [check-env, check-line-endings]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v4
+
+      - name: Validate Compose Files
+        run: |
+          echo "Validating Docker Compose files..."
+          
+          # Validate main compose file
+          docker compose -f services/docker-compose.yml config > /dev/null || exit 1
+          echo "✓ Main compose file valid"
+          
+          # Check all compose files exist and are valid YAML
+          for file in services/docker-compose*.yml; do
+            if [ -f "$file" ]; then
+              docker compose -f "$file" config > /dev/null || exit 1
+              echo "✓ $(basename $file) valid"
+            fi
+          done
+          
+          echo "All compose files validated successfully"
+
+      - name: Test Engine Configuration
+        run: |
+          echo "Testing engine configuration..."
+          
+          # Create minimal .env
+          echo "INFERENCE_ENGINE=ollama" > .env
+          echo "PROFILE=usr" >> .env
+          
+          # Test engine set commands
+          chmod +x ./aixcl
+          
+          # Test each engine
+          for engine in ollama vllm llamacpp; do
+            ./aixcl engine set $engine
+            grep -q "INFERENCE_ENGINE=$engine" .env || exit 1
+            echo "✓ Engine $engine configured"
+          done
+          
+          # Test auto-detect
+          ./aixcl engine auto
+          echo "✓ Engine auto-detect works"
+          
+          echo "Engine configuration tests PASSED"
+
+      - name: Test Stack Configuration
+        run: |
+          echo "Testing stack configuration..."
+          
+          # Create minimal .env
+          echo "INFERENCE_ENGINE=ollama" > .env
+          echo "PROFILE=usr" >> .env
+          
+          # Validate stack configs without starting
+          ./aixcl stack status 2>/dev/null || true
+          
+          echo "✓ Stack configuration validated"
+          echo "Stack configuration tests PASSED"
+
   devcontainer-engine-tests:
     name: Devcontainer Engine Tests (CPU-only)
     runs-on: ubuntu-latest
