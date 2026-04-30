@@ -1,6 +1,6 @@
 # Development Workflow Guide
 
-This document describes the standard development workflow for AIXCL. **All contributors, including AI assistants, must follow this workflow.**
+This document describes the standard development workflow for AIXCL. **All contributors, including agents, must follow this workflow.**
 
 ## Overview
 
@@ -271,9 +271,9 @@ opencode --agent ai/orchestration/agent-developer-workflow.md
 
 See [opencode-setup.md](./opencode-setup.md) for installation and configuration instructions.
 
-## AI Assistant Instructions
+## Agent Instructions
 
-When working with AI assistants (like Cursor, GitHub Copilot, etc.), include this prompt:
+When working with agents (like OpenCode, Claude Code, Cursor, Copilot, etc.), include this prompt:
 
 ```
 Follow the development workflow documented in this document:

@@ -5,7 +5,7 @@ Service contracts describe **what a service is allowed to do** and its **depende
 Purpose:
 - Preserve boundaries
 - Reduce blast radius
-- Enable AI-assisted safe modification
+- Enable agentic safe modification
 - Make service intent explicit
 
 ---

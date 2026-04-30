@@ -17,7 +17,7 @@
 - [x] PR format follows template with markdown checkboxes
 - [x] Appropriate labels applied to issues
 
-### AI Assistant Guidelines
+### Agentic Guidelines
 - [x] Runtime core components treated as non-refactorable unless explicitly instructed
 - [x] Declarative configuration preferred over imperative logic
 - [x] Small, reversible steps taken
@@ -28,7 +28,7 @@
 All work in this session adheres to:
 
 - **Invariants**: [`docs/architecture/governance/00_invariants.md`](../architecture/governance/00_invariants.md)
-- **AI Guidance**: [`docs/architecture/governance/01_ai_guidance.md`](../architecture/governance/01_ai_guidance.md)
+- **Agentic Guidance**: [`docs/architecture/governance/01_ai_guidance.md`](../architecture/governance/01_ai_guidance.md)
 - **Profiles**: [`docs/architecture/governance/02_profiles.md`](../architecture/governance/02_profiles.md)
 - **Development Workflow**: [`docs/developer/development-workflow.md`](../developer/development-workflow.md)
 - **Service Contracts**: [`docs/architecture/governance/service_contracts/`](../architecture/governance/service_contracts/)
