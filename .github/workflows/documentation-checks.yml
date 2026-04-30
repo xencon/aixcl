@@ -1,0 +1,118 @@
+name: Documentation Checks
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  check-paths:
+    name: Check Documentation Paths
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run path validation
+        run: |
+          chmod +x ./scripts/checks/check-paths.sh
+          ./scripts/checks/check-paths.sh
+
+  check-generated-files:
+    name: Check for Generated Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run generated file check
+        run: |
+          chmod +x ./scripts/checks/check-generated-files.sh
+          ./scripts/checks/check-generated-files.sh
+
+  check-markdown-links:
+    name: Check Markdown Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for broken links
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --exclude-all-private --require-https --timeout 30 --retry-wait-time 5 --max-retries 3
+          fail: true
+        continue-on-error: true
+
+  check-yaml-syntax:
+    name: Validate YAML Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Validate YAML files
+        run: |
+          yamllint -c .yamllint.yml . || true
+
+  validate-compose-files:
+    name: Validate Docker Compose Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create minimal .env for validation
+        run: |
+          cat > .env << 'EOF'
+          INFERENCE_ENGINE=ollama
+          PROFILE=usr
+          POSTGRES_USER=admin
+          POSTGRES_PASSWORD=test
+          POSTGRES_DATABASE=webui
+          PGADMIN_EMAIL=admin@test.com
+          PGADMIN_PASSWORD=test
+          OPENWEBUI_EMAIL=admin@test.com
+          OPENWEBUI_PASSWORD=test
+          GRAFANA_ADMIN_USER=admin
+          GRAFANA_ADMIN_PASSWORD=test
+          OLLAMA_HOST=0.0.0.0:11434
+          OLLAMA_NUM_PARALLEL=8
+          OLLAMA_MAX_LOADED_MODELS=3
+          OLLAMA_KEEP_ALIVE=1800
+          OLLAMA_NUM_GPU=1
+          OLLAMA_NUM_THREAD=8
+          VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
+          VLLM_CUDA_GRAPH_CAPTURE=0
+          EOF
+
+      - name: Validate main compose file
+        run: |
+          docker compose -f services/docker-compose.yml config > /dev/null || exit 1
+          echo "Main compose file valid"
+
+      - name: Validate additional compose files
+        run: |
+          for file in services/docker-compose*.yml; do
+            if [ -f "$file" ]; then
+              docker compose -f "$file" config > /dev/null || exit 1
+              echo "Validated: $(basename $file)"
+            fi
+          done
+
+      - name: Cleanup
+        run: rm -f .env
