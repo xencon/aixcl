@@ -38,11 +38,11 @@ gh issue create --title "Brief description" --body "Detailed description of the 
 
 ### 2. Create a Branch
 
-Create a branch from `main` with a descriptive name:
+Create a branch from `dev` with a descriptive name:
 
 ```bash
-git checkout main
-git pull origin main
+git checkout dev
+git pull origin dev
 git checkout -b issue-<number>/<short-description>
 ```
 
@@ -330,7 +330,6 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-<<<<<<< HEAD
 When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 **Note**: Skill files (`ai/skills/skill-*.md`) are optional. The `ai/skills/` directory does not currently exist and should only be created if skills are actually needed.

@@ -88,7 +88,7 @@ When conflicts arise, follow this order:
 2. **Create Branch**
    - Format: `issue-<number>/<short-description>`
    - Example: `issue-217/fix-encoding-problem`
-   - Always branch from `main`
+    - Always branch from `dev`
 
 3. **Make Changes**
    - Small, reversible steps

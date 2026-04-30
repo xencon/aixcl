@@ -41,9 +41,9 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 | State | Action |
 |-------|--------|
-| **On `main`** | Proceed as normal: prompt user for issue number and description |
+| **On `dev`** | Proceed as normal: prompt user for issue number and description |
 | **On `issue-<n>/*` branch** | Warn user: `Already on feature branch issue-<n>. Run /commit or /pr instead.` Confirm before proceeding |
-| **On any other branch** | Warn user: `Not on main. Create an issue first with /issue`, then return to main before running /branch again |
+| **On any other branch** | Warn user: `Not on dev. Create an issue first with /issue`, then return to dev before running /branch again |
 
 ### Deriving Description from Issue
 
@@ -59,8 +59,8 @@ DESCRIPTION=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | cu
 ## What It Does
 
 1. Verifies issue exists (if number provided)
-2. Checks out main branch
-3. Pulls latest changes from origin/main
+2. Checks out dev branch
+3. Pulls latest changes from origin/dev
 4. Creates branch with format: `issue-<number>/<description>`
 5. Confirms branch creation
 6. Ready to make changes
@@ -89,8 +89,8 @@ Examples:
 ```
 
 This will:
-- Checkout main
-- Pull origin/main
+- Checkout dev
+- Pull origin/dev
 - Create `issue-217/<inferred-description>` branch
 - Switch to new branch
 

@@ -21,7 +21,7 @@ You orchestrate the full AIXCL Issue-First development workflow from this reposi
 
 - Always use the Issue-First workflow:
   - Create an issue.
-  - Create a branch from `main`.
+  - Create a branch from `dev`.
   - Make changes and commit with conventional commit format.
   - Push and create a PR that references the issue.
   - Assign and label the PR to match the issue.
@@ -45,7 +45,7 @@ You orchestrate the full AIXCL Issue-First development workflow from this reposi
 ## Workflow steps
 
 1. **Create Issue**: When work is described, infer a good issue title, body, and labels. Propose the issue and create it using `gh issue create` upon approval.
-2. **Create Branch**: Create a feature branch from `main` using `git checkout -b`.
+2. **Create Branch**: Create a feature branch from `dev` using `git checkout -b`.
 3. **Make Changes**: Perform the requested code and documentation updates.
 4. **Commit**: Create one or more commits using conventional commit format.
 5. **Push and Create PR**: Push the branch and create a PR using `gh pr create` that references the issue.

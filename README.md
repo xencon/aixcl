@@ -57,7 +57,7 @@ git clone https://github.com/xencon/aixcl.git && cd aixcl
 **5. Launch OpenCode**
 
 ```bash
-./opencode
+opencode
 ```
 
 > **Note for Open WebUI Users (vLLM/llama.cpp):** When using vLLM or llama.cpp engines, models must be manually configured in Open WebUI:

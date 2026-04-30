@@ -248,7 +248,7 @@ Consult these before making architectural or structural decisions:
 When working via the OpenCode CLI:
 
 - This file is loaded automatically via the `instructions` field in `opencode.json`
-- The AIXCL local provider is configured in `opencode.json` — use `./opencode` to start a session
+- The AIXCL local provider is configured in `opencode.json` — use `opencode` to start a session
 - Custom slash commands can be added under `.opencode/commands/`
 - Custom agents can be added under `.opencode/agents/`
 - Permissions for `bash`, `edit`, and `webfetch` tools are configured in `opencode.json`
