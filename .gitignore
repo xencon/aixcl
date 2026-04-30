@@ -62,6 +62,12 @@ pgadmin-servers.json
 pg-backup/*
 !pg-backup/.gitkeep
 
+# Test artifacts and backups
+tests/.backup/
+tests/test-results.md
+tests/*.backup
+tests/*-results.md
+
 # Temporary files
 *.tmp
 *.swp
