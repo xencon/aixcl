@@ -49,19 +49,14 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    # Docker-in-Docker fix: Use multi-line command format for proper YAML parsing
+    # Keep the entrypoint script for GPU mode - it handles model detection and startup
+    volumes:
+      - aixcl-llamacpp-data:/models
+      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
     environment:
       - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        MODEL_FILE="$INFERENCE_MODEL"
-        MODEL_BASENAME="$(basename "$MODEL_FILE")"
-        MODEL_PATH="/models/$MODEL_BASENAME"
-        if [ ! -f "$MODEL_PATH" ]; then
-          echo "⚠️ Model not found: $MODEL_PATH"
-          echo "   Add a model using: ./aixcl models add <model.gguf>"
-          exit 0
-        fi
-        echo "✅ Starting llama.cpp server with: $MODEL_BASENAME"
-        exec /app/llama-server -m "$MODEL_PATH" --host 0.0.0.0 --port 11434
+      # Enable GPU support for llama.cpp via CUDA environment variables
+      - CUDA_VISIBLE_DEVICES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
+    command: ["--host", "0.0.0.0", "--port", "11434"]
