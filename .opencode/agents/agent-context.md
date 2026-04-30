@@ -43,7 +43,7 @@ When conflicts arise, follow this order:
 3. **DEVELOPMENT.md** (Workflow Rules) - Development workflow and contribution rules
 4. **ai/governance/** - Behavioral constraints and workflow policy
 5. **ai/actions/** - Executable workflow actions
-6. **ai/templates/** - Issue and PR templates
+6. **ai/templates/** - Release templates (issue/PR templates now in `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md`)
 7. **ai/orchestration/** - Agent definitions and workflow steps
 8. **docs/architecture/governance/** - Platform invariants and service contracts
 9. **docs/developer/** - Developer guides and workflow documentation
@@ -175,10 +175,10 @@ When performing specific tasks, load the relevant action file from `ai/actions/`
 
 When creating issues or PRs, load the appropriate template:
 
-- Bug report → Load `ai/templates/issue/bug_report.md`
-- Feature request → Load `ai/templates/issue/feature_request.md`
-- Task → Load `ai/templates/issue/task.md`
-- Pull request → Load `ai/templates/pr/pull_request.md`
+- Bug report → Load `.github/ISSUE_TEMPLATE/bug_report.md`
+- Feature request → Load `.github/ISSUE_TEMPLATE/feature_request.md`
+- Task → Load `.github/ISSUE_TEMPLATE/task.md`
+- Pull request → Load `.github/PULL_REQUEST_TEMPLATE.md`
 
 ## Tool Usage
 

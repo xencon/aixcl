@@ -26,7 +26,7 @@ With no arguments, the command is **context-aware**:
 1. Detects current branch and extracts issue number from `issue-<number>/*`
 2. Fetches issue title and body via `gh issue view <n> --json title,body`
 3. Drafts PR title: `<Issue Title> (#<n>)`
-4. Reads PR template from `ai/templates/pr/pull_request.md`
+4. Reads PR template from `.github/PULL_REQUEST_TEMPLATE.md`
 5. Maps issue body sections to template sections (Summary, Description, etc.)
 6. Ensures branch is pushed to remote
 7. Creates PR with proper title format and pre-filled body
@@ -62,7 +62,7 @@ If the issue body does not contain template sections, the agent drafts the PR bo
 
 ## Full Behavior
 
-1. Reads the PR template from `ai/templates/pr/pull_request.md` first
+1. Reads the PR template from `.github/PULL_REQUEST_TEMPLATE.md` first
 2. Drafts PR body using the template's exact section headings (Summary, Description of Changes, Change Checklist, Testing Notes, Verification, Related Issues)
 3. Ensures branch is pushed to remote
 4. Creates PR with proper title format: `<Description> (#<number>)`
