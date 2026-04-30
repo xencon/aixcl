@@ -173,6 +173,43 @@ opencode                              # Start OpenCode session (global binary; r
 - Collapse service boundaries
 - Add external libraries, cloud services, telemetry, or analytics without explicit approval
 
+## Lean Repository Policy
+
+The AIXCL repository follows a **lean repository** philosophy to maintain clarity and freshness:
+
+### Principles
+
+1. **Delete, Don't Archive**
+   - Outdated reports and dated documentation should be **deleted**, not moved to archive directories
+   - Historical data belongs in Git history, not in the working tree
+   - Archive directories accumulate stale content and create confusion
+
+2. **Fresh Information Only**
+   - Operations reports should be current (within 30 days)
+   - Test results should be generated on-demand, not stored
+   - Documentation should reflect the current state of the codebase
+
+3. **Generated Files Stay Generated**
+   - Files that can be regenerated should not be committed
+   - Test outputs, logs, and reports are generated artifacts
+   - Use `.gitignore` to prevent accidental commits
+
+### Examples
+
+| What | Policy | Action |
+|------|--------|--------|
+| Dated operations reports (>30 days) | DELETE | `git rm docs/operations/report-2026-01-01.md` |
+| Test result files | DELETE | `git rm tests/test-results.md` |
+| Old engine test results | DELETE | `git rm ENGINE_TEST_RESULTS.md` |
+| Backup directories | DELETE | `rm -rf tests/.backup/*` |
+
+### Verification
+
+Agents should verify:
+- No dated reports are in the repository
+- No generated files are tracked in Git
+- Archive directories are empty or removed
+
 ## Self-Verification Checklist
 
 Before ANY operation, confirm:

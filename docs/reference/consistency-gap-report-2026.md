@@ -25,7 +25,7 @@ The `tests/platform-tests.sh` is robust, leveraging profiles (`--profile`) and c
 - **Recent Issues:** Bug #523 highlighted that while the architecture expects seamless service interactions, operational scripts sometimes lack defensive boundaries (e.g., assuming `admin` passwords).
 
 ## Action Items
-1. **[TASK] Document Cleanup:** Archive `cli-docs-alignment-checklist.md` as it references deprecated commands, and rewrite a fresh checklist based on the current `aixcl --help` output.
+1. **[TASK] Document Cleanup:** DELETE `cli-docs-alignment-checklist.md` (lean repository policy: no archiving) as it references deprecated commands, and rewrite a fresh checklist based on the current `aixcl --help` output.
 2. **[TASK] Expand Test Edge Cases:** Introduce negative testing into `platform-tests.sh` to validate failure recoveries (e.g., database connection drops, invalid environment variables).
 3. **[TASK] Security Test Augmentation:** Add automated network binding verification to `tests/security/` to explicitly validate the "local-first" `network_mode: host` invariant and ensure no unauthorized interfaces are exposed.
 

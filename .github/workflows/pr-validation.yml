@@ -1,0 +1,68 @@
+name: PR Validation
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  validate-pr-title:
+    name: Validate PR Title Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title format
+        env:
+          PR_TITLE: "${{ github.event.pull_request.title }}"
+        run: |
+          echo "Checking PR title: $PR_TITLE"
+          
+          # Check for issue reference (#number)
+          if ! echo "$PR_TITLE" | grep -qE '\(#[0-9]+\)$'; then
+            echo "ERROR: PR title must end with issue reference '(#<number>)'"
+            echo "Expected format: '<description> (#<number>)'"
+            echo "Current title: $PR_TITLE"
+            exit 1
+          fi
+          
+          # Check for colons in title (not allowed)
+          if echo "$PR_TITLE" | grep -qE '^[^:]+:'; then
+            echo "ERROR: PR title should not contain colons before the issue reference"
+            echo "Expected format: '<description> (#<number>)' (NO colons)"
+            exit 1
+          fi
+          
+          echo "PR title format is valid"
+
+  validate-pr-assignee:
+    name: Validate PR Assignee
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR has assignee
+        env:
+          ASSIGNEE: "${{ github.event.pull_request.assignee }}"
+        run: |
+          if [[ -z "$ASSIGNEE" ]] || [[ "$ASSIGNEE" == "null" ]]; then
+            echo "ERROR: PR must have at least one assignee"
+            exit 1
+          fi
+          echo "PR has assignee: $ASSIGNEE"
+
+  validate-pr-labels:
+    name: Validate PR Labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR has component label
+        env:
+          LABELS: "${{ toJson(github.event.pull_request.labels) }}"
+        run: |
+          if ! echo "$LABELS" | grep -q "component:"; then
+            echo "ERROR: PR must have at least one component label (component:*)"
+            echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
+            exit 1
+          fi
+          echo "PR has component label"
