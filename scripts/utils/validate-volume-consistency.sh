@@ -44,7 +44,7 @@ if [ -f "services/docker-compose.gpu.yml" ]; then
   fi
   
   # Check that llamacpp has required configuration
-  if grep -A5 "llamacpp:" services/docker-compose.gpu.yml | grep -q "entrypoint:"; then
+  if grep -A20 "^  llamacpp:" services/docker-compose.gpu.yml | grep -q "entrypoint:"; then
     echo -e "${GREEN}[✓]${NC} llamacpp GPU config has entrypoint"
   else
     echo -e "${RED}[✗]${NC} llamacpp GPU config missing entrypoint"
