@@ -5,7 +5,7 @@ This document defines the **non-negotiable invariants** of the AIXCL platform.
 These invariants exist to:
 - Preserve architectural intent
 - Protect the core runtime from accidental erosion
-- Enable safe collaboration by humans and AI assistants
+- Enable safe collaboration by humans and agents
 - Provide a stable foundation as the platform evolves
 
 Breaking an invariant requires an **explicit architectural decision** by the project maintainer.
@@ -143,9 +143,9 @@ These invariants are:
 
 ---
 
-## 9. AI Assistant Guidance (Normative)
+## 9. Agentic Guidance (Normative)
 
-AI assistants interacting with this repository must:
+Agents interacting with this repository must:
 
 - Preserve all invariants in this document
 - Treat runtime core components as non-refactorable unless explicitly instructed

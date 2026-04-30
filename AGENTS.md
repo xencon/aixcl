@@ -108,7 +108,7 @@ cat .github/PULL_REQUEST_TEMPLATE.md
 ### Fixed Core Runtime
 
 - **Inference Engine** (Ollama) - Docker-managed, always enabled
-- **OpenCode** - Client-side AI assistant, always enabled
+- **OpenCode** - Agentic coding assistant, always enabled
 - Never remove, replace, or conditionally disable runtime core components
 
 ### Runtime vs Operational Services Boundary
@@ -157,7 +157,7 @@ cat tests/test-results.md             # View latest run results
 opencode                              # Start OpenCode session (global binary; repo provides opencode.json)
 ```
 
-## Safe Areas for AI Contribution
+## Safe Areas for Agentic Contribution
 
 **You MAY:**
 - Modify operational services (monitoring, logging, automation)
@@ -224,7 +224,7 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 - `DEVELOPMENT.md` — Full workflow rules and templates
 - `docs/developer/development-workflow.md` — Complete developer guide
 - `docs/architecture/governance/00_invariants.md` — Platform invariants
-- `docs/architecture/governance/01_ai_guidance.md` — AI behavioral guidance
+- `docs/architecture/governance/01_ai_guidance.md` — Agentic behavioral guidance
 - `ai/governance/workflow-governance.md` — Workflow constraints
 - `ai/actions/*` — Executable workflow actions (lazy-load when needed)
 - `opencode.json` — OpenCode configuration
