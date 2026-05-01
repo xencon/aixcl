@@ -27,7 +27,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_info "Starting AIXCL with Docker Secrets (profile: ${PROFILE})"
 
 # Verify secrets exist
-if ! "${SCRIPT_DIR}/init-secrets.sh" --verify >/devdev/null 2>&1; then
+if ! "${SCRIPT_DIR}/init-secrets.sh" --verify >/dev/null 2>&1; then
   log_warn "Secrets not initialized. Running init-secrets.sh..."
   "${SCRIPT_DIR}/init-secrets.sh"
 fi
