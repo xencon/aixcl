@@ -27,134 +27,51 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-  vllm:
-    image: docker.io/vllm/vllm-openai:v0.19.0
-    container_name: vllm
-    pull_policy: if_not_present
-    tty: true
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - aixcl-hf-cache:/home/vllm/.cache/huggingface
-      - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
-    environment:
-      # vLLM runtime configuration (configured via .env)
-      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
-      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
-      - CUDA_LAUNCH_BLOCKING=0
-      - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
-      - HF_HOME=/home/vllm/.cache/huggingface
-      - TRANSFORMERS_CACHE=/home/vllm/.cache/huggingface
-      - HOME=/home/vllm
-    # Use custom entrypoint to run as non-root user
-    entrypoint: ["/vllm-entrypoint.sh"]
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    # Note: read_only cannot be applied - entrypoint creates vllm user with useradd
-    # vLLM startup command with configurable model and memory settings
-    command:
-      - "--model"
-      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
-      - "--gpu-memory-utilization"
-      - "${VLLM_GPU_MEMORY_UTILIZATION:-0.8}"
-      - "--max-model-len"
-      - "${VLLM_MAX_MODEL_LEN:-32768}"
-      - "--port"
-      - "11434"
-      - "--enable-auto-tool-choice"
-      - "--tool-call-parser"
-      - "hermes"
-      - "--enforce-eager"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 180s
 
-  llamacpp:
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
-    container_name: llamacpp
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault
     pull_policy: if_not_present
-    user: "1000:1000"  # Run as non-root user for security
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_API_ADDR: http://127.0.0.1:8200
+      VAULT_DEV_ROOT_TOKEN_ID: aixcl-dev-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     volumes:
-      - aixcl-llamacpp-data:/models
-      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
-    tty: true
+      - aixcl-vault-data:/vault/file
+      - ../scripts/vault/init:/vault/init:ro
+    command: server -dev -dev-root-token-id=aixcl-dev-token
     network_mode: host
     restart: unless-stopped
-    environment:
-      # llama.cpp model configuration (configured via .env)
-      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
-    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
-    command: ["--host", "0.0.0.0", "--port", "11434"]
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
+      test: ["CMD", "vault", "status"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.1
-    container_name: open-webui
+  vault-init:
+    image: hashicorp/vault:1.18
+    container_name: vault-init
     pull_policy: if_not_present
-    user: "0:0"  # Start as root for permission setup, entrypoint switches to non-root
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
     volumes:
-      - aixcl-open-webui:/app/backend/data
-      - aixcl-open-webui-data:/app/data
-      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
-      - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
+      - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
     environment:
-      - DATA_DIR=/app/data
-      - STATIC_DIR=/app/backend/data/static
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}
-      - WEBUI_NAME=AIXCL
-      # Use OpenAI-compatible API for all engines (Ollama, llama.cpp, vLLM all support this)
-      # Use OPENAI_API_BASE_URLS (plural) which is the correct variable name
-      - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
-      - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
-      # OpenAI API key - left empty for local models as they don't require authentication
-      # This prevents "Missing bearer authentication" errors with vLLM and other local engines
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      # Enable OpenAI API for model discovery (uses OpenAI-compatible endpoint at OLLAMA_BASE_URL)
-      # This ensures models are discovered with owned_by='openai' instead of 'ollama'
-      - ENABLE_OPENAI_API=true
-      # Conditionally enable Ollama API based on engine selection
-      # Set ENABLE_OLLAMA_API=false in .env when using llamacpp or vllm to disable Ollama-specific features
-      - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
-      # Only set OLLAMA_BASE_URL when Ollama engine is active
-      # This prevents Open WebUI from trying to query Ollama API when using vLLM or llamacpp
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
-      - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
-      - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
-      - RAG_EMBEDDING_ENGINE=ollama
-      - RAG_EMBEDDING_MODEL=nomic-embed-text
-      - USER_ID=1000
-      - GROUP_ID=1000
-      # Enable signup for initial admin user creation
-      - ENABLE_SIGNUP=true
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - postgres
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /usr/local/bin/init-vault.sh
     network_mode: host
-    restart: always
-    entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
-    command: []
-    healthcheck:
-      # Try /health first, fallback to root endpoint if /health doesn't exist
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    depends_on:
+      vault:
+        condition: service_healthy
+    restart: "no"
 
   postgres:
     image: postgres:17.9
@@ -193,7 +110,106 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-  
+
+  vllm:
+    image: docker.io/vllm/vllm-openai:v0.19.0
+    container_name: vllm
+    pull_policy: if_not_present
+    tty: true
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - aixcl-hf-cache:/home/vllm/.cache/huggingface
+      - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
+    environment:
+      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
+      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
+      - CUDA_LAUNCH_BLOCKING=0
+      - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
+      - HF_HOME=/home/vllm/.cache/huggingface
+      - TRANSFORMERS_CACHE=/home/vllm/.cache/huggingface
+      - HOME=/home/vllm
+      - VLLM_MODEL=${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}
+    entrypoint: ["/vllm-entrypoint.sh"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  llamacpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
+    container_name: llamacpp
+    pull_policy: if_not_present
+    user: "1000:1000"
+    volumes:
+      - aixcl-llamacpp-data:/models
+      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
+    tty: true
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
+    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
+    command: ["--host", "0.0.0.0", "--port", "11434"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.9.1
+    container_name: open-webui
+    pull_policy: if_not_present
+    user: "0:0"
+    volumes:
+      - aixcl-open-webui:/app/backend/data
+      - aixcl-open-webui-data:/app/data
+      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
+      - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
+    environment:
+      - DATA_DIR=/app/data
+      - STATIC_DIR=/app/backend/data/static
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE:-webui}
+      - WEBUI_NAME=AIXCL
+      - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
+      - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ENABLE_OPENAI_API=true
+      - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+      - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
+      - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=nomic-embed-text
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - ENABLE_SIGNUP=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+    network_mode: host
+    restart: always
+    entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
+    command: []
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   pgadmin:
     image: dpage/pgadmin4:9.14.0
     container_name: pgadmin
@@ -473,4 +489,6 @@ volumes:
   aixcl-pgadmin:
     external: true
   aixcl-pgadmin-config:
+    external: true
+  aixcl-vault-data:
     external: true

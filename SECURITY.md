@@ -324,11 +324,11 @@ Critical actions require human approval:
 - [x] Certificate generation and management
 - [x] Update connection strings for SSL
 
-### Phase 2 (Current - May 2026)
+### Phase 2 (Completed - May 2026)
 
 - [x] GPG-signed commits
 - [x] Podman migration (rootless)
-- [ ] Automated credential rotation
+- [x] Automated credential rotation (threat-adaptive with human-in-the-loop)
 - [ ] Penetration testing
 - [ ] Security training for team
 

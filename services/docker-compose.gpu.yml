@@ -40,6 +40,8 @@ services:
       - "--model"
       - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
       - "--trust-remote-code"
+    environment:
+      - VLLM_MODEL=${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}
 
   llamacpp:
     deploy:
