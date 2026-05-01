@@ -44,13 +44,14 @@ jobs:
     steps:
       - name: Check PR has assignee
         env:
-          ASSIGNEE: "${{ github.event.pull_request.assignee }}"
+          ASSIGNEES: "${{ toJson(github.event.pull_request.assignees) }}"
         run: |
-          if [[ -z "$ASSIGNEE" ]] || [[ "$ASSIGNEE" == "null" ]]; then
+          # Check if assignees array is empty or null
+          if [[ -z "$ASSIGNEES" ]] || [[ "$ASSIGNEES" == "null" ]] || [[ "$ASSIGNEES" == "[]" ]]; then
             echo "ERROR: PR must have at least one assignee"
             exit 1
           fi
-          echo "PR has assignee: $ASSIGNEE"
+          echo "PR has assignee(s): $ASSIGNEES"
 
   validate-pr-labels:
     name: Validate PR Labels
