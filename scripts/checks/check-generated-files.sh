@@ -75,9 +75,14 @@ check_test_results() {
         "tests/.backup/*"
     )
     
+    # shellcheck disable=SC2206
     for pattern in "${result_patterns[@]}"; do
-        if ls $pattern 2>/dev/null | grep -q .; then
-            for file in $pattern; do
+        # Use glob expansion instead of ls | grep (SC2010)
+        # Glob expansion is intentional here for pattern matching
+        local files
+        files=($pattern)
+        if [[ ${#files[@]} -gt 0 && -e "${files[0]}" ]]; then
+            for file in "${files[@]}"; do
                 if [[ -f "$file" ]]; then
                     error "Found generated test result file: $file"
                 fi
@@ -136,9 +141,11 @@ check_pgadmin_data() {
 check_log_files() {
     info "Checking for log files..."
     
-    if ls logs/*.log 2>/dev/null | grep -q .; then
-        for file in logs/*.log; do
-            if git ls-files "$file" 2>/dev/null | grep -q .; then
+    # Use glob expansion instead of ls | grep
+    local log_files=(logs/*.log)
+    if [[ -e "${log_files[0]}" ]]; then
+        for file in "${log_files[@]}"; do
+            if [[ -f "$file" ]] && git ls-files "$file" 2>/dev/null | grep -q .; then
                 error "Found tracked log file: $file"
             fi
         done
