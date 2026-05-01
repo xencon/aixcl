@@ -72,6 +72,23 @@ Fixes #<issue-number>"
 - Keep the first line under 72 characters
 - Use bullet points for multiple changes
 
+**GPG-Signed Commits (Required for main/dev):**
+
+All commits to `main` and `dev` branches must be GPG-signed. Setup is automated:
+
+```bash
+# One-time setup
+./scripts/utils/setup-gpg.sh
+
+# Commits are automatically signed after setup
+git commit -m "feat: add new feature"
+
+# Verify signature
+git log --show-signature
+```
+
+See [GPG-Signed Commits Guide](./gpg-signed-commits.md) for complete documentation.
+
 ### 4. Push and Create Pull Request
 
 Push your branch and create a PR:

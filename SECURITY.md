@@ -44,7 +44,7 @@ This document outlines the security architecture for AIXCL in adversarial enviro
 | Plaintext Credentials | ~~.env file with passwords~~ ✅ **DONE** | Docker secrets | Phase 1.6 Complete |
 | PostgreSQL SSL | ~~sslmode=disable~~ ✅ **DONE** | sslmode=require | Phase 1.6 Complete |
 | Secret Rotation | Manual via script | Automated 90-day rotation | Phase 2 |
-| Code Signing | Unsigned commits | GPG-signed commits | Phase 2 |
+| Code Signing | ~~Unsigned commits~~ ✅ **DONE** | GPG-signed commits | Phase 2 Complete |
 
 ---
 
@@ -324,11 +324,11 @@ Critical actions require human approval:
 - [x] Certificate generation and management
 - [x] Update connection strings for SSL
 
-### Phase 2 (Q2 2026)
+### Phase 2 (Current - May 2026)
 
-- [ ] GPG-signed commits
+- [x] GPG-signed commits
+- [x] Podman migration (rootless)
 - [ ] Automated credential rotation
-- [ ] Podman migration (rootless)
 - [ ] Penetration testing
 - [ ] Security training for team
 

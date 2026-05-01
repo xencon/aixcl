@@ -10,13 +10,40 @@ Before making any changes:
 1. **Create an issue** describing the problem or feature
 2. **Create a branch** to address the issue
 3. **Make changes** and commit with clear messages
-4. **Create a Pull Request** that references the issue
+4. **Sign your commits** with GPG (required for main/dev branches)
+5. **Create a Pull Request** that references the issue
 
 See [`development-workflow.md`](./development-workflow.md) for complete workflow documentation, including:
 - Step-by-step instructions
 - Formatting guidelines (use plain text, avoid Unicode)
 - AI assistant instructions
 - Quick reference commands
+
+## GPG-Signed Commits (Required)
+
+All commits to `main` and `dev` branches **must be GPG-signed** for code integrity.
+
+### Quick Setup
+
+```bash
+# Run the setup script
+./scripts/utils/setup-gpg.sh
+
+# Or manual configuration
+git config --global commit.gpgsign true
+git config --global user.signingkey YOUR_GPG_KEY_ID
+```
+
+### Why Signed Commits?
+
+- **Proof of authorship**: Cryptographic verification of who made changes
+- **Tamper detection**: Commit history integrity protection
+- **Compliance**: SOC 2 / ISO 27001 requirement for adversarial environments
+- **Security**: Protection against compromised GitHub credentials
+
+### Verification
+
+Commits will show "Verified" badge on GitHub. Unsigned commits will be rejected by branch protection rules.
 
 ## Quick Start
 
@@ -43,6 +70,7 @@ See [`development-workflow.md`](./development-workflow.md) for complete workflow
 
 ## Tips for a Great Contribution
 
+- **Sign your commits**: Use GPG signing for all commits (required for main/dev)
 - **Keep it focused**: One feature or fix per pull request
 - **Test your changes**: Make sure everything works as expected
 - **Update docs**: If you change functionality, update the documentation
