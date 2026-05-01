@@ -1,0 +1,54 @@
+# HashiCorp Vault Integration for AIXCL
+# Phase 3: Dynamic Secrets Management
+#
+# This compose file deploys Vault alongside AIXCL services
+# Vault provides dynamic, short-lived credentials for PostgreSQL and other services
+
+services:
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_API_ADDR: http://127.0.0.1:8200
+      # Dev mode for initial testing - production requires proper seal/unseal
+      VAULT_DEV_ROOT_TOKEN_ID: aixcl-dev-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    volumes:
+      - aixcl-vault-data:/vault/file
+      - ../vault/config:/vault/config:ro
+      - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
+    command: server -dev -dev-root-token-id=aixcl-dev-token
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
+  vault-agent-postgres:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    volumes:
+      - ../vault/agent-config:/etc/vault:ro
+      - ../scripts/vault/vault-agent.sh:/usr/local/bin/vault-agent.sh:ro
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    command: /usr/local/bin/vault-agent.sh postgres
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+volumes:
+  aixcl-vault-data:
+    external: true
