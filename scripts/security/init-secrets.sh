@@ -78,14 +78,14 @@ create_secret() {
 }
 
 # Create derived secrets (composite values like DATABASE_URL)
+# Note: These use the values we just created, not reading from Docker
 create_derived_secrets() {
   log_info "Creating derived secrets..."
   
-  # Get values from Docker secrets
+  # Create derived secrets using environment (already set by init_secrets)
   local pg_user pg_pass pg_db
-  pg_user=$(docker secret inspect --format='{{.Spec.Name}}' postgres_user 2>/dev/null && \
-    docker run --rm -v postgres_user:/secret:ro alpine cat /secret 2>/dev/null) || pg_user="admin"
-  pg_pass=$(docker run --rm -v postgres_password:/secret:ro alpine cat /secret 2>/dev/null) || pg_pass=""
+  pg_user="${POSTGRES_USER:-admin}"
+  pg_pass="${POSTGRES_PASSWORD:-}"
   pg_db="${POSTGRES_DATABASE:-webui}"
   
   # Create DATABASE_URL
@@ -155,6 +155,9 @@ init_secrets() {
       # No .env file, generate everything
       value=$(generate_secret "$value")
     fi
+    
+    # Export for derived secrets function
+    export "$env_var=$value"
     
     create_secret "$name" "$value"
   done
@@ -227,9 +230,9 @@ verify_secrets() {
   for secret_def in "${SECRETS[@]}"; do
     IFS=':' read -r name _ <<< "$secret_def"
     if docker secret ls -q -f "name=${name}" | grep -q .; then
-      log_info "✓ ${name} exists"
+      log_info "[OK] ${name} exists"
     else
-      log_error "✗ ${name} MISSING"
+      log_error "[MISSING] ${name}"
       all_exist=false
     fi
   done
@@ -237,9 +240,9 @@ verify_secrets() {
   # Check derived secrets
   for derived in database_url postgres_exporter_dsn; do
     if docker secret ls -q -f "name=${derived}" | grep -q .; then
-      log_info "✓ ${derived} exists"
+      log_info "[OK] ${derived} exists"
     else
-      log_error "✗ ${derived} MISSING"
+      log_error "[MISSING] ${derived}"
       all_exist=false
     fi
   done
