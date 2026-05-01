@@ -1,0 +1,63 @@
+# PostgreSQL SSL Overlay for AIXCL
+#
+# This compose file enables SSL/TLS encryption for PostgreSQL connections.
+# Use with: docker compose -f docker-compose.yml -f docker-compose.ssl.yml up
+#
+# Prerequisites:
+#   ./scripts/security/init-postgres-ssl.sh
+#
+# SSL Configuration:
+#   - Server certificate validation required
+#   - Client certificates optional (not enforced)
+#   - SSL mode: require (encryption mandatory)
+
+services:
+  postgres:
+    volumes:
+      # Mount SSL certificates (read-only)
+      - ../.security/postgres-certs/server-cert.pem:/var/lib/postgresql/server.crt:ro
+      - ../.security/postgres-certs/server-key.pem:/var/lib/postgresql/server.key:ro
+      - ../.security/postgres-certs/ca-cert.pem:/var/lib/postgresql/ca.crt:ro
+    environment:
+      # Enable SSL mode
+      PGSSLMODE: require
+      # Server certificate paths (inside container)
+      PGSSLCERT: /var/lib/postgresql/server.crt
+      PGSSLKEY: /var/lib/postgresql/server.key
+      PGSSLROOTCERT: /var/lib/postgresql/ca.crt
+    command: >
+      postgres
+      -c ssl=on
+      -c ssl_cert_file=/var/lib/postgresql/server.crt
+      -c ssl_key_file=/var/lib/postgresql/server.key
+      -c ssl_ca_file=/var/lib/postgresql/ca.crt
+      -c listen_addresses=127.0.0.1
+      -c log_statement=all
+      -c log_destination=stderr
+      -c logging_collector=on
+      -c log_directory=/var/log/postgresql
+      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
+      -c log_rotation_age=1d
+      -c log_rotation_size=100MB
+      -c log_min_duration_statement=0
+      # Log SSL connection details
+      -c log_connections=on
+
+  open-webui:
+    environment:
+      # Update DATABASE_URL to use SSL
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE:-webui}?sslmode=require
+
+  postgres-exporter:
+    environment:
+      # Update connection string to use SSL
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE:-webui}?sslmode=require"
+
+volumes:
+  # Ensure volumes from main compose are available
+  aixcl-pgdata:
+    external: true
+  aixcl-open-webui:
+    external: true
+  aixcl-open-webui-data:
+    external: true
