@@ -1,238 +1,263 @@
 # AIXCL
 
-**A self-hosted, local-first AI stack for running and integrating LLMs.**
+**A self-hosted, local-first AI development platform with enterprise security.**
 
-AIXCL provides a simple CLI, a web interface, and a containerized stack to run, manage, and integrate Large Language Models directly into your developer workflow.
-
-> **New:** AIXCL now supports [Dev Containers](.devcontainer/) for a consistent, pre-configured development environment. See the [Dev Container Guide](.devcontainer/README.md) for details.
-
-## Prerequisites
-
-* **Docker & Docker Compose** installed.
-* **8 GB VRAM** (for GPU compatible LLM's). 
-* **32 GB RAM** (minimum recommended).
-* **128 GB Disk Space** (for models and images).
+Run Large Language Models locally with HashiCorp Vault, GPG-signed commits, and rootless Podman.
 
 ---
 
-## Quick Start
+## Mandatory Minimum Requirements
 
-**1. Clone and Verify**
+| Requirement | Value | Notes |
+|-------------|-------|-------|
+| **Container Engine** | Podman 4.9+ | Rootless mode required |
+| **GPG** | 2.2+ | All commits must be signed |
+| **CPU** | 4 cores | 8+ cores recommended |
+| **RAM** | 8 GB | 16+ GB for larger models |
+| **Disk** | 32 GB | 128+ GB for multiple models |
+| **OS** | Linux | Ubuntu 22.04+ tested |
+
+---
+
+## Quick Start (5 minutes)
+
+### Step 1: Install Prerequisites
 
 ```bash
-git clone https://github.com/xencon/aixcl.git && cd aixcl
-./aixcl utils check-env
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y podman gnupg2 git
+
+# Fedora/RHEL
+sudo dnf install -y podman gnupg2 git
+
+# Verify installations
+podman --version  # Should show 4.9+
+gpg --version     # Should show 2.2+
 ```
 
-> Note: The check will warn if `hf` is missing. Install with pip or brew if you plan to use llama.cpp or vLLM engines.
-
-**2. Start the Stack**
+### Step 2: Configure GPG (Mandatory)
 
 ```bash
-# Choose a profile: usr (minimal), dev (UI+DB), ops (Observability), sys (Full)
-./aixcl stack start --profile usr
+# Run the automated GPG setup
+./scripts/utils/setup-gpg.sh
+
+# Verify configuration
+./scripts/utils/setup-gpg.sh --verify
+
+# Export public key for GitHub (copy output, add to GitHub Settings → SSH and GPG keys)
+./scripts/utils/setup-gpg.sh --export
 ```
 
-**3. Choose Your Engine**
+### Step 3: Initialize Podman
 
 ```bash
-# See available engines
-./aixcl engine auto
+# Run the rootless Podman setup
+./scripts/utils/setup-podman-rootless.sh
 
-# Or set manually
-./aixcl engine set ollama   # Recommended for beginners
-./aixcl engine set vllm     # For high-end GPUs
-./aixcl engine set llamacpp  # For GGUF models
+# Verify rootless mode
+podman info | grep "rootless"
 ```
 
-**4. Add Your First Model**
+### Step 4: Start the Stack
 
 ```bash
-# Quick test model (smallest, fastest download)
+# Start with system profile (includes all services)
+./aixcl stack start --profile sys
+
+# Wait for healthy status (about 60 seconds)
+./aixcl stack status
+```
+
+Services started:
+- **Ollama** on port 11434 (inference API)
+- **PostgreSQL** on port 5432 (database)
+- **Open WebUI** on port 8080 (chat interface)
+- **Vault** on port 8200 (secrets management)
+- **Grafana** on port 3000 (monitoring)
+
+### Step 5: Initialize Vault (First Run Only)
+
+```bash
+# Wait for Vault to be ready
+sleep 30
+
+# Initialize Vault
+podman exec vault sh -c '
+  export VAULT_ADDR=http://127.0.0.1:8200
+  export VAULT_TOKEN=aixcl-dev-token
+  vault secrets enable database
+'
+```
+
+### Step 6: Test Inference (Hello World)
+
+**A. Via Open WebUI (Browser)**
+
+```bash
+# Add a small test model first
 ./aixcl models add qwen2.5-coder:0.5b
 ```
 
-> See [Quick Test Models](#quick-test-models) for engine-specific options.
+1. Open http://localhost:8080 in your browser
+2. Click "Get Started" to create an account (first user becomes admin)
+3. Click "New Chat" in the top left
+4. Select "qwen2.5-coder:0.5b" from the model dropdown
+5. Type: "Hello! Can you confirm you're working?"
+6. **Expected:** The model responds with a greeting
 
-**5. Launch OpenCode**
+**B. Via OpenCode CLI**
 
 ```bash
+# Add the model
+./aixcl models add qwen2.5-coder:0.5b
+
+# Start OpenCode
 opencode
+
+# At the prompt, type:
+# > Hello! Can you help me write a Python function?
+
+# Expected: The AI responds with code suggestions
 ```
 
-> **Note for Open WebUI Users (vLLM/llama.cpp):** When using vLLM or llama.cpp engines, models must be manually configured in Open WebUI:
-> 1. Go to Settings → Connections → Direct Connections
-> 2. Add URL: `http://127.0.0.1:11434/v1` (leave API key empty)
-> 3. Enable "Direct Connections" toggle
-> 4. Save and refresh the page
->
-> The basic configuration is shown above. For additional Open WebUI settings, refer to the Settings page in the Open WebUI interface.
-
----
-
-## Understanding Model Downloads
-
-Models are downloaded on-demand when you run `./aixcl models add`, not during installation. Download times vary based on model size and your connection speed.
-
-### Download Time Estimates
-
-| Model Size | Approximate File Size | Download Time (100 Mbps) | Download Time (20 Mbps) | Download Time (5 Mbps) |
-|------------|----------------------|--------------------------|-------------------------|------------------------|
-| 0.5B params | ~350-400 MB | ~30 seconds | ~2 minutes | ~5 minutes |
-| 1.5B params | ~1 GB | ~1 minute | ~5 minutes | ~15 minutes |
-| 7B params | ~4-5 GB | ~5 minutes | ~20 minutes | ~45 minutes |
-
-> **Note:** Times are estimates. Actual speeds depend on network conditions and HuggingFace/Ollama server load.
-
-### Engine-Specific Notes
-
-**vLLM Users:** The vLLM container does not include the `hf` CLI. Models must be pre-downloaded on the host before starting vLLM. See the [vLLM Workaround Guide](docs/operations/vllm-model-download-workaround.md) for details.
-
-**llama.cpp Users:** When switching to llama.cpp from another engine, the model configuration in `opencode.json` is cleared. You must re-add a GGUF model for llama.cpp.
-
----
-
-## Quick Test Models
-
-These are the smallest viable models for testing your AIXCL setup with OpenCode. **All models below have been tested and verified to work** with the current version of AIXCL.
-
-> **Note:** Using the exact model names shown below ensures compatibility. Other models may work but have not been tested.
-
-### Ollama (Recommended for Beginners)
-
-| Model | Size | Command |
-|-------|------|---------|
-| Qwen2.5-Coder 0.5B | ~398 MB | `./aixcl models add qwen2.5-coder:0.5b` |
-
-> Ollama models use the format `model:tag`. The `0.5b` tag indicates the smallest variant.
->
-> - [x] Tested: Successfully tested with OpenCode integration ([Test Plan](docs/operations/engine-switching-test-plan.md))
-
-### vLLM
-
-| Model | Size | Command |
-|-------|------|---------|
-| Qwen2.5-Coder 0.5B | ~1 GB* | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct` |
-
-> *vLLM downloads the full HuggingFace model (safetensors format), which is larger than GGUF.
-> 
-> **Note:** vLLM container does not include `hf` CLI - see workaround guide.
-> 
-> - [x] Tested: Successfully tested with OpenCode integration on RTX 4060 ([Test Report](docs/operations/engine-switching-test-report.md))
-
-### llama.cpp
-
-| Model | Size | Command |
-|-------|------|---------|
-| Qwen2.5-Coder 0.5B (Q4_K_M) | ~398 MB | `./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf` |
-
-> llama.cpp requires GGUF format models. The format is `username/repo/filename.gguf`.
->
-> **Note:** When switching engines, the model configuration is cleared. Re-add the GGUF model after switching.
->
-> - [x] Tested: Successfully tested with OpenCode integration ([Test Plan](docs/operations/engine-switching-test-plan.md))
-
----
-
-## Management Examples
-
-### 1. Engine Management
-
-AIXCL supports multiple backends. You can switch them instantly:
+**C. Via API (curl)**
 
 ```bash
-# Auto-detect optimal engine based on your hardware
-./aixcl engine auto
-
-# Manually switch to vLLM (Great for high-end GPUs - see notes below)
-./aixcl engine set vllm
-
-# Manually switch to llama.cpp (Great for CPU/Apple Silicon)
-./aixcl engine set llamacpp
-
-# Restart to apply changes
-./aixcl stack restart engine
-```
-
-> **vLLM GPU Compatibility:** vLLM requires specific GPU tuning for different cards. If you encounter CUDA errors on startup, the default configuration includes optimizations for RTX 4060 and similar GPUs. For other GPUs, you may need to adjust `--gpu-memory-utilization` and `--max-model-len` in `services/docker-compose.yml`.
-
-> **Engine Testing:** All engines have been tested and validated. See the [Engine Switching Test Plan](docs/operations/engine-switching-test-plan.md) for comprehensive testing details.
-
-### 2. Model Management
-
-Manage your local library across any active engine:
-
-**Ollama Engine:**
-```bash
-# Add from Ollama Registry (tested model)
+# Add the model
 ./aixcl models add qwen2.5-coder:0.5b
 
-# Add multiple models
-./aixcl models add qwen2.5-coder:0.5b qwen2.5-coder:1.5b
+# Test via API
+curl http://localhost:11434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5-coder:0.5b",
+    "messages": [{"role": "user", "content": "Hello, are you working?"}]
+  }'
 
-# List all local models
-./aixcl models list
-
-# Remove a model
-./aixcl models remove qwen2.5-coder:0.5b
+# Expected output: JSON response with the model's reply
 ```
 
-**vLLM Engine:**
+**All three methods should show the model responding to your hello!**
+
+---
+
+## Access Points
+
+| Service | URL | Login |
+|---------|-----|-------|
+| Open WebUI | http://localhost:8080 | First user = admin |
+| Grafana | http://localhost:3000 | admin/admin |
+| Vault UI | http://localhost:8200 | Token: aixcl-dev-token |
+| Ollama API | http://localhost:11434 | No auth (localhost only) |
+
+---
+
+## Mandatory Workflow
+
+**Every commit must be GPG-signed:**
+
 ```bash
-# Add from HuggingFace (full model path) - tested model
-./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct
+# Configure Git (one-time)
+git config --global commit.gpgsign true
 
-# List downloaded models
-./aixcl models list
+# Commits are automatically signed
+vim some-file.txt
+git add some-file.txt
+git commit -m "feat: add new feature"  # Automatically signed
+
+# Verify signature
+git log --show-signature -1
 ```
-
-**llama.cpp Engine:**
-```bash
-# Add GGUF from HuggingFace (requires full path with filename) - tested model
-./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
-
-# List GGUF files in volume
-./aixcl models list
-```
-
-### 3. OpenCode CLI Integration
-
-AIXCL is designed to power local agentic development workflows via the OpenCode CLI. OpenCode connects to your stack for local chat, autocomplete, and agentic coding - all running on-device.
-
-* **Endpoint:** `http://localhost:11434/v1`
-* **Start a session:** `./opencode`
-* **Setup:** See [OpenCode Setup Guide](https://github.com/xencon/aixcl/blob/main/docs/developer/opencode-setup.md) for full configuration details.
-
-Agent workflow rules and permissions are configured automatically via `opencode.json` and `DEVELOPMENT.md`.
 
 ---
 
 ## Common Commands
 
-| Command | Description |
-| --- | --- |
-| `./aixcl utils check-env` | Validate environment and dependencies |
-| `./aixcl stack start --profile sys` | Start all services with sys profile |
-| `./aixcl stack status` | Check service health and OpenCode connectivity |
-| `./aixcl stack logs engine` | View real-time inference logs |
-| `./aixcl stack stop` | Stop all services gracefully |
-| `./aixcl restart` | Restart services (shorthand for stack restart) |
-| `./aixcl service restart engine` | Restart a specific service |
-| `./aixcl models add <model>` | Add a model (e.g., `qwen2.5-coder:0.5b`) |
-| `./aixcl models remove <model>` | Remove a model |
-| `./aixcl models list` | List installed models |
-| `./aixcl utils clean` | Wipe unused containers and volumes (Fresh start) |
+| Task | Command |
+|------|---------|
+| Check status | `./aixcl stack status` |
+| View logs | `./aixcl stack logs` |
+| Stop stack | `./aixcl stack stop` |
+| Add model | `./aixcl models add <model>` |
+| Chat CLI | `opencode` |
+| Rotate credentials | `./scripts/security/rotate-credentials.sh --check` |
+| Verify GPG | `./scripts/utils/setup-gpg.sh --verify` |
 
 ---
 
-## Documentation
+## Security Features (Mandatory)
 
-* [User Guide](https://github.com/xencon/aixcl/blob/main/docs/user/usage.md) - Detailed workflows and tips.
-* [Architecture](https://github.com/xencon/aixcl/blob/main/docs/architecture/governance) - Profiles and service contracts.
-* [Security](https://github.com/xencon/aixcl/blob/main/docs/operations/security.md) - Rootless Docker operations (Podman support: experimental).
-* [OpenCode Setup](https://github.com/xencon/aixcl/blob/main/docs/developer/opencode-setup.md) - CLI configuration and agent workflow.
-* [Contributing](https://github.com/xencon/aixcl/blob/main/DEVELOPMENT.md) - Issue-first workflow, templates, and PR requirements.
+The following are **not optional** and cannot be disabled:
+
+- ✅ **Podman rootless** - No privileged containers
+- ✅ **GPG-signed commits** - All commits to main/dev must be signed
+- ✅ **HashiCorp Vault** - Dynamic secrets with automatic rotation
+- ✅ **PostgreSQL SSL** - Encrypted database connections
+- ✅ **Host firewall** - Network isolation at host level
+
+See [SECURITY.md](SECURITY.md) for architecture details.
+
+---
+
+## Troubleshooting
+
+### "GPG signing failed"
+
+```bash
+# Re-run setup
+./scripts/utils/setup-gpg.sh
+
+# Verify key exists
+gpg --list-secret-keys --keyid-format LONG
+```
+
+### "Podman not running rootless"
+
+```bash
+# Check user namespaces
+sysctl kernel.unprivileged_userns_clone
+
+# Should return 1, if not:
+echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-userns.conf
+sudo sysctl --system
+```
+
+### "Vault not initializing"
+
+```bash
+# Check Vault status
+podman logs vault | tail -20
+
+# Ensure Vault is healthy before init
+./aixcl stack status
+```
+
+### "Services won't start"
+
+```bash
+# Check for port conflicts
+sudo lsof -i :11434  # Ollama
+sudo lsof -i :8080   # Open WebUI
+sudo lsof -i :8200   # Vault
+
+# Clean restart
+./aixcl stack stop
+./aixcl utils clean
+./aixcl stack start --profile sys
+```
+
+---
+
+## Next Steps
+
+1. **Add more models**: `./aixcl models add qwen2.5-coder:1.5b`
+2. **Customize**: Edit `.env` for your environment
+3. **Learn**: See [docs/](docs/) for detailed guides
+4. **Contribute**: Read [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
 
 ## License
 
-Apache License 2.0 - See [LICENSE](https://github.com/xencon/aixcl/blob/main/LICENSE).
+Apache License 2.0
