@@ -7,12 +7,14 @@ set -e
 
 # Read secrets from files if _FILE variables are set
 if [[ -n "${POSTGRES_USER_FILE:-}" && -f "$POSTGRES_USER_FILE" ]]; then
-  export POSTGRES_USER="$(cat "$POSTGRES_USER_FILE")"
+  POSTGRES_USER="$(cat "$POSTGRES_USER_FILE")"
+  export POSTGRES_USER
   unset POSTGRES_USER_FILE
 fi
 
 if [[ -n "${POSTGRES_PASSWORD_FILE:-}" && -f "$POSTGRES_PASSWORD_FILE" ]]; then
-  export POSTGRES_PASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"
+  POSTGRES_PASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"
+  export POSTGRES_PASSWORD
   unset POSTGRES_PASSWORD_FILE
 fi
 
