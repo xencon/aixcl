@@ -70,26 +70,26 @@ jobs:
           
           # Create minimal .env with required vars for validation
           cat > .env << 'EOF'
-INFERENCE_ENGINE=ollama
-PROFILE=usr
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=test
-POSTGRES_DATABASE=webui
-PGADMIN_EMAIL=admin@test.com
-PGADMIN_PASSWORD=test
-OPENWEBUI_EMAIL=admin@test.com
-OPENWEBUI_PASSWORD=test
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=test
-OLLAMA_HOST=0.0.0.0:11434
-OLLAMA_NUM_PARALLEL=8
-OLLAMA_MAX_LOADED_MODELS=3
-OLLAMA_KEEP_ALIVE=1800
-OLLAMA_NUM_GPU=1
-OLLAMA_NUM_THREAD=8
-VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
-VLLM_CUDA_GRAPH_CAPTURE=0
-EOF
+          INFERENCE_ENGINE=ollama
+          PROFILE=usr
+          POSTGRES_USER=admin
+          POSTGRES_PASSWORD=test
+          POSTGRES_DATABASE=webui
+          PGADMIN_EMAIL=admin@test.com
+          PGADMIN_PASSWORD=test
+          OPENWEBUI_EMAIL=admin@test.com
+          OPENWEBUI_PASSWORD=test
+          GRAFANA_ADMIN_USER=admin
+          GRAFANA_ADMIN_PASSWORD=test
+          OLLAMA_HOST=0.0.0.0:11434
+          OLLAMA_NUM_PARALLEL=8
+          OLLAMA_MAX_LOADED_MODELS=3
+          OLLAMA_KEEP_ALIVE=1800
+          OLLAMA_NUM_GPU=1
+          OLLAMA_NUM_THREAD=8
+          VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
+          VLLM_CUDA_GRAPH_CAPTURE=0
+          EOF
           
           # Validate main compose file
           docker compose -f services/docker-compose.yml config > /dev/null || exit 1
