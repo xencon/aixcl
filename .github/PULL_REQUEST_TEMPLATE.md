@@ -12,6 +12,14 @@ Provide a concise summary of changes.
 - [ ] Commit messages follow conventional style
 - [ ] All tests run and pass
 
+### PR Validation Requirements
+The following are enforced by `.github/workflows/pr-validation.yml` and will block merge if not met:
+- [ ] **Assignee**: At least one assignee is set (required by CI)
+- [ ] **Component Label**: At least one `component:*` label (e.g., `component:cli`, `component:infrastructure`)
+- [ ] **Title Format**: `<description> (#<number>)` with NO colons in the description
+
+**Note**: PR validation runs automatically and must pass before merging.
+
 ### Testing Notes
 Describe how this change was tested:
 
