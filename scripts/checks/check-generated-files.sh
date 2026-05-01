@@ -75,9 +75,10 @@ check_test_results() {
         "tests/.backup/*"
     )
     
+    # shellcheck disable=SC2206
     for pattern in "${result_patterns[@]}"; do
         # Use glob expansion instead of ls | grep (SC2010)
-        # Separate declaration from assignment (SC2206)
+        # Glob expansion is intentional here for pattern matching
         local files
         files=($pattern)
         if [[ ${#files[@]} -gt 0 && -e "${files[0]}" ]]; then
