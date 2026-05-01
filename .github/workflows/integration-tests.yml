@@ -95,10 +95,11 @@ jobs:
           docker compose -f services/docker-compose.yml config > /dev/null || exit 1
           echo "✓ Main compose file valid"
           
-          # Check all compose files exist and are valid YAML
-          for file in services/docker-compose*.yml; do
+          # Check compose override files by combining with main compose
+          # Override files (gpu.yml, arm.yml) require main compose for complete validation
+          for file in services/docker-compose.*.yml; do
             if [ -f "$file" ]; then
-              docker compose -f "$file" config > /dev/null || exit 1
+              docker compose -f services/docker-compose.yml -f "$file" config > /dev/null || exit 1
               echo "✓ $(basename $file) valid"
             fi
           done
