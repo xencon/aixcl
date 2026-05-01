@@ -156,8 +156,17 @@ init_secrets() {
       value=$(generate_secret "$value")
     fi
     
-    # Export for derived secrets function
-    export "$env_var=$value"
+    # Export credential variables for derived secrets function
+    case "$name" in
+      postgres_user) export POSTGRES_USER="$value" ;;
+      postgres_password) export POSTGRES_PASSWORD="$value" ;;
+      pgadmin_email) export PGADMIN_EMAIL="$value" ;;
+      pgadmin_password) export PGADMIN_PASSWORD="$value" ;;
+      openwebui_email) export OPENWEBUI_EMAIL="$value" ;;
+      openwebui_password) export OPENWEBUI_PASSWORD="$value" ;;
+      grafana_admin_user) export GRAFANA_ADMIN_USER="$value" ;;
+      grafana_admin_password) export GRAFANA_ADMIN_PASSWORD="$value" ;;
+    esac
     
     create_secret "$name" "$value"
   done
