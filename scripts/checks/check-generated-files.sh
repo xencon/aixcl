@@ -76,9 +76,11 @@ check_test_results() {
     )
     
     for pattern in "${result_patterns[@]}"; do
-        # Use glob expansion instead of ls | grep
-        local files=($pattern)
-        if [[ -e "${files[0]}" ]]; then
+        # Use glob expansion instead of ls | grep (SC2010)
+        # Separate declaration from assignment (SC2206)
+        local files
+        files=($pattern)
+        if [[ ${#files[@]} -gt 0 && -e "${files[0]}" ]]; then
             for file in "${files[@]}"; do
                 if [[ -f "$file" ]]; then
                     error "Found generated test result file: $file"
