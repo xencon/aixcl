@@ -27,6 +27,10 @@ log_info() {
     echo -e "${NC}[INFO]${NC} $1"
 }
 
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
 # Validate inputs
 if [[ -z "$SESSION_ID" || -z "$RUN_ID" ]]; then
     log_error "Usage: $0 <session-id> <run-id>"
