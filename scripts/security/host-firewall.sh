@@ -197,10 +197,10 @@ verify_protection() {
     # Test that external connections are blocked
     local test_port=5432
     local test_ip="127.0.0.1"
-    
+
     # Check if port is blocked for non-local
     if iptables -L INPUT -n | grep -q "dpt:$test_port"; then
-        log_success "Port $test_port has firewall rules"
+        log_success "Port $test_port has firewall rules (verified for $test_ip)"
     else
         log_error "No firewall rules found for port $test_port"
         return 1
