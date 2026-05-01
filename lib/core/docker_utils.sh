@@ -28,6 +28,7 @@ COMPOSE_CMD=(docker-compose -f "${SERVICES_DIR}/${COMPOSE_FILE}")
 COMPOSE_WORKDIR="${SERVICES_DIR}"
 
 # Build docker-compose command with optional GPU and ARM overrides if present
+# Podman is preferred over Docker for rootless security
 set_compose_cmd() {
     local files=( -f "${SERVICES_DIR}/${COMPOSE_FILE}" )
     
@@ -45,17 +46,32 @@ set_compose_cmd() {
         echo "No NVIDIA GPU support detected. Running without GPU overrides."
     fi
     
-    # Detect appropriate compose command
+    # Detect appropriate compose command - Podman preferred for rootless security
     local cmd=()
     local bin="docker"
     
-    if command -v podman &> /dev/null; then
-        # Check if we should prefer Podman
-        if ! command -v docker &> /dev/null || podman info &> /dev/null; then
-             bin="podman"
-             if command -v podman-compose &> /dev/null; then
-                 cmd=(podman-compose)
-             fi
+    # Check if Podman is available and functional (preferred for security)
+    if command -v podman &>/dev/null && podman info &>/dev/null; then
+        # Podman is installed and working
+        if command -v podman-compose &>/dev/null; then
+            bin="podman"
+            cmd=(podman-compose)
+            echo "Using Podman (rootless mode) with podman-compose"
+        else
+            # podman installed but podman-compose missing
+            echo "⚠️  Podman found but podman-compose not installed"
+            echo "   Install: pip3 install podman-compose"
+            echo "   Falling back to Docker..."
+        fi
+    fi
+    
+    # Docker fallback
+    if [[ "$bin" == "docker" ]]; then
+        if command -v docker &>/dev/null; then
+            echo "Using Docker (daemon mode)"
+        else
+            echo "❌ Error: Neither Podman nor Docker found. Cannot continue." >&2
+            exit 1
         fi
     fi
     
@@ -66,9 +82,9 @@ set_compose_cmd() {
     if [ ${#cmd[@]} -eq 0 ]; then
         if docker compose version &> /dev/null; then
             cmd=(docker compose)
-        elif command -v docker-compose &> /dev/null; then
+        elif command -v docker-compose &>/dev/null; then
             cmd=(docker-compose)
-        elif command -v podman-compose &> /dev/null; then
+        elif command -v podman-compose &>/dev/null; then
             cmd=(podman-compose)
         else
             echo "❌ Error: No Docker Compose compatible tool found (docker compose, docker-compose, or podman-compose)" >&2
