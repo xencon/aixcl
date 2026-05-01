@@ -88,12 +88,12 @@ create_derived_secrets() {
   pg_pass="${POSTGRES_PASSWORD:-}"
   pg_db="${POSTGRES_DATABASE:-webui}"
   
-  # Create DATABASE_URL
-  local db_url="postgresql://${pg_user}:${pg_pass}@127.0.0.1:5432/${pg_db}"
+  # Create DATABASE_URL (with SSL mode=require)
+  local db_url="postgresql://${pg_user}:${pg_pass}@127.0.0.1:5432/${pg_db}?sslmode=require"
   create_secret "database_url" "$db_url"
   
-  # Create postgres_exporter DSN
-  local exporter_dsn="postgresql://${pg_user}:${pg_pass}@127.0.0.1:5432/${pg_db}?sslmode=disable"
+  # Create postgres_exporter DSN (with SSL mode=require)
+  local exporter_dsn="postgresql://${pg_user}:${pg_pass}@127.0.0.1:5432/${pg_db}?sslmode=require"
   create_secret "postgres_exporter_dsn" "$exporter_dsn"
 }
 
