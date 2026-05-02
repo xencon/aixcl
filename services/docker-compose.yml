@@ -547,36 +547,36 @@ services:
 # Using external: true ensures volumes are created once and reused
 volumes:
   aixcl-ollama-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-hf-cache:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-vllm-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-llamacpp-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-open-webui-main:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-open-webui-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgdata:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-prometheus:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-grafana:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-loki:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-alloy-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-alertmanager-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgadmin-storage:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgadmin-main:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgadmin-config:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-vault-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-vault-secrets:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
