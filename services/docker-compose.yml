@@ -373,7 +373,7 @@ services:
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=require"
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
     network_mode: host
     depends_on:
       - postgres
