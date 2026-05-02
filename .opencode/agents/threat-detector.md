@@ -106,11 +106,7 @@ description: Detect attempts to gain elevated privileges
 triggers:
   - sudo_attempts:
     pattern: "sudo|su -|sudoers|/etc/sudoers"
-    
-  - docker_socket_access:
-    service: alloy
-    unauthorized: true
-    
+
   - container_escape:
     pattern: "privileged|/proc/|/sys/|cap_"
     
