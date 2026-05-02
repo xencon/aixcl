@@ -181,7 +181,7 @@ services:
     volumes:
       - aixcl-open-webui:/app/backend/data
       - aixcl-open-webui-data:/app/data
-      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
+      - ../scripts/runtime/openwebui-v2.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
       - ../scripts/runtime/openwebui-vault-entrypoint.sh:/usr/local/bin/openwebui-vault-entrypoint.sh:ro
       - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
