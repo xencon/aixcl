@@ -243,10 +243,11 @@ services:
     user: "0:0"
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
     volumes:
-      - ../vault/agent-config/postgres-bootstrap.hcl:/etc/vault/agent.hcl:ro
+      - ../scripts/vault/bootstrap-password-postgres.sh:/app/bootstrap.sh:ro
       - aixcl-vault-secrets:/run/secrets
-    command: vault agent -config=/etc/vault/agent.hcl
+    command: sh /app/bootstrap.sh
     network_mode: host
     depends_on:
       - vault
@@ -260,10 +261,11 @@ services:
     user: "0:0"
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
     volumes:
-      - ../vault/agent-config/openwebui-bootstrap.hcl:/etc/vault/agent.hcl:ro
+      - ../scripts/vault/bootstrap-password-openwebui.sh:/app/bootstrap.sh:ro
       - aixcl-vault-secrets:/run/secrets
-    command: vault agent -config=/etc/vault/agent.hcl
+    command: sh /app/bootstrap.sh
     network_mode: host
     depends_on:
       - vault
