@@ -81,13 +81,13 @@ Operational:  3/3 healthy (postgres, open-webui, pgadmin)
 ### ops Profile
 ```
 Runtime Core: 2/2 healthy
-Operational:  8/8 healthy (postgres, prometheus, grafana, loki, alloy, cadvisor, node-exporter, postgres-exporter)
+Operational:  7/7 healthy (postgres, prometheus, grafana, loki, cadvisor, node-exporter, postgres-exporter)
 ```
 
 ### sys Profile
 ```
 Runtime Core: 2/2 healthy
-Operational:  10/10 healthy (all services enabled: postgres, open-webui, pgadmin, prometheus, grafana, loki, alloy, cadvisor, node-exporter, postgres-exporter)
+Operational:  9/9 healthy (all services enabled: postgres, open-webui, pgadmin, prometheus, grafana, loki, cadvisor, node-exporter, postgres-exporter)
 ```
 
 ## AI Guidance for Status Implementation

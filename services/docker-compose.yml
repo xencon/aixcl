@@ -2,7 +2,7 @@ services:
   ollama:
     image: docker.io/ollama/ollama:0.20.5
     container_name: ollama
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
     volumes:
       - aixcl-ollama-data:/home/ubuntu/.ollama
@@ -27,148 +27,66 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-  vllm:
-    image: docker.io/vllm/vllm-openai:v0.19.0
-    container_name: vllm
-    pull_policy: if_not_present
-    tty: true
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - aixcl-hf-cache:/home/vllm/.cache/huggingface
-      - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
-    environment:
-      # vLLM runtime configuration (configured via .env)
-      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
-      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
-      - CUDA_LAUNCH_BLOCKING=0
-      - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
-      - HF_HOME=/home/vllm/.cache/huggingface
-      - TRANSFORMERS_CACHE=/home/vllm/.cache/huggingface
-      - HOME=/home/vllm
-    # Use custom entrypoint to run as non-root user
-    entrypoint: ["/vllm-entrypoint.sh"]
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    # Note: read_only cannot be applied - entrypoint creates vllm user with useradd
-    # vLLM startup command with configurable model and memory settings
-    command:
-      - "--model"
-      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
-      - "--gpu-memory-utilization"
-      - "${VLLM_GPU_MEMORY_UTILIZATION:-0.8}"
-      - "--max-model-len"
-      - "${VLLM_MAX_MODEL_LEN:-32768}"
-      - "--port"
-      - "11434"
-      - "--enable-auto-tool-choice"
-      - "--tool-call-parser"
-      - "hermes"
-      - "--enforce-eager"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 180s
 
-  llamacpp:
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
-    container_name: llamacpp
-    pull_policy: if_not_present
-    user: "1000:1000"  # Run as non-root user for security
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault
+    pull_policy: missing
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_API_ADDR: http://127.0.0.1:8200
+      VAULT_DEV_ROOT_TOKEN_ID: aixcl-dev-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     volumes:
-      - aixcl-llamacpp-data:/models
-      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
-    tty: true
+      - aixcl-vault-data:/vault/file
+      - ../scripts/vault/init:/vault/init:ro
+    command: server -dev -dev-root-token-id=aixcl-dev-token
     network_mode: host
     restart: unless-stopped
-    environment:
-      # llama.cpp model configuration (configured via .env)
-      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
-    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
-    command: ["--host", "0.0.0.0", "--port", "11434"]
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
+      test: ["CMD", "vault", "status"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.1
-    container_name: open-webui
-    pull_policy: if_not_present
-    user: "0:0"  # Start as root for permission setup, entrypoint switches to non-root
+  vault-init:
+    image: hashicorp/vault:1.18
+    container_name: vault-init
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
     volumes:
-      - aixcl-open-webui:/app/backend/data
-      - aixcl-open-webui-data:/app/data
-      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
-      - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
+      - ../scripts/vault/init-vault.sh:/init.sh:ro
     environment:
-      - DATA_DIR=/app/data
-      - STATIC_DIR=/app/backend/data/static
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}
-      - WEBUI_NAME=AIXCL
-      # Use OpenAI-compatible API for all engines (Ollama, llama.cpp, vLLM all support this)
-      # Use OPENAI_API_BASE_URLS (plural) which is the correct variable name
-      - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
-      - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
-      # OpenAI API key - left empty for local models as they don't require authentication
-      # This prevents "Missing bearer authentication" errors with vLLM and other local engines
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      # Enable OpenAI API for model discovery (uses OpenAI-compatible endpoint at OLLAMA_BASE_URL)
-      # This ensures models are discovered with owned_by='openai' instead of 'ollama'
-      - ENABLE_OPENAI_API=true
-      # Conditionally enable Ollama API based on engine selection
-      # Set ENABLE_OLLAMA_API=false in .env when using llamacpp or vllm to disable Ollama-specific features
-      - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
-      # Only set OLLAMA_BASE_URL when Ollama engine is active
-      # This prevents Open WebUI from trying to query Ollama API when using vLLM or llamacpp
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
-      - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
-      - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
-      - RAG_EMBEDDING_ENGINE=ollama
-      - RAG_EMBEDDING_MODEL=nomic-embed-text
-      - USER_ID=1000
-      - GROUP_ID=1000
-      # Enable signup for initial admin user creation
-      - ENABLE_SIGNUP=true
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - postgres
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /bin/sh /init.sh
     network_mode: host
-    restart: always
-    entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
-    command: []
-    healthcheck:
-      # Try /health first, fallback to root endpoint if /health doesn't exist
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    depends_on:
+      vault:
+        condition: service_healthy
+    restart: "no"
 
   postgres:
-    image: postgres:17.9
+    image: docker.io/postgres:17.9
     container_name: postgres
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "999:999"  # Run as postgres user (official image default)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
       POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
       - aixcl-pgdata:/var/lib/postgresql/data
+      - aixcl-vault-secrets:/run/secrets:ro
       - ../scripts/db/init:/docker-entrypoint-initdb.d:ro
     network_mode: host
     restart: always
@@ -186,6 +104,11 @@ services:
       -c log_directory=/var/log/postgresql
       -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
       -c log_rotation_age=1d
+      -c log_destination=stderr
+      -c logging_collector=on
+      -c log_directory=/var/log/postgresql
+      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
+      -c log_rotation_age=1d
       -c log_rotation_size=100MB
       -c log_min_duration_statement=0
     healthcheck:
@@ -193,11 +116,165 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-  
+
+  vllm:
+    image: docker.io/vllm/vllm-openai:v0.19.0
+    container_name: vllm
+    pull_policy: missing
+    tty: true
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - aixcl-hf-cache:/home/vllm/.cache/huggingface
+      - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
+    environment:
+      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
+      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
+      - CUDA_LAUNCH_BLOCKING=0
+      - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
+      - HF_HOME=/home/vllm/.cache/huggingface
+      - TRANSFORMERS_CACHE=/home/vllm/.cache/huggingface
+      - HOME=/home/vllm
+      - VLLM_MODEL=${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}
+    entrypoint: ["/vllm-entrypoint.sh"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  llamacpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
+    container_name: llamacpp
+    pull_policy: missing
+    user: "1000:1000"
+    volumes:
+      - aixcl-llamacpp-data:/models
+      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
+    tty: true
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
+    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
+    command: ["--host", "0.0.0.0", "--port", "11434"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.9.1
+    container_name: open-webui
+    pull_policy: missing
+    user: "0:0"
+    volumes:
+      - aixcl-open-webui:/app/backend/data
+      - aixcl-open-webui-data:/app/data
+      - ../scripts/runtime/openwebui-v2.sh:/app/backend/openwebui.sh
+      - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
+      - ../scripts/runtime/openwebui-vault-entrypoint.sh:/usr/local/bin/openwebui-vault-entrypoint.sh:ro
+      - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
+    environment:
+      - DATA_DIR=/app/data
+      - STATIC_DIR=/app/backend/data/static
+      - DATABASE_URL_FILE=/tmp/vault-secrets/openwebui-db-creds
+      - WEBUI_NAME=AIXCL
+      - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
+      - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ENABLE_OPENAI_API=true
+      - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+      - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
+      - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=nomic-embed-text
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - ENABLE_SIGNUP=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres
+      - vault-agent-openwebui
+    network_mode: host
+    restart: always
+    entrypoint: ["/usr/local/bin/openwebui-vault-entrypoint.sh"]
+    command: []
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  vault-agent-openwebui:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-openwebui
+    pull_policy: missing
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    volumes:
+      - /tmp/aixcl-secrets:/tmp/vault-secrets
+      - ../scripts/vault/vault-agent-openwebui.sh:/app/agent.sh:ro
+    command: sh /app/agent.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Vault Agent for PostgreSQL bootstrap password (from KV store)
+  vault-agent-postgres-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres-bootstrap
+    pull_policy: missing
+    user: "0:0"
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    volumes:
+      - ../scripts/vault/bootstrap-password-postgres.sh:/app/bootstrap.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    command: sh /app/bootstrap.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Vault Agent for Open WebUI bootstrap password (from KV store)
+  vault-agent-openwebui-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-openwebui-bootstrap
+    pull_policy: missing
+    user: "0:0"
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    volumes:
+      - ../scripts/vault/bootstrap-password-openwebui.sh:/app/bootstrap.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    command: sh /app/bootstrap.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
   pgadmin:
-    image: dpage/pgadmin4:9.14.0
+    image: docker.io/dpage/pgadmin4:9.14.0
     container_name: pgadmin
-    pull_policy: if_not_present
+    pull_policy: missing
     network_mode: host
     environment:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
@@ -220,9 +297,9 @@ services:
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
-    image: prom/prometheus:v3.11.1
+    image: docker.io/prom/prometheus:v3.11.1
     container_name: prometheus
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -249,9 +326,9 @@ services:
       retries: 3
 
   alertmanager:
-    image: prom/alertmanager:v0.28.0
+    image: docker.io/prom/alertmanager:v0.28.0
     container_name: alertmanager
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -275,9 +352,9 @@ services:
       retries: 3
 
   grafana:
-    image: grafana/grafana:12.4.2
+    image: docker.io/grafana/grafana:12.4.2
     container_name: grafana
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -304,7 +381,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
-    pull_policy: if_not_present
+    pull_policy: missing
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -321,9 +398,9 @@ services:
       - '--docker_only=true'
 
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: docker.io/prom/node-exporter:v1.11.1
     container_name: node-exporter
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "65534:65534"  # node-exporter user (official image default) - avoids 'nobody' ambiguity
     cap_drop:
       - ALL
@@ -345,10 +422,10 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.19.1
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.19.1
     container_name: postgres-exporter
-    pull_policy: if_not_present
-    user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
+    pull_policy: missing
+    user: "65534:65534"
     cap_drop:
       - ALL
     security_opt:
@@ -356,17 +433,36 @@ services:
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
+    volumes:
+      - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
+      - /home/sbadakhc/src/github.com/xencon/aixcl/scripts/vault/postgres-exporter-vault.sh:/usr/local/bin/entrypoint.sh:ro
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
     network_mode: host
     depends_on:
       - postgres
+      - vault-agent-postgres
+    restart: unless-stopped
+
+  vault-agent-postgres:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres
+    pull_policy: missing
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    volumes:
+      - /tmp/aixcl-secrets:/tmp/vault-secrets
+      - ../scripts/vault/vault-agent.sh:/app/agent.sh:ro
+    command: sh /app/agent.sh
+    network_mode: host
+    depends_on:
+      - vault
     restart: unless-stopped
 
   nvidia-gpu-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
     container_name: nvidia-gpu-exporter
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "999:999"  # nvidia-dcgm user - official image default for GPU metrics
     cap_drop:
       - ALL
@@ -383,9 +479,9 @@ services:
     # This service will gracefully fail on systems without NVIDIA GPUs
 
   loki:
-    image: grafana/loki:3.3.0
+    image: docker.io/grafana/loki:3.3.0
     container_name: loki
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -402,47 +498,10 @@ services:
       timeout: 10s
       retries: 3
 
-  # SECURITY NOTE: Alloy requires Docker socket access for container log discovery.
-  # Docker socket access grants full root access on the host. Security mitigations applied:
-  # - Runs as alloy user (UID 12345) via entrypoint with docker group membership
-  # - Read-only root filesystem prevents runtime modifications
-  # - cap_drop: ALL with SETUID cap_add (allows su for user switching)
-  # - Writable data volume for Alloy state, tmpfs for temporary files
-  # - All bind mounts are read-only (:ro suffix)
-  # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
-  # See docs/operations/security.md section 6 for details.
-  alloy:
-    image: grafana/alloy:v1.15.0
-    container_name: alloy
-    pull_policy: if_not_present
-    # Run as root to read protected log files and access docker socket
-    user: "0:0"
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
-      # Use tmpfs for Alloy data to avoid permission issues with named volumes
-      - /data-alloy:noexec,nosuid,size=100m
-    volumes:
-      - ../alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
-      - ../scripts/runtime/alloy-entrypoint.sh:/usr/local/bin/alloy-entrypoint.sh:ro
-    entrypoint: /usr/local/bin/alloy-entrypoint.sh
-    environment:
-      - DOCKER_GID=${DOCKER_GID:-989}
-    network_mode: host
-    depends_on:
-      - loki
-    restart: unless-stopped
+  # External named volumes for persistence across contexts
+  # These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
+  # Using external: true ensures volumes are created once and reused
 
-# External named volumes for persistence across contexts
-# These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
-# Using external: true ensures volumes are created once and reused
 volumes:
   aixcl-ollama-data:
     external: true
@@ -464,8 +523,6 @@ volumes:
     external: true
   aixcl-loki:
     external: true
-  aixcl-alloy-data:
-    external: true
   aixcl-alertmanager-data:
     external: true
   aixcl-pgadmin-storage:
@@ -473,4 +530,8 @@ volumes:
   aixcl-pgadmin:
     external: true
   aixcl-pgadmin-config:
+    external: true
+  aixcl-vault-data:
+    external: true
+  aixcl-vault-secrets:
     external: true

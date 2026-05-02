@@ -8,12 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 generate_pgadmin_config() {
     echo "Generating pgAdmin server configuration..."
     
-    # Validate required environment variables
-    if [ -z "${POSTGRES_USER}" ] || [ -z "${POSTGRES_PASSWORD}" ]; then
-        echo "❌ Error: POSTGRES_USER and POSTGRES_PASSWORD must be set in .env file" >&2
-        echo "   Please check your .env file and ensure these variables are configured" >&2
-        return 1
-    fi
+    # Note: With Vault integration, credentials are dynamic
+    # pgAdmin will need to use static bootstrap credentials or Vault-generated credentials
+    local pg_user="${POSTGRES_USER:-admin}"
+    local pg_pass="${POSTGRES_PASSWORD:-}"
     
     # Remove old file if it exists (may have wrong permissions from container)
     rm -f "${SCRIPT_DIR}/pgadmin-servers.json" 2>/dev/null || true
@@ -28,8 +26,8 @@ generate_pgadmin_config() {
       "Host": "localhost",
       "Port": 5432,
       "MaintenanceDB": "postgres",
-      "Username": "${POSTGRES_USER}",
-      "Password": "${POSTGRES_PASSWORD}",
+      "Username": "${pg_user}",
+      "Password": "${pg_pass}",
       "SSLMode": "prefer",
       "Favorite": true
     }
@@ -41,4 +39,5 @@ EOF
     chmod 644 "${SCRIPT_DIR}/pgadmin-servers.json"
     
     echo "✅ Generated pgadmin-servers.json with populated values and secure permissions"
+    echo "   Note: With Vault enabled, use dynamic credentials from './aixcl vault credentials'"
 }

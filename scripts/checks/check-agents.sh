@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Check AI agents, skills, and reports for compliance with naming conventions and structure.
 # Exit code: 0 if all checks pass, 1 if any check fails.
 

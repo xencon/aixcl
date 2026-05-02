@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Environment Validation Script for AIXCL Development
 # Checks that the development environment is ready for OpenCode and Issue-First workflow
 #

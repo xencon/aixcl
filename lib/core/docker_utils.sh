@@ -28,47 +28,71 @@ COMPOSE_CMD=(docker-compose -f "${SERVICES_DIR}/${COMPOSE_FILE}")
 COMPOSE_WORKDIR="${SERVICES_DIR}"
 
 # Build docker-compose command with optional GPU and ARM overrides if present
+# Podman is preferred over Docker for rootless security
 set_compose_cmd() {
     local files=( -f "${SERVICES_DIR}/${COMPOSE_FILE}" )
     
     # Check for ARM64 architecture
     if is_arm64 && [ -f "${SERVICES_DIR}/docker-compose.arm.yml" ]; then
-        echo "Detected ARM64 architecture. Enabling ARM platform overrides."
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "Detected ARM64 architecture. Enabling ARM platform overrides."
+        fi
         files+=( -f "${SERVICES_DIR}/docker-compose.arm.yml" )
     fi
     
     # Check for NVIDIA GPU hardware AND toolkit availability
     if has_nvidia && has_nvidia_container_toolkit && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
-        echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
+        fi
         files+=( -f "${SERVICES_DIR}/docker-compose.gpu.yml" )
     else
-        echo "No NVIDIA GPU support detected. Running without GPU overrides."
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "No NVIDIA GPU support detected. Running without GPU overrides."
+        fi
     fi
     
-    # Detect appropriate compose command
+    # Detect appropriate compose command - Podman preferred for rootless security
     local cmd=()
     local bin="docker"
     
-    if command -v podman &> /dev/null; then
-        # Check if we should prefer Podman
-        if ! command -v docker &> /dev/null || podman info &> /dev/null; then
-             bin="podman"
-             if command -v podman-compose &> /dev/null; then
-                 cmd=(podman-compose)
-             fi
+    # Check if Podman is available and functional (preferred for security)
+    if command -v podman &>/dev/null && podman info &>/dev/null; then
+        # Podman is installed and working
+        if command -v podman-compose &>/dev/null; then
+            bin="podman"
+            cmd=(podman-compose)
+            [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Podman (rootless mode) with podman-compose"
+        else
+            # podman installed but podman-compose missing
+            echo "⚠️  Podman found but podman-compose not installed" >&2
+            echo "   Install: pip3 install podman-compose" >&2
+            echo "   Falling back to Docker..." >&2
+        fi
+    fi
+    
+    # Docker fallback
+    if [[ "$bin" == "docker" ]]; then
+        if command -v docker &>/dev/null; then
+            [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Docker (daemon mode)"
+        else
+            echo "❌ Error: Neither Podman nor Docker found. Cannot continue." >&2
+            exit 1
         fi
     fi
     
     # Export DOCKER_BIN for use in other scripts
     export DOCKER_BIN="$bin"
-    echo "Using container engine: $DOCKER_BIN"
+    if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+        echo "Using container engine: $DOCKER_BIN"
+    fi
 
     if [ ${#cmd[@]} -eq 0 ]; then
-        if docker compose version &> /dev/null; then
+        if command -v docker &>/dev/null && docker compose version &> /dev/null; then
             cmd=(docker compose)
-        elif command -v docker-compose &> /dev/null; then
+        elif command -v docker-compose &>/dev/null; then
             cmd=(docker-compose)
-        elif command -v podman-compose &> /dev/null; then
+        elif command -v podman-compose &>/dev/null; then
             cmd=(podman-compose)
         else
             echo "❌ Error: No Docker Compose compatible tool found (docker compose, docker-compose, or podman-compose)" >&2
@@ -82,10 +106,14 @@ set_compose_cmd() {
     # Set and export DOCKER_SOCK for use in docker-compose files
     DOCKER_SOCK=$(get_docker_sock)
     export DOCKER_SOCK
-    echo "Using Docker socket: $DOCKER_SOCK"
+    if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+        echo "Using Docker socket: $DOCKER_SOCK"
+    fi
 }
 
 # Helper function to run docker-compose commands from the services directory
+# Filters out verbose podman-compose output (env vars, volumes, JSON config)
+# Only shows errors and important status messages
 run_compose() {
     if [ -z "${COMPOSE_WORKDIR:-}" ]; then
         echo "❌ Error: COMPOSE_WORKDIR is not set. Please call set_compose_cmd() first." >&2
@@ -100,7 +128,39 @@ run_compose() {
     if [ -n "${ENABLE_DB_STORAGE:-}" ]; then
         export ENABLE_DB_STORAGE
     fi
-    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@")
+    
+    # Run compose command and filter output in real-time
+    # Only show lines that look like actual status messages or errors
+    # Suppress: JSON fragments, flag lines (-e, -v, --), command traces, "** merged:**" header
+    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@" 2>&1) | \
+    awk '
+        # Skip lines that are clearly JSON or command flags
+        /^[[:space:]]*-[ev][[:space:]]/ { next }
+        /^[[:space:]]*--/ { next }
+        /^[[:space:]]*\{/ { next }
+        /^[[:space:]]*\}/ { next }
+        /^[[:space:]]*\[/ { next }
+        /^[[:space:]]*\]/ { next }
+        /^[[:space:]]*"/ { next }
+        /^[[:space:]]*\x27/ { next }
+        /^[[:space:]]*,[[:space:]]*$/ { next }
+        /^[[:space:]]*\}[,[:space:]]*$/ { next }
+        /^[[:space:]]*\][,[:space:]]*$/ { next }
+        /^\*\* / { next }
+        /^podman run/ { next }
+        /^\[.podman/ { next }
+        /^exit code:/ { next }
+        /^podman volume/ { next }
+        /^\*\* merged:/ { next }
+        /^\*\* excluding:/ { next }
+        /^recreating:/ { next }
+        /^podman-compose version:/ { next }
+        /^using podman version:/ { next }
+        # Print everything else
+        { print }
+    '
+    
+    return ${PIPESTATUS[0]:-0}
 }
 
 # Check if a container is running (handles both exact name and hash-prefixed names)

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Ollama entrypoint wrapper - ensures correct permissions for Ollama data directory
 
 set -e

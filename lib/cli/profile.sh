@@ -44,16 +44,16 @@ get_profile_services_for_profile() {
     
     case "$profile" in
         usr)
-            echo "$engine postgres"
+            echo "$engine vault postgres vault-agent-postgres-bootstrap"
             ;;
         dev)
-            echo "$engine open-webui postgres pgadmin"
+            echo "$engine vault open-webui postgres pgadmin vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap"
             ;;
         ops)
-            echo "$engine postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
             ;;
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap"
             ;;
         *)
             echo ""
@@ -66,10 +66,10 @@ get_profile_services_for_profile() {
 # Use get_profile_services_for_profile() or get_profile_services() instead
 # shellcheck disable=SC2034
 declare -A PROFILE_SERVICES=(
-    [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
-    [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
-    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [usr]="INFERENCE_ENGINE_PLACEHOLDER vault postgres vault-agent-postgres-bootstrap"
+    [dev]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap"
+    [ops]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
+    [sys]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap"
 )
 
 # Profile database storage settings

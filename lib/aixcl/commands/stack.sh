@@ -464,6 +464,30 @@ function start() {
             fi
         fi
         
+        # Check if Vault is in the profile and auto-initialize if needed
+        local has_vault=false
+        for service in "${profile_services[@]}"; do
+            if [ "$service" = "vault" ]; then
+                has_vault=true
+                break
+            fi
+        done
+        
+        if [ "$has_vault" = true ]; then
+            echo "Checking Vault initialization..."
+            local vault_init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
+            if [ -f "$vault_init_script" ]; then
+                # Run vault init (idempotent - safe to run multiple times)
+                if bash "$vault_init_script" 2>&1 | tail -20; then
+                    echo "Vault initialization complete"
+                else
+                    echo "Warning: Vault initialization may have issues. Run './aixcl vault status' for details"
+                fi
+            else
+                echo "Warning: Vault initialization script not found at $vault_init_script"
+            fi
+        fi
+        
         status
         return 0
     else
@@ -474,7 +498,15 @@ function start() {
 }
 
 function stop() {
-    echo "Stopping Docker Compose deployment..."
+    [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Stopping Docker Compose deployment..."
+    
+    # Get current profile from .env file
+    local profile=""
+    local env_file="${SCRIPT_DIR}/.env"
+    if [ -f "$env_file" ]; then
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    fi
+    [ -z "$profile" ] && profile="sys"
     
     # Set up compose command with GPU detection
     set_compose_cmd
@@ -483,17 +515,73 @@ function stop() {
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
     if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-        echo "Services are not running."
+        # Services already stopped - show status
+        echo ""
+        echo "AIXCL Stack Stopped"
+        echo "==================="
+        echo ""
+        echo "Profile: $profile"
+        echo "Status: Stopped"
+        echo ""
+        echo "Services"
+        echo "--------------------------------------------------"
+        echo ""
+        echo "Runtime Core"
+        for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+            echo "  ❌ $service"
+        done
+        echo ""
+        echo "Operational Services"
+        local profile_services
+        profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+        for service in $profile_services; do
+            local is_core=false
+            for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+                [ "$service" = "$core" ] && is_core=true && break
+            done
+            [ "$is_core" = true ] && continue
+            echo "  ❌ $service"
+        done
+        echo ""
+        echo "All services have been stopped."
         return 0
     fi
     
     echo "Stopping services gracefully..."
-    run_compose down --remove-orphans
+    # Allow down to fail (containers may not exist) - we check status after
+    run_compose down --remove-orphans || true
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-            echo "All services stopped successfully."
+            echo ""
+            echo "AIXCL Stack Stopped"
+            echo "==================="
+            echo ""
+            echo "Profile: $profile"
+            echo "Status: Stopped"
+            echo ""
+            echo "Services"
+            echo "--------------------------------------------------"
+            echo ""
+            echo "Runtime Core"
+            for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+                echo "  ❌ $service"
+            done
+            echo ""
+            echo "Operational Services"
+            local profile_services
+            profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+            for service in $profile_services; do
+                local is_core=false
+                for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+                    [ "$service" = "$core" ] && is_core=true && break
+                done
+                [ "$is_core" = true ] && continue
+                echo "  ❌ $service"
+            done
+            echo ""
+            echo "All services have been stopped."
             return 0
         fi
         echo "Waiting for services to stop... ($i/15)"
@@ -504,6 +592,33 @@ function stop() {
     run_compose down --remove-orphans -v
     "${DOCKER_BIN:-docker}" ps -q | xargs -r "${DOCKER_BIN:-docker}" stop
     
+    echo ""
+    echo "AIXCL Stack Stopped"
+    echo "==================="
+    echo ""
+    echo "Profile: $(get_profile_services "$profile" 2>/dev/null || echo 'N/A')"
+    echo "Status: Stopped"
+    echo ""
+    echo "Services"
+    echo "--------------------------------------------------"
+    echo ""
+    echo "Runtime Core"
+    for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+        echo "  ❌ $service"
+    done
+    echo ""
+    echo "Operational Services"
+    local profile_services
+    profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+    for service in $profile_services; do
+        local is_core=false
+        for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+            [ "$service" = "$core" ] && is_core=true && break
+        done
+        [ "$is_core" = true ] && continue
+        echo "  ❌ $service"
+    done
+    echo ""
     echo "All services have been stopped."
     
     # Clean up pgAdmin configuration file for security
@@ -961,7 +1076,7 @@ function logs() {
         # Show last 100 lines for each container as summary
         for service in "${running_containers[@]}"; do
             echo "=== $service ==="
-            "${DOCKER_BIN:-docker}" logs "$service" --tail=100 2>/dev/null || echo "  (no logs available)"
+            "${DOCKER_BIN:-docker}" logs --tail=100 "$service" 2>/dev/null || echo "  (no logs available)"
             echo ""
         done
         
@@ -978,7 +1093,7 @@ function logs() {
         for service in "${running_containers[@]}"; do
             # Use sed to prefix each line with the service name
             # Appending || true to subshell to prevent it from failing the main script
-            ( "${DOCKER_BIN:-docker}" logs "$service" --follow 2>/dev/null | sed "s/^/[$service] /" || true ) &
+            ( "${DOCKER_BIN:-docker}" logs --follow "$service" 2>/dev/null | sed "s/^/[$service] /" || true ) &
             pids+=($!)
         done
         
@@ -1027,7 +1142,7 @@ function logs() {
         
         if [ -n "$actual_container" ]; then
             # Fetch logs without --follow to avoid hanging in scripts/tests
-            "${DOCKER_BIN:-docker}" logs "$actual_container" --tail="$tail_count" 2>/dev/null || echo "  (no logs available)"
+            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
         else
             log_error "Container for service '$actual_service' not found"
             return 1
@@ -1318,6 +1433,11 @@ function status() {
     # Operational Services
     echo "Operational Services"
     
+    # Security
+    # shellcheck disable=SC2034
+    VAULT_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8200/v1/sys/health 2>/dev/null || echo "000")
+    check_operational_service "Vault" "vault" "vault" "status_var" "VAULT_STATUS"
+    
     # UI
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://127.0.0.1:8080/health"
 
@@ -1370,9 +1490,6 @@ function status() {
     # shellcheck disable=SC2034
     LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
-
-    # Alloy
-    check_operational_service "Alloy" "alloy" "alloy" "" ""
 
     # Health Summary section
     echo ""
