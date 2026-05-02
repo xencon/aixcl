@@ -397,12 +397,12 @@ services:
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
     environment:
-      DATA_SOURCE_NAME_FILE: "/run/secrets/pgexporter-creds"
+      DATA_SOURCE_NAME_FILE: "/tmp/vault-secrets/pgexporter-creds"
     volumes:
-      - /run/secrets:/run/secrets:ro
+      - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
     network_mode: host
     depends_on:
-      - vault-agent-postgres
+      - postgres
     restart: unless-stopped
 
   vault-agent-postgres:
@@ -418,7 +418,7 @@ services:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
     volumes:
-      - /run/secrets:/run/secrets
+      - /tmp/aixcl-secrets:/tmp/vault-secrets
       - ../vault/agent-config/pgexporter.hcl:/etc/vault/agent.hcl:ro
     command: agent -config=/etc/vault/agent.hcl
     network_mode: host
