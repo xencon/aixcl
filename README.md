@@ -76,37 +76,33 @@ Services started:
 - **Vault** on port 8200 (secrets management)
 - **Grafana** on port 3000 (monitoring)
 
-### Step 5: Initialize Vault (First Run Only)
+### Step 5: Vault Auto-Initialization (Automatic)
 
-Vault must be initialized before services can obtain dynamic credentials:
+Vault now auto-initializes when you run `./aixcl stack start`. No manual steps required!
 
+**What happens automatically:**
+- ✅ Vault container starts with dev mode
+- ✅ Database secrets engine enabled
+- ✅ KV secrets engine enabled for bootstrap passwords
+- ✅ PostgreSQL connection configured
+- ✅ Dynamic roles created (auto-rotate every hour)
+- ✅ Random bootstrap passwords generated and stored securely
+- ✅ All services receive credentials automatically
+
+**View credentials:**
 ```bash
-# Wait for Vault to be ready
-sleep 30
-
-# Initialize Vault with all required configuration
-./scripts/vault/init-vault.sh
-```
-
-This script configures:
-- **Database secrets engine** - For dynamic PostgreSQL credentials
-- **PostgreSQL connection** - Vault can connect to your database
-- **Dynamic roles** - Short-lived credentials for apps (auto-rotate every hour)
-- **Vault policies** - Access control for services
-- **AppRole authentication** - For service-to-Vault authentication
-
-**Note:** This uses Vault dev mode with a development token (`aixcl-dev-token`) for local development. For production, Vault should be configured with proper authentication and sealed/unsealed manually.
-
-**What happens:** Services (postgres-exporter, open-webui) will automatically receive credentials from Vault. You can verify with:
-
-```bash
-# Check Vault is working
+# View dynamic database credentials (for postgres-exporter, open-webui)
 ./aixcl vault credentials
 
-# View generated credentials
+# View bootstrap passwords (for PostgreSQL admin, Open WebUI first login)
+./aixcl vault passwords
+
+# Direct credential files
 cat /tmp/aixcl-secrets/pgexporter-creds
 cat /tmp/aixcl-secrets/openwebui-db-creds
 ```
+
+**Note:** Uses Vault dev mode with token `aixcl-dev-token` for local development. For production, use proper Vault configuration with production authentication.
 
 ### Step 6: Test Inference (Hello World)
 
@@ -200,6 +196,7 @@ git log --show-signature -1
 | Add model | `./aixcl models add <model>` |
 | Chat CLI | `opencode` |
 | Vault credentials | `./aixcl vault credentials` |
+| Vault passwords | `./aixcl vault passwords` |
 | Rotate credentials | `./scripts/security/rotate-credentials.sh --check` |
 | Verify GPG | `./scripts/utils/setup-gpg.sh --verify` |
 
@@ -244,16 +241,23 @@ sudo sysctl --system
 
 ### "Vault not initializing"
 
+Vault auto-initializes on stack start. If you see issues:
+
 ```bash
 # Check Vault status
+./aixcl vault status
+
+# View bootstrap passwords (auto-generated)
+./aixcl vault passwords
+
+# Check Vault logs
 podman logs vault | tail -20
 
-# Ensure Vault is healthy before init
-./aixcl stack status
-
-# If Vault shows "connection refused", run the init script
-./scripts/vault/init-vault.sh
+# Re-initialize if needed (idempotent)
+./aixcl vault init
 ```
+
+**Note:** Vault uses dev mode with auto-generated token. No manual unseal required.
 
 ### "Services failing with 'credential file not found'"
 
