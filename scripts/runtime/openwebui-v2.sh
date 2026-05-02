@@ -25,6 +25,7 @@ WEBUI_SECRET_KEY="$WEBUI_SECRET_KEY" uvicorn open_webui.main:app --host "$HOST" 
 webui_pid=$!
 
 echo "Waiting for webui to be ready..."
+# shellcheck disable=SC2034
 for i in {1..60}; do
   if curl -s http://localhost:8080/health > /dev/null 2>&1; then
     echo "Open WebUI is ready at http://$HOST:$PORT"
