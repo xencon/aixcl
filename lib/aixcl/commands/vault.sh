@@ -177,6 +177,29 @@ function cmd_vault_passwords() {
         echo ""
     fi
     
+    # pgAdmin password
+    local pgadmin_data
+    pgadmin_data=$(curl -sf "${vault_addr}/v1/kv/data/bootstrap/pgadmin" \
+        -H "X-Vault-Token: ${vault_token}" 2>/dev/null || true)
+    
+    if [ -n "$pgadmin_data" ] && echo "$pgadmin_data" | jq -e '.data.data.password' >/dev/null 2>&1; then
+        local pgadmin_pass pgadmin_desc pgadmin_created
+        pgadmin_pass=$(echo "$pgadmin_data" | jq -r '.data.data.password')
+        pgadmin_desc=$(echo "$pgadmin_data" | jq -r '.data.data.description // "pgAdmin admin password"')
+        pgadmin_created=$(echo "$pgadmin_data" | jq -r '.data.metadata.created_time // "unknown"')
+        
+        echo "pgAdmin:"
+        echo "  Username: admin"
+        echo "  Password: ${pgadmin_pass}"
+        echo "  Description: ${pgadmin_desc}"
+        echo "  Created: ${pgadmin_created}"
+        echo ""
+    else
+        echo "pgAdmin: Not initialized"
+        echo "  Run: ./aixcl vault init"
+        echo ""
+    fi
+    
     echo "=========================================="
     echo ""
     echo "NOTE: These are bootstrap passwords for initial setup."
