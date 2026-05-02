@@ -13,10 +13,10 @@ log() {
 fetch_bootstrap_password() {
     log "Fetching PostgreSQL bootstrap password from Vault KV..."
     
-    # Use curl to read from KV store (no vault CLI needed)
+    # Use wget to read from KV store (curl not available in Vault image)
     local response
-    response=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
-        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
+    response=$(wget -qO- "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
+        --header="X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
     
     if [ $? -ne 0 ] || [ -z "$response" ]; then
         log "Failed to fetch bootstrap password from Vault KV"
@@ -44,7 +44,7 @@ fetch_bootstrap_password() {
 log "Waiting for Vault..."
 retries=30
 while [ $retries -gt 0 ]; do
-    if curl -sf "${VAULT_ADDR}/v1/sys/health" >/dev/null 2>&1; then
+    if wget -qO- "${VAULT_ADDR}/v1/sys/health" >/dev/null 2>&1; then
         log "Vault is ready"
         break
     fi
