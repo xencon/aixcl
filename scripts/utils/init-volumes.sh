@@ -23,7 +23,6 @@ VOLUMES=(
   "aixcl-prometheus"
   "aixcl-grafana"
   "aixcl-loki"
-  "aixcl-alloy-data"
   "aixcl-alertmanager-data"
   "aixcl-pgadmin-storage"
   "aixcl-pgadmin"

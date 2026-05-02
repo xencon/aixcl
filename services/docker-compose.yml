@@ -462,41 +462,10 @@ services:
   # - cap_drop: ALL with SETUID cap_add (allows su for user switching)
   # - Writable data volume for Alloy state, tmpfs for temporary files
   # - All bind mounts are read-only (:ro suffix)
-  # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
-  # See docs/operations/security.md section 6 for details.
-  alloy:
-    image: docker.io/grafana/alloy:v1.15.0
-    container_name: alloy
-    pull_policy: missing
-    # Run as root to read protected log files and access docker socket
-    user: "0:0"
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
-      # Use tmpfs for Alloy data to avoid permission issues with named volumes
-      - /data-alloy:noexec,nosuid,size=100m
-    volumes:
-      - ../alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
-      - ../scripts/runtime/alloy-entrypoint.sh:/usr/local/bin/alloy-entrypoint.sh:ro
-    entrypoint: /usr/local/bin/alloy-entrypoint.sh
-    environment:
-      - DOCKER_GID=${DOCKER_GID:-989}
-    network_mode: host
-    depends_on:
-      - loki
-    restart: unless-stopped
-
-# External named volumes for persistence across contexts
-# These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
-# Using external: true ensures volumes are created once and reused
-volumes:
+  # External named volumes for persistence across contexts
+  # These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
+  # Using external: true ensures volumes are created once and reused
+  volumes:
   aixcl-ollama-data:
     external: true
   aixcl-hf-cache:
@@ -516,8 +485,6 @@ volumes:
   aixcl-grafana:
     external: true
   aixcl-loki:
-    external: true
-  aixcl-alloy-data:
     external: true
   aixcl-alertmanager-data:
     external: true

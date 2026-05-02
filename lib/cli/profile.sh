@@ -50,10 +50,10 @@ get_profile_services_for_profile() {
             echo "$engine open-webui postgres pgadmin"
             ;;
         ops)
-            echo "$engine postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
             ;;
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
             ;;
         *)
             echo ""
@@ -68,8 +68,8 @@ get_profile_services_for_profile() {
 declare -A PROFILE_SERVICES=(
     [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
     [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
-    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
-    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
 )
 
 # Profile database storage settings
