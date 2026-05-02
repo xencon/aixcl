@@ -41,6 +41,10 @@ function main() {
             shift
             stack_cmd "$@"
             ;;
+        vault)
+            shift
+            source "${SCRIPT_DIR}/scripts/vault/vault-commands.sh" "$@"
+            ;;
         restart)
             shift
             restart "$@"

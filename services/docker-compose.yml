@@ -177,10 +177,12 @@ services:
       - aixcl-open-webui-data:/app/data
       - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
+      - ../scripts/runtime/openwebui-vault-entrypoint.sh:/usr/local/bin/openwebui-vault-entrypoint.sh:ro
+      - /run/secrets:/run/secrets:ro
     environment:
       - DATA_DIR=/app/data
       - STATIC_DIR=/app/backend/data/static
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE:-webui}
+      - DATABASE_URL_FILE=/run/secrets/openwebui-db-creds
       - WEBUI_NAME=AIXCL
       - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
       - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
@@ -199,9 +201,10 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
+      - vault-agent-openwebui
     network_mode: host
     restart: always
-    entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
+    entrypoint: ["/usr/local/bin/openwebui-vault-entrypoint.sh"]
     command: []
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
@@ -209,6 +212,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  vault-agent-openwebui:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-openwebui
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    volumes:
+      - /run/secrets:/run/secrets
+      - ../vault/agent-config/openwebui.hcl:/etc/vault/agent.hcl:ro
+    command: agent -config=/etc/vault/agent.hcl
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
 
   pgadmin:
     image: docker.io/dpage/pgadmin4:9.14.0
@@ -364,7 +388,7 @@ services:
     image: docker.io/prometheuscommunity/postgres-exporter:v0.19.1
     container_name: postgres-exporter
     pull_policy: missing
-    user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
+    user: "65534:65534"
     cap_drop:
       - ALL
     security_opt:
@@ -373,10 +397,33 @@ services:
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=disable"
+      DATA_SOURCE_NAME_FILE: "/run/secrets/pgexporter-creds"
+    volumes:
+      - /run/secrets:/run/secrets:ro
     network_mode: host
     depends_on:
-      - postgres
+      - vault-agent-postgres
+    restart: unless-stopped
+
+  vault-agent-postgres:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    volumes:
+      - /run/secrets:/run/secrets
+      - ../vault/agent-config/pgexporter.hcl:/etc/vault/agent.hcl:ro
+    command: agent -config=/etc/vault/agent.hcl
+    network_mode: host
+    depends_on:
+      - vault
     restart: unless-stopped
 
   nvidia-gpu-exporter:
