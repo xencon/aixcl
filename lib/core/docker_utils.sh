@@ -112,6 +112,8 @@ set_compose_cmd() {
 }
 
 # Helper function to run docker-compose commands from the services directory
+# Filters out verbose podman-compose output (env vars, volumes, JSON config)
+# Only shows errors and important status messages
 run_compose() {
     if [ -z "${COMPOSE_WORKDIR:-}" ]; then
         echo "❌ Error: COMPOSE_WORKDIR is not set. Please call set_compose_cmd() first." >&2
@@ -126,7 +128,38 @@ run_compose() {
     if [ -n "${ENABLE_DB_STORAGE:-}" ]; then
         export ENABLE_DB_STORAGE
     fi
-    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@")
+    
+    # Run compose command and filter output in real-time
+    # Only show lines that look like actual status messages or errors
+    # Suppress: JSON fragments, flag lines (-e, -v, --), command traces
+    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@" 2>&1) | \
+    awk '
+        # Skip lines that are clearly JSON or command flags
+        /^[[:space:]]*-[ev][[:space:]]/ { next }
+        /^[[:space:]]*--/ { next }
+        /^[[:space:]]*\{/ { next }
+        /^[[:space:]]*\}/ { next }
+        /^[[:space:]]*\[/ { next }
+        /^[[:space:]]*\]/ { next }
+        /^[[:space:]]*"/ { next }
+        /^[[:space:]]*\x27/ { next }
+        /^[[:space:]]*,[[:space:]]*$/ { next }
+        /^[[:space:]]*\}[,[:space:]]*$/ { next }
+        /^[[:space:]]*\][,[:space:]]*$/ { next }
+        /^podman run/ { next }
+        /^\[.podman/ { next }
+        /^exit code:/ { next }
+        /^podman volume/ { next }
+        /^\*\* merged:/ { next }
+        /^\*\* excluding:/ { next }
+        /^recreating:/ { next }
+        /^podman-compose version:/ { next }
+        /^using podman version:/ { next }
+        # Print everything else
+        { print }
+    '
+    
+    return ${PIPESTATUS[0]:-0}
 }
 
 # Check if a container is running (handles both exact name and hash-prefixed names)
