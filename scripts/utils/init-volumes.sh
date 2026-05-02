@@ -23,11 +23,12 @@ VOLUMES=(
   "aixcl-prometheus"
   "aixcl-grafana"
   "aixcl-loki"
-  "aixcl-alloy-data"
   "aixcl-alertmanager-data"
   "aixcl-pgadmin-storage"
   "aixcl-pgadmin"
   "aixcl-pgadmin-config"
+  "aixcl-vault-data"
+  "aixcl-vault-secrets"
 )
 
 echo "AIXCL Volume Initialization"

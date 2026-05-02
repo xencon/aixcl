@@ -60,6 +60,10 @@ source "${SCRIPT_DIR}/lib/aixcl/commands/models.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/commands/stack.sh"
 
+# Vault command module
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/aixcl/commands/vault.sh"
+
 # Dispatcher (must be last - contains main function)
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/dispatcher.sh"

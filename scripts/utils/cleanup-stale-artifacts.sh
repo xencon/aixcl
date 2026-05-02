@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Cleanup stale artifacts and generated files
 # Run this periodically to keep the repository clean
 

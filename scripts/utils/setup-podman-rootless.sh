@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Podman Rootless Setup for AIXCL
 # Phase 2: Complete Docker to Podman migration

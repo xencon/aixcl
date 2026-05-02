@@ -56,10 +56,10 @@ get_profile_services_for_profile() {
             echo "$engine open-webui postgres pgadmin"
             ;;
         ops)
-            echo "$engine postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+            echo "$engine postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
             ;;
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
             ;;
     esac
 }
@@ -71,8 +71,8 @@ Also update the deprecated `PROFILE_SERVICES` array for backward compatibility:
 declare -A PROFILE_SERVICES=(
     [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
     [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
-    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
-    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
 )
 ```
 
@@ -141,7 +141,7 @@ Before submitting a PR, verify:
 **lib/cli/profile.sh (sys profile):**
 ```bash
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki alloy cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
             ;;
 ```
 

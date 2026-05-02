@@ -54,7 +54,7 @@ COMMANDS
               Operational Services (profile-dependent):
               open-webui, postgres, pgadmin, prometheus, grafana,
               cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter,
-              loki, alloy
+              loki
 
               Note: OpenCode is a VS Code plugin, not a containerized service.
 
@@ -148,8 +148,8 @@ ARCHITECTURE
        Operational Services (Guided)
               Profile-dependent, support/observe the runtime:
               - Persistence: postgres, pgadmin
-              - Observability: prometheus, grafana, loki, alloy, cadvisor,
-                node-exporter, postgres-exporter, nvidia-gpu-exporter
+               - Observability: prometheus, grafana, loki, cadvisor,
+                 node-exporter, postgres-exporter, nvidia-gpu-exporter
               - UI: open-webui
 
        See docs/architecture/governance/ for complete architectural documentation.

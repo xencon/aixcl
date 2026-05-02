@@ -4,14 +4,16 @@
 # This file serves as documentation/reference for the alert definitions
 
 # High GPU Temperature Alert
-# Query: DCGM_FI_DEV_GPU_TEMP > 85
+# Query: nvidia_smi_temperature_gpu > 85
 # Threshold: > 85°C for 5 minutes
 # Severity: Warning
+# Note: Updated for rootless mode - uses nvidia-smi metrics instead of DCGM
 
 # High GPU Memory Usage Alert
-# Query: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
+# Query: (nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes) * 100 > 90
 # Threshold: > 90% memory usage for 5 minutes
 # Severity: Warning
+# Note: Updated for rootless mode - uses nvidia-smi metrics instead of DCGM
 
 # GPU Unavailable Alert
 # Query: up{job="nvidia-gpu"} == 0

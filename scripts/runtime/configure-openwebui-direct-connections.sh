@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Open WebUI Direct Connections Auto-Configuration Script
 # This script automatically configures Open WebUI Direct Connections on startup
 # for vLLM/llama.cpp engines (non-Ollama)

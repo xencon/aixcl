@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # vLLM entrypoint wrapper - compatible with security hardening
 # Runs vLLM server directly without user switching
 
