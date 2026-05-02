@@ -24,8 +24,9 @@ fetch_bootstrap_password() {
     fi
     
     # Extract password using basic shell (no jq needed)
+    # Handle both "password": "value" and "password":"value" formats
     local password
-    password=$(echo "$response" | grep -o '"password": "[^"]*"' | head -1 | sed 's/"password": "\(.*\)"/\1/')
+    password=$(echo "$response" | grep -o '"password"[^,}]*' | head -1 | sed 's/"password"[[:space:]]*:[[:space:]]*"//;s/"$//')
     
     if [ -z "$password" ]; then
         log "Failed to parse bootstrap password from response"
