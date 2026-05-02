@@ -76,13 +76,6 @@ scrape_configs:
         labels:
           service: 'loki'
 
-  # Alloy - Telemetry collector metrics
-  - job_name: 'alloy'
-    static_configs:
-      - targets: ['localhost:12345']
-        labels:
-          service: 'alloy'
-
   # Grafana - Self-monitoring
   - job_name: 'grafana'
     static_configs:

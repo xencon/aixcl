@@ -270,7 +270,7 @@ groups:
           description: "Prometheus storage usage is above 80% of retention limit. Current usage: {{ $value }}%. Consider increasing retention or adding storage."
 
       - alert: PrometheusTargetDown
-        expr: up{job!~"nvidia-gpu|alloy"} == 0
+        expr: up{job!~"nvidia-gpu"} == 0
         for: 2m
         labels:
           severity: warning

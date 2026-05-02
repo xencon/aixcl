@@ -251,13 +251,6 @@ test_stack_status() {
         record_test "fail" "Loki container is not running"
     fi
     
-    if is_container_running "alloy"; then
-        print_success "Alloy"
-        record_test "pass" "Alloy container is running"
-    else
-        print_error "Alloy"
-        record_test "fail" "Alloy container is not running"
-    fi
     
     # Utility Services
     echo ""
@@ -450,13 +443,6 @@ test_stack_status() {
     fi
     
     # Alloy doesn't have a health endpoint, so we just check if it's running
-    if is_container_running "alloy"; then
-        print_success "Alloy (container running)"
-        record_test "pass" "Alloy container is running (no health endpoint)"
-    else
-        print_error "Alloy"
-        record_test "fail" "Alloy container is not running"
-    fi
 }
 
 # Helper function to get available models
@@ -938,13 +924,6 @@ test_component_logging() {
     fi
     
     # Alloy
-    if is_container_running "alloy"; then
-        print_success "Alloy container is running"
-        record_test "pass" "Alloy container is running (no health endpoint)"
-    else
-        print_error "Alloy container is not running"
-        record_test "fail" "Alloy container is not running"
-    fi
 }
 
 # Test UI services

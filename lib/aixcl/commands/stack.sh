@@ -1462,9 +1462,6 @@ function status() {
     LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
-    # Alloy
-    check_operational_service "Alloy" "alloy" "alloy" "" ""
-
     # Health Summary section
     echo ""
     if [ $total_services -gt 0 ]; then
