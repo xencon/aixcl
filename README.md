@@ -36,27 +36,39 @@ podman --version  # Should show 4.9+
 gpg --version     # Should show 2.2+
 ```
 
-### Step 2: Configure GPG (Mandatory)
+### Step 2: Configure GPG (Maintainers Only)
+
+**Note:** GPG signing is required for CODEOWNERS pushing to main/dev branches. Contributors using fork+PR workflow do not need GPG.
+
+**For CODEOWNERS:**
 
 ```bash
-# Run the automated GPG setup
-./scripts/utils/setup-gpg.sh
+# Generate GPG key (if you don't have one)
+gpg --full-generate-key
 
-# Verify configuration
-./scripts/utils/setup-gpg.sh --verify
+# List your keys
+gpg --list-secret-keys --keyid-format LONG
 
-# Export public key for GitHub (copy output, add to GitHub Settings → SSH and GPG keys)
-./scripts/utils/setup-gpg.sh --export
+# Configure Git to sign commits
+git config --global commit.gpgsign true
+git config --global user.signingkey YOUR_KEY_ID
+
+# Export public key for GitHub
+gpg --armor --export YOUR_KEY_ID
+# Copy output and add to GitHub Settings → SSH and GPG keys
 ```
 
-### Step 3: Initialize Podman
+### Step 3: Verify Podman
 
 ```bash
-# Run the rootless Podman setup
-./scripts/utils/setup-podman-rootless.sh
+# Check Podman version
+podman --version
 
-# Verify rootless mode
+# Verify rootless mode is working
 podman info | grep "rootless"
+# Should show: "rootless: true"
+
+# If rootless is not enabled, see Troubleshooting section below
 ```
 
 ### Step 4: Start the Stack
@@ -76,33 +88,17 @@ Services started:
 - **Vault** on port 8200 (secrets management)
 - **Grafana** on port 3000 (monitoring)
 
-### Step 5: Vault Auto-Initialization (Automatic)
+### Step 5: Verify Vault (Auto-Initialized)
 
-Vault now auto-initializes when you run `./aixcl stack start`. No manual steps required!
+Vault initializes automatically when the stack starts. No manual steps required.
 
-**What happens automatically:**
-- ✅ Vault container starts with dev mode
-- ✅ Database secrets engine enabled
-- ✅ KV secrets engine enabled for bootstrap passwords
-- ✅ PostgreSQL connection configured
-- ✅ Dynamic roles created (auto-rotate every hour)
-- ✅ Random bootstrap passwords generated and stored securely
-- ✅ All services receive credentials automatically
-
-**View credentials:**
 ```bash
-# View dynamic database credentials (for postgres-exporter, open-webui)
-./aixcl vault credentials
+# Check Vault status
+./aixcl vault status
 
-# View bootstrap passwords (for PostgreSQL admin, Open WebUI first login)
-./aixcl vault passwords
-
-# Direct credential files
-cat /tmp/aixcl-secrets/pgexporter-creds
-cat /tmp/aixcl-secrets/openwebui-db-creds
+# Or access Vault UI at http://localhost:8200
+# Token: aixcl-dev-token
 ```
-
-**Note:** Uses Vault dev mode with token `aixcl-dev-token` for local development. For production, use proper Vault configuration with production authentication.
 
 ### Step 6: Test Inference (Hello World)
 
@@ -196,9 +192,8 @@ git log --show-signature -1
 | Add model | `./aixcl models add <model>` |
 | Chat CLI | `opencode` |
 | Vault credentials | `./aixcl vault credentials` |
-| Vault passwords | `./aixcl vault passwords` |
-| Rotate credentials | `./scripts/security/rotate-credentials.sh --check` |
-| Verify GPG | `./scripts/utils/setup-gpg.sh --verify` |
+| Rotate credentials | `./aixcl vault rotate` |
+| Verify GPG | `gpg --list-secret-keys --keyid-format LONG` |
 
 ---
 
@@ -241,44 +236,11 @@ sudo sysctl --system
 
 ### "Vault not initializing"
 
-Vault auto-initializes on stack start. If you see issues:
-
 ```bash
 # Check Vault status
-./aixcl vault status
-
-# View bootstrap passwords (auto-generated)
-./aixcl vault passwords
-
-# Check Vault logs
 podman logs vault | tail -20
 
-# Re-initialize if needed (idempotent)
-./aixcl vault init
-```
-
-**Note:** Vault uses dev mode with auto-generated token. No manual unseal required.
-
-### "Services failing with 'credential file not found'"
-
-This means Vault agents haven't generated credentials yet:
-
-```bash
-# Check Vault agents are running
-podman ps | grep vault-agent
-
-# Check agent logs for errors
-podman logs vault-agent-postgres | tail -20
-podman logs vault-agent-openwebui | tail -20
-
-# Check credentials were generated
-ls -la /tmp/aixcl-secrets/
-
-# If missing, restart the agents
-./aixcl stack restart vault-agent-postgres vault-agent-openwebui
-
-# Wait 30 seconds then check again
-sleep 30
+# Ensure Vault is healthy before init
 ./aixcl stack status
 ```
 
