@@ -493,7 +493,34 @@ function stop() {
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-            echo "All services stopped successfully."
+            echo ""
+            echo "AIXCL Stack Stopped"
+            echo "==================="
+            echo ""
+            echo "Profile: $(get_profile_services "$profile" 2>/dev/null || echo 'N/A')"
+            echo "Status: Stopped"
+            echo ""
+            echo "Services"
+            echo "--------------------------------------------------"
+            echo ""
+            echo "Runtime Core"
+            for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+                echo "  ❌ $service"
+            done
+            echo ""
+            echo "Operational Services"
+            local profile_services
+            profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+            for service in $profile_services; do
+                local is_core=false
+                for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+                    [ "$service" = "$core" ] && is_core=true && break
+                done
+                [ "$is_core" = true ] && continue
+                echo "  ❌ $service"
+            done
+            echo ""
+            echo "All services have been stopped."
             return 0
         fi
         echo "Waiting for services to stop... ($i/15)"
@@ -504,6 +531,33 @@ function stop() {
     run_compose down --remove-orphans -v
     "${DOCKER_BIN:-docker}" ps -q | xargs -r "${DOCKER_BIN:-docker}" stop
     
+    echo ""
+    echo "AIXCL Stack Stopped"
+    echo "==================="
+    echo ""
+    echo "Profile: $(get_profile_services "$profile" 2>/dev/null || echo 'N/A')"
+    echo "Status: Stopped"
+    echo ""
+    echo "Services"
+    echo "--------------------------------------------------"
+    echo ""
+    echo "Runtime Core"
+    for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+        echo "  ❌ $service"
+    done
+    echo ""
+    echo "Operational Services"
+    local profile_services
+    profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+    for service in $profile_services; do
+        local is_core=false
+        for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+            [ "$service" = "$core" ] && is_core=true && break
+        done
+        [ "$is_core" = true ] && continue
+        echo "  ❌ $service"
+    done
+    echo ""
     echo "All services have been stopped."
     
     # Clean up pgAdmin configuration file for security
