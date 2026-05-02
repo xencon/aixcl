@@ -2,7 +2,7 @@ services:
   ollama:
     image: docker.io/ollama/ollama:0.20.5
     container_name: ollama
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
     volumes:
       - aixcl-ollama-data:/home/ubuntu/.ollama
@@ -31,7 +31,7 @@ services:
   vault:
     image: hashicorp/vault:1.18
     container_name: vault
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_add:
       - IPC_LOCK
     environment:
@@ -55,7 +55,7 @@ services:
   vault-init:
     image: hashicorp/vault:1.18
     container_name: vault-init
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     cap_add:
@@ -74,9 +74,9 @@ services:
     restart: "no"
 
   postgres:
-    image: postgres:17.9
+    image: docker.io/postgres:17.9
     container_name: postgres
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "999:999"  # Run as postgres user (official image default)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
@@ -114,7 +114,7 @@ services:
   vllm:
     image: docker.io/vllm/vllm-openai:v0.19.0
     container_name: vllm
-    pull_policy: if_not_present
+    pull_policy: missing
     tty: true
     network_mode: host
     restart: unless-stopped
@@ -148,7 +148,7 @@ services:
   llamacpp:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
     container_name: llamacpp
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "1000:1000"
     volumes:
       - aixcl-llamacpp-data:/models
@@ -170,7 +170,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.9.1
     container_name: open-webui
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "0:0"
     volumes:
       - aixcl-open-webui:/app/backend/data
@@ -211,9 +211,9 @@ services:
       start_period: 60s
 
   pgadmin:
-    image: dpage/pgadmin4:9.14.0
+    image: docker.io/dpage/pgadmin4:9.14.0
     container_name: pgadmin
-    pull_policy: if_not_present
+    pull_policy: missing
     network_mode: host
     environment:
       PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
@@ -236,9 +236,9 @@ services:
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
-    image: prom/prometheus:v3.11.1
+    image: docker.io/prom/prometheus:v3.11.1
     container_name: prometheus
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -265,9 +265,9 @@ services:
       retries: 3
 
   alertmanager:
-    image: prom/alertmanager:v0.28.0
+    image: docker.io/prom/alertmanager:v0.28.0
     container_name: alertmanager
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -291,9 +291,9 @@ services:
       retries: 3
 
   grafana:
-    image: grafana/grafana:12.4.2
+    image: docker.io/grafana/grafana:12.4.2
     container_name: grafana
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -320,7 +320,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
-    pull_policy: if_not_present
+    pull_policy: missing
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -337,9 +337,9 @@ services:
       - '--docker_only=true'
 
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: docker.io/prom/node-exporter:v1.11.1
     container_name: node-exporter
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "65534:65534"  # node-exporter user (official image default) - avoids 'nobody' ambiguity
     cap_drop:
       - ALL
@@ -361,9 +361,9 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.19.1
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.19.1
     container_name: postgres-exporter
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
     cap_drop:
       - ALL
@@ -382,7 +382,7 @@ services:
   nvidia-gpu-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
     container_name: nvidia-gpu-exporter
-    pull_policy: if_not_present
+    pull_policy: missing
     user: "999:999"  # nvidia-dcgm user - official image default for GPU metrics
     cap_drop:
       - ALL
@@ -399,9 +399,9 @@ services:
     # This service will gracefully fail on systems without NVIDIA GPUs
 
   loki:
-    image: grafana/loki:3.3.0
+    image: docker.io/grafana/loki:3.3.0
     container_name: loki
-    pull_policy: if_not_present
+    pull_policy: missing
     cap_drop:
       - ALL
     security_opt:
@@ -428,9 +428,9 @@ services:
   # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
   # See docs/operations/security.md section 6 for details.
   alloy:
-    image: grafana/alloy:v1.15.0
+    image: docker.io/grafana/alloy:v1.15.0
     container_name: alloy
-    pull_policy: if_not_present
+    pull_policy: missing
     # Run as root to read protected log files and access docker socket
     user: "0:0"
     cap_drop:
