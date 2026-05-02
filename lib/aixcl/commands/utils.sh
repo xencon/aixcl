@@ -51,6 +51,15 @@ function clean() {
     $docker_cmd volume prune -f
     echo ""
     
+    # Remove AIXCL-specific external volumes (scorched earth)
+    echo "Removing AIXCL volumes..."
+    local volumes
+    volumes=$($docker_cmd volume ls -q 2>/dev/null | grep "^aixcl-" || true)
+    if [ -n "$volumes" ]; then
+        echo "$volumes" | xargs -r $docker_cmd volume rm 2>/dev/null || true
+    fi
+    echo ""
+    
     # Clean up pgAdmin configuration file for security
     if [ -f "pgadmin-servers.json" ]; then
         rm -f pgadmin-servers.json
