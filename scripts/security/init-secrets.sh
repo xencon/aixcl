@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Docker Secrets Management for AIXCL
 # Phase 1.6: Secure credential management without plaintext .env

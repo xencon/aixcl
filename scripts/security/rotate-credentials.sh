@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Threat-Adaptive Credential Rotation for AIXCL
 # Phase 2: Automated credential rotation with human-in-the-loop

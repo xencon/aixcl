@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # scripts/security/validate-token.sh
 # Validates security approval token for agentic workflows
 

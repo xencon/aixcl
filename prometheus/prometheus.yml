@@ -50,20 +50,20 @@ scrape_configs:
           database: 'aixcl'
 
   # Ollama - LLM Engine
-  # NOTE: Ollama doesn't expose Prometheus metrics natively
-  # Monitor via cAdvisor container metrics instead (container name: ollama)
-  # Uncomment below when/if Ollama adds native Prometheus metrics support
-  # - job_name: 'ollama'
-  #   metrics_path: '/metrics'
-  #   static_configs:
-  #     - targets: ['localhost:11434']
-  #       labels:
-  #         service: 'ollama'
+  # Uses custom exporter on port 11435 that polls Ollama API
+  # Provides model info, version, and availability metrics
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['localhost:11435']
+        labels:
+          service: 'ollama'
 
-  # NVIDIA DCGM Exporter - GPU metrics (utilization, memory, temperature, power)
+  # NVIDIA GPU Exporter - GPU metrics (utilization, memory, temperature, power)
+  # Uses custom exporter (nvidia-smi) on port 9445 in rootless mode
+  # DCGM exporter (port 9400) requires root/Docker socket and doesn't work in rootless
   - job_name: 'nvidia-gpu'
     static_configs:
-      - targets: ['localhost:9400']
+      - targets: ['localhost:9445']
         labels:
           service: 'nvidia-gpu'
     # GPU exporter will only work on systems with NVIDIA GPUs and drivers
@@ -76,10 +76,26 @@ scrape_configs:
         labels:
           service: 'loki'
 
-  # Alloy - Telemetry collector metrics
-  - job_name: 'alloy'
+  # Grafana - Self-monitoring
+  - job_name: 'grafana'
     static_configs:
-      - targets: ['localhost:12345']
+      - targets: ['localhost:3000']
         labels:
-          service: 'alloy'
+          service: 'grafana'
+    metrics_path: /metrics
+
+  # Alertmanager - Alert delivery metrics
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['localhost:9093']
+        labels:
+          service: 'alertmanager'
+
+  # Open WebUI - User interface metrics
+  # Uses custom exporter on port 11436
+  - job_name: 'open-webui'
+    static_configs:
+      - targets: ['localhost:11436']
+        labels:
+          service: 'open-webui'
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # llama.cpp entrypoint wrapper - prevents crash-loop when model is missing
 # This script provides graceful handling for the llama.cpp server when no model exists
 

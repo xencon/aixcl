@@ -98,7 +98,6 @@ Pass criteria: host CPU usage under 80%, host memory under 90%, disk under 90%. 
 | Container security posture | `docker inspect <container>` | `HostConfig.CapDrop`, `HostConfig.SecurityOpt`, `HostConfig.ReadonlyRootfs` |
 | PostgreSQL auth errors | `docker logs postgres --tail 50` | `FATAL: password authentication failed` |
 | Open WebUI auth errors | `docker logs open-webui --tail 50` | `401 Unauthorized`, `Invalid credentials` |
-| Alloy pipeline failures | `docker logs alloy --tail 20` | `error`, `failed` |
 | Loki error stream | `curl -s "http://127.0.0.1:3100/loki/api/v1/query?query={job=\"docker\"} |= \"error\"&limit=20&start=$(date -d '5 minutes ago' +%s)000000000"` | error logs in last 5m |
 
 Pass criteria: no auth failures in last 5 minutes; all containers have `cap_drop: ALL` and `no-new-privileges:true`.
