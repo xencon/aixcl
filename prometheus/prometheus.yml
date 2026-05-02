@@ -60,10 +60,12 @@ scrape_configs:
   #       labels:
   #         service: 'ollama'
 
-  # NVIDIA DCGM Exporter - GPU metrics (utilization, memory, temperature, power)
+  # NVIDIA GPU Exporter - GPU metrics (utilization, memory, temperature, power)
+  # Uses custom exporter (nvidia-smi) on port 9445 in rootless mode
+  # DCGM exporter (port 9400) requires root/Docker socket and doesn't work in rootless
   - job_name: 'nvidia-gpu'
     static_configs:
-      - targets: ['localhost:9400']
+      - targets: ['localhost:9445']
         labels:
           service: 'nvidia-gpu'
     # GPU exporter will only work on systems with NVIDIA GPUs and drivers

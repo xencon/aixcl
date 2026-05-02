@@ -91,7 +91,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_UTIL",
+          "expr": "nvidia_smi_utilization_gpu",
           "refId": "A",
           "legendFormat": "GPU {{gpu}} - {{modelName}}"
         }
@@ -172,7 +172,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "(DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100",
+          "expr": "(nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes) * 100",
           "refId": "A",
           "legendFormat": "GPU {{gpu}} - {{modelName}}"
         }
@@ -237,7 +237,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_TEMP",
+          "expr": "nvidia_smi_temperature_gpu",
           "refId": "A",
           "legendFormat": "GPU {{gpu}}"
         }
@@ -296,7 +296,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_POWER_USAGE",
+          "expr": "nvidia_smi_power_draw_watts",
           "refId": "A",
           "legendFormat": "GPU {{gpu}}"
         }
@@ -367,12 +367,12 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_FB_USED",
+          "expr": "nvidia_smi_memory_used_bytes",
           "refId": "A",
           "legendFormat": "GPU {{gpu}} Used"
         },
         {
-          "expr": "DCGM_FI_DEV_FB_FREE",
+          "expr": "nvidia_smi_memory_total_bytes - nvidia_smi_memory_used_bytes",
           "refId": "B",
           "legendFormat": "GPU {{gpu}} Free"
         }
