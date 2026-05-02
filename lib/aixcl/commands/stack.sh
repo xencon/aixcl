@@ -1052,7 +1052,7 @@ function logs() {
         # Show last 100 lines for each container as summary
         for service in "${running_containers[@]}"; do
             echo "=== $service ==="
-            "${DOCKER_BIN:-docker}" logs "$service" --tail=100 2>/dev/null || echo "  (no logs available)"
+            "${DOCKER_BIN:-docker}" logs --tail=100 "$service" 2>/dev/null || echo "  (no logs available)"
             echo ""
         done
         
@@ -1069,7 +1069,7 @@ function logs() {
         for service in "${running_containers[@]}"; do
             # Use sed to prefix each line with the service name
             # Appending || true to subshell to prevent it from failing the main script
-            ( "${DOCKER_BIN:-docker}" logs "$service" --follow 2>/dev/null | sed "s/^/[$service] /" || true ) &
+            ( "${DOCKER_BIN:-docker}" logs --follow "$service" 2>/dev/null | sed "s/^/[$service] /" || true ) &
             pids+=($!)
         done
         
@@ -1118,7 +1118,7 @@ function logs() {
         
         if [ -n "$actual_container" ]; then
             # Fetch logs without --follow to avoid hanging in scripts/tests
-            "${DOCKER_BIN:-docker}" logs "$actual_container" --tail="$tail_count" 2>/dev/null || echo "  (no logs available)"
+            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
         else
             log_error "Container for service '$actual_service' not found"
             return 1
