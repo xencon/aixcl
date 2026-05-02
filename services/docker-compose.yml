@@ -259,7 +259,7 @@ services:
     pull_policy: missing
     user: "0:0"
     volumes:
-      - aixcl-open-webui:/app/backend/data
+      - aixcl-open-webui-main:/app/backend/data
       - aixcl-open-webui-data:/app/data
       - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
@@ -312,7 +312,7 @@ services:
       PGADMIN_GROUP_ID: "5050"
     volumes:
       - aixcl-pgadmin-storage:/var/lib/pgadmin/storage
-      - aixcl-pgadmin:/var/lib/pgadmin
+      - aixcl-pgadmin-main:/var/lib/pgadmin
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
       - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
@@ -554,7 +554,7 @@ volumes:
     external: true
   aixcl-llamacpp-data:
     external: true
-  aixcl-open-webui:
+  aixcl-open-webui-main:
     external: true
   aixcl-open-webui-data:
     external: true
@@ -572,7 +572,7 @@ volumes:
     external: true
   aixcl-pgadmin-storage:
     external: true
-  aixcl-pgadmin:
+  aixcl-pgadmin-main:
     external: true
   aixcl-pgadmin-config:
     external: true
