@@ -80,12 +80,13 @@ services:
     user: "999:999"  # Run as postgres user (official image default)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
       POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
       - aixcl-pgdata:/var/lib/postgresql/data
+      - aixcl-vault-secrets:/run/secrets:ro
       - ../scripts/db/init:/docker-entrypoint-initdb.d:ro
     network_mode: host
     restart: always
@@ -98,6 +99,11 @@ services:
       postgres
       -c listen_addresses=127.0.0.1
       -c log_statement=all
+      -c log_destination=stderr
+      -c logging_collector=on
+      -c log_directory=/var/log/postgresql
+      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
+      -c log_rotation_age=1d
       -c log_destination=stderr
       -c logging_collector=on
       -c log_directory=/var/log/postgresql
