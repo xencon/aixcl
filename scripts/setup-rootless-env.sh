@@ -5,6 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC2034
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Colors
@@ -42,7 +43,8 @@ fi
 # Source for current session
 echo -e "${YELLOW}Sourcing environment for current session...${NC}"
 export DOCKER_BIN=podman
-export DOCKER_HOST="unix:///run/user/$(id - u)/podman/podman.sock"
+DOCKER_HOST="unix:///run/user/$(id - u)/podman/podman.sock"
+export DOCKER_HOST
 
 # Verify podman socket
 echo -e "${YELLOW}Verifying Podman socket...${NC}"
