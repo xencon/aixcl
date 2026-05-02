@@ -36,27 +36,39 @@ podman --version  # Should show 4.9+
 gpg --version     # Should show 2.2+
 ```
 
-### Step 2: Configure GPG (Mandatory)
+### Step 2: Configure GPG (Maintainers Only)
+
+**Note:** GPG signing is required for CODEOWNERS pushing to main/dev branches. Contributors using fork+PR workflow do not need GPG.
+
+**For CODEOWNERS:**
 
 ```bash
-# Run the automated GPG setup
-./scripts/utils/setup-gpg.sh
+# Generate GPG key (if you don't have one)
+gpg --full-generate-key
 
-# Verify configuration
-./scripts/utils/setup-gpg.sh --verify
+# List your keys
+gpg --list-secret-keys --keyid-format LONG
 
-# Export public key for GitHub (copy output, add to GitHub Settings → SSH and GPG keys)
-./scripts/utils/setup-gpg.sh --export
+# Configure Git to sign commits
+git config --global commit.gpgsign true
+git config --global user.signingkey YOUR_KEY_ID
+
+# Export public key for GitHub
+gpg --armor --export YOUR_KEY_ID
+# Copy output and add to GitHub Settings → SSH and GPG keys
 ```
 
-### Step 3: Initialize Podman
+### Step 3: Verify Podman
 
 ```bash
-# Run the rootless Podman setup
-./scripts/utils/setup-podman-rootless.sh
+# Check Podman version
+podman --version
 
-# Verify rootless mode
+# Verify rootless mode is working
 podman info | grep "rootless"
+# Should show: "rootless: true"
+
+# If rootless is not enabled, see Troubleshooting section below
 ```
 
 ### Step 4: Start the Stack
@@ -76,18 +88,16 @@ Services started:
 - **Vault** on port 8200 (secrets management)
 - **Grafana** on port 3000 (monitoring)
 
-### Step 5: Initialize Vault (First Run Only)
+### Step 5: Verify Vault (Auto-Initialized)
+
+Vault initializes automatically when the stack starts. No manual steps required.
 
 ```bash
-# Wait for Vault to be ready
-sleep 30
+# Check Vault status
+./aixcl vault status
 
-# Initialize Vault
-podman exec vault sh -c '
-  export VAULT_ADDR=http://127.0.0.1:8200
-  export VAULT_TOKEN=aixcl-dev-token
-  vault secrets enable database
-'
+# Or access Vault UI at http://localhost:8200
+# Token: aixcl-dev-token
 ```
 
 ### Step 6: Test Inference (Hello World)
@@ -181,8 +191,9 @@ git log --show-signature -1
 | Stop stack | `./aixcl stack stop` |
 | Add model | `./aixcl models add <model>` |
 | Chat CLI | `opencode` |
-| Rotate credentials | `./scripts/security/rotate-credentials.sh --check` |
-| Verify GPG | `./scripts/utils/setup-gpg.sh --verify` |
+| Vault credentials | `./aixcl vault credentials` |
+| Rotate credentials | `./aixcl vault rotate` |
+| Verify GPG | `gpg --list-secret-keys --keyid-format LONG` |
 
 ---
 
