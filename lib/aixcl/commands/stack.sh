@@ -464,6 +464,30 @@ function start() {
             fi
         fi
         
+        # Check if Vault is in the profile and auto-initialize if needed
+        local has_vault=false
+        for service in "${profile_services[@]}"; do
+            if [ "$service" = "vault" ]; then
+                has_vault=true
+                break
+            fi
+        done
+        
+        if [ "$has_vault" = true ]; then
+            echo "Checking Vault initialization..."
+            local vault_init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
+            if [ -f "$vault_init_script" ]; then
+                # Run vault init (idempotent - safe to run multiple times)
+                if bash "$vault_init_script" 2>&1 | tail -20; then
+                    echo "Vault initialization complete"
+                else
+                    echo "Warning: Vault initialization may have issues. Run './aixcl vault status' for details"
+                fi
+            else
+                echo "Warning: Vault initialization script not found at $vault_init_script"
+            fi
+        fi
+        
         status
         return 0
     else
@@ -1355,31 +1379,6 @@ function status() {
     echo "=================="
     echo ""
     
-    # Check Vault initialization status
-    local vault_initialized=false
-    if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-        local vault_addr="${VAULT_ADDR:-http://127.0.0.1:8200}"
-        local vault_token="${VAULT_TOKEN:-aixcl-dev-token}"
-        
-        # Check if Vault container is running
-        if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^vault$"; then
-            # Check if database engine is configured
-            local vault_secrets
-            vault_secrets=$(curl -sf "${vault_addr}/v1/sys/mounts" \
-                -H "X-Vault-Token: ${vault_token}" 2>/dev/null | jq -r '.data | keys[]' 2>/dev/null || true)
-            
-            if echo "$vault_secrets" | grep -q "^database/"; then
-                vault_initialized=true
-            fi
-            
-            if [ "$vault_initialized" = false ]; then
-                echo "Vault Status:           ⚠️  Not Initialized"
-                echo "                        Run: ./aixcl vault init"
-                echo ""
-            fi
-        fi
-    fi
-    
     if [ -n "$current_profile" ] && is_valid_profile "$current_profile" 2>/dev/null; then
         echo "Profile: $current_profile"
     else
@@ -1433,6 +1432,11 @@ function status() {
 
     # Operational Services
     echo "Operational Services"
+    
+    # Security
+    # shellcheck disable=SC2034
+    VAULT_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8200/v1/sys/health 2>/dev/null || echo "000")
+    check_operational_service "Vault" "vault" "vault" "status_var" "VAULT_STATUS"
     
     # UI
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://127.0.0.1:8080/health"
