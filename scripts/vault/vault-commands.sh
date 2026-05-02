@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # vault-commands.sh - Vault integration commands for AIXCL
 # Usage: Source this file or run commands directly
 

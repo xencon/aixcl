@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # scripts/audit/capture-session.sh
 # Captures OpenCode session data to PostgreSQL and filesystem
 

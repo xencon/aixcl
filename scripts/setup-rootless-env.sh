@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # setup-rootless-env.sh - Configure persistent rootless Podman environment
 # Run this script once to set up your shell for rootless Podman
 

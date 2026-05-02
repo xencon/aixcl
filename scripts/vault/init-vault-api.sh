@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # init-vault-api.sh - Initialize Vault via API calls
 
 set -e

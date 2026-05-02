@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Check documentation paths and file references
 # Exit code: 0 if all paths valid, 1 if any missing
 

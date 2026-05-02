@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # openwebui-vault-entrypoint.sh - Wrap Open WebUI to read database credentials from Vault
 
 set -e

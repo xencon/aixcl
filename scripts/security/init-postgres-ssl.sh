@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # PostgreSQL SSL Certificate Generation
 # Phase 1.6: Enable SSL/TLS encryption for database connections

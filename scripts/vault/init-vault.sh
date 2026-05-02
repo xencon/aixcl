@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Initialize HashiCorp Vault for AIXCL
 # Sets up PostgreSQL dynamic credentials and policies

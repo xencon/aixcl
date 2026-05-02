@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # scripts/security/host-firewall.sh
 # Implements host-level firewall to compensate for AIXCL host networking
 # Blocks external access, allows localhost-only for services

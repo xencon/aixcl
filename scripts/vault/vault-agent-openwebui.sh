@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# shellcheck shell=bash
 # Vault Agent for Open WebUI
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"

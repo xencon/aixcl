@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # PostgreSQL Secret Reader Entrypoint
 # Reads credentials from Docker secrets and exports as environment variables

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Start AIXCL Devcontainer with Podman (Rootless)
 #

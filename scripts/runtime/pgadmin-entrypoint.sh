@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # pgAdmin entrypoint wrapper - runs pgAdmin as non-root user
 # This script sets up permissions and runs pgAdmin with reduced privileges
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # GPG Setup Script for AIXCL Contributors
 # Phase 2: Configure GPG-signed commits for code integrity
