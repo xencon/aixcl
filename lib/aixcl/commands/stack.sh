@@ -474,7 +474,7 @@ function start() {
 }
 
 function stop() {
-    echo "Stopping Docker Compose deployment..."
+    [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Stopping Docker Compose deployment..."
     
     # Set up compose command with GPU detection
     set_compose_cmd
@@ -483,7 +483,7 @@ function stop() {
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
     if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-        echo "Services are not running."
+        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Services are not running."
         return 0
     fi
     

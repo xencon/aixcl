@@ -62,11 +62,11 @@ services:
       - SETUID
       - SETGID
     volumes:
-      - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
+      - ../scripts/vault/init-vault.sh:/init.sh:ro
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
-    command: /usr/local/bin/init-vault.sh
+    command: /bin/sh /init.sh
     network_mode: host
     depends_on:
       vault:
@@ -391,10 +391,10 @@ services:
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
-    environment:
-      DATA_SOURCE_NAME_FILE: "/tmp/vault-secrets/pgexporter-creds"
     volumes:
       - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
+      - /home/sbadakhc/src/github.com/xencon/aixcl/scripts/vault/postgres-exporter-vault.sh:/usr/local/bin/entrypoint.sh:ro
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
     network_mode: host
     depends_on:
       - postgres

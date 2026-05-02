@@ -50,7 +50,7 @@ configure_postgres_connection() {
   vault write database/config/postgresql \
     plugin_name=postgresql-database-plugin \
     allowed_roles="aixcl-app,aixcl-admin" \
-    connection_url="postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=require" \
+    connection_url="postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable" \
     username="admin" \
     password="admin"
 }
@@ -62,7 +62,8 @@ create_app_role() {
   vault write database/roles/aixcl-app \
     db_name=postgresql \
     creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; \
-      GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
+      GRANT USAGE, CREATE ON SCHEMA public TO \"{{name}}\"; \
+      GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
     default_ttl="1h" \
     max_ttl="24h"
 }

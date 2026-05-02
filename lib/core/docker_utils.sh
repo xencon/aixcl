@@ -34,16 +34,16 @@ set_compose_cmd() {
     
     # Check for ARM64 architecture
     if is_arm64 && [ -f "${SERVICES_DIR}/docker-compose.arm.yml" ]; then
-        echo "Detected ARM64 architecture. Enabling ARM platform overrides."
+        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Detected ARM64 architecture. Enabling ARM platform overrides."
         files+=( -f "${SERVICES_DIR}/docker-compose.arm.yml" )
     fi
     
     # Check for NVIDIA GPU hardware AND toolkit availability
     if has_nvidia && has_nvidia_container_toolkit && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
-        echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
+        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
         files+=( -f "${SERVICES_DIR}/docker-compose.gpu.yml" )
     else
-        echo "No NVIDIA GPU support detected. Running without GPU overrides."
+        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "No NVIDIA GPU support detected. Running without GPU overrides."
     fi
     
     # Detect appropriate compose command - Podman preferred for rootless security
@@ -56,19 +56,19 @@ set_compose_cmd() {
         if command -v podman-compose &>/dev/null; then
             bin="podman"
             cmd=(podman-compose)
-            echo "Using Podman (rootless mode) with podman-compose"
+            [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Podman (rootless mode) with podman-compose"
         else
             # podman installed but podman-compose missing
-            echo "⚠️  Podman found but podman-compose not installed"
-            echo "   Install: pip3 install podman-compose"
-            echo "   Falling back to Docker..."
+            echo "⚠️  Podman found but podman-compose not installed" >&2
+            echo "   Install: pip3 install podman-compose" >&2
+            echo "   Falling back to Docker..." >&2
         fi
     fi
     
     # Docker fallback
     if [[ "$bin" == "docker" ]]; then
         if command -v docker &>/dev/null; then
-            echo "Using Docker (daemon mode)"
+            [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Docker (daemon mode)"
         else
             echo "❌ Error: Neither Podman nor Docker found. Cannot continue." >&2
             exit 1
@@ -77,7 +77,7 @@ set_compose_cmd() {
     
     # Export DOCKER_BIN for use in other scripts
     export DOCKER_BIN="$bin"
-    echo "Using container engine: $DOCKER_BIN"
+    [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using container engine: $DOCKER_BIN"
 
     if [ ${#cmd[@]} -eq 0 ]; then
         if docker compose version &> /dev/null; then
@@ -98,7 +98,7 @@ set_compose_cmd() {
     # Set and export DOCKER_SOCK for use in docker-compose files
     DOCKER_SOCK=$(get_docker_sock)
     export DOCKER_SOCK
-    echo "Using Docker socket: $DOCKER_SOCK"
+    [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Docker socket: $DOCKER_SOCK"
 }
 
 # Helper function to run docker-compose commands from the services directory
