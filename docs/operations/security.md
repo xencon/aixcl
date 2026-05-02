@@ -105,7 +105,6 @@ The following security controls are applied to services where applicable:
 | **loki** | default | ALL | ✅ | ❌* | - | 2 |
 | **postgres-exporter** | 65534:65534 | ALL | ✅ | ✅ | ✅ | 0 |
 | **node-exporter** | 65534:65534 | ALL | ✅ | ✅ | ✅ | 3 |
-| **alloy** | 12345:12345 | ALL | ✅ | ✅ | ✅ | 5 |
 | **cadvisor** | root | - | - | - | - | 5 |
 | **open-webui** | root** | - | - | - | - | 0 |
 | **pgadmin** | root** | - | - | - | - | 1 |

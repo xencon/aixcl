@@ -41,7 +41,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands
-    local commands="stack service models engine utils help"
+    local commands="stack service models engine utils vault help"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -50,9 +50,9 @@ _aixcl_complete() {
     
     # Operational Services (Guided): Profile-dependent, support/observe runtime
     # - Persistence: postgres, pgadmin
-    # - Observability: prometheus, grafana, loki, alloy, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+    # - Observability: prometheus, grafana, loki, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
     # - UI: open-webui
-    local operational_services="open-webui postgres pgadmin prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki alloy"
+    local operational_services="open-webui postgres pgadmin prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki"
     
     # Combined list of all services (for backward compatibility and general completion)
     # Includes 'engine' alias for convenience
@@ -150,6 +150,11 @@ _aixcl_complete() {
         'utils')
             local utils_actions="check-env bash-completion clean"
             mapfile -t COMPREPLY < <(compgen -W "$utils_actions" -- "$cur")
+            return 0
+            ;;
+        'vault')
+            local vault_actions="init status credentials passwords rotate"
+            mapfile -t COMPREPLY < <(compgen -W "$vault_actions" -- "$cur")
             return 0
             ;;
 

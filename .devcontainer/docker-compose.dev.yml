@@ -32,7 +32,6 @@ services:
       - aixcl-grafana:/var/lib/grafana
       - aixcl-prometheus:/prometheus
       - aixcl-loki:/loki
-      - aixcl-alloy-data:/var/lib/alloy
     environment:
       - DOCKER_BUILDKIT=1
       - COMPOSE_DOCKER_CLI_BUILD=1
@@ -64,4 +63,3 @@ volumes:
   aixcl-grafana:
   aixcl-prometheus:
   aixcl-loki:
-  aixcl-alloy-data:

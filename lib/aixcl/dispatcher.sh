@@ -41,6 +41,10 @@ function main() {
             shift
             stack_cmd "$@"
             ;;
+        vault)
+            shift
+            cmd_vault "$@"
+            ;;
         restart)
             shift
             restart "$@"

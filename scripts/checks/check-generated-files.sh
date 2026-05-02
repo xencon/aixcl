@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Check for generated files that should not be committed
 # Exit code: 0 if clean, 1 if generated files found
 

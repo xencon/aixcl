@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # scripts/security/emergency-lockdown.sh
 # Emergency lockdown procedure for agentic system
 
