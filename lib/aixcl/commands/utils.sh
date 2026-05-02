@@ -19,32 +19,36 @@ function needs_rebuild() {
 }
 
 function clean() {
-    echo "Cleaning up unused Docker resources..."
+    # Use DOCKER_BIN from environment (set by .env or docker_utils.sh), default to 'docker'
+    local docker_cmd="${DOCKER_BIN:-docker}"
+    
+    echo "Cleaning up unused container resources..."
+    echo "Using container engine: $docker_cmd"
     echo ""
     
     # Show current disk usage
-    echo "Current Docker disk usage:"
-    docker system df
+    echo "Current container engine disk usage:"
+    $docker_cmd system df
     echo ""
     
     # Remove dangling images (untagged, not referenced)
     echo "Removing dangling images..."
-    docker image prune -f
+    $docker_cmd image prune -f
     echo ""
     
     # Remove unused images (not referenced by running containers)
     echo "Removing unused images (not referenced by running containers)..."
-    docker image prune -a -f
+    $docker_cmd image prune -a -f
     echo ""
     
     # Remove stopped containers
     echo "Removing stopped containers..."
-    docker container prune -f
+    $docker_cmd container prune -f
     echo ""
     
     # Remove unused volumes
     echo "Removing unused volumes..."
-    docker volume prune -f
+    $docker_cmd volume prune -f
     echo ""
     
     # Clean up pgAdmin configuration file for security
@@ -56,8 +60,8 @@ function clean() {
     echo ""
     echo "[x] Cleanup complete."
     echo ""
-    echo "Updated Docker disk usage:"
-    docker system df
+    echo "Updated container engine disk usage:"
+    $docker_cmd system df
 }
 
 function utils_cmd() {
