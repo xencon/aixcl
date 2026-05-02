@@ -455,17 +455,11 @@ services:
       timeout: 10s
       retries: 3
 
-  # SECURITY NOTE: Alloy requires Docker socket access for container log discovery.
-  # Docker socket access grants full root access on the host. Security mitigations applied:
-  # - Runs as alloy user (UID 12345) via entrypoint with docker group membership
-  # - Read-only root filesystem prevents runtime modifications
-  # - cap_drop: ALL with SETUID cap_add (allows su for user switching)
-  # - Writable data volume for Alloy state, tmpfs for temporary files
-  # - All bind mounts are read-only (:ro suffix)
   # External named volumes for persistence across contexts
   # These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
   # Using external: true ensures volumes are created once and reused
-  volumes:
+
+volumes:
   aixcl-ollama-data:
     external: true
   aixcl-hf-cache:
