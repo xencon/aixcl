@@ -398,6 +398,7 @@ services:
     network_mode: host
     depends_on:
       - postgres
+      - vault-agent-postgres
     restart: unless-stopped
 
   vault-agent-postgres:
