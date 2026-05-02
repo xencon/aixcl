@@ -30,6 +30,11 @@ is_vault_running() {
 }
 
 # Generate a random password
+generate_password() {
+    local length="${1:-32}"
+    openssl rand -base64 48 | tr -dc 'a-zA-Z0-9!@#$%^&*' | head -c "${length}"
+}
+
 # Check if KV store is enabled
 is_kv_enabled() {
     local secrets
@@ -108,7 +113,14 @@ init_bootstrap_passwords() {
     log_info "Initializing bootstrap passwords..."
     
     # Check if we need to migrate from .env
-    local env_file="${SCRIPT_DIR}/.env"
+    local env_file
+    if [ -n "${SCRIPT_DIR:-}" ] && [ -f "${SCRIPT_DIR}/.env" ]; then
+        env_file="${SCRIPT_DIR}/.env"
+    elif [ -f ".env" ]; then
+        env_file=".env"
+    else
+        env_file=""
+    fi
     local postgres_password=""
     local openwebui_password=""
     

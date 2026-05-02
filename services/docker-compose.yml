@@ -240,12 +240,7 @@ services:
     image: hashicorp/vault:1.18
     container_name: vault-agent-postgres-bootstrap
     pull_policy: missing
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-      - CHOWN
+    user: "0:0"
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
     volumes:
@@ -262,12 +257,7 @@ services:
     image: hashicorp/vault:1.18
     container_name: vault-agent-openwebui-bootstrap
     pull_policy: missing
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-      - CHOWN
+    user: "0:0"
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
     volumes:
