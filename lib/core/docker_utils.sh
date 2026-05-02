@@ -131,7 +131,7 @@ run_compose() {
     
     # Run compose command and filter output in real-time
     # Only show lines that look like actual status messages or errors
-    # Suppress: JSON fragments, flag lines (-e, -v, --), command traces
+    # Suppress: JSON fragments, flag lines (-e, -v, --), command traces, "** merged:**" header
     (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@" 2>&1) | \
     awk '
         # Skip lines that are clearly JSON or command flags
@@ -146,6 +146,7 @@ run_compose() {
         /^[[:space:]]*,[[:space:]]*$/ { next }
         /^[[:space:]]*\}[,[:space:]]*$/ { next }
         /^[[:space:]]*\][,[:space:]]*$/ { next }
+        /^\*\* / { next }
         /^podman run/ { next }
         /^\[.podman/ { next }
         /^exit code:/ { next }
