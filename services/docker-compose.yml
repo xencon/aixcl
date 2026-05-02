@@ -178,11 +178,11 @@ services:
       - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
       - ../scripts/runtime/openwebui-vault-entrypoint.sh:/usr/local/bin/openwebui-vault-entrypoint.sh:ro
-      - /run/secrets:/run/secrets:ro
+      - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
     environment:
       - DATA_DIR=/app/data
       - STATIC_DIR=/app/backend/data/static
-      - DATABASE_URL_FILE=/run/secrets/openwebui-db-creds
+      - DATABASE_URL_FILE=/tmp/vault-secrets/openwebui-db-creds
       - WEBUI_NAME=AIXCL
       - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
       - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
@@ -217,18 +217,13 @@ services:
     image: hashicorp/vault:1.18
     container_name: vault-agent-openwebui
     pull_policy: missing
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
     volumes:
-      - /run/secrets:/run/secrets
-      - ../vault/agent-config/openwebui.hcl:/etc/vault/agent.hcl:ro
-    command: agent -config=/etc/vault/agent.hcl
+      - /tmp/aixcl-secrets:/tmp/vault-secrets
+      - ../scripts/vault/vault-agent-openwebui.sh:/app/agent.sh:ro
+    command: sh /app/agent.sh
     network_mode: host
     depends_on:
       - vault

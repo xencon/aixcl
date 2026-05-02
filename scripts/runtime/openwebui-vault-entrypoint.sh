@@ -1,10 +1,9 @@
 #!/bin/bash
 # openwebui-vault-entrypoint.sh - Wrap Open WebUI to read database credentials from Vault
-# This script reads credentials from Vault Agent file and exports them for Open WebUI
 
 set -e
 
-VAULT_CREDS_FILE="${VAULT_CREDS_FILE:-/run/secrets/openwebui-db-creds}"
+VAULT_CREDS_FILE="${VAULT_CREDS_FILE:-/tmp/vault-secrets/openwebui-db-creds}"
 
 # Wait for Vault credentials to be available
 echo "Waiting for Vault credentials..."
