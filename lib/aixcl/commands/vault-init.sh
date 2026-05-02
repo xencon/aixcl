@@ -29,6 +29,135 @@ is_vault_running() {
     fi
 }
 
+# Generate a random password
+# Check if KV store is enabled
+is_kv_enabled() {
+    local secrets
+    secrets=$(curl -sf "${VAULT_ADDR}/v1/sys/mounts" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null | jq -r '.data | keys[]' 2>/dev/null || true)
+    
+    if echo "$secrets" | grep -q "^kv/"; then
+        log_verbose "KV secrets engine already enabled"
+        return 0
+    fi
+    return 1
+}
+
+# Enable KV secrets engine v2 (idempotent)
+enable_kv_engine() {
+    if is_kv_enabled; then
+        log_info "KV secrets engine already enabled (skipping)"
+        return 0
+    fi
+    
+    log_info "Enabling KV secrets engine v2..."
+    local result
+    result=$(curl -sf -X POST "${VAULT_ADDR}/v1/sys/mounts/kv" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d '{"type": "kv", "options": {"version": "2"}}' 2>/dev/null || echo "exists")
+    
+    if [ "$result" != "exists" ]; then
+        log_info "KV secrets engine v2 enabled"
+    else
+        log_warn "KV engine may already be enabled (continuing)"
+    fi
+}
+
+# Generate a secure random password
+generate_password() {
+    local length="${1:-32}"
+    openssl rand -base64 48 | tr -dc 'a-zA-Z0-9!@#$%^&*' | head -c "${length}"
+}
+
+# Check if bootstrap password exists in KV
+bootstrap_password_exists() {
+    local service="$1"
+    local password_data
+    password_data=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/${service}" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null || true)
+    
+    if [ -n "$password_data" ] && echo "$password_data" | jq -e '.data.data.password' >/dev/null 2>&1; then
+        log_verbose "Bootstrap password for ${service} already exists"
+        return 0
+    fi
+    return 1
+}
+
+# Store bootstrap password in KV
+store_bootstrap_password() {
+    local service="$1"
+    local password="$2"
+    local description="$3"
+    
+    log_info "Storing bootstrap password for ${service}..."
+    
+    curl -sf -X POST "${VAULT_ADDR}/v1/kv/data/bootstrap/${service}" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "{\"data\": {\"password\": \"${password}\", \"description\": \"${description}\", \"created\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" 2>/dev/null || {
+        log_warn "Failed to store bootstrap password for ${service}"
+        return 1
+    }
+    
+    log_info "Bootstrap password for ${service} stored in Vault KV"
+}
+
+# Initialize bootstrap passwords
+init_bootstrap_passwords() {
+    log_info "Initializing bootstrap passwords..."
+    
+    # Check if we need to migrate from .env
+    local env_file="${SCRIPT_DIR}/.env"
+    local postgres_password=""
+    local openwebui_password=""
+    
+    if [ -f "$env_file" ]; then
+        postgres_password=$(grep "^POSTGRES_PASSWORD=" "$env_file" 2>/dev/null | cut -d'=' -f2 || true)
+        openwebui_password=$(grep "^OPENWEBUI_PASSWORD=" "$env_file" 2>/dev/null | cut -d'=' -f2 || true)
+    fi
+    
+    # PostgreSQL bootstrap password
+    if ! bootstrap_password_exists "postgres"; then
+        if [ -n "$postgres_password" ] && [ "$postgres_password" != "admin" ]; then
+            # Migrate existing custom password from .env
+            log_info "Migrating existing PostgreSQL password from .env to Vault KV..."
+            store_bootstrap_password "postgres" "$postgres_password" "PostgreSQL admin/bootstrap password (migrated from .env)"
+        else
+            # Generate random password
+            local random_password
+            random_password=$(generate_password 32)
+            store_bootstrap_password "postgres" "$random_password" "PostgreSQL admin/bootstrap password (auto-generated)"
+            
+            # Show the generated password
+            log_info "Generated PostgreSQL bootstrap password: ${random_password}"
+        fi
+    else
+        log_info "PostgreSQL bootstrap password already exists in Vault KV (skipping)"
+    fi
+    
+    # Open WebUI bootstrap password
+    if ! bootstrap_password_exists "openwebui"; then
+        if [ -n "$openwebui_password" ] && [ "$openwebui_password" != "admin" ]; then
+            # Migrate existing custom password from .env
+            log_info "Migrating existing Open WebUI password from .env to Vault KV..."
+            store_bootstrap_password "openwebui" "$openwebui_password" "Open WebUI admin password (migrated from .env)"
+        else
+            # Generate random password
+            local random_password
+            random_password=$(generate_password 32)
+            store_bootstrap_password "openwebui" "$random_password" "Open WebUI admin password (auto-generated)"
+            
+            # Show the generated password
+            log_info "Generated Open WebUI bootstrap password: ${random_password}"
+        fi
+    else
+        log_info "Open WebUI bootstrap password already exists in Vault KV (skipping)"
+    fi
+    
+    log_info "Bootstrap passwords initialized"
+}
+
 # Wait for Vault to be ready using REST API
 wait_for_vault() {
     log_info "Waiting for Vault to be ready..."
@@ -380,6 +509,9 @@ show_summary() {
     log_info "Dynamic credentials are now available:"
     log_info "  ./aixcl vault credentials"
     log_info ""
+    log_info "Bootstrap passwords stored in Vault KV:"
+    log_info "  ./aixcl vault passwords    # View static bootstrap credentials"
+    log_info ""
     log_info "Service credentials auto-rotate:"
     log_info "  - Open WebUI: Every 1 hour"
     log_info "  - Postgres Exporter: Every 1 hour"
@@ -392,6 +524,19 @@ show_summary() {
         log_info "Generated credentials stored in:"
         ls -1 /tmp/aixcl-secrets/ 2>&1 | sed 's/^/  - /' || true
         log_info ""
+    fi
+    
+    # Warn about .env passwords if they still exist
+    local env_file="${SCRIPT_DIR}/.env"
+    if [ -f "$env_file" ]; then
+        if grep -q "^POSTGRES_PASSWORD=\|^OPENWEBUI_PASSWORD=" "$env_file" 2>/dev/null; then
+            log_warn "NOTE: Passwords still exist in .env file"
+            log_warn "      Run the following to complete migration:"
+            log_warn "      1. ./aixcl vault passwords    # Verify passwords work"
+            log_warn "      2. Remove POSTGRES_PASSWORD and OPENWEBUI_PASSWORD from .env"
+            log_warn "      3. Restart stack: ./aixcl stack restart"
+            log_info ""
+        fi
     fi
 }
 
@@ -416,6 +561,7 @@ main() {
     
     # Run initialization steps (all idempotent)
     enable_database_engine
+    enable_kv_engine
     configure_postgres_connection
     create_app_role
     create_admin_role
@@ -423,6 +569,7 @@ main() {
     create_policies
     enable_approle_auth
     enable_audit_logging
+    init_bootstrap_passwords
     test_credentials
     
     show_summary

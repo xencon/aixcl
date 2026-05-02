@@ -229,6 +229,50 @@ services:
       - vault
     restart: unless-stopped
 
+  # Vault Agent for PostgreSQL bootstrap password (from KV store)
+  vault-agent-postgres-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    volumes:
+      - ../vault/agent-config/postgres-bootstrap.hcl:/etc/vault/agent.hcl:ro
+      - aixcl-vault-secrets:/run/secrets
+    command: vault agent -config=/etc/vault/agent.hcl
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Vault Agent for Open WebUI bootstrap password (from KV store)
+  vault-agent-openwebui-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-openwebui-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    volumes:
+      - ../vault/agent-config/openwebui-bootstrap.hcl:/etc/vault/agent.hcl:ro
+      - aixcl-vault-secrets:/run/secrets
+    command: vault agent -config=/etc/vault/agent.hcl
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
   pgadmin:
     image: docker.io/dpage/pgadmin4:9.14.0
     container_name: pgadmin
@@ -490,4 +534,6 @@ volumes:
   aixcl-pgadmin-config:
     external: true
   aixcl-vault-data:
+    external: true
+  aixcl-vault-secrets:
     external: true

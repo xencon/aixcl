@@ -27,6 +27,8 @@ VOLUMES=(
   "aixcl-pgadmin-storage"
   "aixcl-pgadmin"
   "aixcl-pgadmin-config"
+  "aixcl-vault-data"
+  "aixcl-vault-secrets"
 )
 
 echo "AIXCL Volume Initialization"

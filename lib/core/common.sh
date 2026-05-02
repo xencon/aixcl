@@ -75,6 +75,8 @@ ALL_SERVICES=(
     "nvidia-gpu-exporter"
     "loki"
     "vault"
+    "vault-agent-postgres-bootstrap"
+    "vault-agent-openwebui-bootstrap"
 )
 
 # Function to validate service name
