@@ -255,3 +255,65 @@ groups:
           summary: "GPU monitoring unavailable"
           description: "GPU metrics are not available for more than 2 minutes. This may indicate GPU exporter is down or no GPUs are present."
 
+  # Prometheus Self-Monitoring Alerts
+  - name: aixcl_prometheus
+    interval: 30s
+    rules:
+      - alert: PrometheusStorageHigh
+        expr: (prometheus_tsdb_storage_blocks_bytes / prometheus_tsdb_retention_limit_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "Prometheus storage is filling up"
+          description: "Prometheus storage usage is above 80% of retention limit. Current usage: {{ $value }}%. Consider increasing retention or adding storage."
+
+      - alert: PrometheusTargetDown
+        expr: up{job!~"nvidia-gpu|alloy"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is down"
+          description: "Prometheus scrape target {{ $labels.job }} has been down for more than 2 minutes."
+
+  # Grafana & Alertmanager Alerts
+  - name: aixcl_platform
+    interval: 30s
+    rules:
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: platform
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana dashboard service is not responding for more than 1 minute. Monitoring dashboards unavailable."
+
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: platform
+        annotations:
+          summary: "Alertmanager is down"
+          description: "Alertmanager is not responding for more than 2 minutes. Alert notifications may not be delivered."
+
+  # Ollama Capacity Alerts
+  - name: aixcl_ollama_capacity
+    interval: 30s
+    rules:
+      - alert: OllamaHighModelStorage
+        expr: ollama_model_storage_bytes > 107374182400  # 100GB
+        for: 5m
+        labels:
+          severity: warning
+          component: ai-engine
+        annotations:
+          summary: "Ollama model storage is high"
+          description: "Ollama model storage is above 100GB. Current usage: {{ $value | humanize1024 }}B. Consider removing unused models."
+

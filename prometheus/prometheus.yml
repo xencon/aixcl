@@ -83,6 +83,21 @@ scrape_configs:
         labels:
           service: 'alloy'
 
+  # Grafana - Self-monitoring
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['localhost:3000']
+        labels:
+          service: 'grafana'
+    metrics_path: /metrics
+
+  # Alertmanager - Alert delivery metrics
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['localhost:9093']
+        labels:
+          service: 'alertmanager'
+
   # Open WebUI - User interface metrics
   # Uses custom exporter on port 11436
   - job_name: 'open-webui'
