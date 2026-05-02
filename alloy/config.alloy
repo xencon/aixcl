@@ -1,67 +1,48 @@
-// /alloy/config.alloy
-discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
-  filter {
-    name = "label"
-    values = ["com.docker.compose.project=services"]
-  }
+// /etc/alloy/config.alloy - Hybrid approach for rootless Podman
+// Uses file-based collection for /var/log
+
+// Read system logs from files
+local.file_match "system_logs" {
+  path_targets = [
+    {"__path__" = "/var/log/*.log"},
+    {"__path__" = "/var/log/syslog"},
+    {"__path__" = "/var/log/messages"},
+  ]
 }
 
-discovery.relabel "docker_logs" {
-  targets = discovery.docker.containers.targets
-
+discovery.relabel "system_log_labels" {
+  targets = local.file_match.system_logs.targets
+  
   rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex = "/(.*)"
-    target_label = "container"
+    source_labels = ["__path__"]
+    regex = "/var/log/(.*).log"
+    target_label  = "log_type"
   }
-  rule {
-    source_labels = ["__meta_docker_container_id"]
-    target_label = "container_id"
-  }
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    target_label = "compose_service"
-  }
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
-    target_label = "compose_project"
-  }
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_image"]
-    target_label = "image"
-  }
-}
-
-loki.source.docker "default" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.relabel.docker_logs.output
-  forward_to = [loki.write.local.receiver]
-}
-
-local.file_match "varlogs" {
-  path_targets = [{"__path__" = "/var/log/*.log"}]
-}
-
-discovery.relabel "varlog_labels" {
-  targets = local.file_match.varlogs.targets
+  
   rule {
     target_label = "job"
-    replacement  = "varlogs"
+    replacement  = "system-logs"
   }
+  
   rule {
     target_label = "host"
     replacement  = "aixcl-host"
   }
 }
 
-loki.source.file "varlogs" {
-  targets    = discovery.relabel.varlog_labels.output
+loki.source.file "system_logs" {
+  targets    = discovery.relabel.system_log_labels.output
   forward_to = [loki.write.local.receiver]
+}
+
+// Alternative: Use exec to tail journal
+// Note: This runs journalctl in the container
+local.file_match "journal_output" {
+  path_targets = []
 }
 
 loki.write "local" {
   endpoint {
-    url = "http://localhost:3100/loki/api/v1/push"
+    url = "http://127.0.0.1:3100/loki/api/v1/push"
   }
 }
