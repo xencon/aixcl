@@ -4,20 +4,6 @@ vault {
   address = "http://127.0.0.1:8200"
 }
 
-auto_auth {
-  method "token" {
-    config = {
-      token = "aixcl-dev-token"
-    }
-  }
-
-  sink "file" {
-    config = {
-      path = "/tmp/vault-token-pgexporter"
-    }
-  }
-}
-
 template {
   destination = "/tmp/vault-secrets/pgexporter-creds"
   contents = <<-EOT
