@@ -43,7 +43,7 @@ function main() {
             ;;
         vault)
             shift
-            source "${SCRIPT_DIR}/scripts/vault/vault-commands.sh" "$@"
+            cmd_vault "$@"
             ;;
         restart)
             shift

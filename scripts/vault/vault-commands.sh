@@ -17,10 +17,21 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Check if Vault is running
 vault_status() {
-    local health
-    health=$(curl -sf "${VAULT_ADDR}/v1/sys/health" 2>/dev/null | jq -r '.sealed // "unreachable"')
+    local health_response
+    health_response=$(curl -sf "${VAULT_ADDR}/v1/sys/health" 2>/dev/null || echo '{}')
     
-    case "$health" in
+    # In dev mode, Vault responds with version even when "sealed"
+    local version
+    version=$(echo "$health_response" | jq -r '.version // ""')
+    if [ -n "$version" ]; then
+        log_info "Vault is running (version: $version)"
+        return 0
+    fi
+    
+    local sealed
+    sealed=$(echo "$health_response" | jq -r '.sealed // "unreachable"')
+    
+    case "$sealed" in
         "false")
             log_info "Vault is running and unsealed"
             return 0

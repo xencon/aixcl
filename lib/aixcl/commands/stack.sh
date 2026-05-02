@@ -1355,6 +1355,31 @@ function status() {
     echo "=================="
     echo ""
     
+    # Check Vault initialization status
+    local vault_initialized=false
+    if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+        local vault_addr="${VAULT_ADDR:-http://127.0.0.1:8200}"
+        local vault_token="${VAULT_TOKEN:-aixcl-dev-token}"
+        
+        # Check if Vault container is running
+        if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^vault$"; then
+            # Check if database engine is configured
+            local vault_secrets
+            vault_secrets=$(curl -sf "${vault_addr}/v1/sys/mounts" \
+                -H "X-Vault-Token: ${vault_token}" 2>/dev/null | jq -r '.data | keys[]' 2>/dev/null || true)
+            
+            if echo "$vault_secrets" | grep -q "^database/"; then
+                vault_initialized=true
+            fi
+            
+            if [ "$vault_initialized" = false ]; then
+                echo "Vault Status:           ⚠️  Not Initialized"
+                echo "                        Run: ./aixcl vault init"
+                echo ""
+            fi
+        fi
+    fi
+    
     if [ -n "$current_profile" ] && is_valid_profile "$current_profile" 2>/dev/null; then
         echo "Profile: $current_profile"
     else
