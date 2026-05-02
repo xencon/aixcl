@@ -409,18 +409,13 @@ services:
     image: hashicorp/vault:1.18
     container_name: vault-agent-postgres
     pull_policy: missing
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
     volumes:
       - /tmp/aixcl-secrets:/tmp/vault-secrets
-      - ../vault/agent-config/pgexporter.hcl:/etc/vault/agent.hcl:ro
-    command: agent -config=/etc/vault/agent.hcl
+      - ../scripts/vault/vault-agent.sh:/app/agent.sh:ro
+    command: sh /app/agent.sh
     network_mode: host
     depends_on:
       - vault
