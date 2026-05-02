@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# shellcheck shell=bash
+#!/bin/sh
 # postgres-exporter-vault.sh - Read Vault credentials and start postgres-exporter
 
 # Read credentials from file
