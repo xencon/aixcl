@@ -1,0 +1,15 @@
+[Unit]
+Description=Ollama Metrics Exporter for Prometheus
+Documentation=https://github.com/xencon/aixcl
+After=network.target ollama.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/sbadakhc/src/github.com/xencon/aixcl/scripts/exporters/ollama-exporter.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

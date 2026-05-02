@@ -50,15 +50,13 @@ scrape_configs:
           database: 'aixcl'
 
   # Ollama - LLM Engine
-  # NOTE: Ollama doesn't expose Prometheus metrics natively
-  # Monitor via cAdvisor container metrics instead (container name: ollama)
-  # Uncomment below when/if Ollama adds native Prometheus metrics support
-  # - job_name: 'ollama'
-  #   metrics_path: '/metrics'
-  #   static_configs:
-  #     - targets: ['localhost:11434']
-  #       labels:
-  #         service: 'ollama'
+  # Uses custom exporter on port 11435 that polls Ollama API
+  # Provides model info, version, and availability metrics
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['localhost:11435']
+        labels:
+          service: 'ollama'
 
   # NVIDIA GPU Exporter - GPU metrics (utilization, memory, temperature, power)
   # Uses custom exporter (nvidia-smi) on port 9445 in rootless mode
@@ -84,4 +82,12 @@ scrape_configs:
       - targets: ['localhost:12345']
         labels:
           service: 'alloy'
+
+  # Open WebUI - User interface metrics
+  # Uses custom exporter on port 11436
+  - job_name: 'open-webui'
+    static_configs:
+      - targets: ['localhost:11436']
+        labels:
+          service: 'open-webui'
 
