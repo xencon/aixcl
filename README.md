@@ -78,16 +78,34 @@ Services started:
 
 ### Step 5: Initialize Vault (First Run Only)
 
+Vault must be initialized before services can obtain dynamic credentials:
+
 ```bash
 # Wait for Vault to be ready
 sleep 30
 
-# Initialize Vault
-podman exec vault sh -c '
-  export VAULT_ADDR=http://127.0.0.1:8200
-  export VAULT_TOKEN=aixcl-dev-token
-  vault secrets enable database
-'
+# Initialize Vault with all required configuration
+./scripts/vault/init-vault.sh
+```
+
+This script configures:
+- **Database secrets engine** - For dynamic PostgreSQL credentials
+- **PostgreSQL connection** - Vault can connect to your database
+- **Dynamic roles** - Short-lived credentials for apps (auto-rotate every hour)
+- **Vault policies** - Access control for services
+- **AppRole authentication** - For service-to-Vault authentication
+
+**Note:** This uses Vault dev mode with a development token (`aixcl-dev-token`) for local development. For production, Vault should be configured with proper authentication and sealed/unsealed manually.
+
+**What happens:** Services (postgres-exporter, open-webui) will automatically receive credentials from Vault. You can verify with:
+
+```bash
+# Check Vault is working
+./aixcl vault credentials
+
+# View generated credentials
+cat /tmp/aixcl-secrets/pgexporter-creds
+cat /tmp/aixcl-secrets/openwebui-db-creds
 ```
 
 ### Step 6: Test Inference (Hello World)
@@ -181,6 +199,7 @@ git log --show-signature -1
 | Stop stack | `./aixcl stack stop` |
 | Add model | `./aixcl models add <model>` |
 | Chat CLI | `opencode` |
+| Vault credentials | `./aixcl vault credentials` |
 | Rotate credentials | `./scripts/security/rotate-credentials.sh --check` |
 | Verify GPG | `./scripts/utils/setup-gpg.sh --verify` |
 
@@ -230,6 +249,32 @@ sudo sysctl --system
 podman logs vault | tail -20
 
 # Ensure Vault is healthy before init
+./aixcl stack status
+
+# If Vault shows "connection refused", run the init script
+./scripts/vault/init-vault.sh
+```
+
+### "Services failing with 'credential file not found'"
+
+This means Vault agents haven't generated credentials yet:
+
+```bash
+# Check Vault agents are running
+podman ps | grep vault-agent
+
+# Check agent logs for errors
+podman logs vault-agent-postgres | tail -20
+podman logs vault-agent-openwebui | tail -20
+
+# Check credentials were generated
+ls -la /tmp/aixcl-secrets/
+
+# If missing, restart the agents
+./aixcl stack restart vault-agent-postgres vault-agent-openwebui
+
+# Wait 30 seconds then check again
+sleep 30
 ./aixcl stack status
 ```
 
