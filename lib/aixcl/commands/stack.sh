@@ -476,6 +476,14 @@ function start() {
 function stop() {
     [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Stopping Docker Compose deployment..."
     
+    # Get current profile from .env file
+    local profile=""
+    local env_file="${SCRIPT_DIR}/.env"
+    if [ -f "$env_file" ]; then
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    fi
+    [ -z "$profile" ] && profile="sys"
+    
     # Set up compose command with GPU detection
     set_compose_cmd
     
@@ -483,12 +491,41 @@ function stop() {
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
     if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Services are not running."
+        # Services already stopped - show status
+        echo ""
+        echo "AIXCL Stack Stopped"
+        echo "==================="
+        echo ""
+        echo "Profile: $profile"
+        echo "Status: Stopped"
+        echo ""
+        echo "Services"
+        echo "--------------------------------------------------"
+        echo ""
+        echo "Runtime Core"
+        for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+            echo "  ❌ $service"
+        done
+        echo ""
+        echo "Operational Services"
+        local profile_services
+        profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+        for service in $profile_services; do
+            local is_core=false
+            for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+                [ "$service" = "$core" ] && is_core=true && break
+            done
+            [ "$is_core" = true ] && continue
+            echo "  ❌ $service"
+        done
+        echo ""
+        echo "All services have been stopped."
         return 0
     fi
     
     echo "Stopping services gracefully..."
-    run_compose down --remove-orphans
+    # Allow down to fail (containers may not exist) - we check status after
+    run_compose down --remove-orphans || true
     
     echo "Waiting for containers to stop..."
     for i in {1..15}; do
@@ -497,7 +534,7 @@ function stop() {
             echo "AIXCL Stack Stopped"
             echo "==================="
             echo ""
-            echo "Profile: $(get_profile_services "$profile" 2>/dev/null || echo 'N/A')"
+            echo "Profile: $profile"
             echo "Status: Stopped"
             echo ""
             echo "Services"

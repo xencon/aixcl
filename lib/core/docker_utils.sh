@@ -34,16 +34,22 @@ set_compose_cmd() {
     
     # Check for ARM64 architecture
     if is_arm64 && [ -f "${SERVICES_DIR}/docker-compose.arm.yml" ]; then
-        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Detected ARM64 architecture. Enabling ARM platform overrides."
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "Detected ARM64 architecture. Enabling ARM platform overrides."
+        fi
         files+=( -f "${SERVICES_DIR}/docker-compose.arm.yml" )
     fi
     
     # Check for NVIDIA GPU hardware AND toolkit availability
     if has_nvidia && has_nvidia_container_toolkit && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
-        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
+        fi
         files+=( -f "${SERVICES_DIR}/docker-compose.gpu.yml" )
     else
-        [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "No NVIDIA GPU support detected. Running without GPU overrides."
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "No NVIDIA GPU support detected. Running without GPU overrides."
+        fi
     fi
     
     # Detect appropriate compose command - Podman preferred for rootless security
@@ -77,10 +83,12 @@ set_compose_cmd() {
     
     # Export DOCKER_BIN for use in other scripts
     export DOCKER_BIN="$bin"
-    [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using container engine: $DOCKER_BIN"
+    if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+        echo "Using container engine: $DOCKER_BIN"
+    fi
 
     if [ ${#cmd[@]} -eq 0 ]; then
-        if docker compose version &> /dev/null; then
+        if command -v docker &>/dev/null && docker compose version &> /dev/null; then
             cmd=(docker compose)
         elif command -v docker-compose &>/dev/null; then
             cmd=(docker-compose)
@@ -98,7 +106,9 @@ set_compose_cmd() {
     # Set and export DOCKER_SOCK for use in docker-compose files
     DOCKER_SOCK=$(get_docker_sock)
     export DOCKER_SOCK
-    [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Docker socket: $DOCKER_SOCK"
+    if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+        echo "Using Docker socket: $DOCKER_SOCK"
+    fi
 }
 
 # Helper function to run docker-compose commands from the services directory
