@@ -552,8 +552,11 @@ show_summary() {
     fi
     
     # Warn about .env passwords if they still exist
-    local env_file="${SCRIPT_DIR}/.env"
-    if [ -f "$env_file" ]; then
+    local env_file=""
+    if [ -n "${SCRIPT_DIR:-}" ]; then
+        env_file="${SCRIPT_DIR}/.env"
+    fi
+    if [ -n "$env_file" ] && [ -f "$env_file" ]; then
         if grep -q "^POSTGRES_PASSWORD=\|^OPENWEBUI_PASSWORD=" "$env_file" 2>/dev/null; then
             log_warn "NOTE: Passwords still exist in .env file"
             log_warn "      Run the following to complete migration:"
