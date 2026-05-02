@@ -162,29 +162,30 @@ groups:
           summary: "High memory usage in container {{ $labels.name }}"
           description: "Container {{ $labels.name }} memory usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
 
-  # GPU Alerts
+  # GPU Alerts (using nvidia-smi metrics for rootless Podman compatibility)
+  # Note: DCGM metrics don't work in rootless mode, using custom exporter instead
   - name: aixcl_gpu
     interval: 30s
     rules:
       - alert: GPUHighTemperature
-        expr: DCGM_FI_DEV_GPU_TEMP > 85
+        expr: nvidia_smi_temperature_gpu > 85
         for: 5m
         labels:
           severity: warning
           component: gpu
         annotations:
           summary: "High GPU temperature on GPU {{ $labels.gpu }}"
-          description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) temperature is above 85°C for more than 5 minutes. Current temperature: {{ $value }}°C"
+          description: "GPU {{ $labels.gpu }} temperature is above 85°C for more than 5 minutes. Current temperature: {{ $value }}°C"
 
       - alert: GPUHighMemoryUsage
-        expr: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
+        expr: (nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes) * 100 > 90
         for: 5m
         labels:
           severity: warning
           component: gpu
         annotations:
           summary: "High GPU memory usage on GPU {{ $labels.gpu }}"
-          description: "GPU {{ $labels.gpu }} ({{ $labels.modelName }}) memory usage is above 90% for more than 5 minutes. Current usage: {{ $value }}%"
+          description: "GPU {{ $labels.gpu }} memory usage is above 90% for more than 5 minutes. Current usage: {{ $value }}%"
 
       - alert: GPUUnavailable
         expr: up{job="nvidia-gpu"} == 0

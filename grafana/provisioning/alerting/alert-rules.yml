@@ -318,7 +318,7 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: DCGM_FI_DEV_GPU_TEMP > 85
+              expr: nvidia_smi_temperature_gpu > 85
               intervalMs: 1000
               maxDataPoints: 43200
         noDataState: OK
@@ -338,7 +338,7 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: (DCGM_FI_DEV_FB_USED / (DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)) * 100 > 90
+              expr: (nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes) * 100 > 90
               intervalMs: 1000
               maxDataPoints: 43200
         noDataState: OK
