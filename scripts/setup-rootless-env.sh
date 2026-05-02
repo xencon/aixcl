@@ -5,6 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# REPO_ROOT is defined for future use - not currently used but kept for reference
 # shellcheck disable=SC2034
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
