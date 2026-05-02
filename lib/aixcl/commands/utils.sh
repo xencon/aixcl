@@ -22,42 +22,43 @@ function clean() {
     # Use DOCKER_BIN from environment (set by .env or docker_utils.sh), default to 'docker'
     local docker_cmd="${DOCKER_BIN:-docker}"
     
-    echo "Cleaning up unused container resources..."
+    echo "SCORCHED EARTH: Removing ALL container resources..."
     echo "Using container engine: $docker_cmd"
     echo ""
     
-    # Show current disk usage
-    echo "Current container engine disk usage:"
-    $docker_cmd system df
+    # Stop and remove ALL containers (running and stopped)
+    echo "Stopping all containers..."
+    $docker_cmd stop -a 2>/dev/null || true
+    echo "Removing all containers..."
+    $docker_cmd rm -f -a 2>/dev/null || true
     echo ""
     
-    # Remove dangling images (untagged, not referenced)
-    echo "Removing dangling images..."
-    $docker_cmd image prune -f
+    # Remove ALL images (force)
+    echo "Removing all images..."
+    $docker_cmd rmi -f -a 2>/dev/null || true
     echo ""
     
-    # Remove unused images (not referenced by running containers)
-    echo "Removing unused images (not referenced by running containers)..."
-    $docker_cmd image prune -a -f
-    echo ""
-    
-    # Remove stopped containers
-    echo "Removing stopped containers..."
-    $docker_cmd container prune -f
-    echo ""
-    
-    # Remove unused volumes
-    echo "Removing unused volumes..."
-    $docker_cmd volume prune -f
-    echo ""
-    
-    # Remove AIXCL-specific external volumes (scorched earth)
-    echo "Removing AIXCL volumes..."
-    local volumes
-    volumes=$($docker_cmd volume ls -q 2>/dev/null | grep "^aixcl-" || true)
-    if [ -n "$volumes" ]; then
-        echo "$volumes" | xargs -r $docker_cmd volume rm 2>/dev/null || true
+    # Remove ALL volumes by name (not just prune)
+    echo "Removing all volumes..."
+    local all_volumes
+    all_volumes=$($docker_cmd volume ls -q 2>/dev/null || true)
+    if [ -n "$all_volumes" ]; then
+        echo "$all_volumes" | xargs -r $docker_cmd volume rm -f 2>/dev/null || true
     fi
+    echo ""
+    
+    # Remove custom networks (not system networks)
+    echo "Removing custom networks..."
+    local networks
+    networks=$($docker_cmd network ls -q 2>/dev/null | grep -v "^podman$" || true)
+    if [ -n "$networks" ]; then
+        echo "$networks" | xargs -r $docker_cmd network rm 2>/dev/null || true
+    fi
+    echo ""
+    
+    # System prune for anything left
+    echo "System prune..."
+    $docker_cmd system prune -f --all --volumes 2>/dev/null || true
     echo ""
     
     # Clean up pgAdmin configuration file for security
@@ -67,10 +68,10 @@ function clean() {
     fi
     
     echo ""
-    echo "[x] Cleanup complete."
+    echo "✅ SCORCHED EARTH CLEAN COMPLETE"
     echo ""
-    echo "Updated container engine disk usage:"
-    $docker_cmd system df
+    echo "Container engine should now be empty:"
+    $docker_cmd system df 2>/dev/null || echo "No resources found (good!)"
 }
 
 function utils_cmd() {
