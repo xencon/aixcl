@@ -10,6 +10,15 @@ function cmd_vault() {
     shift || true
     
     case "$subcommand" in
+        start)
+            cmd_vault_start "$@"
+            ;;
+        stop)
+            cmd_vault_stop "$@"
+            ;;
+        restart)
+            cmd_vault_restart "$@"
+            ;;
         init)
             cmd_vault_init "$@"
             ;;
@@ -33,7 +42,12 @@ function cmd_vault() {
             echo ""
             echo "Usage: ./aixcl vault <command> [options]"
             echo ""
-            echo "Commands:"
+            echo "Lifecycle Commands:"
+            echo "  start        Start the Vault container"
+            echo "  stop         Stop the Vault container"
+            echo "  restart      Restart the Vault container"
+            echo ""
+            echo "Query Commands:"
             echo "  init         Initialize Vault (idempotent)"
             echo "  status       Check Vault health and initialization state"
             echo "  credentials  View generated dynamic credentials"
@@ -42,16 +56,30 @@ function cmd_vault() {
             echo "  logs [n]     View Vault container logs (default: 50 lines)"
             echo ""
             echo "Examples:"
+            echo "  ./aixcl vault start         # Start Vault container"
+            echo "  ./aixcl vault stop          # Stop Vault container"
+            echo "  ./aixcl vault restart       # Restart Vault container"
             echo "  ./aixcl vault init          # Initialize Vault on first run"
             echo "  ./aixcl vault status        # Check if Vault is ready"
             echo "  ./aixcl vault credentials   # View service credentials"
             echo "  ./aixcl vault passwords     # View bootstrap passwords"
             echo "  ./aixcl vault logs          # View last 50 log lines"
-            echo "  ./aixcl vault logs 100      # View last 100 log lines"
             echo ""
             return 1
             ;;
     esac
+}
+
+function cmd_vault_start() {
+    container_start "vault"
+}
+
+function cmd_vault_stop() {
+    container_stop "vault"
+}
+
+function cmd_vault_restart() {
+    container_restart "vault"
 }
 
 function cmd_vault_init() {
@@ -300,6 +328,9 @@ vault_is_enabled_in_profile() {
 
 # Export the main command
 export -f cmd_vault
+export -f cmd_vault_start
+export -f cmd_vault_stop
+export -f cmd_vault_restart
 export -f cmd_vault_init
 export -f cmd_vault_status
 export -f cmd_vault_credentials

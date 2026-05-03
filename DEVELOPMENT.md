@@ -62,9 +62,20 @@ Every issue must include a **Verification** section with concrete done-criteria 
 considered ready to work.
 
 ```bash
-gh issue create --title "[BUG] <title>" --label "priority:medium,profile:dev" --assignee <assignee>
-gh issue create --title "[FEATURE] <title>" --label "enhancement" --assignee <assignee>
-gh issue create --title "[TASK] <title>" --label "maintenance" --assignee <assignee>
+# IMPORTANT: Use --body-file (not inline --body) to prevent backtick command substitution.
+# Never use inline --body with multiline strings containing backticks — shell will
+# execute them and inject output into the issue body.
+cat > /tmp/issue-body.md << 'EOF'
+## Summary
+Brief description here.
+
+## Deliverables
+- [ ] Step 1
+- [ ] Step 2
+EOF
+gh issue create --title "[BUG] <title>" --body-file /tmp/issue-body.md --label "priority:medium,profile:dev" --assignee <assignee>
+gh issue create --title "[FEATURE] <title>" --body-file /tmp/issue-body.md --label "enhancement" --assignee <assignee>
+gh issue create --title "[TASK] <title>" --body-file /tmp/issue-body.md --label "maintenance" --assignee <assignee>
 ```
 
 ---
@@ -214,9 +225,11 @@ Additional PR rules:
 - All CI checks must be green before the PR is considered complete
 
 ```bash
-gh pr create --title "<description> (#<number>)" --body "Fixes #<number>"
-gh pr edit <number> --add-assignee <your-github-username> --add-label "component:..."
+gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assignee <github-username>
+gh pr edit <number> --add-assignee <github-username> --add-label "component:..."
 ```
+
+**Critical**: Always pass `--assignee` to `gh pr create`. The PR Validation workflow fires immediately on PR creation. If the assignee is not set at creation time, the "Validate PR Assignee" check will fail on the `opened` event. The fallback two-step (`create` then `gh pr edit`) creates a race condition where the first check run sees no assignee and permanently blocks the PR.
 
 ---
 
