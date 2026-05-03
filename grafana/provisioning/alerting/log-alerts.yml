@@ -21,5 +21,5 @@
 
 # Note: Log-based alerts require Loki as a data source
 # These alerts can be created in Grafana UI using Loki queries
-# Prometheus-based log alerts can be created if using Alloy metrics
+# System-level log metrics (disk, network, CPU) are available via node-exporter and cadvisor
 

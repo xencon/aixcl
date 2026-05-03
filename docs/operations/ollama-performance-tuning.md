@@ -19,7 +19,7 @@ All optimizations are tailored for:
 - **Performance**: High throughput, low switching latency
 - **Status**: Stable, fits within 8GB VRAM
 
-See [`model-recommendations.md`](./model-recommendations.md) for alternative configurations and [`performance-test-results.md`](./performance-test-results.md) for detailed test results.
+See [`model-recommendations.md`](./model-recommendations.md) for alternative configurations.
 
 ## Performance Bottlenecks Identified
 

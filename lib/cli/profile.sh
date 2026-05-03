@@ -37,6 +37,7 @@ declare -A PROFILE_DESCRIPTIONS=(
 # Profile service mappings (Docker-managed services only)
 # Each profile includes runtime core services plus profile-specific services.
 # NOTE: This is now a function to ensure INFERENCE_ENGINE is read after .env loading
+# Vault and bootstrap services are ONLY included in ops and sys profiles.
 get_profile_services_for_profile() {
     local profile="$1"
     # Use current INFERENCE_ENGINE value (may have been updated after .env loading)
@@ -44,10 +45,10 @@ get_profile_services_for_profile() {
     
     case "$profile" in
         usr)
-            echo "$engine vault postgres vault-agent-postgres-bootstrap"
+            echo "$engine postgres"
             ;;
         dev)
-            echo "$engine vault open-webui postgres pgadmin vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
+            echo "$engine open-webui postgres pgadmin"
             ;;
         ops)
             echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"

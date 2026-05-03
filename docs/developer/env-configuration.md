@@ -146,5 +146,4 @@ When switching engines, old model configuration may persist:
 ## See Also
 
 - [Profile Documentation](../architecture/governance/02_profiles.md)
-- [Engine Switching Guide](../operations/engine-switching-test-plan.md)
-- [vLLM Workaround Guide](../operations/vllm-model-download-workaround.md)
+- [Engine Management](../../docs/developer/adding-services.md)
