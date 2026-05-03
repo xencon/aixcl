@@ -6,6 +6,8 @@ labels: ["priority:medium","profile:dev"]
 assignees: ["<assignee>"]
 ---
 
+<!-- IMPORTANT: When creating via CLI, use --body-file or quoted HEREDOC to prevent backtick command substitution. Do not use inline --body with multiline strings containing backticks. -->
+
 ## Bug Summary
 Provide a clear, concise description of the bug.
 
