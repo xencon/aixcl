@@ -12,6 +12,22 @@ echo "=== Open WebUI Non-Root Entrypoint ==="
 echo "Target UID: $USER_ID"
 echo "Target GID: $GROUP_ID"
 
+# Read PostgreSQL password from Vault secrets volume if available
+# This overrides any stale .env password with the Vault-generated secret
+if [ -f /run/secrets/postgres-password ]; then
+    POSTGRES_PASSWORD=$(cat /run/secrets/postgres-password)
+    export POSTGRES_PASSWORD
+    echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
+fi
+
+# Build DATABASE_URL from env vars or defaults, using Vault password if available
+POSTGRES_USER="${POSTGRES_USER:-admin}"
+POSTGRES_DATABASE="${POSTGRES_DATABASE:-webui}"
+export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}"
+
+# Note: Open WebUI uses this DATABASE_URL for its database connection.
+# We reconstruct it here to ensure POSTGRES_PASSWORD reflects the Vault secret.
+
 # Wait for PostgreSQL to be ready before starting Open WebUI
 # This prevents Open WebUI from falling back to SQLite
 if [ -n "${DATABASE_URL:-}" ]; then
