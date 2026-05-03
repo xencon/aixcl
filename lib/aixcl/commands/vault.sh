@@ -55,6 +55,11 @@ function cmd_vault() {
 }
 
 function cmd_vault_init() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile ops or --profile sys to enable Vault."
+        return 1
+    fi
     # Run the idempotent initialization
     local init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
     if [ -f "$init_script" ]; then
@@ -66,6 +71,11 @@ function cmd_vault_init() {
 }
 
 function cmd_vault_status() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile ops or --profile sys to enable Vault."
+        return 1
+    fi
     # Run the status check
     local status_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-status.sh"
     if [ -f "$status_script" ]; then
@@ -77,6 +87,11 @@ function cmd_vault_status() {
 }
 
 function cmd_vault_credentials() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile ops or --profile sys to enable Vault."
+        return 1
+    fi
     # Source existing vault commands
     local vault_commands="${SCRIPT_DIR}/scripts/vault/vault-commands.sh"
     if [ -f "$vault_commands" ]; then
@@ -89,7 +104,30 @@ function cmd_vault_credentials() {
     fi
 }
 
+function cmd_vault_passwords() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile ops or --profile sys to enable Vault."
+        return 1
+    fi
+    # Source existing vault commands
+    local vault_commands="${SCRIPT_DIR}/scripts/vault/vault-commands.sh"
+    if [ -f "$vault_commands" ]; then
+        # shellcheck source=/dev/null
+        source "$vault_commands"
+        vault_passwords
+    else
+        echo "Error: vault-commands.sh not found"
+        return 1
+    fi
+}
+
 function cmd_vault_rotate() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile ops or --profile sys to enable Vault."
+        return 1
+    fi
     echo "Triggering manual credential rotation..."
     
     # Check if Vault is accessible
@@ -239,6 +277,25 @@ function cmd_vault_logs() {
         echo "  ./aixcl stack start --profile sys"
         return 1
     fi
+}
+
+# Check if Vault is enabled in the current profile
+# Reads PROFILE from .env file and checks if vault is in the service list
+vault_is_enabled_in_profile() {
+    local profile=""
+    local env_file="${SCRIPT_DIR}/.env"
+    if [ -f "$env_file" ]; then
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    fi
+    [ -z "$profile" ] && profile="sys"
+    
+    # Check if profile contains vault service
+    local profile_services
+    profile_services=$(get_profile_services_for_profile "$profile" 2>/dev/null)
+    if echo "$profile_services" | grep -qw "vault"; then
+        return 0
+    fi
+    return 1
 }
 
 # Export the main command
