@@ -6,8 +6,22 @@ set -e
 
 echo "=== pgAdmin Non-Root Entrypoint ==="
 
+# Read Vault secrets if available
+if [ -f /run/secrets/pgadmin-password ]; then
+    PGADMIN_DEFAULT_PASSWORD=$(cat /run/secrets/pgadmin-password)
+    export PGADMIN_DEFAULT_PASSWORD
+    echo "[Vault] pgAdmin root password loaded from /run/secrets/pgadmin-password"
+fi
+
+# Read PostgreSQL password for connection in servers.json
+PG_CONNECT_PASSWORD="admin"
+if [ -f /run/secrets/postgres-password ]; then
+    PG_CONNECT_PASSWORD=$(cat /run/secrets/postgres-password)
+    echo "[Vault] PostgreSQL connection password loaded from /run/secrets/postgres-password"
+fi
+
 # Create the servers.json file with proper permissions (required for pgAdmin to connect to PostgreSQL)
-cat > /pgadmin4/servers.json << 'EOF'
+cat > /pgadmin4/servers.json << EOF
 {
   "Servers": {
     "1": {
@@ -17,7 +31,7 @@ cat > /pgadmin4/servers.json << 'EOF'
       "Port": 5432,
       "MaintenanceDB": "postgres",
       "Username": "admin",
-      "Password": "admin",
+      "Password": "${PG_CONNECT_PASSWORD}",
       "SSLMode": "prefer",
       "Favorite": true
     }
