@@ -4,6 +4,19 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Shared Container Lifecycle Utilities**: New `lib/core/service_utils.sh` module with `container_start()`, `container_stop()`, `container_restart()` (#968)
+- **Vault Lifecycle Commands**: `./aixcl vault start|stop|restart` now available, using same code path as `stack service` (#968)
+
+### Refactored
+
+- **Stack Service Delegation**: `start_service()` and `stop_service()` in `lib/aixcl/commands/stack.sh` now delegate to shared `service_utils.sh` (#968)
+
+### Documentation
+
+- **Issue Creation Safety**: Templates updated with `--body-file` warnings; DEVELOPMENT.md shows safe `--body-file` patterns; `workflow-guard` skill validates issue body cleanliness (#970)
+
 ## [v1.1.1] - 2026-05-03
 
 ### Summary
