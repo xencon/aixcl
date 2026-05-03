@@ -4,6 +4,31 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.1] - 2026-05-03
+
+### Summary
+
+Simplification release — Vault is now optional in `usr` and `dev` profiles. Documentation cleaned up per lean repository policy.
+
+### Changed
+
+- **Profile-Gated Vault**: Vault and bootstrap containers are no longer started in `usr` and `dev` profiles (#960)
+  - `usr`: ollama, postgres only (2 services)
+  - `dev`: ollama, open-webui, postgres, pgadmin only (4 services)
+  - `ops` and `sys`: still include full Vault stack
+- **Vault CLI Commands**: `./aixcl vault <cmd>` now shows "Vault not enabled" message when profile lacks Vault
+
+### Fixed
+
+- **Grafana Comment**: Removed stale Alloy reference from log-alerts.yml (#962)
+
+### Documentation
+
+- **Docs Audit**: Deleted 17 stale, dated, or generated files (#961)
+  - Removed: reports, test plans, compliance analyses, agent templates, monitoring assessments
+  - Removed all Alloy references from remaining docs
+  - No Alloy mentions remain in docs/ directory
+
 ## [v1.1.0] - 2026-05-03
 
 ### Summary
