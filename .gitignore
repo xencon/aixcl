@@ -76,6 +76,11 @@ tests/*-results.md
 *.bak*
 *.orig
 
+# PR and issue body drafts (generated from templates)
+.github/*-body-*.md
+.github/*-pr-body-*.md
+pr-body-simple.txt
+
 # Compiled files
 *.out
 *.o
