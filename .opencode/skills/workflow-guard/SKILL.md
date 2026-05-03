@@ -20,6 +20,9 @@ Validates that all actions comply with the Issue-First development workflow befo
 - [ ] Issue is assigned to someone
 - [ ] Issue has appropriate labels (component:* required)
 - [ ] Issue title follows format: `[TYPE] Description` (no colons)
+- [ ] **Issue body is clean** — no shell command output, no backtick artifacts, no garbled CLI text
+  - *Prevention*: When creating via `gh issue create`, always use `--body-file` with a file, or a quoted HEREDOC (`cat << 'EOF'`). Never use inline `--body` with multiline strings containing backticks.
+  - *Detection*: If body contains strings like "Error:", "Usage:", log timestamps (e.g., "2024-01-01T..."), or container IDs (64-char hex), reject as garbled.
 
 ### 2. Branch Requirements
 - [ ] Branch format: `issue-<number>/<short-description>`
@@ -77,6 +80,18 @@ The following workflow transitions ALWAYS require human approval:
 gh issue view <number> --json number,title,state,assignees,labels
 ```
 
+### Check Issue Body Cleanliness (prevent backtick injection)
+```bash
+# Check for garbled body: shell output, error messages, container IDs, timestamps
+gbody=$(gh issue view <number> --json body -q '.body')
+# Reject if body contains shell artifacts
+if echo "$gbody" | grep -Eq '(Error:|Usage:|podman stop|^[a-f0-9]{64}$|20[0-9]{2}-[0-9]{2}-[0-9]{2}T)'; then
+  echo "REJECT: Issue body appears garbled (backtick command substitution or shell output injected)"
+  echo "Remediation: Recreate with --body-file or quoted HEREDOC"
+  exit 1
+fi
+```
+
 ### Check Branch Origin
 ```bash
 git log --oneline dev..HEAD | tail -1  # Should be empty (branched from dev)
@@ -132,6 +147,7 @@ This skill is automatically invoked by:
 |------|--------|-------------|
 | Issue-first | AGENTS.md | Block execution without valid issue |
 | No colons in titles | DEVELOPMENT.md | Reject malformed titles |
+| Clean issue body | workflow-guard skill | Reject garbled body (backtick injection) |
 | Branch from dev | AGENTS.md | Reject branches from main |
 | Component labels required | workflow-governance.md | Reject unlabeled PRs |
 | Assignee required | workflow-governance.md | Reject unassigned PRs |
