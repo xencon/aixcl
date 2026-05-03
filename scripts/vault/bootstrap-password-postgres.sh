@@ -15,7 +15,7 @@ fetch_bootstrap_password() {
     log "Fetching PostgreSQL bootstrap password from Vault KV..."
     
     # Use wget to read from KV store (curl not available in Vault image)
-    local response
+response
     response=$(wget -qO- "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
         --header="X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
     
@@ -26,7 +26,7 @@ fetch_bootstrap_password() {
     
     # Extract password using basic shell (no jq needed)
     # Handle both "password": "value" and "password":"value" formats
-    local password
+password
     password=$(echo "$response" | grep -o '"password"[^,}]*' | head -1 | sed 's/"password"[[:space:]]*:[[:space:]]*"//;s/"$//')
     
     if [ -z "$password" ]; then
