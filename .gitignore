@@ -118,3 +118,6 @@ context/
 *.sqlite
 *.sqlite3
 export/
+
+# Generated SSL/certificates
+.security/
