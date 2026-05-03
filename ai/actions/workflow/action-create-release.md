@@ -99,35 +99,34 @@ echo "✅ Version $RELEASE_VERSION validated"
 ### Step 4: Generate Release Notes
 
 ```bash
-# Read template
-TEMPLATE=$(cat ai/templates/release/release_notes.md)
+# Read current and previous tag names
+LATEST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "v0.0.0")
 
-# Extract from CHANGELOG
-UNRELEASED=$(sed -n '/^## \[Unreleased\]/,/^## \[v/p' CHANGELOG.md | head --1 | tail -n +2)
+# Extract Unreleased section from CHANGELOG — first line is the summary
+CHANGELOG_SUMMARY=$(sed -n '/^## \[Unreleased\]/,/^## \[v/p' CHANGELOG.md | grep -v "^## " | grep -v "^###" | grep "^$" | head -1)
 
-# Parse sections
-SECURITY=$(echo "$UNRELEASED" | sed -n '/### Security/,/### /p' | head --1 | tail -n +2)
-ADDED=$(echo "$UNRELEASED" | sed -n '/### Added/,/### /p' | head --1 | tail -n +2)
-CHANGED=$(echo "$UNRELEASED" | sed -n '/### Changed/,/### /p' | head --1 | tail -n +2)
-FIXED=$(echo "$UNRELEASED" | sed -n '/### Fixed/,/### /p' | head --1 | tail -n +2)
+# Generate release notes in unified format
+RELEASE_NOTES="## AIXCL $RELEASE_VERSION
 
-# Generate draft
-RELEASE_NOTES="# Release $RELEASE_VERSION
+**$CHANGELOG_SUMMARY**
 
-## Summary
-$(echo "$UNRELEASED" | grep -v "^###" | grep -v "^$" | head -1)
+### What's New in $RELEASE_VERSION
 
-## Security
-$SECURITY
+$(sed -n '/^## \[Unreleased\]/,/^## \[v/p' CHANGELOG.md | sed 's/^### /#### /' | grep -v "^## \[" | grep -v "^---$" | grep -v "^$(date +%Y-%m-%d)$" | sed 's/^- /- ✅ /')
 
-## Added
-$ADDED
+### Installation
 
-## Changed
-$CHANGED
+\`\`\`bash
+git clone https://github.com/xencon/aixcl.git
+cd aixcl
+./aixcl utils check-env
+./aixcl stack start --profile usr
+\`\`\`
 
-## Fixed
-$FIXED
+### Documentation
+- [Getting Started](README.md)
+- [Development Workflow](DEVELOPMENT.md)
+- [Changelog](CHANGELOG.md)
 
 ---
 
