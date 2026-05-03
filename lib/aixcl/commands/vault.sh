@@ -25,6 +25,9 @@ function cmd_vault() {
         rotate)
             cmd_vault_rotate "$@"
             ;;
+        logs)
+            cmd_vault_logs "$@"
+            ;;
         *)
             echo "AIXCL Vault Management"
             echo ""
@@ -36,12 +39,15 @@ function cmd_vault() {
             echo "  credentials  View generated dynamic credentials"
             echo "  passwords    View static bootstrap passwords (from Vault KV)"
             echo "  rotate       Manually trigger credential rotation"
+            echo "  logs [n]     View Vault container logs (default: 50 lines)"
             echo ""
             echo "Examples:"
             echo "  ./aixcl vault init          # Initialize Vault on first run"
             echo "  ./aixcl vault status        # Check if Vault is ready"
             echo "  ./aixcl vault credentials   # View service credentials"
             echo "  ./aixcl vault passwords     # View bootstrap passwords"
+            echo "  ./aixcl vault logs          # View last 50 log lines"
+            echo "  ./aixcl vault logs 100      # View last 100 log lines"
             echo ""
             return 1
             ;;
@@ -207,6 +213,34 @@ function cmd_vault_passwords() {
     echo ""
 }
 
+function cmd_vault_logs() {
+    # Show Vault container logs, consistent with stack logs behavior
+    local tail_count="${1:-50}"
+    local container_name="vault"
+    
+    # Validate tail count
+    if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
+        echo "Error: Log line count must be a number between 1 and 10000"
+        return 1
+    fi
+    
+    # Check if container exists (running or stopped)
+    local actual_container
+    actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$" | head -1)
+    
+    if [ -n "$actual_container" ]; then
+        echo "Fetching logs for Vault (last $tail_count lines)..."
+        echo ""
+        "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
+    else
+        echo "Error: Vault container not found"
+        echo ""
+        echo "Vault may not be running. Start the stack with:"
+        echo "  ./aixcl stack start --profile sys"
+        return 1
+    fi
+}
+
 # Export the main command
 export -f cmd_vault
 export -f cmd_vault_init
@@ -214,3 +248,4 @@ export -f cmd_vault_status
 export -f cmd_vault_credentials
 export -f cmd_vault_passwords
 export -f cmd_vault_rotate
+export -f cmd_vault_logs
