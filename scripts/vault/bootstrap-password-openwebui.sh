@@ -15,18 +15,16 @@ fetch_bootstrap_password() {
     log "Fetching Open WebUI bootstrap password from Vault KV..."
     
     # Use wget to read from KV store (curl not available in Vault image)
-response
     response=$(wget -qO- "${VAULT_ADDR}/v1/kv/data/bootstrap/openwebui" \
         --header="X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
+    wget_exit=$?
     
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
+    if [ $wget_exit -ne 0 ] || [ -z "$response" ]; then
         log "Failed to fetch bootstrap password from Vault KV"
         return 1
     fi
     
     # Extract password using basic shell (no jq needed)
-    # Handle both "password": "value" and "password":"value" formats
-password
     password=$(echo "$response" | grep -o '"password"[^,}]*' | head -1 | sed 's/"password"[[:space:]]*:[[:space:]]*"//;s/"$//')
     
     if [ -z "$password" ]; then
@@ -35,9 +33,18 @@ password
     fi
     
     # Write to shared volume
-    mkdir -p /run/secrets
-    echo "$password" > /run/secrets/openwebui-password
-    chmod 600 /run/secrets/openwebui-password
+    mkdir -p /run/secrets || {
+        log "ERROR: Cannot create /run/secrets directory"
+        return 1
+    }
+    if ! echo "$password" > /run/secrets/openwebui-password; then
+        log "ERROR: Cannot write /run/secrets/openwebui-password"
+        return 1
+    fi
+    if ! chmod 600 /run/secrets/openwebui-password; then
+        log "ERROR: Cannot chmod /run/secrets/openwebui-password"
+        return 1
+    fi
     
     log "Bootstrap password written to /run/secrets/openwebui-password"
 }

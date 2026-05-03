@@ -15,18 +15,16 @@ fetch_bootstrap_password() {
     log "Fetching PostgreSQL bootstrap password from Vault KV..."
     
     # Use wget to read from KV store (curl not available in Vault image)
-response
     response=$(wget -qO- "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
         --header="X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
+    wget_exit=$?
     
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
+    if [ $wget_exit -ne 0 ] || [ -z "$response" ]; then
         log "Failed to fetch bootstrap password from Vault KV"
         return 1
     fi
     
     # Extract password using basic shell (no jq needed)
-    # Handle both "password": "value" and "password":"value" formats
-password
     password=$(echo "$response" | grep -o '"password"[^,}]*' | head -1 | sed 's/"password"[[:space:]]*:[[:space:]]*"//;s/"$//')
     
     if [ -z "$password" ]; then
@@ -35,10 +33,18 @@ password
     fi
     
     # Write to shared volume
-    mkdir -p /run/secrets
-    echo "$password" > /run/secrets/postgres-password
-    # PostgreSQL runs as user 999 (postgres), make file readable
-    chmod 644 /run/secrets/postgres-password
+    mkdir -p /run/secrets || {
+        log "ERROR: Cannot create /run/secrets directory"
+        return 1
+    }
+    if ! echo "$password" > /run/secrets/postgres-password; then
+        log "ERROR: Cannot write /run/secrets/postgres-password"
+        return 1
+    fi
+    if ! chmod 644 /run/secrets/postgres-password; then
+        log "ERROR: Cannot chmod /run/secrets/postgres-password"
+        return 1
+    fi
     
     log "Bootstrap password written to /run/secrets/postgres-password"
 }

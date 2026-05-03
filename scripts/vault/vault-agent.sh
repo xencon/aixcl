@@ -14,16 +14,15 @@ fetch_credentials() {
     log "Fetching credentials..."
     
     # Use vault binary to read credentials
-output
     output=$(vault read -format=json database/creds/aixcl-app 2>&1)
+    vault_exit=$?
     
-    if [ $? -ne 0 ]; then
+    if [ $vault_exit -ne 0 ]; then
         log "Failed to fetch credentials: $output"
         return 1
     fi
     
     # Extract using basic shell string manipulation (no jq needed)
-username password
     username=$(echo "$output" | grep '"username"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
     password=$(echo "$output" | grep '"password"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
     
