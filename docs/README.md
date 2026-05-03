@@ -23,7 +23,6 @@ Documentation for operations and performance tuning:
 - [`ollama-performance-tuning.md`](operations/ollama-performance-tuning.md) - Detailed Ollama performance tuning guide
 - [`ollama-tuning-summary.md`](operations/ollama-tuning-summary.md) - Executive summary of Ollama optimizations
 - [`model-recommendations.md`](operations/model-recommendations.md) - Model size recommendations and configurations
-- [`performance-test-results.md`](operations/performance-test-results.md) - Performance test results and analysis
 
 ### Architecture Documentation (`architecture/`)
 Documentation about system architecture and design:

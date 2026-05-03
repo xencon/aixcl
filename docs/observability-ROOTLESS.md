@@ -71,13 +71,13 @@ Access logs directly via CLI:
 
 ## Why This Happens
 
-- **Alloy** (log shipper) requires Docker socket or journal access
+- Loki (log aggregation) may have limited access to container logs in rootless mode
 - Rootless Podman uses user-scoped journal (not accessible from containers)
-- File-based log collection is limited
+- File-based log collection depends on container engine configuration
 
 ## Future Improvements
 
 Consider:
-- Running Alloy on host instead of container
-- Configuring Podman to use file-based logging
-- Using `podman logs` command for log access
+- Configuring Podman to use file-based logging for better Loki integration
+- Using `./aixcl stack logs <service>` command for direct log access
+- Using `podman logs` command for container log access
