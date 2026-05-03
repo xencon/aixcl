@@ -804,13 +804,7 @@ function start_service() {
     fi
     
     local service="$1"
-    local force_recreate="${2:-false}"  # Optional second parameter to force recreate
-
-    # Resolve 'engine' alias
-    local actual_service="$service"
-    if [[ "$service" == "engine" ]]; then
-        actual_service=$(get_container_name "engine")
-    fi
+    local force_recreate="${2:-false}"
     
     # Validate service name
     if ! is_valid_service "$service"; then
@@ -823,83 +817,8 @@ function start_service() {
         return 1
     fi
     
-    local container_name
-    container_name=$(get_container_name "$service")
-    
-    # Set up compose command with GPU detection
-    set_compose_cmd
-    
-    # Check if service is already running (handle both exact name and hash-prefixed names)
-    if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
-        log_info "Service '$service' is already running."
-        return 0
-    fi
-    
-    # Remove any existing containers (running or stopped) to avoid ContainerConfig errors
-    # This is especially important after rebuilds when docker-compose tries to recreate containers
-    log_info "Cleaning up any existing containers for $actual_service..."
-    run_compose rm -f "$actual_service" 2>/dev/null || true
-    
-    # Also remove hash-prefixed containers directly via docker (handles edge cases)
-    local hash_prefixed
-    hash_prefixed=$("${DOCKER_BIN:-docker}" ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}') || true
-    if [ -n "$hash_prefixed" ]; then
-        echo "Removing hash-prefixed containers to avoid docker-compose issues..."
-        echo "$hash_prefixed" | while read -r container_id; do
-            "${DOCKER_BIN:-docker}" rm -f "$container_id" 2>/dev/null || true
-        done
-    fi
-    
-    # Remove container by exact name if it exists
-    "${DOCKER_BIN:-docker}" rm -f "$container_name" 2>/dev/null || true
-    
-    log_info "Starting service: $service..."
-    
-    # Check for .env file if needed (for services that require it)
-    if [ ! -f "${SCRIPT_DIR}/.env" ] && { [ "$service" = "open-webui" ] || [ "$service" = "postgres" ] || [ "$service" = "pgadmin" ]; }; then
-        if [ -f "${SCRIPT_DIR}/config/.env.example" ]; then
-            log_warning ".env file not found. Copying from config/.env.example..."
-            cp "${SCRIPT_DIR}/config/.env.example" "${SCRIPT_DIR}/.env"
-            load_env_file "${SCRIPT_DIR}/.env"
-        else
-            log_error ".env file required for service '$service'"
-            return 1
-        fi
-    fi
-    
-    # Generate pgAdmin configuration if starting pgadmin
-    if [ "$service" = "pgadmin" ]; then
-        generate_pgadmin_config
-    fi
-    
-    # Start the specific service
-    # Use --force-recreate if explicitly requested (e.g., after a rebuild)
-    if [ "$force_recreate" = "true" ]; then
-        if run_compose up -d --force-recreate --no-deps "$actual_service"; then
-            log_success "Successfully started service: $service (recreated)"
-        else
-            log_error "Failed to start service: $service"
-            return 1
-        fi
-    else
-        if run_compose up -d "$actual_service"; then
-            log_success "Successfully started service: $service"
-        else
-            log_error "Failed to start service: $service"
-            return 1
-        fi
-    fi
-    
-    # Wait a moment for the service to initialize
-    sleep 2
-    
-    # Check if the container is actually running (handle both exact name and hash-prefixed names)
-    if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
-        log_info "Service '$service' is now running."
-    else
-        log_warning "Service '$service' may not have started correctly. Check logs with: $0 logs $service"
-    fi
-    return 0
+    # Delegate to shared utility
+    container_start "$service" "$force_recreate"
 }
 
 function stop_service() {
@@ -915,12 +834,6 @@ function stop_service() {
     fi
     
     local service="$1"
-
-    # Resolve 'engine' alias
-    local actual_service="$service"
-    if [[ "$service" == "engine" ]]; then
-        actual_service=$(get_container_name "engine")
-    fi
     
     # Validate service name
     if ! is_valid_service "$service"; then
@@ -933,34 +846,8 @@ function stop_service() {
         return 1
     fi
     
-    local container_name
-    container_name=$(get_container_name "$service")
-    
-    # Check if service is running
-    if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
-        log_info "Service '$service' is not running."
-        return 0
-    fi
-    
-    # Set up compose command with GPU detection
-    set_compose_cmd
-    
-    log_info "Stopping service: $service..."
-    
-    # Stop the specific service
-    if run_compose stop "$actual_service"; then
-        log_success "Successfully stopped service: $service"
-        
-        # Clean up pgAdmin configuration if stopping pgadmin
-        if [ "$service" = "pgadmin" ] && [ -f "pgadmin-servers.json" ]; then
-            rm -f pgadmin-servers.json
-            log_info "Cleaned up pgAdmin configuration file"
-        fi
-        return 0
-    else
-        log_error "Failed to stop service: $service"
-        return 1
-    fi
+    # Delegate to shared utility
+    container_stop "$service"
 }
 
 function service() {
