@@ -4,6 +4,8 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.2] - 2026-05-03
+
 ### Added
 
 - **Shared Container Lifecycle Utilities**: New `lib/core/service_utils.sh` module with `container_start()`, `container_stop()`, `container_restart()` (#968)
@@ -16,6 +18,7 @@ All notable changes to the AIXCL project will be documented in this file.
 ### Documentation
 
 - **Issue Creation Safety**: Templates updated with `--body-file` warnings; DEVELOPMENT.md shows safe `--body-file` patterns; `workflow-guard` skill validates issue body cleanliness (#970)
+- **PR Validation Race Condition**: DEVELOPMENT.md updated to always pass `--assignee` to `gh pr create` and warn about the race condition (#972)
 
 ## [v1.1.1] - 2026-05-03
 
