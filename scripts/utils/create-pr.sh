@@ -37,6 +37,9 @@ if ! echo "$TITLE" | grep -qE '\(#[0-9]+\)$'; then
     exit 1
 fi
 
+# Extract issue number from title (just the number, no #)
+ISSUE_NUM=$(echo "$TITLE" | grep -oE '[0-9]+' | tail -1)
+
 # Validate branch name
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [[ ! "$BRANCH" =~ ^issue-[0-9]+/ ]]; then
@@ -53,13 +56,26 @@ if [[ -z "$ASSIGNEE" ]]; then
     exit 1
 fi
 
-# Create body file in /tmp
+# Read PR template and substitute issue number
+TEMPLATE_FILE="${SCRIPT_DIR}/.github/PULL_REQUEST_TEMPLATE.md"
 BODY_FILE="$(mktemp /tmp/aixcl-pr-XXXXXX.md)"
 trap 'rm -f "$BODY_FILE"' EXIT
 
-cat > "$BODY_FILE" <<EOF
+if [[ -f "$TEMPLATE_FILE" ]]; then
+    # Replace placeholder with actual issue reference
+    sed "s/#<ISSUE_NUMBER>/${ISSUE_NUM}/g" "$TEMPLATE_FILE" > "$BODY_FILE"
+    # Append any additional body content if provided
+    if [[ -n "$BODY" ]]; then
+        echo "" >> "$BODY_FILE"
+        echo "## Additional Notes" >> "$BODY_FILE"
+        echo "" >> "$BODY_FILE"
+        echo "$BODY" >> "$BODY_FILE"
+    fi
+else
+    cat > "$BODY_FILE" <<EOF
 ${BODY}
 EOF
+fi
 
 echo "Creating PR: $TITLE"
 echo "  Branch: $BRANCH → $BASE"
