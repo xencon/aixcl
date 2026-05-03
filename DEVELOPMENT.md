@@ -225,9 +225,11 @@ Additional PR rules:
 - All CI checks must be green before the PR is considered complete
 
 ```bash
-gh pr create --title "<description> (#<number>)" --body "Fixes #<number>"
-gh pr edit <number> --add-assignee <your-github-username> --add-label "component:..."
+gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assignee <github-username>
+gh pr edit <number> --add-assignee <github-username> --add-label "component:..."
 ```
+
+**Critical**: Always pass `--assignee` to `gh pr create`. The PR Validation workflow fires immediately on PR creation. If the assignee is not set at creation time, the "Validate PR Assignee" check will fail on the `opened` event. The fallback two-step (`create` then `gh pr edit`) creates a race condition where the first check run sees no assignee and permanently blocks the PR.
 
 ---
 
