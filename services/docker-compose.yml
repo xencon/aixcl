@@ -494,22 +494,6 @@ services:
       - vault-agent-postgres
     restart: unless-stopped
 
-  vault-agent-postgres:
-    image: hashicorp/vault:1.18
-    container_name: vault-agent-postgres
-    pull_policy: missing
-    environment:
-      VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: aixcl-dev-token
-    volumes:
-      - /tmp/aixcl-secrets:/tmp/vault-secrets
-      - ../scripts/vault/vault-agent.sh:/app/agent.sh:ro
-    command: sh /app/agent.sh
-    network_mode: host
-    depends_on:
-      - vault
-    restart: unless-stopped
-
   nvidia-gpu-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:4.5.2-4.8.1-ubuntu22.04
     container_name: nvidia-gpu-exporter
