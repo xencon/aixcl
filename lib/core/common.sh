@@ -77,6 +77,7 @@ ALL_SERVICES=(
     "vault"
     "vault-agent-postgres-bootstrap"
     "vault-agent-openwebui-bootstrap"
+    "vault-agent-pgadmin-bootstrap"
 )
 
 # Function to validate service name

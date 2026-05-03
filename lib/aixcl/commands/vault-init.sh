@@ -167,6 +167,19 @@ init_bootstrap_passwords() {
         log_info "Open WebUI bootstrap password already exists in Vault KV (skipping)"
     fi
     
+    # pgAdmin bootstrap password
+    if ! bootstrap_password_exists "pgadmin"; then
+        # Generate random password for pgAdmin
+        local random_password
+        random_password=$(generate_password 32)
+        store_bootstrap_password "pgadmin" "$random_password" "pgAdmin admin password (auto-generated)"
+        
+        # Show the generated password
+        log_info "Generated pgAdmin bootstrap password: ${random_password}"
+    else
+        log_info "pgAdmin bootstrap password already exists in Vault KV (skipping)"
+    fi
+    
     log_info "Bootstrap passwords initialized"
 }
 
@@ -539,8 +552,11 @@ show_summary() {
     fi
     
     # Warn about .env passwords if they still exist
-    local env_file="${SCRIPT_DIR}/.env"
-    if [ -f "$env_file" ]; then
+    local env_file=""
+    if [ -n "${SCRIPT_DIR:-}" ]; then
+        env_file="${SCRIPT_DIR}/.env"
+    fi
+    if [ -n "$env_file" ] && [ -f "$env_file" ]; then
         if grep -q "^POSTGRES_PASSWORD=\|^OPENWEBUI_PASSWORD=" "$env_file" 2>/dev/null; then
             log_warn "NOTE: Passwords still exist in .env file"
             log_warn "      Run the following to complete migration:"

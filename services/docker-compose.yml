@@ -62,16 +62,124 @@ services:
       - SETUID
       - SETGID
     volumes:
-      - ../scripts/vault/init-vault.sh:/init.sh:ro
+      - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
-    command: /bin/sh /init.sh
+    command: /usr/local/bin/init-vault.sh
     network_mode: host
     depends_on:
       vault:
         condition: service_healthy
     restart: "no"
+
+  # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
+  vault-agent-postgres:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    volumes:
+      - ../vault/agent-config:/etc/vault:ro
+      - ../scripts/vault/vault-agent.sh:/usr/local/bin/vault-agent.sh:ro
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    command: /usr/local/bin/vault-agent.sh postgres
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Vault Agent sidecar for Open WebUI (runs alongside open-webui)
+  vault-agent-openwebui:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-openwebui
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    volumes:
+      - ../vault/agent-config:/etc/vault:ro
+      - ../scripts/vault/vault-agent-openwebui.sh:/usr/local/bin/vault-agent-openwebui.sh:ro
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    command: /usr/local/bin/vault-agent-openwebui.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Bootstrap service for PostgreSQL Vault KV password
+  vault-agent-postgres-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-postgres-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    volumes:
+      - ../scripts/vault/bootstrap-password-postgres.sh:/usr/local/bin/bootstrap-password-postgres.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /usr/local/bin/bootstrap-password-postgres.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Bootstrap service for Open WebUI Vault KV password
+  vault-agent-openwebui-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-openwebui-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    volumes:
+      - ../scripts/vault/bootstrap-password-openwebui.sh:/usr/local/bin/bootstrap-password-openwebui.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /usr/local/bin/bootstrap-password-openwebui.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+  # Bootstrap service for pgAdmin Vault KV password
+  vault-agent-pgadmin-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-pgadmin-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    volumes:
+      - ../scripts/vault/bootstrap-password-pgadmin.sh:/usr/local/bin/bootstrap-password-pgadmin.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /usr/local/bin/bootstrap-password-pgadmin.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
 
   postgres:
     image: docker.io/postgres:17.9
@@ -179,16 +287,14 @@ services:
     pull_policy: missing
     user: "0:0"
     volumes:
-      - aixcl-open-webui:/app/backend/data
+      - aixcl-open-webui-main:/app/backend/data
       - aixcl-open-webui-data:/app/data
-      - ../scripts/runtime/openwebui-v2.sh:/app/backend/openwebui.sh
+      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
-      - ../scripts/runtime/openwebui-vault-entrypoint.sh:/usr/local/bin/openwebui-vault-entrypoint.sh:ro
-      - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
     environment:
       - DATA_DIR=/app/data
       - STATIC_DIR=/app/backend/data/static
-      - DATABASE_URL_FILE=/tmp/vault-secrets/openwebui-db-creds
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE:-webui}
       - WEBUI_NAME=AIXCL
       - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
       - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
@@ -207,10 +313,9 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
-      - vault-agent-openwebui
     network_mode: host
     restart: always
-    entrypoint: ["/usr/local/bin/openwebui-vault-entrypoint.sh"]
+    entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
     command: []
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/health > /dev/null 2>&1 || curl -f http://127.0.0.1:8080/ > /dev/null 2>&1"]
@@ -218,58 +323,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  vault-agent-openwebui:
-    image: hashicorp/vault:1.18
-    container_name: vault-agent-openwebui
-    pull_policy: missing
-    environment:
-      VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: aixcl-dev-token
-    volumes:
-      - /tmp/aixcl-secrets:/tmp/vault-secrets
-      - ../scripts/vault/vault-agent-openwebui.sh:/app/agent.sh:ro
-    command: sh /app/agent.sh
-    network_mode: host
-    depends_on:
-      - vault
-    restart: unless-stopped
-
-  # Vault Agent for PostgreSQL bootstrap password (from KV store)
-  vault-agent-postgres-bootstrap:
-    image: hashicorp/vault:1.18
-    container_name: vault-agent-postgres-bootstrap
-    pull_policy: missing
-    user: "0:0"
-    environment:
-      VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: aixcl-dev-token
-    volumes:
-      - ../scripts/vault/bootstrap-password-postgres.sh:/app/bootstrap.sh:ro
-      - aixcl-vault-secrets:/run/secrets
-    command: sh /app/bootstrap.sh
-    network_mode: host
-    depends_on:
-      - vault
-    restart: unless-stopped
-
-  # Vault Agent for Open WebUI bootstrap password (from KV store)
-  vault-agent-openwebui-bootstrap:
-    image: hashicorp/vault:1.18
-    container_name: vault-agent-openwebui-bootstrap
-    pull_policy: missing
-    user: "0:0"
-    environment:
-      VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: aixcl-dev-token
-    volumes:
-      - ../scripts/vault/bootstrap-password-openwebui.sh:/app/bootstrap.sh:ro
-      - aixcl-vault-secrets:/run/secrets
-    command: sh /app/bootstrap.sh
-    network_mode: host
-    depends_on:
-      - vault
-    restart: unless-stopped
 
   pgadmin:
     image: docker.io/dpage/pgadmin4:9.14.0
@@ -287,7 +340,7 @@ services:
       PGADMIN_GROUP_ID: "5050"
     volumes:
       - aixcl-pgadmin-storage:/var/lib/pgadmin/storage
-      - aixcl-pgadmin:/var/lib/pgadmin
+      - aixcl-pgadmin-main:/var/lib/pgadmin
       - ../logs/pgadmin:/var/log/pgadmin
       - ../pgadmin-servers.json:/pgadmin4/servers.json
       - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
@@ -425,7 +478,7 @@ services:
     image: docker.io/prometheuscommunity/postgres-exporter:v0.19.1
     container_name: postgres-exporter
     pull_policy: missing
-    user: "65534:65534"
+    user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
     cap_drop:
       - ALL
     security_opt:
@@ -433,10 +486,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
-    volumes:
-      - /tmp/aixcl-secrets:/tmp/vault-secrets:ro
-      - /home/sbadakhc/src/github.com/xencon/aixcl/scripts/vault/postgres-exporter-vault.sh:/usr/local/bin/entrypoint.sh:ro
-    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=require"
     network_mode: host
     depends_on:
       - postgres
@@ -498,40 +549,76 @@ services:
       timeout: 10s
       retries: 3
 
-  # External named volumes for persistence across contexts
-  # These volumes are shared between local Docker, devcontainer, and GitHub Codespaces
-  # Using external: true ensures volumes are created once and reused
+  # SECURITY NOTE: Alloy requires Docker socket access for container log discovery.
+  # Docker socket access grants full root access on the host. Security mitigations applied:
+  # - Runs as alloy user (UID 12345) via entrypoint with docker group membership
+  # - Read-only root filesystem prevents runtime modifications
+  # - cap_drop: ALL with SETUID cap_add (allows su for user switching)
+  # - Writable data volume for Alloy state, tmpfs for temporary files
+  # - All bind mounts are read-only (:ro suffix)
+  # - Docker socket path auto-detected (supports rootless via DOCKER_SOCK env var)
+  # See docs/operations/security.md section 6 for details.
+  alloy:
+    image: docker.io/grafana/alloy:v1.15.0
+    container_name: alloy
+    pull_policy: missing
+    # Run as root to read protected log files and access docker socket
+    user: "0:0"
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      # Use tmpfs for Alloy data to avoid permission issues with named volumes
+      - /data-alloy:noexec,nosuid,size=100m
+    volumes:
+      - ../alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ../scripts/runtime/alloy-entrypoint.sh:/usr/local/bin/alloy-entrypoint.sh:ro
+    entrypoint: /usr/local/bin/alloy-entrypoint.sh
+    environment:
+      - DOCKER_GID=${DOCKER_GID:-989}
+    network_mode: host
+    depends_on:
+      - loki
+    restart: unless-stopped
 
 volumes:
   aixcl-ollama-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-hf-cache:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-vllm-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-llamacpp-data:
-    external: true
-  aixcl-open-webui:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
+  aixcl-open-webui-main:
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-open-webui-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgdata:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-prometheus:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-grafana:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-loki:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
+  aixcl-alloy-data:
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-alertmanager-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgadmin-storage:
-    external: true
-  aixcl-pgadmin:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
+  aixcl-pgadmin-main:
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-pgadmin-config:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-vault-data:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
   aixcl-vault-secrets:
-    external: true
+    # external: true  # Disabled: volumes created automatically by compose
