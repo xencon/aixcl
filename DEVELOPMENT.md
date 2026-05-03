@@ -78,6 +78,8 @@ gh issue create --title "[FEATURE] <title>" --body-file /tmp/issue-body.md --lab
 gh issue create --title "[TASK] <title>" --body-file /tmp/issue-body.md --label "maintenance" --assignee <assignee>
 ```
 
+**Recommended**: Use the wrapper script `./scripts/utils/create-issue.sh` which handles validation, uses `/tmp`, and prevents both backtick injection and assignee race conditions.
+
 ---
 
 ## 3. Branch Strategy
@@ -230,6 +232,8 @@ gh pr edit <number> --add-assignee <github-username> --add-label "component:..."
 ```
 
 **Critical**: Always pass `--assignee` to `gh pr create`. The PR Validation workflow fires immediately on PR creation. If the assignee is not set at creation time, the "Validate PR Assignee" check will fail on the `opened` event. The fallback two-step (`create` then `gh pr edit`) creates a race condition where the first check run sees no assignee and permanently blocks the PR.
+
+**Recommended**: Use the wrapper script `./scripts/utils/create-pr.sh` which validates the title format, validates the branch name, uses `/tmp` for body files, and always passes `--assignee` at creation time.
 
 ---
 
