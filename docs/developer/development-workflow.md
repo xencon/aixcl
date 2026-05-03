@@ -156,7 +156,7 @@ Labels are organized into categories using prefixes:
 - `component:runtime-core` - Runtime core services (Ollama, OpenCode)
 - `component:ollama` - Ollama LLM inference engine
 - `component:persistence` - Database and persistence services
-- `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki, Alloy)
+- `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki)
 - `component:ui` - User interface components (Open WebUI)
 - `component:cli` - Command-line interface and tooling
 - `component:infrastructure` - Infrastructure and deployment (Docker, profiles, configuration)
