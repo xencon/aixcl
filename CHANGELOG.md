@@ -4,6 +4,37 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.0] - 2026-05-03
+
+### Summary
+
+Release v1.1.0 - Vault integration hardening and observability cleanup. This release includes 9 commits focusing on Vault secrets volume mounting, Alpine container compatibility, and removal of deprecated Alloy service.
+
+### Added
+
+- **Vault Secrets Volume Mounting**: Mount Vault secrets volume into open-webui and pgadmin containers (#953)
+  - Open WebUI and pgAdmin now read credentials from /run/secrets/ via aixcl-vault-secrets volume
+  - Entrypoint scripts persist passwords to /var/lib/pgadmin for non-root user (UID 5050)
+- **Vault CLI Logs Subcommand**: Add ./aixcl vault logs [n] for viewing Vault init/bootstrap output (#949)
+
+### Fixed
+
+- **POSIX/Alpine Compatibility**: Change vault bootstrap scripts from bash to sh (#950, #951)
+  - Alpine-based hashicorp/vault:1.18 image does not include bash
+  - Changed shebang from bash to sh, removed unsupported local variables
+- **Bootstrap Container Permissions**: Add DAC_OVERRIDE capability (#952)
+  - Allows bootstrap containers to write to aixcl-vault-secrets volume (owned by UID 999)
+
+### Changed
+
+- **Remove Deprecated Alloy Service**: Clean up alloy from docker-compose.yml (#955, #956)
+  - Removed alloy service definition (~38 lines) and aixcl-alloy-data volume
+  - Eliminates noisyy errors on stack stop/restart for non-existent container
+
+### Deprecated
+
+- Alloy service removed entirely. Use Loki+Promtail for log aggregation instead.
+
 ## [v1.0.0] - 2026-04-30
 
 ### Summary
