@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Vault Agent for pgAdmin bootstrap password (KV store)
 # Fetches static bootstrap password from Vault KV and writes to file
-# shellcheck shell=bash
+# shellcheck shell=sh
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
 VAULT_TOKEN="${VAULT_TOKEN:-aixcl-dev-token}"
