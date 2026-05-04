@@ -71,7 +71,7 @@ echo "  Assignee: $ASSIGNEE"
 gh issue create \
     --title "$TITLE" \
     --body-file "$BODY_FILE" \
-    --label "$LABELS" \
+    ${LABELS:+--label "$LABELS"} \
     --assignee "$ASSIGNEE"
 
 # Cleanup handled by trap

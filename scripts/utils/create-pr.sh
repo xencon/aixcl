@@ -37,12 +37,12 @@ if ! echo "$TITLE" | grep -qE '\(#[0-9]+\)$'; then
     exit 1
 fi
 
-# Extract issue number from title (just the number, no #)
-ISSUE_NUM=$(echo "$TITLE" | grep -oE '[0-9]+' | tail -1)
+# Extract issue number from title (e.g. "Description (#42)" => 42)
+ISSUE_NUM=$(echo "$TITLE" | grep -oE '#[0-9]+' | tr -d '#' | tail -1)
 
 # Validate branch name
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [[ ! "$BRANCH" =~ ^issue-[0-9]+/ ]]; then
+if [[ ! "$BRANCH" =~ ^issue-[0-9]+/ ]] && [[ ! "$BRANCH" =~ ^(dev|main)$ ]]; then
     echo "WARNING: Branch '$BRANCH' does not follow 'issue-N/description' format"
     read -p "Continue anyway? [y/N] " -n 1 -r
     echo
@@ -90,11 +90,5 @@ gh pr create \
     --base "$BASE" \
     --assignee "$ASSIGNEE" \
     ${LABELS:+--label "$LABELS"}
-
-# Add labels if not passed at creation (fallback)
-if [[ -n "$LABELS" ]] && ! echo "$LABELS" | grep -q ','; then
-    PR_NUM=$(gh pr view --json number -q '.number')
-    gh pr edit "$PR_NUM" --add-label "$LABELS" 2>/dev/null || true
-fi
 
 echo "✅ PR created successfully"
