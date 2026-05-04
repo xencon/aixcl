@@ -123,14 +123,6 @@ init_bootstrap_passwords() {
     else
         env_file=""
     fi
-    local postgres_password=""
-    local openwebui_password=""
-    
-    if [ -f "$env_file" ]; then
-        postgres_password=$(grep "^POSTGRES_PASSWORD=" "$env_file" 2>/dev/null | cut -d'=' -f2 || true)
-        openwebui_password=$(grep "^OPENWEBUI_PASSWORD=" "$env_file" 2>/dev/null | cut -d'=' -f2 || true)
-    fi
-    
     # Read admin identity from .env if available
     local admin_email="${AIXCL_ADMIN_EMAIL:-admin@example.com}"
     local admin_user="${AIXCL_ADMIN_USER:-admin}"
@@ -139,12 +131,9 @@ init_bootstrap_passwords() {
     
     # PostgreSQL bootstrap password
     if ! bootstrap_password_exists "postgres"; then
-        # Generate random password
         local random_password
         random_password=$(generate_password 32)
         store_bootstrap_password "postgres" "$random_password" "PostgreSQL admin/bootstrap password" "$admin_email" "$admin_user"
-        
-        # Show the generated password
         log_info "Generated PostgreSQL bootstrap password: ${random_password}"
     else
         log_info "PostgreSQL bootstrap password already exists in Vault KV (skipping)"
@@ -152,12 +141,9 @@ init_bootstrap_passwords() {
     
     # Open WebUI bootstrap password
     if ! bootstrap_password_exists "openwebui"; then
-        # Generate random password
         local random_password
         random_password=$(generate_password 32)
         store_bootstrap_password "openwebui" "$random_password" "Open WebUI admin password" "$admin_email" "$admin_user"
-        
-        # Show the generated password
         log_info "Generated Open WebUI bootstrap password: ${random_password}"
     else
         log_info "Open WebUI bootstrap password already exists in Vault KV (skipping)"
