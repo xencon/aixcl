@@ -76,6 +76,62 @@ function ensure_databases() {
     fi
 }
 
+function init_stack() {
+    echo "AIXCL Stack Initialisation"
+    echo "=========================="
+    echo ""
+
+    local env_file="${SCRIPT_DIR}/.env"
+    local env_example="${SCRIPT_DIR}/config/.env.example"
+
+    # Check if already initialized
+    if [ -f "${SCRIPT_DIR}/.aixcl.initialized" ]; then
+        echo "Already initialised. To re-initialise, remove .aixcl.initialized"
+        return 1
+    fi
+
+    # Create .env from example if not exists
+    if [ ! -f "$env_file" ]; then
+        if [ -f "$env_example" ]; then
+            cp "$env_example" "$env_file"
+            echo "Created .env from .env.example"
+        else
+            echo "Error: .env.example not found"
+            return 1
+        fi
+    fi
+
+    # Load current values
+    load_env_file "$env_file"
+
+    # Prompt for username
+    echo ""
+    read -r -p "Enter admin username [admin]: " AIXCL_ADMIN_USER
+    AIXCL_ADMIN_USER="${AIXCL_ADMIN_USER:-admin}"
+
+    # Prompt for email
+    read -r -p "Enter admin email [admin@example.com]: " AIXCL_ADMIN_EMAIL
+    AIXCL_ADMIN_EMAIL="${AIXCL_ADMIN_EMAIL:-admin@example.com}"
+
+    # Update .env with values
+    sed -i "s/^AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
+    sed -i "s/^AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+
+    echo ""
+    echo "Initialisation complete:"
+    echo "  Username: $AIXCL_ADMIN_USER"
+    echo "  Email: $AIXCL_ADMIN_EMAIL"
+    echo ""
+
+    # Create initialized marker
+    echo "username=$AIXCL_ADMIN_USER" > "${SCRIPT_DIR}/.aixcl.initialized"
+    echo "email=$AIXCL_ADMIN_EMAIL" >> "${SCRIPT_DIR}/.aixcl.initialized"
+    echo "created=$(date -Iseconds)" >> "${SCRIPT_DIR}/.aixcl.initialized"
+
+    echo "Credentials will be generated on first start."
+    echo "Run './aixcl stack start --profile sys' to begin."
+}
+
 function start() {
     local profile
     profile=""
@@ -1447,17 +1503,25 @@ function stack_cmd() {
         logs)
             logs "$@"
             ;;
+        init)
+            if [ $# -gt 0 ]; then
+                echo "Error: Unknown argument '$1'"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
+                return 1
+            fi
+            init_stack
+            ;;
         export-quadlet)
             if [ $# -gt 0 ]; then
                 echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
                 return 1
             fi
             export_quadlet
             ;;
         *)
             echo "Error: Unknown stack action '$action'"
-            echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
+            echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
             echo ""
             echo "For profiles and service contracts, see: docs/architecture/governance/"
             return 1

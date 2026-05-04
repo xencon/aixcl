@@ -203,43 +203,74 @@ function cmd_vault_passwords() {
     echo "=========================================="
     echo ""
     
-    # PostgreSQL password
-    local postgres_data
-    postgres_data=$(curl -sf "${vault_addr}/v1/kv/data/bootstrap/postgres" \
-        -H "X-Vault-Token: ${vault_token}" 2>/dev/null || true)
+    # Display bootstrap passwords from Vault KV (generic - reads all bootstrap entries)
+    echo ""
+    echo "=========================================="
+    echo "  Bootstrap Passwords (Vault KV)"
+    echo "=========================================="
+    echo ""
     
-    if [ -n "$postgres_data" ] && echo "$postgres_data" | jq -e '.data.data.password' >/dev/null 2>&1; then
-        local postgres_pass postgres_desc postgres_created
-        postgres_pass=$(echo "$postgres_data" | jq -r '.data.data.password')
-        postgres_desc=$(echo "$postgres_data" | jq -r '.data.data.description // "PostgreSQL bootstrap password"')
-        postgres_created=$(echo "$postgres_data" | jq -r '.data.metadata.created_time // "unknown"')
-        
-        echo "PostgreSQL:"
-        echo "  Username: admin"
-        echo "  Password: ${postgres_pass}"
-        echo "  Description: ${postgres_desc}"
-        echo "  Created: ${postgres_created}"
-        echo ""
-    else
-        echo "PostgreSQL: Not initialized"
+    # List all bootstrap entries
+    local bootstrap_list
+    bootstrap_list=$(curl -sf "${vault_addr}/v1/kv/metadata/bootstrap" \
+        -H "X-Vault-Token: ${vault_token}" 2>/dev/null | jq -r '.data.keys[] // empty' 2>/dev/null || true)
+    
+    if [ -z "$bootstrap_list" ]; then
+        echo "No bootstrap credentials found."
         echo "  Run: ./aixcl vault init"
         echo ""
+        echo "=========================================="
+        echo ""
+        echo "NOTE: These are bootstrap passwords for initial setup."
+        echo "      Change them after first login for security."
+        echo ""
+        return 0
     fi
+    
+    # Read each bootstrap entry and display it
+    local service
+    while IFS= read -r service; do
+        [ -z "$service" ] && continue
+        
+        local service_data
+        service_data=$(curl -sf "${vault_addr}/v1/kv/data/bootstrap/${service}" \
+            -H "X-Vault-Token: ${vault_token}" 2>/dev/null) || true
+        
+        if [ -n "$service_data" ] && echo "$service_data" | jq -e '.data.data.password' > /dev/null 2>&1; then
+            local password email username description created
+            password=$(echo "$service_data" | jq -r '.data.data.password // ""')
+            email=$(echo "$service_data" | jq -r '.data.data.email // ""')
+            username=$(echo "$service_data" | jq -r '.data.data.username // ""')
+            description=$(echo "$service_data" | jq -r '.data.data.description // "Bootstrap password"')
+            created=$(echo "$service_data" | jq -r '.data.metadata.created_time // "unknown"')
+            
+            echo "${service}:"
+            [ -n "$username" ] && echo "  Username: ${username}"
+            [ -n "$email" ] && echo "  Email: ${email}"
+            [ -n "$password" ] && echo "  Password: ${password}"
+            echo "  Description: ${description}"
+            echo "  Created: ${created}"
+            echo ""
+        fi
+    done <<< "$bootstrap_list"
     
     # Open WebUI password
     local openwebui_data
     openwebui_data=$(curl -sf "${vault_addr}/v1/kv/data/bootstrap/openwebui" \
-        -H "X-Vault-Token: ${vault_token}" 2>/dev/null || true)
+        -H "X-Vault-Token: ${vault_token}" 2>/dev/null) || true
     
     if [ -n "$openwebui_data" ] && echo "$openwebui_data" | jq -e '.data.data.password' >/dev/null 2>&1; then
-        local openwebui_pass openwebui_desc openwebui_created
+        local openwebui_pass openwebui_email openwebui_user openwebui_desc openwebui_created
         openwebui_pass=$(echo "$openwebui_data" | jq -r '.data.data.password')
+        openwebui_email=$(echo "$openwebui_data" | jq -r '.data.data.email // "admin@example.com"')
+        openwebui_user=$(echo "$openwebui_data" | jq -r '.data.data.username // "admin"')
         openwebui_desc=$(echo "$openwebui_data" | jq -r '.data.data.description // "Open WebUI admin password"')
         openwebui_created=$(echo "$openwebui_data" | jq -r '.data.metadata.created_time // "unknown"')
         
         echo "Open WebUI:"
-        echo "  Username: admin"
+        echo "  Username: ${openwebui_user}"
         echo "  Password: ${openwebui_pass}"
+        echo "  Email: ${openwebui_email}"
         echo "  Description: ${openwebui_desc}"
         echo "  Created: ${openwebui_created}"
         echo ""
