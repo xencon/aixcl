@@ -435,7 +435,7 @@ services:
       timeout: 10s
       retries: 3
 
-  grafana:
+   grafana:
     image: docker.io/grafana/grafana:12.4.2
     container_name: grafana
     pull_policy: missing
@@ -446,15 +446,17 @@ services:
     volumes:
       - aixcl-grafana:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - aixcl-vault-secrets:/run/secrets:ro
+    entrypoint: ["/usr/local/bin/grafana-entrypoint.sh"]
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_INSTALL_PLUGINS=
+      - GF_SECURITY_ADMIN_USER=${AIXCL_ADMIN_USER:-admin}
       - GF_SERVER_HTTP_PORT=3000
+    command: []
     network_mode: host
     depends_on:
       - prometheus
       - loki
+      - vault-agent-grafana-bootstrap
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
