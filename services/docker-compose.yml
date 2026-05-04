@@ -435,7 +435,7 @@ services:
       timeout: 10s
       retries: 3
 
-   grafana:
+  grafana:
     image: docker.io/grafana/grafana:12.4.2
     container_name: grafana
     pull_policy: missing
