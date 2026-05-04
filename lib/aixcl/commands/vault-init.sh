@@ -94,13 +94,15 @@ store_bootstrap_password() {
     local service="$1"
     local password="$2"
     local description="$3"
+    local email="${4:-admin@example.com}"
+    local username="${5:-admin}"
     
     log_info "Storing bootstrap password for ${service}..."
     
     curl -sf -X POST "${VAULT_ADDR}/v1/kv/data/bootstrap/${service}" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d "{\"data\": {\"password\": \"${password}\", \"description\": \"${description}\", \"created\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" 2>/dev/null || {
+        -d "{\"data\": {\"password\": \"${password}\", \"email\": \"${email}\", \"username\": \"${username}\", \"description\": \"${description}\", \"created\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" 2>/dev/null || {
         log_warn "Failed to store bootstrap password for ${service}"
         return 1
     }
@@ -129,40 +131,34 @@ init_bootstrap_passwords() {
         openwebui_password=$(grep "^OPENWEBUI_PASSWORD=" "$env_file" 2>/dev/null | cut -d'=' -f2 || true)
     fi
     
+    # Read admin identity from .env if available
+    local admin_email="${AIXCL_ADMIN_EMAIL:-admin@example.com}"
+    local admin_user="${AIXCL_ADMIN_USER:-admin}"
+    
+    log_info "Admin identity: ${admin_user} / ${admin_email}"
+    
     # PostgreSQL bootstrap password
     if ! bootstrap_password_exists "postgres"; then
-        if [ -n "$postgres_password" ] && [ "$postgres_password" != "admin" ]; then
-            # Migrate existing custom password from .env
-            log_info "Migrating existing PostgreSQL password from .env to Vault KV..."
-            store_bootstrap_password "postgres" "$postgres_password" "PostgreSQL admin/bootstrap password (migrated from .env)"
-        else
-            # Generate random password
-            local random_password
-            random_password=$(generate_password 32)
-            store_bootstrap_password "postgres" "$random_password" "PostgreSQL admin/bootstrap password (auto-generated)"
-            
-            # Show the generated password
-            log_info "Generated PostgreSQL bootstrap password: ${random_password}"
-        fi
+        # Generate random password
+        local random_password
+        random_password=$(generate_password 32)
+        store_bootstrap_password "postgres" "$random_password" "PostgreSQL admin/bootstrap password" "$admin_email" "$admin_user"
+        
+        # Show the generated password
+        log_info "Generated PostgreSQL bootstrap password: ${random_password}"
     else
         log_info "PostgreSQL bootstrap password already exists in Vault KV (skipping)"
     fi
     
     # Open WebUI bootstrap password
     if ! bootstrap_password_exists "openwebui"; then
-        if [ -n "$openwebui_password" ] && [ "$openwebui_password" != "admin" ]; then
-            # Migrate existing custom password from .env
-            log_info "Migrating existing Open WebUI password from .env to Vault KV..."
-            store_bootstrap_password "openwebui" "$openwebui_password" "Open WebUI admin password (migrated from .env)"
-        else
-            # Generate random password
-            local random_password
-            random_password=$(generate_password 32)
-            store_bootstrap_password "openwebui" "$random_password" "Open WebUI admin password (auto-generated)"
-            
-            # Show the generated password
-            log_info "Generated Open WebUI bootstrap password: ${random_password}"
-        fi
+        # Generate random password
+        local random_password
+        random_password=$(generate_password 32)
+        store_bootstrap_password "openwebui" "$random_password" "Open WebUI admin password" "$admin_email" "$admin_user"
+        
+        # Show the generated password
+        log_info "Generated Open WebUI bootstrap password: ${random_password}"
     else
         log_info "Open WebUI bootstrap password already exists in Vault KV (skipping)"
     fi
@@ -172,7 +168,7 @@ init_bootstrap_passwords() {
         # Generate random password for pgAdmin
         local random_password
         random_password=$(generate_password 32)
-        store_bootstrap_password "pgadmin" "$random_password" "pgAdmin admin password (auto-generated)"
+        store_bootstrap_password "pgadmin" "$random_password" "pgAdmin admin password" "$admin_email" "$admin_user"
         
         # Show the generated password
         log_info "Generated pgAdmin bootstrap password: ${random_password}"
