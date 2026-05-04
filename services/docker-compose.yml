@@ -161,7 +161,7 @@ services:
       - vault
     restart: unless-stopped
 
-  # Bootstrap service for pgAdmin Vault KV password
+   # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
     image: hashicorp/vault:1.18
     container_name: vault-agent-pgadmin-bootstrap
@@ -179,6 +179,29 @@ services:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
     command: /usr/local/bin/bootstrap-password-pgadmin.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+   # Bootstrap service for Grafana Vault KV password
+  vault-agent-grafana-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-grafana-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    volumes:
+      - ../scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /usr/local/bin/bootstrap-password-grafana.sh
     network_mode: host
     depends_on:
       - vault

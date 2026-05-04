@@ -176,6 +176,18 @@ init_bootstrap_passwords() {
         log_info "pgAdmin bootstrap password already exists in Vault KV (skipping)"
     fi
     
+    # Grafana bootstrap password
+    if ! bootstrap_password_exists "grafana"; then
+        local random_password
+        random_password=$(generate_password 32)
+        store_bootstrap_password "grafana" "$random_password" "Grafana admin password" "$admin_email" "$admin_user"
+        
+        # Show the generated password
+        log_info "Generated Grafana bootstrap password: ${random_password}"
+    else
+        log_info "Grafana bootstrap password already exists in Vault KV (skipping)"
+    fi
+    
     log_info "Bootstrap passwords initialized"
 }
 
