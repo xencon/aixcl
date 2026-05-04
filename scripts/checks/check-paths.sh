@@ -53,6 +53,10 @@ check_markdown_paths() {
             [[ "$link" =~ ^https?:// ]] && continue
             [[ "$link" =~ ^# ]] && continue
             [[ "$link" =~ ^mailto: ]] && continue
+
+            # Skip template placeholder paths (release notes, templates)
+            [[ "$link" =~ vPREVIOUS\.\.\.vX\.Y\.Z ]] && continue
+            [[ "$link" =~ \.\.\./\.\./compare/ ]] && continue
             
             # Remove anchor fragments
             local path="${link%%#*}"

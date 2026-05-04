@@ -199,9 +199,11 @@ services:
     volumes:
       - aixcl-pgdata:/var/lib/postgresql/data
       - aixcl-vault-secrets:/run/secrets:ro
+      - ../scripts/runtime/postgres-secret-entrypoint.sh:/usr/local/bin/postgres-secret-entrypoint.sh:ro
       - ../scripts/db/init:/docker-entrypoint-initdb.d:ro
     network_mode: host
     restart: always
+    entrypoint: ["/usr/local/bin/postgres-secret-entrypoint.sh"]
     cap_drop:
       - ALL
     security_opt:
