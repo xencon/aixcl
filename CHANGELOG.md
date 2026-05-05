@@ -4,6 +4,25 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.5] - 2026-05-05
+
+### Governance
+
+- **Consolidated OpenCode governance**: Eliminated `ai/` directory duplication by moving all agent definitions, skills, and rules into `.opencode/` per the canonical OpenCode layout (Fixes #1033)
+- **Removed stale references**: Cleaned up `ai/` and `.opencode/commands/` references from `AGENTS.md`, `opencode.json`, and documentation (Fixes #1035)
+
+### Documentation
+
+- **Documentation overhaul**: Restructured `docs/` for clarity, aligned `opencode.json` with `.opencode/` conventions, and added `.opencode/rules/` for workflow, formatting, and security constraints (Fixes #1031)
+
+### Related Issues
+
+- Fixes #1031 - Docs overhaul and opencode.json alignment
+- Fixes #1033 - Consolidate OpenCode governance and eliminate ai/ duplication
+- Fixes #1035 - Remove stale ai/ and .opencode/commands/ references
+
+---
+
 ## [v1.1.4] - 2026-05-05
 
 ### Security
