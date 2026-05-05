@@ -283,27 +283,26 @@ The CI workflow automatically checks for CRLF line endings and will fail the bui
 A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with OpenCode CLI and approve `gh`/`git` tool calls when prompted:
 
 ```bash
-opencode --agent ai/orchestration/agent-developer-workflow.md
+opencode
 ```
 
 See [opencode-setup.md](./opencode-setup.md) for installation and configuration instructions.
 
 ## Agent Instructions
 
-When working with agents (like OpenCode, Claude Code, Cursor, Copilot, etc.), include this prompt:
-
 ```
 Follow the development workflow documented in this document:
 1. Always create an issue first using 'gh issue create' with appropriate labels and assignee
-2. Create a branch with format 'issue-<number>/<description>'
-3. Make changes and commit with conventional commit format
-4. Push branch and create PR that references the issue
-5. Assign the PR and add matching labels to it
-6. Use plain text formatting (markdown checkboxes - [x], not Unicode)
-7. Reference the issue number in commits and PRs
-8. Add labels to issues (type, component, priority, profile as applicable)
-9. Verify CI status: Monitor GitHub Actions and ensure all checks are green before finalizing the task
-10. For automated PRs, document them retroactively with an issue
+2. Read the template file first before composing any issue or PR body
+3. Create a branch with format 'issue-<number>/<description>' from dev
+4. Make changes and commit with conventional commit format
+5. Push branch and create PR that references the issue
+6. Assign the PR and add matching labels to it
+7. Use plain text formatting (markdown checkboxes - [x], not Unicode)
+8. Reference the issue number in commits and PRs
+9. Add labels to issues (type, component, priority, profile as applicable)
+10. Verify CI status: Monitor GitHub Actions and ensure all checks are green before finalizing the task
+11. For automated PRs, document them retroactively with an issue
 ```
 
 ## Quick Reference Commands
@@ -347,9 +346,7 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
-
-**Note**: Skill files (`ai/skills/skill-*.md`) are optional. The `ai/skills/` directory does not currently exist and should only be created if skills are actually needed.
+When creating or modifying AI agent files (`.opencode/agents/agent-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
 ./scripts/checks/check-agents.sh
@@ -357,17 +354,19 @@ When creating or modifying AI agent files (`ai/orchestration/agent-*.md`), or AI
 
 This script validates:
 - Naming conventions (`agent-*.md`, `ai-report-*.md`)
-- Skill files (`skill-*.md`) if ai/skills/ directory exists
+- Skill files (`skill-*.md`) if `.opencode/skills/` directory exists
 - Required YAML frontmatter fields (`name`, `description`, `role: system`)
 - Required sections (Purpose, Canonical references, Global rules, Tool usage, Workflow steps, Safety/governance)
 - References to core documentation (`development-workflow.md`, `01_ai_guidance.md`)
 
 The same checks run automatically in CI on pull requests that touch agent, skill, or report files.
 
+**Note**: Custom skills in `.opencode/skills/` are optional. The directory only exists if skills are actually defined.
+
 ## Questions?
 
 If you're unsure about the workflow, check:
 - This document (`development-workflow.md`)
-- [`contributing.md`](./contributing.md) for general contribution guidelines
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) for general contribution guidelines
 - Existing issues and PRs for examples
 
