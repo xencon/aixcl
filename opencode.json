@@ -6,6 +6,21 @@
   "share": "manual",
   "autoupdate": "notify",
   "username": "sbadakhc",
+  "watcher": {
+    "ignore": [
+      "node_modules/",
+      ".git/",
+      "*.log",
+      "volumes/",
+      "pgadmin-data/",
+      "tests/test-results.md",
+      "tests/*.backup",
+      "*.tmp",
+      "*.swp",
+      "build/",
+      "dist/"
+    ]
+  },
   "instructions": [
     "AGENTS.md",
     "DEVELOPMENT.md",
