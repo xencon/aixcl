@@ -23,7 +23,7 @@ PGHOST="${POSTGRES_HOST:-127.0.0.1}"
 PGPORT="${POSTGRES_PORT:-5432}"
 
 # Build DATA_SOURCE_NAME for postgres_exporter
-export DATA_SOURCE_NAME="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=require"
+export DATA_SOURCE_NAME="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=disable"
 
 echo "[Vault] DATA_SOURCE_NAME configured (password redacted)"
 
