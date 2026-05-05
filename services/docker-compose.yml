@@ -214,8 +214,7 @@ services:
     user: "999:999"  # Run as postgres user (official image default)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
-      POSTGRES_PASSWORD_FILE: ${POSTGRES_PASSWORD_FILE:-}
+      # NOTE: Password managed by Vault. The entrypoint reads /run/secrets/postgres-password.
       POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
@@ -248,6 +247,8 @@ services:
       -c log_rotation_age=1d
       -c log_rotation_size=100MB
       -c log_min_duration_statement=0
+    depends_on:
+      - vault-agent-postgres-bootstrap
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 30s
