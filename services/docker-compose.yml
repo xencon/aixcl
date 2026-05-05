@@ -360,8 +360,7 @@ services:
     pull_policy: missing
     network_mode: host
     environment:
-      PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
-      PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
+      PGADMIN_DEFAULT_EMAIL: $PGADMIN_DEFAULT_EMAIL
       PGADMIN_LISTEN_PORT: 5050
       PGADMIN_LISTEN_ADDRESS: 127.0.0.1
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
