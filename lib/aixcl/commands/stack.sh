@@ -116,6 +116,8 @@ function init_stack() {
     # Update .env with values
     sed -i "s/^AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
     sed -i "s/^AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    sed -i "s/^PGADMIN_DEFAULT_EMAIL=.*/PGADMIN_DEFAULT_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    sed -i "s/^OPENWEBUI_EMAIL=.*/OPENWEBUI_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
 
     echo ""
     echo "Initialisation complete:"
