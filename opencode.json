@@ -1,5 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "shell": "bash",
+  "logLevel": "WARN",
+  "snapshot": true,
+  "share": "manual",
+  "autoupdate": "notify",
+  "username": "sbadakhc",
   "instructions": [
     "AGENTS.md",
     "DEVELOPMENT.md",
