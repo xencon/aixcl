@@ -368,6 +368,6 @@ The same checks run automatically in CI on pull requests that touch agent, skill
 
 If you're unsure about the workflow, check:
 - This document (`development-workflow.md`)
-- [`contributing.md`](./contributing.md) for general contribution guidelines
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) for general contribution guidelines
 - Existing issues and PRs for examples
 

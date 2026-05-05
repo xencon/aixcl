@@ -74,7 +74,7 @@ podman info | grep "rootless"
 ### Step 4: Initialize the Stack
 
 ```bash
-# Generate .env file and admin credentials (one-time setup)
+# Generate .env file, admin credentials, and Vault secrets (one-time)
 ./aixcl stack init
 
 # Start with system profile (includes all services)
@@ -84,12 +84,24 @@ podman info | grep "rootless"
 ./aixcl stack status
 ```
 
-Services started:
-- **Ollama** on port 11434 (inference API)
-- **PostgreSQL** on port 5432 (database)
-- **Open WebUI** on port 8080 (chat interface)
-- **Vault** on port 8200 (secrets management)
-- **Grafana** on port 3000 (monitoring)
+Services started (12 in sys profile):
+
+| Category | Service | Port |
+|----------|---------|------|
+| **Runtime** | Ollama (inference) | 11434 |
+| | OpenCode (agent) | Plugin |
+| **Persistence** | PostgreSQL | 5432 |
+| | pgAdmin | 5050 |
+| **Observability** | Prometheus | 9090 |
+| | Grafana | 3000 |
+| | Loki (logs) | 3100 |
+| | cAdvisor (containers) | - |
+| | node-exporter (host) | 9100 |
+| | postgres-exporter (DB) | 9187 |
+| | alertmanager | 9093 |
+| | nvidia-gpu-exporter | 9445 |
+| **Secrets** | Vault | 8200 |
+| **UI** | Open WebUI | 8080 |
 
 ### Step 5: Verify Vault (Auto-Initialized)
 
@@ -160,9 +172,16 @@ curl http://localhost:11434/v1/chat/completions \
 | Service | URL | Login |
 |---------|-----|-------|
 | Open WebUI | http://localhost:8080 | First user = admin |
-| Grafana | http://localhost:3000 | admin/admin |
-| Vault UI | http://localhost:8200 | Token: aixcl-dev-token |
+| pgAdmin | http://localhost:5050 | Vault credentials (see below) |
+| Grafana | http://localhost:3000 | Vault credentials (see below) |
+| Vault UI | http://localhost:8200 | Token: `aixcl-dev-token` |
+| Prometheus | http://localhost:9090 | No auth (localhost only) |
 | Ollama API | http://localhost:11434 | No auth (localhost only) |
+
+Get current service credentials:
+```bash
+./aixcl vault credentials
+```
 
 ---
 

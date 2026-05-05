@@ -137,6 +137,5 @@ Add models one by one or in batch:
 
 ## See Also
 
-- [`ollama-performance-tuning.md`](./ollama-performance-tuning.md) - Engine-specific optimizations
 - [Qwen 2.5 Coder on Hugging Face](https://huggingface.co/Qwen) - Official model cards
 - [`../user/usage.md`](../user/usage.md) - Adding and managing models
