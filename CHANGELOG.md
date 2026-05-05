@@ -4,6 +4,31 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.4] - 2026-05-05
+
+### Security
+
+- **Eliminated PostgreSQL Password Fallback**: Removed `POSTGRES_PASSWORD` and `POSTGRES_PASSWORD_FILE` from postgres service in `docker-compose.yml`. Entrypoint now polls Vault bootstrap agent and fails hard if secret unavailable (Fixes #1019)
+- **Postgres Exporter Vault Hardening**: Fixed binary path and removed password leak from compose (Fixes #1017, #1025)
+
+### Fixed
+
+- **Bash Completion Drift**: Added missing `restart`, `config`, `init`, and `export-quadlet` commands (Fixes #1021)
+- **Postgres Exporter Startup**: Corrected binary path from `/postgres_exporter` to `/bin/postgres_exporter` (Fixes #1025)
+
+### Documentation
+
+- **README Quick Start**: Added `./aixcl stack init` step and `utils bash-completion` / `utils clean` commands (Fixes #1020)
+
+### Related Issues
+
+- Fixes #1019 - Remove hardcoded postgres password from docker-compose.yml
+- Fixes #1020 - Update README with missing init step and utils commands
+- Fixes #1021 - Fix bash completion script drift
+- Fixes #1025 - Fix postgres-exporter binary path in vault entrypoint
+
+---
+
 ## [v1.1.3] - 2026-05-05
 
 ### Summary
