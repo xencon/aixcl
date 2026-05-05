@@ -67,5 +67,6 @@
       }
     }
   },
-  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
+  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct",
+  "small_model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
 }
