@@ -42,6 +42,12 @@ volumes/
 node_modules/
 npm-debug.log
 yarn-error.log
+package-lock.json
+bun.lock
+
+# OpenCode generated artifacts
+.opencode/package-lock.json
+.opencode/bun.lock
 
 # macOS
 .DS_Store

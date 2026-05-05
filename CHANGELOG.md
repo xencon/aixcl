@@ -4,6 +4,25 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.6] - 2026-05-05
+
+### Configuration
+
+- **OpenCode Schema Alignment**: Enhanced opencode.json with official schema features including shell, logLevel, snapshot, share, autoupdate, username, and watcher ignore patterns (Fixes #1041)
+- **Small Model Support**: Added small_model configuration for fast lightweight tasks like title generation
+- **Artifact Prevention**: Updated .gitignore to prevent accidental commits of npm artifacts (node_modules, package-lock.json, bun.lock)
+
+### Documentation
+
+- **README Access Points**: Added missing observability services to Access Points table (Loki port 3100, Alertmanager port 9093) and simplified Vault credentials notes (Fixes #1030)
+
+### Related Issues
+
+- Fixes #1041 - Release v1.1.6
+- Fixes #1030 - Refresh README service list and access points
+
+---
+
 ## [v1.1.5] - 2026-05-05
 
 ### Governance
