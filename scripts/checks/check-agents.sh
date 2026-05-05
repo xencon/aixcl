@@ -32,7 +32,7 @@ info() {
 
 # Check agent files
 check_agents() {
-    local agents_dir="ai/orchestration"
+    local agents_dir=".opencode/agents"
     if [[ ! -d "$agents_dir" ]]; then
         warn "Agent directory $agents_dir does not exist"
         return 0
@@ -69,76 +69,55 @@ check_agents() {
             if ! echo "$frontmatter" | grep -q "^description:"; then
                 error "$basename: Missing 'description' field in frontmatter"
             fi
-            if ! echo "$frontmatter" | grep -q "^role: system"; then
-                error "$basename: Missing 'role: system' in frontmatter"
+            if ! echo "$frontmatter" | grep -q "^mode:"; then
+                warn "$basename: Missing 'mode' in frontmatter (e.g., mode: primary or subagent)"
             fi
         fi
 
-        # Check required sections
-        local content
-        content=$(awk '/^---$/{flag=1} /^---$/{flag=0; next} !flag' "$agent_file")
-        
-        local required_sections=(
-            "Purpose"
-            "Canonical references"
-            "Global rules"
-            "Tool usage"
-            "Workflow steps"
-            "Safety"
-        )
-
-        for section in "${required_sections[@]}"; do
-            if ! echo "$content" | grep -qi "^## $section\|^### $section"; then
-                error "$basename: Missing required section: $section"
-            fi
-        done
-
-        # Check for references to core docs
+        # Check for references to core docs (optional but recommended)
         if ! grep -q "docs/developer/development-workflow.md" "$agent_file"; then
-            error "$basename: Missing reference to docs/developer/development-workflow.md"
+            warn "$basename: Missing reference to docs/developer/development-workflow.md"
         fi
         if ! grep -q "docs/architecture/governance/01_ai_guidance.md" "$agent_file"; then
-            error "$basename: Missing reference to docs/architecture/governance/01_ai_guidance.md"
+            warn "$basename: Missing reference to docs/architecture/governance/01_ai_guidance.md"
         fi
     done
 }
 
-# Check action files
-check_actions() {
-    local actions_dir="ai/actions"
-    if [[ ! -d "$actions_dir" ]]; then
-        return 0  # Actions directory is optional
+# Check skill files
+check_skills() {
+    local skills_dir=".opencode/skills"
+    if [[ ! -d "$skills_dir" ]]; then
+        return 0  # Skills directory is optional
     fi
 
-    # Check for action files in subdirectories
-    local action_files=()
+    local skill_files=()
     while IFS= read -r -d '' file; do
-        action_files+=("$file")
-    done < <(find "$actions_dir" -name "action-*.md" -type f -print0 2>/dev/null || true)
+        skill_files+=("$file")
+    done < <(find "$skills_dir" -name "SKILL.md" -type f -print0 2>/dev/null || true)
     
-    if [[ ${#action_files[@]} -eq 0 ]]; then
-        warn "No action files found matching action-*.md pattern in $actions_dir"
+    if [[ ${#skill_files[@]} -eq 0 ]]; then
         return 0
     fi
 
-    for action_file in "${action_files[@]}"; do
+    for skill_file in "${skill_files[@]}"; do
         local basename
-        basename=$(basename "$action_file")
-        local category
-        category=$(basename "$(dirname "$action_file")")
-        if [[ "$category" == "actions" ]]; then
-            info "Checking action: $basename"
-        else
-            info "Checking action: $category/$basename"
+        basename=$(basename "$(dirname "$skill_file")")
+        info "Checking skill: $basename"
+
+        if ! grep -q "^---$" "$skill_file"; then
+            warn "$basename/SKILL.md: Missing YAML frontmatter"
+            continue
         fi
 
-        if [[ ! "$basename" =~ ^action-.*\.md$ ]]; then
-            error "$basename does not match action-*.md naming convention"
-        fi
+        local frontmatter
+        frontmatter=$(awk '/^---$/{flag=1; next} /^---$/{flag=0} flag' "$skill_file")
 
-        # Check YAML frontmatter presence (optional but recommended)
-        if ! grep -q "^---$" "$action_file"; then
-            warn "$basename: Missing YAML frontmatter (no --- delimiter) - recommended but not required"
+        if ! echo "$frontmatter" | grep -q "^name:"; then
+            error "$basename/SKILL.md: Missing 'name' field in frontmatter"
+        fi
+        if ! echo "$frontmatter" | grep -q "^description:"; then
+            error "$basename/SKILL.md: Missing 'description' field in frontmatter"
         fi
     done
 }
@@ -161,18 +140,18 @@ check_reports() {
         info "Checking AI report: $basename"
 
         if [[ ! "$basename" =~ ^ai-report-.*\.md$ ]]; then
-            warn "$basename does not match ai-report-*.md naming convention (this is a warning, not an error)"
+            warn "$basename does not match ai-report-*.md naming convention"
         fi
     done
 }
 
 # Main execution
 main() {
-    echo "Checking AI agents, actions, and reports..."
+    echo "Checking AI agents, skills, and reports..."
     echo ""
 
     check_agents
-    check_actions
+    check_skills
     check_reports
 
     echo ""

@@ -26,11 +26,9 @@ When conflicts arise, follow this order:
 1. Direct human instruction in active session
 2. **This AGENTS.md file** (operating contract)
 3. **DEVELOPMENT.md** (workflow rules, templates)
-4. **ai/governance/** (behavioral constraints)
-5. **ai/actions/** (executable workflow actions)
-6. **ai/templates/** (release templates; issue/PR templates in `.github/`)
-7. **docs/architecture/governance/** (platform invariants)
-8. **docs/developer/** (developer guides)
+4. **.opencode/rules/** (behavioral constraints)
+5. **docs/architecture/governance/** (platform invariants)
+6. **docs/developer/** (developer guides)
 
 ## Critical Constraints
 
@@ -148,7 +146,7 @@ cat tests/test-results.md             # View latest run results
 
 ### Validation & Lint
 ```bash
-./scripts/checks/check-agents.sh      # Lint ai/orchestration/agent-*.md, ai/actions/action-*.md, ai-report-*
+./scripts/checks/check-agents.sh      # Lint .opencode/agents/agent-*.md, .opencode/skills/*/SKILL.md
 ./scripts/checks/check-environment.sh # Full environment check
 ```
 
@@ -262,8 +260,7 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 - `docs/developer/development-workflow.md` — Complete developer guide
 - `docs/architecture/governance/00_invariants.md` — Platform invariants
 - `docs/architecture/governance/01_ai_guidance.md` — Agentic behavioral guidance
-- `ai/governance/workflow-governance.md` — Workflow constraints
-- `ai/actions/*` — Executable workflow actions (lazy-load when needed)
+- `.opencode/rules/workflow.md` — Workflow constraints
 - `opencode.json` — OpenCode configuration
 
 ---

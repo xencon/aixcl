@@ -3,9 +3,14 @@
   "instructions": [
     "AGENTS.md",
     "DEVELOPMENT.md",
+<<<<<<< issue-1035/remove-stale-references
     ".opencode/rules/workflow.md",
+=======
+    ".opencode/rules/*.md",
+>>>>>>> dev
     "docs/architecture/governance/00_invariants.md",
     "docs/architecture/governance/01_ai_guidance.md",
+    "docs/architecture/governance/02_profiles.md",
     "docs/developer/development-workflow.md"
   ],
   "default_agent": "agent-context",

@@ -285,6 +285,7 @@ Before completing security scan:
 - Security policies: `.security/policies/`
 - Audit scripts: `scripts/security/`
 - Compliance rules: `.opencode/rules/workflow.md`
+- Emergency lockdown: `scripts/security/emergency-lockdown.sh`
 
 ---
 
