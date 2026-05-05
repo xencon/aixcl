@@ -17,9 +17,17 @@ When conflicts arise, follow this order:
 1. **Direct human instruction** in active session
 2. **AGENTS.md** (Operating Contract) - Critical constraints and core principles
 3. **DEVELOPMENT.md** (Workflow Rules) - Development workflow and contribution rules
+<<<<<<< issue-1035/remove-stale-references
+4. **`.opencode/rules/`** - Behavioral constraints and workflow policy
+5. **`.github/`** - Issue and PR templates
+6. **`.opencode/skills/`** - Specialized task workflows
+7. `docs/architecture/governance/` - Platform invariants and service contracts
+8. `docs/developer/` - Developer guides and workflow documentation
+=======
 4. **.opencode/rules/** (Behavioral constraints and workflow policy)
 5. **docs/architecture/governance/** (Platform invariants and service contracts)
 6. **docs/developer/** (Developer guides and workflow documentation)
+>>>>>>> dev
 
 ## Core Principles
 
@@ -107,6 +115,28 @@ When creating issues or PRs, read the appropriate template first:
 - Collapse service boundaries
 - Introduce architectural indirection without explicit instruction
 
+<<<<<<< issue-1035/remove-stale-references
+## Lazy-Loading Rules
+
+When performing specific tasks, read the relevant rule file from `.opencode/rules/`:
+
+| Rule | File | Purpose |
+|---|---|---|
+| Workflow | `.opencode/rules/workflow.md` | Issue-First workflow, branch/commit/PR format |
+| Formatting | `.opencode/rules/formatting.md` | Title rules, ASCII conventions, label taxonomy |
+| Security | `.opencode/rules/security.md` | Runtime core invariants and safe/unsafe areas |
+
+## Lazy-Loading Templates
+
+When creating issues or PRs, load the appropriate template:
+
+- Bug report → Load `.github/ISSUE_TEMPLATE/bug_report.md`
+- Feature request → Load `.github/ISSUE_TEMPLATE/feature_request.md`
+- Task → Load `.github/ISSUE_TEMPLATE/task.md`
+- Pull request → Load `.github/PULL_REQUEST_TEMPLATE.md`
+
+=======
+>>>>>>> dev
 ## Tool Usage
 
 ### bash
@@ -156,8 +186,13 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 - `docs/architecture/governance/00_invariants.md` - Platform invariants
 - `docs/architecture/governance/01_ai_guidance.md` - AI behavioral guidance
 - `docs/architecture/governance/02_profiles.md` - Profile definitions
+<<<<<<< issue-1035/remove-stale-references
+- `docs/architecture/governance/03_stack_status.md` - Stack status
+- `.opencode/rules/workflow.md` - Workflow constraints
+=======
 - `.opencode/rules/workflow.md` - Workflow constraints
 - `opencode.json` - OpenCode configuration
+>>>>>>> dev
 
 ---
 
