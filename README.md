@@ -172,10 +172,12 @@ curl http://localhost:11434/v1/chat/completions \
 | Service | URL | Login |
 |---------|-----|-------|
 | Open WebUI | http://localhost:8080 | First user = admin |
-| pgAdmin | http://localhost:5050 | Vault credentials (see below) |
-| Grafana | http://localhost:3000 | Vault credentials (see below) |
+| pgAdmin | http://localhost:5050 | Vault credentials |
+| Grafana | http://localhost:3000 | Vault credentials |
 | Vault UI | http://localhost:8200 | Token: `aixcl-dev-token` |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
+| Loki | http://localhost:3100 | No auth (localhost only) |
+| Alertmanager | http://localhost:9093 | No auth (localhost only) |
 | Ollama API | http://localhost:11434 | No auth (localhost only) |
 
 Get current service credentials:
