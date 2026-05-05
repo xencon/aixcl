@@ -222,7 +222,8 @@ check_env() {
     if [ -f "${SCRIPT_DIR}/.env" ]; then
         local env_errors=0
         # Check for required variables
-        for var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DATABASE; do
+        # NOTE: Passwords are managed by Vault. Do not require them in .env.
+        for var in POSTGRES_USER POSTGRES_DATABASE; do
             if ! grep -q "^[[:space:]]*${var}=" "${SCRIPT_DIR}/.env"; then
                 print_error "Missing required environment variable in .env: $var"
                 env_errors=1

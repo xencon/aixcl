@@ -344,7 +344,7 @@ vault_is_enabled_in_profile() {
     local profile=""
     local env_file="${SCRIPT_DIR}/.env"
     if [ -f "$env_file" ]; then
-        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
     [ -z "$profile" ] && profile="sys"
     
