@@ -1,68 +1,22 @@
 # AIXCL Documentation
 
-This directory contains all project-wide documentation organized by audience and purpose.
+Documentation organized by audience. Keep it lean -- if something can be regenerated or is operator-only, it belongs in the [wiki](https://github.com/xencon/aixcl/wiki), not the repo.
 
-## Documentation Structure
+## Structure
 
-### User Documentation (`user/`)
-Documentation for end users and operators:
-- [`setup.md`](user/setup.md) - Installation and setup guide
-- [`usage.md`](user/usage.md) - Usage guide and examples
+| Directory | Audience | Key Files |
+|-----------|----------|-----------|
+| `user/` | End users | [`usage.md`](user/usage.md) - Setup, commands, troubleshooting |
+| `developer/` | Contributors | [`development-workflow.md`](developer/development-workflow.md), [`opencode-setup.md`](developer/opencode-setup.md), [`adding-services.md`](developer/adding-services.md) |
+| `architecture/governance/` | Architects | [`00_invariants.md`](architecture/governance/00_invariants.md), [`02_profiles.md`](architecture/governance/02_profiles.md), [`service_contracts/`](architecture/governance/service_contracts/) |
+| `operations/` | Operators | [`security.md`](operations/security.md), [`model-recommendations.md`](operations/model-recommendations.md) |
+| `reference/` | All | [`manpage.txt`](reference/manpage.txt) |
 
-### Developer Documentation (`developer/`)
-Documentation for contributors and developers:
-- [`contributing.md`](developer/contributing.md) - Contribution guidelines
-- [`development-workflow.md`](developer/development-workflow.md) - Development workflow and best practices
-- [`adding-services.md`](developer/adding-services.md) - Checklist for adding new services to the stack
-- [`opencode-setup.md`](developer/opencode-setup.md) - OpenCode CLI (cn) with Ollama and agentic mode
-- **Moved to docs/developer/**: `AGENTS.md` and `DEVELOPMENT.md` - Agent operating contracts and workflow rules
+## Root-Level Contracts
 
-### Operations Documentation (`operations/`)
-Documentation for operations and performance tuning:
-- [`security.md`](operations/security.md) - Rootless container operations and security isolation
-- [`ollama-performance-tuning.md`](operations/ollama-performance-tuning.md) - Detailed Ollama performance tuning guide
-- [`ollama-tuning-summary.md`](operations/ollama-tuning-summary.md) - Executive summary of Ollama optimizations
-- [`model-recommendations.md`](operations/model-recommendations.md) - Model size recommendations and configurations
-
-### Architecture Documentation (`architecture/`)
-Documentation about system architecture and design:
-- [`governance/`](architecture/governance/) - Governance model, invariants, profiles, and service contracts
-  - [`GOVERNANCE_COMPLIANCE.md`](architecture/governance/GOVERNANCE_COMPLIANCE.md) - Session compliance confirmation and checklist
-
-### Reference Documentation (`reference/`)
-Reference materials and specifications:
-- [`manpage.txt`](reference/manpage.txt) - Command-line reference
-- See root [`SECURITY.md`](../SECURITY.md) - Security policy and practices
-
-### Configuration Documentation (`config/`)
-Configuration templates and profiles:
-- `.env.example` - Environment configuration template
-- `profiles/` - Profile-specific configurations (usr, dev, ops, sys)
-
-### GitHub Templates (`.github/`)
-GitHub-specific templates:
-- `PULL_REQUEST_TEMPLATE.md` - Pull request template
-- `ISSUE_TEMPLATE/` - Issue templates (bug report, feature request, task)
-
-## Component-Specific Documentation
-
-Component-specific documentation remains with their respective components:
-- **Tests**: `tests/README.md` and component-specific test docs
-- **Scripts**: `scripts/*/README.md` files
-- **Libraries**: `lib/README.md` files
-
-## Root-Level Documentation
-
-The following files remain at the project root (standard practice):
-- `README.md` - Main project overview and quick start
-- `CHANGELOG.md` - Project changelog
-- `SECURITY.md` - Security policy and practices
-
-## Quick Links
-
-- **Getting Started**: Start with [`user/setup.md`](user/setup.md)
-- **Contributing**: See [`developer/contributing.md`](developer/contributing.md)
-- **Architecture**: Explore [`architecture/governance/`](architecture/governance/)
-- **Performance**: Check [`operations/ollama-performance-tuning.md`](operations/ollama-performance-tuning.md) and [`operations/model-recommendations.md`](operations/model-recommendations.md)
-- **Configuration**: See [`../config/README.md`](../config/README.md)
+These files are canonical and loaded by all agents:
+- `AGENTS.md` — Operating contract
+- `DEVELOPMENT.md` — Workflow rules
+- `CONTRIBUTING.md` — External contributor guide
+- `SECURITY.md` — Security policy
 
