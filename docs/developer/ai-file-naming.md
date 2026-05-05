@@ -1,4 +1,4 @@
-## AI-related file naming conventions
+## AI-Related File Naming Conventions
 
 This document defines naming and directory conventions for AI-related markdown files in this repository. The goal is to make agents, skills, MCP-related docs, and AI-generated reports easy to discover and safe to use across different AI tools.
 
@@ -6,15 +6,14 @@ These conventions complement the development workflow in `docs/developer/develop
 
 ### Agents
 
-- **Location**: `ai/orchestration/` or `ai/governance/`
+- **Location**: `.opencode/agents/`
 - **Filename pattern**: `agent-<domain>.md`
   - Examples:
-    - `agent-developer-workflow.md`
-    - `agent-issues-compliance-auditor.md`
-    - `agent-stack-operations.md`
+    - `agent-context.md`
+    - `agent-security-gate.md`
+    - `agent-audit-logger.md`
 
 Agent files:
-
 - Contain YAML frontmatter with `name` and `description`.
 - Encode AIXCL-specific constraints (Issue-First workflow, governance rules, plain ASCII markdown).
 - Are intended to be used by multiple AI tools (e.g., OpenCode CLI, Cursor, Copilot-style agents).
@@ -23,22 +22,30 @@ Agent files:
 
 Skills are optional narrowly scoped capabilities. If used:
 
-- **Location**: `ai/skills/` (create this directory only if needed)
-- **Filename pattern**: `skill-<verb-noun>.md`
+- **Location**: `.opencode/skills/<name>/SKILL.md`
+- **Filename pattern**: directory-based (`<name>/SKILL.md`)
   - Examples:
-    - `skill-normalize-issue-labels.md`
-    - `skill-updateopencode-config.md`
-    - `skill-run-platform-tests.md`
-
-**Note**: The `ai/skills/` directory does not currently exist in this repository. Skills are an optional extension to the agent system. Agents in `ai/orchestration/` are self-contained and do not require skills to function.
+    - `workflow-guard/SKILL.md`
+    - `security-scan/SKILL.md`
 
 Skill files define narrowly scoped capabilities that agents can rely on, such as a specific refactoring or check.
 
-### MCP documentation
+### Rules
+
+- **Location**: `.opencode/rules/`
+- **Filename pattern**: `<topic>.md`
+  - Examples:
+    - `workflow.md`
+    - `formatting.md`
+    - `security.md`
+
+Rules are automatically loaded by OpenCode via the `instructions` array in `opencode.json`.
+
+### MCP Documentation
 
 If MCP servers or tools are documented in markdown prompts or specs:
 
-- **Location**: `ai/mcp/`
+- **Location**: `.opencode/mcp/`
 - **Filename patterns**:
   - MCP servers: `mcp-server-<name>.md`
   - MCP tools: `mcp-tool-<name>.md`
@@ -49,7 +56,7 @@ If MCP servers or tools are documented in markdown prompts or specs:
 
 These files describe how MCP components should behave but do not replace the actual MCP server or tool configuration files.
 
-### AI-generated reports
+### AI-Generated Reports
 
 - **Location**: `docs/reference/`
 - **Filename pattern**: `ai-report-<topic>.md`
@@ -57,4 +64,3 @@ These files describe how MCP components should behave but do not replace the act
     - `ai-report-issues-compliance-analysis.md`
 
 AI reports are outputs produced by agents or analysis tools. They are not agent or skill definitions and should not be treated as such by tooling.
-

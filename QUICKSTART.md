@@ -2,8 +2,6 @@
 
 Get up and running with the AIXCL Issue-First development workflow in minutes.
 
-> **New to Dev Containers?** AIXCL provides a [Dev Container](.devcontainer/) setup for a fully pre-configured development environment. See [.devcontainer/README.md](.devcontainer/README.md) for details.
-
 ## Prerequisites
 
 - [Git](https://git-scm.com/) installed
@@ -19,11 +17,10 @@ Before starting, run the environment validation:
 ```
 
 This checks:
-- ✓ Git configuration
-- ✓ GitHub CLI authentication
-- ✓ OpenCode configuration
-- ✓ AI directory structure
-- ✓ Required permissions
+- Git configuration
+- GitHub CLI authentication
+- OpenCode configuration
+- Required permissions
 
 ## 2. Start OpenCode
 
@@ -36,203 +33,48 @@ opencode
 
 The `agent-context` agent will automatically load with full project context.
 
-## 3. Available Commands
+## 3. Modes
 
-### Workflow Commands (Issue-First)
+| Mode | Command | Use When |
+|------|---------|----------|
+| Planning | `/mode planning` | Read-only analysis |
+| Building | `/mode building` | Full development |
+| Reviewing | `/mode reviewing` | Code review |
 
-| Command | Description | Step |
-|-----------|-------------|------|
-| `/workflow` | Run complete Issue-First workflow | All |
-| `/issue` | Create a GitHub issue | 1 |
-| `/branch` | Create feature branch from issue | 2 |
-| `/commit` | Commit changes with proper format | 4 |
-| `/pr` | Create pull request | 5 |
-| `/verify` | Verify CI status | 6 |
-
-### Mode Commands
-
-| Command | Description | Use When |
-|---------|-------------|----------|
-| `/mode planning` | Read-only analysis mode | Analyzing code, planning changes |
-| `/mode building` | Full development mode | Writing code, making changes |
-| `/mode reviewing` | Code review mode | Reviewing PRs, providing feedback |
-
-### Utility Commands
-
-| Command | Description |
-|---------|-------------|
-| `/actions` | List all available actions |
-| `/lint` | Validate agent and action files |
+Switch modes at any time. Each mode controls whether the agent can modify files.
 
 ## 4. Quick Examples
 
-### Example 1: Full Workflow
-
-Start a complete Issue-First workflow:
+### Create an Issue
 
 ```
-/workflow Add user authentication feature
-```
-
-This will:
-1. Create issue `[FEATURE] Add user authentication`
-2. Create branch `issue-123/add-user-authentication`
-3. Guide you through implementation
-4. Commit with proper format
-5. Create PR
-6. Verify CI
-
-### Example 2: Individual Steps
-
-Create an issue first:
-
-```
-/issue We need to fix the login timeout bug
-```
-
-Then create a branch:
-
-```
-/branch 217
-```
-
-Make your changes, then commit:
-
-```
-/commit fix: Resolve login timeout bug
-
-- Increased timeout from 30s to 60s
-- Added retry logic
-
-Fixes #217
-```
-
-Create a PR:
-
-```
-/pr Fix login timeout bug
-```
-
-Check CI status:
-
-```
-/verify
-```
-
-### Example 3: Resume Work
-
-If you have existing work:
-
-```
-/workflow
-```
-
-The agent will detect your current state:
-- Open issues you created
-- Current branch
-- Uncommitted changes
-- Existing PRs
-
-And suggest the next step.
-
-## 5. Common Workflows
-
-### Bug Fix Workflow
-
-```
-/issue Fix critical bug in payment processing
-/branch 218
-[fix the bug]
-/commit fix: Resolve payment processing error
-/pr Fix payment processing bug
-/verify
-```
-
-### Feature Development
-
-```
-/issue Add dark mode toggle to UI
-/branch 219
-[implement feature]
-/commit feat: Add dark mode toggle
-
-- Implemented theme switching
-- Added user preference storage
-- Updated UI components
-
-Fixes #219
-/pr Add dark mode support
-/verify
-```
-
-### Documentation Update
-
-```
-/issue Update API documentation with new endpoints
-/branch 220
-[update docs]
-/commit docs: Update API documentation
-
-- Added new endpoints section
-- Updated authentication docs
-- Fixed broken links
-
-Fixes #220
-/pr Update API documentation
-/verify
-```
-
-## 6. Modes in Action
-
-### Planning Mode
-
-Before writing code, analyze and plan:
-
-```
-/mode planning
-
-How should I structure the authentication middleware?
+Create a new issue for adding dark mode to the UI. Label it component:ui and assign me.
 ```
 
 The agent will:
-- Read existing code
-- Analyze patterns
-- Suggest approaches
-- NOT modify any files
+1. Read the `.github/ISSUE_TEMPLATE/feature_request.md` template first
+2. Draft the title and body
+3. Ask you to confirm
+4. Run `gh issue create` with proper labels and assignee
+5. Note the issue number for branch creation
 
-### Building Mode
-
-Switch to building mode when ready:
-
-```
-/mode building
-
-Now implement the authentication middleware following the plan.
-```
-
-The agent will:
-- Create/modify files
-- Run tests
-- Commit changes
-- Full development capabilities
-
-### Reviewing Mode
-
-Review your work:
+### Create a Branch
 
 ```
-/mode reviewing
-
-Review this PR for best practices.
+Create a branch for issue 219 from dev.
 ```
 
-The agent will:
-- Analyze code
-- Provide feedback
-- Suggest improvements
-- NOT modify files
+The agent will run `git checkout -b issue-219/add-dark-mode`.
 
-## 7. Tips & Best Practices
+### Commit and PR
+
+```
+Commit these changes with conventional format referencing issue 219, then create a PR.
+```
+
+The agent will commit and run `gh pr create` with proper title, body, and labels.
+
+## 5. Tips & Best Practices
 
 ### Issue-First Rule
 
@@ -242,30 +84,17 @@ The agent will:
 
 - **Issues**: `[TYPE] Description` (e.g., `[TASK] Setup agent`)
 - **PRs**: `Description (#<number>)` (e.g., `Setup agent (#217)`)
+- **No colons** in titles
 
-### Labels Matter
+### ASCII Only
 
-Every issue must have:
-- [ ] At least one component label (e.g., `component:cli`)
-- [ ] An assignee (you)
-
-### No Colons in Titles
-
-**CORRECT:**
-- `[TASK] Setup agent template`
-- `Setup agent template (#217)`
-
-**INCORRECT:**
-- `[TASK]: Setup agent template`
-- `Setup: agent template (#217)`
+Use markdown checkboxes `- [x]`. No Unicode checkmarks or emoji.
 
 ### CI is the Gate
 
-Your task is NOT complete until all CI checks pass. Use `/verify` to check status.
+Your task is NOT complete until all CI checks pass. Ask the agent: `Check CI status for PR 217.`
 
 ### Small Commits
-
-Make small, focused commits:
 
 ```
 git commit -m "fix: Add null check for user input
@@ -273,21 +102,9 @@ git commit -m "fix: Add null check for user input
 Fixes #220"
 ```
 
-Not:
+Not: `git commit -m "fixed stuff"`
 
-```
-git commit -m "fixed stuff"
-```
-
-## 8. Troubleshooting
-
-### Command Not Found
-
-If `/workflow` or other commands don't work:
-
-1. Check you're in the AIXCL repository root
-2. Verify `.opencode/commands/` exists
-3. Restart OpenCode
+## 6. Troubleshooting
 
 ### GitHub CLI Not Authenticated
 
@@ -300,54 +117,31 @@ gh auth login
 Make sure to create an issue before creating a branch:
 
 ```
-/issue Add new feature
+Create an issue for the login timeout bug, label it component:cli.
 ```
 
-Then note the issue number and use it for the branch.
+Then note the issue number and ask for the branch.
 
 ### CI Failing
 
 ```
-/verify
+Check CI status for PR 217.
 ```
 
-Check the logs, fix the issues, and commit again.
+## 7. Validation
 
-## 9. Validation
-
-Before committing changes to the `ai/` directory:
-
-```
-/lint
-```
-
-Or run directly:
+Before committing changes to `.opencode/`:
 
 ```bash
 ./scripts/checks/check-agents.sh
 ```
 
-## 10. Documentation
+## 8. Documentation
 
-- **AGENTS.md** - Operating contract and authority hierarchy
-- **DEVELOPMENT.md** - Development workflow rules
-- **ai/README.md** - AI directory structure and conventions
-- **ai/actions/** - All available actions
+- **AGENTS.md** - Operating contract
+- **DEVELOPMENT.md** - Workflow rules
+- **.opencode/rules/** - OpenCode behavioral rules
 - **.opencode/agents/** - Agent definitions
-- **.opencode/commands/** - Command definitions
-
-## Next Steps
-
-1. ✅ Run `./scripts/checks/check-environment.sh`
-2. ✅ Start OpenCode: `opencode`
-3. ✅ Try: `/workflow Add your first feature`
-4. ✅ Check out `/actions` to see all available actions
-
-## Getting Help
-
-- List available actions: `/actions`
-- Check environment: `./scripts/checks/check-environment.sh`
-- Review workflow: `ai/actions/action-workflow-visualization.md`
 
 ---
 
