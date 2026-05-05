@@ -122,8 +122,6 @@ check_directory_references() {
     # Only check directories that SHOULD exist (not optional ones like ai/skills)
     local dirs_to_check=(
         ".opencode/agents"   # Should exist
-        ".opencode/commands" # Should exist
-        ".opencode/modes"   # Should exist
     )
     
     for dir in "${dirs_to_check[@]}"; do

@@ -8,8 +8,9 @@ on:
       - main
       - dev
     paths:
-      - 'ai/orchestration/**'
-      - 'ai/skills/**'
+      - '.opencode/agents/**'
+      - '.opencode/skills/**'
+      - '.opencode/rules/**'
       - 'docs/reference/ai-report-*.md'
       - 'docs/developer/agent-template.md'
       - 'docs/developer/ai-file-naming.md'

@@ -156,7 +156,6 @@ check_opencode_structure() {
     
     local dirs=(
         ".opencode/agents"
-        ".opencode/commands"
     )
     
     for dir in "${dirs[@]}"; do
