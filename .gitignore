@@ -57,6 +57,7 @@ pgadmin-servers.json
 # Open WebUI secret keys
 .webui_secret_key
 *.key
+.aixcl.initialized
 
 # Database backups (user-generated)
 pg-backup/*
