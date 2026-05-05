@@ -117,7 +117,8 @@ EOF
     export PGADMIN_REPLACE_SERVERS_ON_STARTUP
     
     # Re-run this script as the non-root user
-    exec su -s /bin/bash pgadmin -c 'exec /usr/local/bin/pgadmin-entrypoint.sh'
+    # Use su -m to preserve environment variables (email and password)
+    exec su -m -s /bin/bash pgadmin -c 'exec /usr/local/bin/pgadmin-entrypoint.sh'
 fi
 
 # At this point, we should be running as non-root
