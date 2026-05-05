@@ -105,8 +105,10 @@ if [ "$(id -u)" = "0" ]; then
     echo "Switching to webui user (UID: $USER_ID)..."
     # Re-run this script as the non-root user using su
     # Preserve environment variables needed by OpenWebUI (DATABASE_URL, etc.)
-    # Using 'su' (not 'su -') preserves the environment
+    # Using 'su -m' preserves the environment but keeps HOME=/root which causes
+    # asyncpg to look for /root/.postgresql/sslkey. Set HOME to webui's home.
     export -n USER_ID GROUP_ID  # Don't export these to avoid confusion
+    export HOME=/home/webui
     exec su -m webui -c 'exec /usr/local/bin/openwebui-entrypoint.sh'
 fi
 
