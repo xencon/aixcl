@@ -214,8 +214,7 @@ services:
     user: "999:999"  # Run as postgres user (official image default)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
-      POSTGRES_PASSWORD_FILE: ${POSTGRES_PASSWORD_FILE:-}
+      # NOTE: Password managed by Vault. The entrypoint reads /run/secrets/postgres-password.
       POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
@@ -248,6 +247,8 @@ services:
       -c log_rotation_age=1d
       -c log_rotation_size=100MB
       -c log_min_duration_statement=0
+    depends_on:
+      - vault-agent-postgres-bootstrap
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 30s
@@ -360,8 +361,7 @@ services:
     pull_policy: missing
     network_mode: host
     environment:
-      PGADMIN_DEFAULT_EMAIL: $PGADMIN_EMAIL
-      PGADMIN_DEFAULT_PASSWORD: $PGADMIN_PASSWORD
+      PGADMIN_DEFAULT_EMAIL: $PGADMIN_DEFAULT_EMAIL
       PGADMIN_LISTEN_PORT: 5050
       PGADMIN_LISTEN_ADDRESS: 127.0.0.1
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
@@ -520,8 +520,15 @@ services:
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
+    entrypoint: ["/usr/local/bin/postgres-exporter-entrypoint.sh"]
+    volumes:
+      - ../scripts/runtime/postgres-exporter-entrypoint.sh:/usr/local/bin/postgres-exporter-entrypoint.sh:ro
+      - aixcl-vault-secrets:/run/secrets:ro
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}?sslmode=require"
+      # PostgreSQL credentials are read from Vault by the entrypoint
+      # Do not set DATA_SOURCE_NAME here; it is constructed from /run/secrets/postgres-password
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
     network_mode: host
     depends_on:
       - postgres

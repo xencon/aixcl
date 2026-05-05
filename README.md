@@ -71,9 +71,12 @@ podman info | grep "rootless"
 # If rootless is not enabled, see Troubleshooting section below
 ```
 
-### Step 4: Start the Stack
+### Step 4: Initialize the Stack
 
 ```bash
+# Generate .env file and admin credentials (one-time setup)
+./aixcl stack init
+
 # Start with system profile (includes all services)
 ./aixcl stack start --profile sys
 
