@@ -4,6 +4,39 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.3] - 2026-05-05
+
+### Summary
+
+Hotfix release — Vault credential management hardening. Fixes critical clean build failures where `stack start` silently exited, and four service startup issues (Open WebUI, pgAdmin, Grafana, Postgres exporter) caused by environment variable handling in non-root entrypoint wrappers.
+
+### Fixed
+
+- **Clean Build Silent Failure**: `stack start` silently exited with code 1 on fresh installations because `.env.example` was missing `PROFILE=` and `grep | sed` pipelines failed under `set -e` (Fixes #1008)
+- **PostgreSQL Password Sync**: Entrypoint script syncs admin password from Vault on restart using temporary `pg_ctl` start (Fixes #993)
+- **Service Credential Leaks**: Vault manages all service passwords. This release removes last traces of password fallbacks from compose and entrypoints (Fixes #1010)
+
+### Security
+
+- **Vault Credential Isolation**: Eliminated `POSTGRES_PASSWORD` fallback in `docker-compose.yml`. Passwords now exclusively from `/run/secrets/postgres-password` (Fixes #1010)
+- **Entrypoint Environment Hardening**: Open WebUI and pgAdmin entrypoints now preserve Vault credentials across `su` user switches (Fixes #1012)
+
+### Infrastructure
+
+- **Grafana Vault Entrypoint**: `grafana-entrypoint.sh` reads admin password from `/run/secrets/grafana-password` (Fixes #1005)
+- **Vault Bootstrap Agents**: Agent sidecars for Open WebUI, pgAdmin, Grafana, and PostgreSQL fetch static passwords from Vault KV (Fixes #998)
+
+### Related Issues
+
+- Fixes #1005 - Grafana container fails to start due to missing entrypoint volume mount
+- Fixes #1008 - Stack start fails silently on clean build due to missing PROFILE and pipefail
+- Fixes #1010 - Open WebUI, pgAdmin, and Grafana fail on clean build after Vault credential migration
+- Fixes #1012 - Open WebUI and pgAdmin still fail after PR 1011 due to su env issues
+- Part of #998 - Add Vault bootstrap passwords for all services
+- Part of #1000 - Interactive first-run init with Vault-only credentials
+
+---
+
 ## [v1.1.2] - 2026-05-03
 
 ### Added
