@@ -10,7 +10,7 @@
 
 Agents MUST read this file before performing any development work in this repository.
 This file is the single source of truth for workflow, formatting, and contribution rules.
-It complements `AGENTS.md` (the operating contract) and `ai/governance/` (behavioral constraints).
+It complements `AGENTS.md` (the operating contract) and `.opencode/rules/` (behavioral constraints).
 
 ---
 
@@ -266,8 +266,8 @@ When working via the OpenCode CLI:
 
 - This file is loaded automatically via the `instructions` field in `opencode.json`
 - The AIXCL local provider is configured in `opencode.json` — use `opencode` to start a session
-- Custom slash commands can be added under `.opencode/commands/`
 - Custom agents can be added under `.opencode/agents/`
+- Rules can be added under `.opencode/rules/`
 - Permissions for `bash`, `edit`, and `webfetch` tools are configured in `opencode.json`
 
 ---
