@@ -1,6 +1,9 @@
 #!/bin/sh
 # postgres-exporter Vault entrypoint
 # Reads PostgreSQL password from Vault secrets and constructs DATA_SOURCE_NAME
+#
+# IMPORTANT: The official postgres_exporter binary is at /bin/postgres_exporter,
+# not /postgres_exporter. Always use the full path.
 
 set -e
 
@@ -32,4 +35,4 @@ unset PGPASSWORD
 unset POSTGRES_PASSWORD
 
 # Start the official postgres_exporter
-exec /postgres_exporter
+exec /bin/postgres_exporter
