@@ -161,7 +161,7 @@ services:
       - vault
     restart: unless-stopped
 
-  # Bootstrap service for pgAdmin Vault KV password
+   # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
     image: hashicorp/vault:1.18
     container_name: vault-agent-pgadmin-bootstrap
@@ -179,6 +179,29 @@ services:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
     command: /usr/local/bin/bootstrap-password-pgadmin.sh
+    network_mode: host
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+   # Bootstrap service for Grafana Vault KV password
+  vault-agent-grafana-bootstrap:
+    image: hashicorp/vault:1.18
+    container_name: vault-agent-grafana-bootstrap
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    volumes:
+      - ../scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro
+      - aixcl-vault-secrets:/run/secrets
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: aixcl-dev-token
+    command: /usr/local/bin/bootstrap-password-grafana.sh
     network_mode: host
     depends_on:
       - vault
@@ -423,15 +446,18 @@ services:
     volumes:
       - aixcl-grafana:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - aixcl-vault-secrets:/run/secrets:ro
+      - ../scripts/runtime/grafana-entrypoint.sh:/usr/local/bin/grafana-entrypoint.sh:ro
+    entrypoint: ["/usr/local/bin/grafana-entrypoint.sh"]
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_INSTALL_PLUGINS=
+      - GF_SECURITY_ADMIN_USER=${AIXCL_ADMIN_USER:-admin}
       - GF_SERVER_HTTP_PORT=3000
+    command: []
     network_mode: host
     depends_on:
       - prometheus
       - loki
+      - vault-agent-grafana-bootstrap
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
