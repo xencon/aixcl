@@ -41,12 +41,11 @@ When conflicts arise, follow this order:
 1. **Direct human instruction** in active session
 2. **AGENTS.md** (Operating Contract) - Critical constraints and core principles
 3. **DEVELOPMENT.md** (Workflow Rules) - Development workflow and contribution rules
-4. **ai/governance/** - Behavioral constraints and workflow policy
-5. **ai/actions/** - Executable workflow actions
-6. **ai/templates/** - Release templates (issue/PR templates now in `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md`)
-7. **ai/orchestration/** - Agent definitions and workflow steps
-8. **docs/architecture/governance/** - Platform invariants and service contracts
-9. **docs/developer/** - Developer guides and workflow documentation
+4. **`.opencode/rules/`** - Behavioral constraints and workflow policy
+5. **`.github/`** - Issue and PR templates
+6. **`.opencode/skills/`** - Specialized task workflows
+7. `docs/architecture/governance/` - Platform invariants and service contracts
+8. `docs/developer/` - Developer guides and workflow documentation
 
 ## Core Principles
 
@@ -151,25 +150,15 @@ When conflicts arise, follow this order:
 - Collapse service boundaries
 - Introduce architectural indirection without explicit instruction
 
-## Lazy-Loading Action Files
+## Lazy-Loading Rules
 
-When performing specific tasks, load the relevant action file from `ai/actions/`:
+When performing specific tasks, read the relevant rule file from `.opencode/rules/`:
 
-### Workflow Actions (`ai/actions/workflow/`)
-- Creating an issue → Load `ai/actions/workflow/action-create-issue.md`
-- Creating a branch → Load `ai/actions/workflow/action-create-branch.md`
-- Committing changes → Load `ai/actions/workflow/action-commit.md`
-- Creating a PR → Load `ai/actions/workflow/action-create-pr.md`
-- Verifying CI → Load `ai/actions/workflow/action-verify-ci.md`
-- Workflow state detection → Load `ai/actions/workflow/action-detect-workflow-state.md`
-- Workflow report → Load `ai/actions/workflow/action-workflow-report.md`
-
-### Validation Actions (`ai/actions/validation/`)
-- Linting agents/actions → Load `ai/actions/validation/action-lint-agents.md`
-
-### Utility Actions (`ai/actions/utilities/`)
-- Icon usage guidelines → Load `ai/actions/utilities/action-icon-usage.md`
-- Workflow visualization → Load `ai/actions/utilities/action-workflow-visualization.md`
+| Rule | File | Purpose |
+|---|---|---|
+| Workflow | `.opencode/rules/workflow.md` | Issue-First workflow, branch/commit/PR format |
+| Formatting | `.opencode/rules/formatting.md` | Title rules, ASCII conventions, label taxonomy |
+| Security | `.opencode/rules/security.md` | Runtime core invariants and safe/unsafe areas |
 
 ## Lazy-Loading Templates
 
@@ -238,7 +227,7 @@ Always reference these documents when needed:
 - `docs/architecture/governance/01_ai_guidance.md` - AI behavioral guidance
 - `docs/architecture/governance/02_profiles.md` - Profile definitions
 - `docs/architecture/governance/03_stack_status.md` - Stack status
-- `ai/governance/workflow-governance.md` - Workflow constraints
+- `.opencode/rules/workflow.md` - Workflow constraints
 
 ---
 

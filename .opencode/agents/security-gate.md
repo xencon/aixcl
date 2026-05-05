@@ -284,7 +284,7 @@ Before completing security scan:
 - CodeQL queries: `.github/codeql/`
 - Security policies: `.security/policies/`
 - Audit scripts: `scripts/security/`
-- Compliance rules: `ai/governance/workflow-governance.md`
+- Compliance rules: `.opencode/rules/workflow.md`
 
 ---
 

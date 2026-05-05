@@ -13,7 +13,7 @@ OpenCode is the recommended local-first AI coding assistant for AIXCL. It connec
 opencode
 ```
 
-The `agent-context` agent and our workflow commands load automatically from `opencode.json`.
+The `agent-context` agent and governance rules load automatically from `opencode.json`.
 
 ## Configuration (`opencode.json`)
 
@@ -23,12 +23,34 @@ The `agent-context` agent and our workflow commands load automatically from `ope
   "instructions": [
     "AGENTS.md",
     "DEVELOPMENT.md",
-    "ai/governance/workflow-governance.md",
+    ".opencode/rules/*.md",
     "docs/architecture/governance/00_invariants.md",
     "docs/architecture/governance/01_ai_guidance.md",
     "docs/developer/development-workflow.md"
   ],
   "default_agent": "agent-context",
+  "permission": {
+    "edit": "ask",
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git add*": "allow",
+      "ls*": "allow",
+      "cat*": "allow",
+      "grep*": "allow",
+      "gh repo*": "allow",
+      "gh issue*": "allow",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "rm -rf*": "deny",
+      "git push --force*": "deny",
+      "./scripts/checks/check-agents.sh*": "allow"
+    },
+    "webfetch": "ask",
+    "skill": "allow"
+  },
   "provider": {
     "aixcl-local": {
       "npm": "@ai-sdk/openai-compatible",
@@ -47,26 +69,15 @@ The `agent-context` agent and our workflow commands load automatically from `ope
 }
 ```
 
-## Custom Commands
+## Extending OpenCode
 
-Markdown files in `.opencode/commands/` define slash commands discovered by OpenCode.
+Custom agents, skills, and rules can be added to the repo without modifying `opencode.json`:
 
-| Command | File | Purpose |
-|---------|------|---------|
-| `/workflow` | `commands/workflow.md` | Run the full Issue-First workflow |
-| `/issue` | `commands/issue.md` | Create a GitHub issue |
-| `/branch` | `commands/branch.md` | Create a feature branch from dev |
-| `/commit` | `commands/commit.md` | Commit changes with conventional format |
-| `/pr` | `commands/pr.md` | Create a pull request |
-| `/verify` | `commands/verify.md` | Check CI status |
-| `/actions` | `commands/actions.md` | List available actions |
-| `/lint` | `commands/lint.md` | Validate agents and actions |
-| `/platform` | `commands/platform.md` | Live platform health report |
-| `/status` | `commands/status.md` | Quick triage command |
-| `/report` | `commands/report.md` | Workflow progress report |
-| `/release` | `commands/release.md` | Create a GitHub release |
+- **Custom agents:** `.opencode/agents/<name>.md`
+- **Custom skills:** `.opencode/skills/<name>/SKILL.md`
+- **Custom rules:** `.opencode/rules/<topic>.md`
 
-## Custom Agents
+## Agents
 
 Agents in `.opencode/agents/` provide specialized behavior.
 
@@ -106,11 +117,10 @@ Switch modes with `/mode planning`, `/mode building`, or `/mode reviewing`.
 
 - **Connection refused**: Ensure `./aixcl stack status` shows the engine as healthy.
 - **Model not found**: Verify the model name matches `./aixcl models list`.
-- **Agent not following rules**: Confirm `AGENTS.md` and `DEVELOPMENT.md` exist at the repo root.
+- **Agent not following rules**: Confirm `AGENTS.md` and `DEVELOPMENT.md` exist at the repo root and are listed in `opencode.json`.
 
 ## References
 
-- [OpenCode Commands](https://opencode.ai/docs/commands/)
 - [OpenCode Agents](https://opencode.ai/docs/agents/)
 - [OpenCode Skills](https://opencode.ai/docs/skills/)
 - [OpenCode Permissions](https://opencode.ai/docs/permissions/)
