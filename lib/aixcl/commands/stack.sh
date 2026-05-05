@@ -170,7 +170,7 @@ function start() {
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
             local env_profile
-            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
             
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
@@ -227,7 +227,7 @@ function start() {
         local env_file="${SCRIPT_DIR}/.env"
         if [ -f "$env_file" ]; then
             local current_env_profile
-            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
             if [ "$current_env_profile" != "$profile" ]; then
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -560,7 +560,7 @@ function stop() {
     local profile=""
     local env_file="${SCRIPT_DIR}/.env"
     if [ -f "$env_file" ]; then
-        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
     [ -z "$profile" ] && profile="sys"
     
@@ -761,7 +761,7 @@ function restart() {
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
             local env_profile
-            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
             
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
@@ -814,7 +814,7 @@ function restart() {
         local env_file="${SCRIPT_DIR}/.env"
         if [ -f "$env_file" ]; then
             local current_env_profile
-            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            current_env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
             if [ "$current_env_profile" != "$profile" ]; then
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -1097,7 +1097,7 @@ function export_quadlet() {
     local profile=""
     # Load profile from .env if not specified
     if [ -f "${SCRIPT_DIR}/.env" ]; then
-        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
     
     if [ -z "$profile" ]; then
@@ -1180,7 +1180,7 @@ function status() {
     local current_profile=""
     local env_file="${SCRIPT_DIR}/.env"
     if [ -f "$env_file" ]; then
-        current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
     
     # Determine overall status (Running/Stopped)
