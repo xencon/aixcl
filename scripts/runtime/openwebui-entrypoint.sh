@@ -107,7 +107,7 @@ if [ "$(id -u)" = "0" ]; then
     # Preserve environment variables needed by OpenWebUI (DATABASE_URL, etc.)
     # Using 'su' (not 'su -') preserves the environment
     export -n USER_ID GROUP_ID  # Don't export these to avoid confusion
-    exec su webui -c 'exec /usr/local/bin/openwebui-entrypoint.sh'
+    exec su -m webui -c 'exec /usr/local/bin/openwebui-entrypoint.sh'
 fi
 
 # At this point, we should be running as non-root
