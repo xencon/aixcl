@@ -40,8 +40,8 @@ _aixcl_complete() {
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
     
-    # List of all possible commands
-    local commands="stack service models engine utils vault help"
+    # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
+    local commands="stack service models engine utils vault help restart config"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -70,7 +70,7 @@ _aixcl_complete() {
     # Handle subcommands
     case "$prev" in
         'stack')
-            local stack_actions="start stop restart status logs"
+            local stack_actions="start stop restart status logs init export-quadlet"
             mapfile -t COMPREPLY < <(compgen -W "$stack_actions" -- "$cur")
             return 0
             ;;
