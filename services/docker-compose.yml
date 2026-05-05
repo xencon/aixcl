@@ -248,6 +248,8 @@ services:
       -c log_rotation_age=1d
       -c log_rotation_size=100MB
       -c log_min_duration_statement=0
+    depends_on:
+      - vault-agent-postgres-bootstrap
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 30s

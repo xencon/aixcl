@@ -24,12 +24,30 @@ PG_ENTRYPOINT="/usr/local/bin/docker-entrypoint.sh"
 PGDATA="${PGDATA:-/var/lib/postgresql/data}"
 
 # Read the Vault-generated password if available (mounted via aixcl-vault-secrets)
+# On first start the bootstrap agent may not have written the secret yet,
+# so we poll for up to 60 seconds before proceeding.
 VAULT_PASS=""
 if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
     VAULT_PASS=$(cat /run/secrets/postgres-password | tr -d '\n')
     echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
 else
-    echo "[Vault] No vault password file found, using PGPASSWORD env var"
+    echo "[Vault] Waiting for Vault to generate PostgreSQL bootstrap password..."
+    vault_ready=false
+    for i in $(seq 1 30); do
+        if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+            VAULT_PASS=$(cat /run/secrets/postgres-password | tr -d '\n')
+            echo "[Vault] PostgreSQL password loaded after $((i * 2)) seconds"
+            vault_ready=true
+            break
+        fi
+        echo "[Vault] Waiting for Vault bootstrap password... ($i/30)"
+        sleep 2
+    done
+    if [ "$vault_ready" = false ]; then
+        echo "[Vault] ERROR: Vault bootstrap password not available after 60 seconds"
+        echo "[Vault] Check that vault-agent-postgres-bootstrap is running and Vault is initialized"
+        exit 1
+    fi
 fi
 
 # If Vault password is set AND database already exists, update the admin password.
