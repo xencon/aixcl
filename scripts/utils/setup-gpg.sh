@@ -14,6 +14,7 @@ set -euo pipefail
 
 # Note: This script operates on user-global paths (~/.gnupg/, ~/.gitconfig)
 # No project-relative paths needed for GPG key operations
+# GPG signing test marker: issue-1046
 
 # Colors
 RED='\033[0;31m'
