@@ -110,19 +110,26 @@ store_bootstrap_password() {
     log_info "Bootstrap password for ${service} stored in Vault KV"
 }
 
+# Clear old bootstrap password files from shared volume
+# to prevent stale credentials after re-initialization
+clear_bootstrap_artifacts() {
+    log_info "Clearing old bootstrap password artifacts..."
+    
+    local files="/run/secrets/postgres-password /run/secrets/openwebui-password /run/secrets/pgadmin-password /run/secrets/grafana-password"
+    for f in $files; do
+        if [ -f "$f" ]; then
+            rm -f "$f" && log_info "Cleared old artifact: $f"
+        fi
+    done
+}
+
 # Initialize bootstrap passwords
 init_bootstrap_passwords() {
     log_info "Initializing bootstrap passwords..."
     
-    # Check if we need to migrate from .env
-    local env_file
-    if [ -n "${SCRIPT_DIR:-}" ] && [ -f "${SCRIPT_DIR}/.env" ]; then
-        env_file="${SCRIPT_DIR}/.env"
-    elif [ -f ".env" ]; then
-        env_file=".env"
-    else
-        env_file=""
-    fi
+    # Clear old artifacts first (prevents stale credentials after re-init)
+    clear_bootstrap_artifacts
+    
     # Read admin identity from .env if available
     local admin_email="${AIXCL_ADMIN_EMAIL:-admin@example.com}"
     local admin_user="${AIXCL_ADMIN_USER:-admin}"
@@ -130,14 +137,40 @@ init_bootstrap_passwords() {
     log_info "Admin identity: ${admin_user} / ${admin_email}"
     
     # PostgreSQL bootstrap password
-    if ! bootstrap_password_exists "postgres"; then
-        local random_password
-        random_password=$(generate_password 32)
-        store_bootstrap_password "postgres" "$random_password" "PostgreSQL admin/bootstrap password" "$admin_email" "$admin_user"
-        log_info "Generated PostgreSQL bootstrap password: ${random_password}"
-    else
-        log_info "PostgreSQL bootstrap password already exists in Vault KV (skipping)"
+    # Always sync from shared volume/container to KV to ensure KV matches PostgreSQL
+    local postgres_password
+    postgres_password=""
+    
+    # Source 1: Read from shared volume (already set by bootstrap agent)
+    if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+        postgres_password=$(cat /run/secrets/postgres-password | tr -d '\n')
+        log_info "Read existing PostgreSQL password from shared volume (${#postgres_password} chars)"
     fi
+    
+    # Source 2: Read from PostgreSQL container secrets volume
+    if [ -z "$postgres_password" ]; then
+        if command -v podman >/dev/null 2>&1; then
+            postgres_password=$(podman exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+            if [ -n "$postgres_password" ]; then
+                log_info "Read existing PostgreSQL password from container (${#postgres_password} chars)"
+            fi
+        elif command -v docker >/dev/null 2>&1; then
+            postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+            if [ -n "$postgres_password" ]; then
+                log_info "Read existing PostgreSQL password from container (${#postgres_password} chars)"
+            fi
+        fi
+    fi
+    
+    # Source 3: Generate new random password
+    if [ -z "$postgres_password" ]; then
+        postgres_password=$(generate_password 32)
+        log_info "Generated new PostgreSQL bootstrap password: ${postgres_password}"
+    fi
+    
+    # Always write to KV (overwrite if exists) so KV matches PostgreSQL
+    store_bootstrap_password "postgres" "$postgres_password" "PostgreSQL admin/bootstrap password" "$admin_email" "$admin_user"
+    log_info "PostgreSQL bootstrap password synced to Vault KV"
     
     # Open WebUI bootstrap password
     if ! bootstrap_password_exists "openwebui"; then
@@ -151,12 +184,9 @@ init_bootstrap_passwords() {
     
     # pgAdmin bootstrap password
     if ! bootstrap_password_exists "pgadmin"; then
-        # Generate random password for pgAdmin
         local random_password
         random_password=$(generate_password 32)
         store_bootstrap_password "pgadmin" "$random_password" "pgAdmin admin password" "$admin_email" "$admin_user"
-        
-        # Show the generated password
         log_info "Generated pgAdmin bootstrap password: ${random_password}"
     else
         log_info "pgAdmin bootstrap password already exists in Vault KV (skipping)"
@@ -167,8 +197,6 @@ init_bootstrap_passwords() {
         local random_password
         random_password=$(generate_password 32)
         store_bootstrap_password "grafana" "$random_password" "Grafana admin password" "$admin_email" "$admin_user"
-        
-        # Show the generated password
         log_info "Generated Grafana bootstrap password: ${random_password}"
     else
         log_info "Grafana bootstrap password already exists in Vault KV (skipping)"
@@ -239,21 +267,38 @@ enable_database_engine() {
     fi
 }
 
-# Check if PostgreSQL connection exists
+# Check if PostgreSQL connection has valid connection_url
 is_postgres_configured() {
     local config
     config=$(curl -sf "${VAULT_ADDR}/v1/database/config/postgresql" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null || true)
     
-    if [ -n "$config" ] && echo "$config" | jq -e '.data' >/dev/null 2>&1; then
+    if [ -n "$config" ] && echo "$config" | jq -e '.data.connection_details.connection_url' >/dev/null 2>&1; then
         log_verbose "PostgreSQL connection already configured"
         return 0
     fi
     return 1
 }
 
+# Delete a stale/broken PostgreSQL config (no connection_url)
+delete_broken_postgres_config() {
+    local config
+    config=$(curl -sf "${VAULT_ADDR}/v1/database/config/postgresql" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null || true)
+    
+    if [ -n "$config" ] && ! echo "$config" | jq -e '.data.connection_details.connection_url' >/dev/null 2>&1; then
+        log_warn "Found stale PostgreSQL config without connection_url - deleting..."
+        curl -sf -X DELETE "${VAULT_ADDR}/v1/database/config/postgresql" \
+            -H "X-Vault-Token: ${VAULT_TOKEN}" >/dev/null 2>&1 || true
+        log_info "Stale config deleted"
+    fi
+}
+
 # Configure PostgreSQL connection (idempotent)
 configure_postgres_connection() {
+    # Clean up stale configs first (from previous failed attempts)
+    delete_broken_postgres_config
+    
     if is_postgres_configured; then
         log_info "PostgreSQL connection already configured (skipping)"
         return 0
@@ -614,8 +659,11 @@ main() {
     fi
     
     # Run initialization steps (all idempotent)
+    # NOTE: init_bootstrap_passwords MUST run before configure_postgres_connection
+    # so that the KV contains the real PostgreSQL password before we try to read it.
     enable_database_engine
     enable_kv_engine
+    init_bootstrap_passwords
     configure_postgres_connection
     create_app_role
     create_admin_role
@@ -623,7 +671,6 @@ main() {
     create_policies
     enable_approle_auth
     enable_audit_logging
-    init_bootstrap_passwords
     test_credentials
     
     show_summary
