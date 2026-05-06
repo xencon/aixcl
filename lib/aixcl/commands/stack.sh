@@ -533,10 +533,41 @@ function start() {
         
         if [ "$has_vault" = true ]; then
             echo ""
-            echo "Vault is running. To complete setup, run:"
-            echo "  ./aixcl vault init"
+            echo "Vault is running. Auto-initializing..."
             echo ""
-            echo "Then check status with:"
+            
+            # Source vault-init functions and run initialization inline
+            # This ensures bootstrap agents have had time to write passwords
+            local vault_init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
+            if [ -f "$vault_init_script" ]; then
+                # Wait briefly for bootstrap agents to stabilize
+                echo "Waiting for bootstrap agents to write passwords..."
+                sleep 5
+                
+                # Run vault init via CLI wrapper (handles env, checks, etc.)
+                if bash "$vault_init_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]"; then
+                    echo ""
+                    echo "Vault initialization complete."
+                else
+                    echo ""
+                    echo "Vault initialization encountered issues. Run manually:"
+                    echo "  ./aixcl vault init"
+                fi
+                
+                # Show current passwords
+                echo ""
+                echo "Retrieving bootstrap passwords..."
+                echo ""
+                bash "${SCRIPT_DIR}/scripts/vault/vault-commands.sh" passwords 2>/dev/null || echo "  Run './aixcl vault passwords' to view"
+            else
+                echo ""
+                echo "Vault initialization script not found. Run manually:"
+                echo "  ./aixcl vault init"
+                echo ""
+            fi
+            
+            echo ""
+            echo "Check status with:"
             echo "  ./aixcl vault status"
             echo ""
         fi
