@@ -52,26 +52,8 @@ services:
       retries: 5
       start_period: 30s
 
-  vault-init:
-    image: hashicorp/vault:1.18
-    container_name: vault-init
-    pull_policy: missing
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    volumes:
-      - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
-    environment:
-      VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: aixcl-dev-token
-    command: /usr/local/bin/init-vault.sh
-    network_mode: host
-    depends_on:
-      vault:
-        condition: service_healthy
-    restart: "no"
+  # Vault initialization is now handled by `aixcl vault init` CLI command
+  # after stack start, when bootstrap passwords are available in Vault KV
 
   # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
   vault-agent-postgres:

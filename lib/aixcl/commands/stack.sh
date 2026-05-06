@@ -522,7 +522,7 @@ function start() {
             fi
         fi
         
-        # Check if Vault is in the profile and auto-initialize if needed
+        # Check if Vault is in the profile and prompt user to initialize
         local has_vault=false
         for service in "${profile_services[@]}"; do
             if [ "$service" = "vault" ]; then
@@ -532,18 +532,13 @@ function start() {
         done
         
         if [ "$has_vault" = true ]; then
-            echo "Checking Vault initialization..."
-            local vault_init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
-            if [ -f "$vault_init_script" ]; then
-                # Run vault init (idempotent - safe to run multiple times)
-                if bash "$vault_init_script" 2>&1 | tail -20; then
-                    echo "Vault initialization complete"
-                else
-                    echo "Warning: Vault initialization may have issues. Run './aixcl vault status' for details"
-                fi
-            else
-                echo "Warning: Vault initialization script not found at $vault_init_script"
-            fi
+            echo ""
+            echo "Vault is running. To complete setup, run:"
+            echo "  ./aixcl vault init"
+            echo ""
+            echo "Then check status with:"
+            echo "  ./aixcl vault status"
+            echo ""
         fi
         
         status

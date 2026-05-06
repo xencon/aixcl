@@ -268,16 +268,48 @@ configure_postgres_connection() {
         log_warn "You may need to re-run init after PostgreSQL starts"
     fi
     
+    # Fetch the actual PostgreSQL bootstrap password
+    local postgres_password
+    local postgres_user="${POSTGRES_USER:-admin}"
+    
+    # Source 1: Vault KV (primary - survives restarts if Vault data persists)
+    postgres_password=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null | jq -r '.data.data.password // empty')
+    if [ -n "$postgres_password" ]; then
+        log_info "Retrieved PostgreSQL bootstrap password from Vault KV"
+    fi
+    
+    # Source 2: Read from PostgreSQL container secrets volume (fallback)
+    if [ -z "$postgres_password" ] && command -v podman >/dev/null 2>&1; then
+        postgres_password=$(podman exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+        if [ -n "$postgres_password" ]; then
+            log_info "Retrieved PostgreSQL bootstrap password from container secrets volume"
+        fi
+    fi
+    
+    if [ -z "$postgres_password" ] && command -v docker >/dev/null 2>&1; then
+        postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+        if [ -n "$postgres_password" ]; then
+            log_info "Retrieved PostgreSQL bootstrap password from container secrets volume"
+        fi
+    fi
+    
+    if [ -z "$postgres_password" ]; then
+        log_warn "Could not retrieve PostgreSQL bootstrap password"
+        log_warn "Falling back to 'admin' — this will likely fail if bootstrap already ran"
+        postgres_password="admin"
+    fi
+    
     curl -sf -X POST "${VAULT_ADDR}/v1/database/config/postgresql" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d '{
-            "plugin_name": "postgresql-database-plugin",
-            "allowed_roles": "aixcl-app,aixcl-admin,aixcl-readonly",
-            "connection_url": "postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable",
-            "username": "admin",
-            "password": "admin"
-        }' 2>/dev/null || {
+        -d "{
+            \"plugin_name\": \"postgresql-database-plugin\",
+            \"allowed_roles\": \"aixcl-app,aixcl-admin,aixcl-readonly\",
+            \"connection_url\": \"postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable\",
+            \"username\": \"${postgres_user}\",
+            \"password\": \"${postgres_password}\"
+        }" 2>/dev/null || {
         log_warn "Failed to configure PostgreSQL connection (may already exist)"
     }
 }
