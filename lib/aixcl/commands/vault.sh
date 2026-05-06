@@ -158,8 +158,9 @@ function cmd_vault_rotate() {
     fi
     echo "Triggering manual credential rotation..."
     
-    # Check if Vault is accessible
-    if ! vault status >/dev/null 2>&1; then
+    # Check if Vault is accessible (via HTTP API, not vault CLI)
+    local vault_addr="${VAULT_ADDR:-http://127.0.0.1:8200}"
+    if ! curl -sf "${vault_addr}/v1/sys/health" >/dev/null 2>&1; then
         echo "Error: Vault is not running or not accessible"
         echo "Run: ./aixcl vault init"
         return 1
