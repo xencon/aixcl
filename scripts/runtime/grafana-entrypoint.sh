@@ -28,7 +28,7 @@ GRAFANA_PID=$!
 
 # Wait for Grafana to be ready
 echo "[Vault] Waiting for Grafana to be ready..."
-for i in {1..60}; do
+for _ in {1..60}; do
     if curl -sf http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
         echo "[Vault] Grafana is ready"
         break
