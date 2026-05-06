@@ -36,9 +36,42 @@ podman --version  # Should show 4.9+
 gpg --version     # Should show 2.2+
 ```
 
-### Step 2: Configure GPG (Maintainers Only)
+### Step 2: Configure Podman Rootless
 
-**Note:** GPG signing is required for CODEOWNERS pushing to main/dev branches. Contributors using fork+PR workflow do not need GPG.
+AIXCL requires rootless Podman. Run the setup script once per machine:
+
+```bash
+./scripts/utils/setup-podman-rootless.sh
+```
+
+**What this modifies on your local machine:**
+
+| File | Purpose |
+|------|---------|
+| `~/.bashrc` | Adds `DOCKER_BIN=podman` and `DOCKER_HOST` exports |
+| `/etc/subuid` | Configures subordinate UIDs for rootless containers (via sudo) |
+| `/etc/subgid` | Configures subordinate GIDs for rootless containers (via sudo) |
+| `~/.config/containers/containers.conf` | Podman network and security defaults |
+| `~/.config/containers/registries.conf` | Docker Hub search registry |
+| `~/.config/containers/storage.conf` | Rootless storage driver settings |
+| `.env.podman` (repo root) | Project-specific `DOCKER_HOST` override |
+
+**After setup, reload your shell:**
+
+```bash
+source ~/.bashrc
+```
+
+**Verify rootless mode:**
+
+```bash
+podman info | grep "rootless"
+# Should show: "rootless: true"
+```
+
+### Step 3: Configure GPG (CODEOWNERS Only)
+
+**Note:** GPG signing is required only for CODEOWNERS pushing directly to `main`. Contributors using the fork+PR workflow do not need GPG. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **For CODEOWNERS:**
 
@@ -56,19 +89,6 @@ git config --global user.signingkey YOUR_KEY_ID
 # Export public key for GitHub
 gpg --armor --export YOUR_KEY_ID
 # Copy output and add to GitHub Settings → SSH and GPG keys
-```
-
-### Step 3: Verify Podman
-
-```bash
-# Check Podman version
-podman --version
-
-# Verify rootless mode is working
-podman info | grep "rootless"
-# Should show: "rootless: true"
-
-# If rootless is not enabled, see Troubleshooting section below
 ```
 
 ### Step 4: Initialize the Stack
@@ -226,7 +246,7 @@ git log --show-signature -1
 The following are **not optional** and cannot be disabled:
 
 - ✅ **Podman rootless** - No privileged containers
-- ✅ **GPG-signed commits** - All commits to main/dev must be signed
+- ✅ **GPG-signed commits** - All commits to main must be signed (CODEOWNERS only)
 - ✅ **HashiCorp Vault** - Dynamic secrets with automatic rotation
 - ✅ **PostgreSQL SSL** - Encrypted database connections
 - ✅ **Host firewall** - Network isolation at host level
@@ -256,6 +276,26 @@ sysctl kernel.unprivileged_userns_clone
 # Should return 1, if not:
 echo 'kernel.unprivileged_userns_clone=1' | sudo tee /etc/sysctl.d/99-userns.conf
 sudo sysctl --system
+```
+
+### "Podman rootless setup failed"
+
+If `./scripts/utils/setup-podman-rootless.sh` fails, check manually:
+
+```bash
+# Verify subordinate UIDs/GIDs are configured
+grep "^$(whoami):" /etc/subuid
+grep "^$(whoami):" /etc/subgid
+
+# If missing, add them manually (requires sudo)
+echo "$(whoami):100000:65536" | sudo tee -a /etc/subuid
+echo "$(whoami):100000:65536" | sudo tee -a /etc/subgid
+
+# Start the podman socket manually
+systemctl --user start podman.socket
+
+# Re-run the setup script
+./scripts/utils/setup-podman-rootless.sh
 ```
 
 ### "Vault not initializing"
