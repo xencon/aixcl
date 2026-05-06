@@ -148,8 +148,8 @@ opencode
 ### Starting OpenCode
 
 1. Ensure AIXCL services are running: `./aixcl stack status`
-2. OpenCode automatically connects to `http://localhost:11434/v1`
-3. Start OpenCode: `opencode`
+2. Start OpenCode: `opencode`
+3. In the TUI, use `/connect` to select a provider (the dev container exposes Ollama at `http://localhost:11434/v1`)
 
 ---
 
