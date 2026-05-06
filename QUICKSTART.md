@@ -31,6 +31,8 @@ cd /path/to/aixcl
 opencode
 ```
 
+Then connect to your preferred provider with `/connect`.
+
 The `agent-context` agent will automatically load with full project context.
 
 ## 3. Modes

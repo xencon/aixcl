@@ -4,12 +4,16 @@
 
 Your dev container is running AIXCL with the following configuration:
 - **API Endpoint**: http://localhost:11434/v1
-- **Model**: qwen2.5-coder:0.5b
+- **Local Model**: qwen2.5-coder:0.5b (when Ollama running)
 - **Provider**: Ollama (running in dev container)
+
+## Provider-Agnostic Note
+
+AIXCL no longer hardcodes a default `model` in `opencode.json`. You must connect to a provider via `/connect` before working. The dev container provides a local Ollama endpoint, but you can also use any cloud provider.
 
 ## Host-Side OpenCode Configuration
 
-Your `opencode.json` file in the repository root is already configured correctly:
+Your `opencode.json` file in the repository root is configured with a local provider:
 
 ```json
 {
@@ -26,21 +30,26 @@ Your `opencode.json` file in the repository root is already configured correctly
         }
       }
     }
-  },
-  "model": "aixcl-local/qwen2.5-coder:0.5b"
+  }
 }
 ```
+
+**No `model` key is set.** Use `/connect` to select your provider.
 
 ## How to Use
 
 ### From Your Host Machine:
 
 ```bash
-# Start OpenCode (it will automatically connect to localhost:11434)
+# Start OpenCode
 cd ~/src/github.com/xencon/aixcl
 opencode
 
-# In OpenCode, test with:
+# In the TUI, connect via one of:
+# a) Local dev container (if running): /connect -> aixcl-local
+# b) Cloud provider: /connect -> opencode, anthropic, openai, etc.
+
+# Then test with:
 # "Hello, can you confirm you're running from the dev container?"
 ```
 
@@ -48,7 +57,7 @@ opencode
 
 1. Open the project folder in VS Code on your **host**
 2. The OpenCode extension will read the local `opencode.json`
-3. It will connect to `localhost:11434` (which is the dev container)
+3. Use `/connect` in the TUI to select the local provider (`aixcl-local`) or any cloud provider
 
 ## How It Works
 
@@ -58,11 +67,13 @@ opencode
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │  OpenCode CLI                                         │ │
 │  │  - Reads opencode.json                                │ │
-│  │  - Connects to http://localhost:11434/v1               │ │
+│  │  - Use /connect to select provider                    │ │
+│  │  - aixcl-local -> http://localhost:11434/v1            │ │
+│  │  - cloud providers -> remote API                      │ │
 │  └────────────────────┬───────────────────────────────────┘ │
 └───────────────────────┼─────────────────────────────────────┘
                         │
-                        │ (port forwarded)
+                        │ (port forwarded, when using local)
                         │
 ┌───────────────────────┼─────────────────────────────────────┐
 │  Dev Container        │                                       │

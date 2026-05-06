@@ -1,17 +1,80 @@
 # OpenCode Integration for AIXCL
 
-OpenCode is the recommended local-first AI coding assistant for AIXCL. It connects directly to your inference engine (Ollama by default) via the OpenAI-compatible API and provides chat, autocomplete, and agentic workflows -- entirely on-device.
+OpenCode is the recommended AI coding assistant for AIXCL. It connects to any provider via the OpenAI-compatible API and provides chat, autocomplete, and agentic workflows.
 
 ## Quick Start
 
 ```bash
-# Ensure the stack is running
+# Ensure the stack is running (for local provider)
 ./aixcl stack start --profile dev
 ./aixcl stack status
 
 # Start OpenCode from the repo root
 opencode
+
+# Connect to a provider
+/connect
 ```
+
+The `agent-context` agent and governance rules load automatically from `opencode.json`.
+
+## Configuration (`opencode.json`)
+
+AIXCL does not hardcode a default `model`. You must connect to a provider via `/connect` before starting work. The project provides a local provider (`aixcl-local`) for on-device inference, but you can also use any cloud provider.
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "DEVELOPMENT.md",
+    ".opencode/rules/*.md",
+    "docs/architecture/governance/00_invariants.md",
+    "docs/architecture/governance/01_ai_guidance.md",
+    "docs/architecture/governance/02_profiles.md",
+    "docs/developer/development-workflow.md"
+  ],
+  "default_agent": "agent-context",
+  "permission": {
+    "edit": "ask",
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git add*": "allow",
+      "ls*": "allow",
+      "cat*": "allow",
+      "grep*": "allow",
+      "gh repo*": "allow",
+      "gh issue*": "allow",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "rm -rf*": "deny",
+      "git push --force*": "deny",
+      "./scripts/checks/check-agents.sh*": "allow"
+    },
+    "webfetch": "ask",
+    "skill": "allow"
+  },
+  "provider": {
+    "aixcl-local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "AIXCL",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
+        }
+      }
+    }
+  }
+}
+```
+
+**Note:** No `model` or `small_model` is set. OpenCode uses whatever provider you connect to via `/connect`.
 
 The `agent-context` agent and governance rules load automatically from `opencode.json`.
 
@@ -64,8 +127,7 @@ The `agent-context` agent and governance rules load automatically from `opencode
         }
       }
     }
-  },
-  "model": "aixcl-local/Qwen/Qwen2.5-Coder-0.5B-Instruct"
+  }
 }
 ```
 

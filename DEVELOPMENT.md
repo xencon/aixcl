@@ -265,7 +265,7 @@ Consult these before making architectural or structural decisions:
 When working via the OpenCode CLI:
 
 - This file is loaded automatically via the `instructions` field in `opencode.json`
-- The AIXCL local provider is configured in `opencode.json` — use `opencode` to start a session
+- The AIXCL local provider is configured in `opencode.json` — use `/connect` in the OpenCode TUI to select a provider, or connect to the local provider with `./aixcl stack start --profile dev`
 - Custom agents can be added under `.opencode/agents/`
 - Rules can be added under `.opencode/rules/`
 - Permissions for `bash`, `edit`, and `webfetch` tools are configured in `opencode.json`
