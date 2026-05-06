@@ -87,7 +87,7 @@ container_start() {
     if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$"; then
         log_info "Service '$service' is now running."
     else
-        log_warning "Service '$service' may not have started correctly. Check logs with: $0 logs $service"
+        log_warning "Service '$service' may not have started correctly. Check logs with: $0 stack logs $service"
     fi
     return 0
 }
