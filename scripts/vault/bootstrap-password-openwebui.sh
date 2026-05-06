@@ -41,7 +41,7 @@ fetch_bootstrap_password() {
         log "ERROR: Cannot write /run/secrets/openwebui-password"
         return 1
     fi
-    if ! chmod 600 /run/secrets/openwebui-password; then
+    if ! chmod 644 /run/secrets/openwebui-password; then
         log "ERROR: Cannot chmod /run/secrets/openwebui-password"
         return 1
     fi

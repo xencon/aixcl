@@ -20,6 +20,16 @@ if [ -f /run/secrets/postgres-password ]; then
     echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
 fi
 
+# Read Open WebUI admin password from Vault secrets volume if available
+# This ensures the admin user is created with the correct Vault-managed password
+if [ -f /run/secrets/openwebui-password ]; then
+    OPENWEBUI_PASSWORD=$(cat /run/secrets/openwebui-password)
+    export OPENWEBUI_PASSWORD
+    echo "[Vault] Open WebUI admin password loaded from /run/secrets/openwebui-password"
+else
+    echo "[Vault] Warning: /run/secrets/openwebui-password not found, admin may be created with empty password"
+fi
+
 # Build DATABASE_URL from env vars or defaults, using Vault password if available
 POSTGRES_USER="${POSTGRES_USER:-admin}"
 POSTGRES_DATABASE="${POSTGRES_DATABASE:-webui}"
