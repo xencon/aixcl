@@ -107,6 +107,12 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
 
     echo "[Vault] Starting PostgreSQL with official entrypoint..."
     echo ""
+else
+    # Fresh start: ensure POSTGRES_PASSWORD is set for initdb
+    if [ -n "$VAULT_PASS" ]; then
+        echo "[Vault] Fresh start detected. Setting POSTGRES_PASSWORD from Vault secret."
+        export POSTGRES_PASSWORD="$VAULT_PASS"
+    fi
 fi
 
 # Delegate to the official docker-entrypoint.sh which handles initdb or startup.

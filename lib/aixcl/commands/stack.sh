@@ -522,7 +522,7 @@ function start() {
             fi
         fi
         
-        # Check if Vault is in the profile and auto-initialize if needed
+        # Check if Vault is in the profile and prompt user to initialize
         local has_vault=false
         for service in "${profile_services[@]}"; do
             if [ "$service" = "vault" ]; then
@@ -532,18 +532,65 @@ function start() {
         done
         
         if [ "$has_vault" = true ]; then
-            echo "Checking Vault initialization..."
+            echo ""
+            echo "Vault is running. Auto-initializing..."
+            echo ""
+            
+            # Source vault-init functions and run initialization inline
+            # This ensures bootstrap agents have had time to write passwords
             local vault_init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
             if [ -f "$vault_init_script" ]; then
-                # Run vault init (idempotent - safe to run multiple times)
-                if bash "$vault_init_script" 2>&1 | tail -20; then
-                    echo "Vault initialization complete"
-                else
-                    echo "Warning: Vault initialization may have issues. Run './aixcl vault status' for details"
+                # Poll Vault KV until bootstrap agents have written passwords
+                # (Bootstrap agents start with vault and retry every 30s on failure)
+                echo "Waiting for bootstrap agents to write passwords to Vault KV..."
+                local wait_attempt=0
+                local kv_ready=false
+                while [ $wait_attempt -lt 30 ]; do
+                    if curl -sf "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" \
+                        --header "X-Vault-Token: aixcl-dev-token" >/dev/null 2>&1; then
+                        kv_ready=true
+                        echo "Bootstrap passwords found in Vault KV."
+                        break
+                    fi
+                    echo "Waiting for bootstrap agents... ($wait_attempt/30)"
+                    sleep 1
+                    wait_attempt=$((wait_attempt + 1))
+                done
+                
+                if [ "$kv_ready" != true ]; then
+                    echo ""
+                    echo "WARNING: Bootstrap agents did not populate Vault KV within 30 seconds."
+                    echo "Run manually after services stabilize:"
+                    echo "  ./aixcl vault init"
+                    echo ""
                 fi
+                
+                # Run vault init via CLI wrapper (handles env, checks, etc.)
+                if bash "$vault_init_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]"; then
+                    echo ""
+                    echo "Vault initialization complete."
+                else
+                    echo ""
+                    echo "Vault initialization encountered issues. Run manually:"
+                    echo "  ./aixcl vault init"
+                fi
+                
+                # Show current passwords
+                echo ""
+                echo "Retrieving bootstrap passwords..."
+                echo ""
+                bash "${SCRIPT_DIR}/scripts/vault/vault-commands.sh" passwords 2>/dev/null || echo "  Run './aixcl vault passwords' to view"
             else
-                echo "Warning: Vault initialization script not found at $vault_init_script"
+                echo ""
+                echo "Vault initialization script not found. Run manually:"
+                echo "  ./aixcl vault init"
+                echo ""
             fi
+            
+            echo ""
+            echo "Check status with:"
+            echo "  ./aixcl vault status"
+            echo ""
         fi
         
         status

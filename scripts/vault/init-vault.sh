@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Initialize HashiCorp Vault for AIXCL
-# Sets up PostgreSQL dynamic credentials and policies
+# Initialize HashiCorp Vault for AIXCL (legacy container script)
+# NOTE: This script is kept for manual use inside the Vault container.
+# The canonical initialization is now `aixcl vault init` on the host.
 #
 # Usage: ./scripts/vault/init-vault.sh [vault-address] [root-token]
 
@@ -43,16 +44,35 @@ enable_database_engine() {
   vault secrets enable database || log_warn "Database engine already enabled"
 }
 
+# Read PostgreSQL bootstrap password from Vault KV
+get_postgres_password() {
+  local password
+  password=$(vault kv get -field=password kv/bootstrap/postgres 2>/dev/null || true)
+  if [ -n "$password" ]; then
+    echo "$password"
+    return 0
+  fi
+  log_warn "Could not read bootstrap password from Vault KV"
+  log_warn "Ensure bootstrap agents have written to kv/bootstrap/postgres"
+  return 1
+}
+
 # Configure PostgreSQL connection
 configure_postgres_connection() {
   log_info "Configuring PostgreSQL connection..."
+  
+  local postgres_password
+  if ! postgres_password=$(get_postgres_password); then
+    log_warn "Using hardcoded fallback 'admin' — this will likely fail"
+    postgres_password="admin"
+  fi
   
   vault write database/config/postgresql \
     plugin_name=postgresql-database-plugin \
     allowed_roles="aixcl-app,aixcl-admin" \
     connection_url="postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable" \
     username="admin" \
-    password="admin"
+    password="$postgres_password"
 }
 
 # Create dynamic role for application
