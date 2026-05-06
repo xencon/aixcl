@@ -41,7 +41,7 @@ fetch_bootstrap_password() {
         log "ERROR: Cannot write /run/secrets/openwebui-password"
         return 1
     fi
-    if ! chmod 600 /run/secrets/openwebui-password; then
+    if ! chmod 644 /run/secrets/openwebui-password; then
         log "ERROR: Cannot chmod /run/secrets/openwebui-password"
         return 1
     fi
@@ -73,8 +73,7 @@ fetch_bootstrap_password
 # Keep checking every 30 seconds (password rarely changes)
 while true; do
     sleep 30
-    # Re-fetch to ensure file exists (in case volume was reset)
-    if [ ! -f /run/secrets/openwebui-password ]; then
-        fetch_bootstrap_password
-    fi
+    # Always re-fetch to ensure file has latest password from KV
+    # (password changes on re-init, stale files must not persist)
+    fetch_bootstrap_password
 done

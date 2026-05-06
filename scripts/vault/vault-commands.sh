@@ -208,6 +208,62 @@ vault_info() {
     echo ""
 }
 
+# Show bootstrap passwords from Vault KV
+vault_passwords() {
+    if ! vault_status >/dev/null 2>&1; then
+        return 1
+    fi
+    
+    log_info "Fetching bootstrap passwords from Vault KV..."
+    
+    echo ""
+    echo "=========================================="
+    echo "  Bootstrap Passwords (Vault KV)"
+    echo "=========================================="
+    echo ""
+    
+    local services="postgres openwebui pgadmin grafana"
+    local found_any=false
+    
+    for service in $services; do
+        local password_data
+        password_data=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/${service}" \
+            -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
+        
+        if [ -n "$password_data" ] && echo "$password_data" | jq -e '.data.data.password' >/dev/null 2>&1; then
+            local password username description
+            password=$(echo "$password_data" | jq -r '.data.data.password')
+            username=$(echo "$password_data" | jq -r '.data.data.username // "admin"')
+            description=$(echo "$password_data" | jq -r '.data.data.description // "Password"')
+            
+            case "$service" in
+                postgres) description="PostgreSQL admin" ;;
+                openwebui) description="Open WebUI admin" ;;
+                pgadmin) description="pgAdmin admin" ;;
+                grafana) description="Grafana admin" ;;
+            esac
+            
+            echo "  ${description}:"
+            echo "    Username: ${username}"
+            echo "    Password: ${password}"
+            echo ""
+            found_any=true
+        fi
+    done
+    
+    if [ "$found_any" = false ]; then
+        echo "  No bootstrap credentials found."
+        echo "  Run: ./aixcl vault init"
+        echo ""
+    fi
+    
+    echo "=========================================="
+    echo ""
+    echo "NOTE: These are bootstrap passwords for initial setup."
+    echo "      Change them after first login for security."
+    echo ""
+}
+
 # Main dispatcher
 case "${1:-}" in
     status|info)
@@ -215,6 +271,9 @@ case "${1:-}" in
         ;;
     credentials|creds)
         vault_credentials
+        ;;
+    passwords|password)
+        vault_passwords
         ;;
     admin)
         vault_admin_credentials
@@ -231,6 +290,7 @@ case "${1:-}" in
         echo "Commands:"
         echo "  status      - Show Vault status"
         echo "  credentials - Get database credentials"
+        echo "  passwords   - Get bootstrap passwords from Vault KV"
         echo "  admin       - Get admin credentials (short TTL)"
         echo "  rotate      - Force credential rotation"
         echo "  init        - Initialize Vault (one-time)"

@@ -63,6 +63,7 @@ services:
       - SETGID
     volumes:
       - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
+      - aixcl-vault-secrets:/run/secrets
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: aixcl-dev-token
