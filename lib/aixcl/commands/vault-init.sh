@@ -6,6 +6,15 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../.. && pwd)}"
+
+# Load .env file if available (needed for admin identity)
+if [ -f "${SCRIPT_DIR}/.env" ]; then
+    set -o allexport
+    source "${SCRIPT_DIR}/.env"
+    set +o allexport
+fi
+
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
 VAULT_TOKEN="${VAULT_DEV_TOKEN:-aixcl-dev-token}"
 AIXCL_VERBOSE="${AIXCL_VERBOSE:-0}"
