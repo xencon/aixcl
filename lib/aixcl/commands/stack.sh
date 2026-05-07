@@ -124,16 +124,24 @@ function init_stack() {
         echo "A valid email address is required."
     done
 
+    # Set PostgreSQL defaults based on admin username
+    local postgres_user="${AIXCL_ADMIN_USER}"
+    local postgres_db="webui"
+
     # Update .env with values
     sed -i "s/^#\?AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
     sed -i "s/^#\?AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
     sed -i "s/^#\?PGADMIN_DEFAULT_EMAIL=.*/PGADMIN_DEFAULT_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
     sed -i "s/^#\?OPENWEBUI_EMAIL=.*/OPENWEBUI_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    sed -i "s/^#\?POSTGRES_USER=.*/POSTGRES_USER=$postgres_user/" "$env_file"
+    sed -i "s/^#\?POSTGRES_DATABASE=.*/POSTGRES_DATABASE=$postgres_db/" "$env_file"
 
     echo ""
     echo "Initialisation complete:"
     echo "  Username: $AIXCL_ADMIN_USER"
     echo "  Email: $AIXCL_ADMIN_EMAIL"
+    echo "  PostgreSQL user: $postgres_user"
+    echo "  PostgreSQL database: $postgres_db"
     echo ""
 
     # Create initialized marker
