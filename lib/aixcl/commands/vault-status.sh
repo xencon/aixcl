@@ -7,7 +7,7 @@
 set -euo pipefail
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-aixcl-dev-token}"
+VAULT_TOKEN="${VAULT_DEV_TOKEN:-aixcl-dev-token}"
 
 export VAULT_ADDR
 export VAULT_TOKEN

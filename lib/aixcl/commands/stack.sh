@@ -547,7 +547,7 @@ function start() {
                 local kv_ready=false
                 while [ $wait_attempt -lt 30 ]; do
                     if curl -sf "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" \
-                        --header "X-Vault-Token: aixcl-dev-token" >/dev/null 2>&1; then
+                        --header "X-Vault-Token: ${VAULT_DEV_TOKEN:-aixcl-dev-token}" >/dev/null 2>&1; then
                         kv_ready=true
                         echo "Bootstrap passwords found in Vault KV."
                         break
