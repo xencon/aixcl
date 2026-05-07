@@ -44,14 +44,22 @@ jobs:
     steps:
       - name: Check PR has assignee
         env:
-          ASSIGNEES: "${{ toJson(github.event.pull_request.assignees) }}"
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # Check if assignees array is empty or null
-          if [[ -z "$ASSIGNEES" ]] || [[ "$ASSIGNEES" == "null" ]] || [[ "$ASSIGNEES" == "[]" ]]; then
-            echo "ERROR: PR must have at least one assignee"
-            exit 1
-          fi
-          echo "PR has assignee(s): $ASSIGNEES"
+          # Retry to handle API propagation delay
+          for i in 1 2 3; do
+            assignees=$(gh pr view "$PR_NUMBER" --json assignees --jq '.assignees[].login' 2>/dev/null)
+            if [[ -n "$assignees" ]]; then
+              echo "PR has assignee(s): $assignees"
+              exit 0
+            fi
+            echo "Attempt $i: No assignee found yet, retrying in 2s..."
+            sleep 2
+          done
+          
+          echo "ERROR: PR must have at least one assignee"
+          exit 1
 
   validate-pr-labels:
     name: Validate PR Labels
@@ -59,11 +67,20 @@ jobs:
     steps:
       - name: Check PR has component label
         env:
-          LABELS: "${{ toJson(github.event.pull_request.labels) }}"
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          if ! echo "$LABELS" | grep -q "component:"; then
-            echo "ERROR: PR must have at least one component label (component:*)"
-            echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
-            exit 1
-          fi
-          echo "PR has component label"
+          # Retry to handle API propagation delay on 'opened' event
+          for i in 1 2 3; do
+            labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null)
+            if echo "$labels" | grep -q "component:"; then
+              echo "PR has component label: $(echo "$labels" | grep "component:" | head -1)"
+              exit 0
+            fi
+            echo "Attempt $i: No component label found yet, retrying in 2s..."
+            sleep 2
+          done
+          
+          echo "ERROR: PR must have at least one component label (component:*)"
+          echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
+          exit 1
