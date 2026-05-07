@@ -175,6 +175,35 @@ Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
 - Use bullet points for multi-change commits
 - Always include `Fixes #<n>` or `Addresses #<n>`
 
+### GPG-Signed Commits (Required)
+
+All commits to `main` and `dev` branches **must be GPG-signed**.
+
+**Setup** (run once per developer):
+```bash
+./scripts/utils/setup-gpg.sh
+```
+
+This script:
+- Checks for GPG installation
+- Configures terminal for passphrase prompts (`GPG_TTY`)
+- Generates or uses existing GPG key
+- Configures Git for automatic signing
+
+**Common error and fix**:
+If you see `gpg: signing failed: Inappropriate ioctl for device`, run:
+```bash
+export GPG_TTY=$(tty)
+# Or permanently add to ~/.bashrc:
+echo 'export GPG_TTY=$(tty)' >> ~/.bashrc
+```
+
+**Verification**:
+```bash
+git log --show-signature --oneline -1
+# Should show: gpg: Good signature from ...
+```
+
 ---
 
 ## 5. Pull request format — `.github/PULL_REQUEST_TEMPLATE.md`
