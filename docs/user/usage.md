@@ -55,7 +55,7 @@ Then chat via [Open WebUI](http://localhost:8080) (first user = admin), `opencod
 | Open WebUI | http://localhost:8080 | First user becomes admin |
 | pgAdmin | http://localhost:5050 | Email/password from `vault credentials` |
 | Grafana | http://localhost:3000 | Email/password from `vault credentials` |
-| Vault UI | http://localhost:8200 | Token: `aixcl-dev-token` |
+| Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
 | Ollama API | http://localhost:11434 | OpenAI-compatible endpoint |
 
