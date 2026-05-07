@@ -9,7 +9,7 @@
 set -euo pipefail
 
 VAULT_ADDR="${1:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${2:-aixcl-dev-token}"
+VAULT_TOKEN="${2:-${VAULT_DEV_TOKEN:-aixcl-dev-token}}"
 
 log_info() { echo "[INFO] $1"; }
 log_warn() { echo "[WARN] $1"; }
@@ -63,8 +63,10 @@ configure_postgres_connection() {
   
   local postgres_password
   if ! postgres_password=$(get_postgres_password); then
-    log_warn "Using hardcoded fallback 'admin' — this will likely fail"
-    postgres_password="admin"
+    log_error "Could not read bootstrap password from Vault KV"
+    log_error "Ensure bootstrap agents have written to kv/bootstrap/postgres"
+    log_error "Failing fast — no hardcoded fallback available"
+    return 1
   fi
   
   vault write database/config/postgresql \

@@ -10,6 +10,9 @@ on:
       - dev
     types: [opened, edited, synchronize, reopened, labeled, unlabeled, assigned, unassigned]
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   validate-pr-title:
     name: Validate PR Title Format
@@ -44,14 +47,22 @@ jobs:
     steps:
       - name: Check PR has assignee
         env:
-          ASSIGNEES: "${{ toJson(github.event.pull_request.assignees) }}"
+          PR_ASSIGNEES_JSON: ${{ toJson(github.event.pull_request.assignees) }}
         run: |
-          # Check if assignees array is empty or null
-          if [[ -z "$ASSIGNEES" ]] || [[ "$ASSIGNEES" == "null" ]] || [[ "$ASSIGNEES" == "[]" ]]; then
-            echo "ERROR: PR must have at least one assignee"
-            exit 1
+          set -euo pipefail
+          
+          # Use event payload directly to avoid API race conditions
+          # github.event.pull_request.assignees is a JSON array of user objects
+          count=$(echo "$PR_ASSIGNEES_JSON" | jq 'length')
+          
+          if [[ "$count" -gt 0 ]]; then
+            echo "PR has $count assignee(s)"
+            echo "$PR_ASSIGNEES_JSON" | jq -r '.[].login'
+            exit 0
           fi
-          echo "PR has assignee(s): $ASSIGNEES"
+          
+          echo "ERROR: PR must have at least one assignee"
+          exit 1
 
   validate-pr-labels:
     name: Validate PR Labels
@@ -59,11 +70,19 @@ jobs:
     steps:
       - name: Check PR has component label
         env:
-          LABELS: "${{ toJson(github.event.pull_request.labels) }}"
+          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
         run: |
-          if ! echo "$LABELS" | grep -q "component:"; then
-            echo "ERROR: PR must have at least one component label (component:*)"
-            echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
-            exit 1
+          set -euo pipefail
+          
+          # Use event payload directly to avoid API race conditions
+          # github.event.pull_request.labels is a JSON array of label objects
+          labels=$(echo "$PR_LABELS_JSON" | jq -r '.[].name')
+          
+          if echo "$labels" | grep -q "component:"; then
+            echo "PR has component label: $(echo "$labels" | grep "component:" | head -1)"
+            exit 0
           fi
-          echo "PR has component label"
+          
+          echo "ERROR: PR must have at least one component label (component:*)"
+          echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
+          exit 1

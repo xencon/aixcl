@@ -111,6 +111,61 @@ EOF
   log_info "GPG key generated successfully"
 }
 
+# Configure terminal for GPG pinentry
+configure_terminal() {
+  log_step "Configuring terminal for GPG pinentry..."
+
+  # Check if GPG_TTY is already set
+  if [[ -n "${GPG_TTY:-}" ]]; then
+    log_info "GPG_TTY already set: $GPG_TTY"
+    return 0
+  fi
+
+  # Detect shell configuration file
+  local shell_rc=""
+  case "${SHELL:-}" in
+    */bash) shell_rc="$HOME/.bashrc" ;;
+    */zsh)  shell_rc="$HOME/.zshrc" ;;
+    */fish) shell_rc="$HOME/.config/fish/config.fish" ;;
+    *)      shell_rc="$HOME/.profile" ;;
+  esac
+
+  # Add GPG_TTY export if not present
+  if [[ -f "$shell_rc" ]] && ! grep -q "export GPG_TTY" "$shell_rc" 2>/dev/null; then
+    echo "" >> "$shell_rc"
+    echo "# GPG terminal configuration for signed commits" >> "$shell_rc"
+    echo 'export GPG_TTY=$(tty)' >> "$shell_rc"
+    log_info "Added 'export GPG_TTY=\$(tty)' to $shell_rc"
+    log_warn "Please run: source $shell_rc  (or restart your terminal)"
+  else
+    log_info "GPG_TTY configuration already present or shell RC not found"
+  fi
+
+  # Also configure GPG agent for terminal use
+  local gpg_agent_conf="$HOME/.gnupg/gpg-agent.conf"
+  if [[ -d "$HOME/.gnupg" ]]; then
+    if [[ ! -f "$gpg_agent_conf" ]] || ! grep -q "pinentry-program" "$gpg_agent_conf" 2>/dev/null; then
+      # Detect available pinentry
+      local pinentry=""
+      if command -v pinentry-curses >/dev/null 2>&1; then
+        pinentry=$(command -v pinentry-curses)
+      elif command -v pinentry-tty >/dev/null 2>&1; then
+        pinentry=$(command -v pinentry-tty)
+      elif command -v pinentry >/dev/null 2>&1; then
+        pinentry=$(command -v pinentry)
+      fi
+
+      if [[ -n "$pinentry" ]]; then
+        echo "pinentry-program $pinentry" >> "$gpg_agent_conf"
+        log_info "Configured pinentry-program: $pinentry"
+        # Restart gpg-agent
+        gpg-connect-agent reloadagent /bye >/dev/null 2>&1 || true
+        log_info "Restarted gpg-agent"
+      fi
+    fi
+  fi
+}
+
 # Configure Git to use GPG
 configure_git() {
   log_step "Configuring Git for GPG signing..."
@@ -295,6 +350,7 @@ case "${1:-}" in
     ;;
   "")
     check_gpg
+    configure_terminal
     if ! check_existing_keys; then
       generate_key
     fi

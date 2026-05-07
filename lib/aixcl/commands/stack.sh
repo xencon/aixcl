@@ -104,20 +104,31 @@ function init_stack() {
     # Load current values
     load_env_file "$env_file"
 
-    # Prompt for username
+    # Prompt for username (no default)
     echo ""
-    read -r -p "Enter admin username [admin]: " AIXCL_ADMIN_USER
-    AIXCL_ADMIN_USER="${AIXCL_ADMIN_USER:-admin}"
+    while true; do
+        read -r -p "Enter admin username: " AIXCL_ADMIN_USER
+        if [ -n "$AIXCL_ADMIN_USER" ]; then
+            break
+        fi
+        echo "Username is required."
+    done
 
-    # Prompt for email
-    read -r -p "Enter admin email [admin@example.com]: " AIXCL_ADMIN_EMAIL
-    AIXCL_ADMIN_EMAIL="${AIXCL_ADMIN_EMAIL:-admin@example.com}"
+    # Prompt for email (no default)
+    echo ""
+    while true; do
+        read -r -p "Enter admin email: " AIXCL_ADMIN_EMAIL
+        if echo "$AIXCL_ADMIN_EMAIL" | grep -qE '^[^@]+@[^@]+\.[^@]+$'; then
+            break
+        fi
+        echo "A valid email address is required."
+    done
 
     # Update .env with values
-    sed -i "s/^AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
-    sed -i "s/^AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
-    sed -i "s/^PGADMIN_DEFAULT_EMAIL=.*/PGADMIN_DEFAULT_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
-    sed -i "s/^OPENWEBUI_EMAIL=.*/OPENWEBUI_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    sed -i "s/^#\?AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
+    sed -i "s/^#\?AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    sed -i "s/^#\?PGADMIN_DEFAULT_EMAIL=.*/PGADMIN_DEFAULT_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    sed -i "s/^#\?OPENWEBUI_EMAIL=.*/OPENWEBUI_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
 
     echo ""
     echo "Initialisation complete:"
@@ -547,7 +558,7 @@ function start() {
                 local kv_ready=false
                 while [ $wait_attempt -lt 30 ]; do
                     if curl -sf "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" \
-                        --header "X-Vault-Token: aixcl-dev-token" >/dev/null 2>&1; then
+                        --header "X-Vault-Token: ${VAULT_DEV_TOKEN:-aixcl-dev-token}" >/dev/null 2>&1; then
                         kv_ready=true
                         echo "Bootstrap passwords found in Vault KV."
                         break

@@ -4,6 +4,56 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.7] - 2026-05-07
+
+### Security
+
+- **Eliminated Baked-In Credential Defaults**: Removed all hardcoded password fallbacks from Docker Compose and service entrypoints. Services now fail fast if Vault secrets are missing. (Fixes #1076)
+- **Restart-Safe Password Preservation**: Grafana and pgAdmin entrypoints now detect first-start vs restart, preserving user-changed passwords across container restarts. (Fixes #1079)
+- **Vault Single-Source-of-Truth**: Unified credential sync across all services with Vault KV storage as the sole password authority. (Fixes #1051, #1052)
+- **Vault Bootstrap Race Condition Fixed**: Replaced static 5s sleep with active Vault KV polling loop (up to 30s), preventing services from starting with empty password files. (Fixes #1055)
+
+### Infrastructure
+
+- **Auto-Run Vault Init**: `stack start` now automatically triggers `vault init` to prevent bootstrap race conditions. (Fixes #1054)
+- **Grafana Entrypoint Permissions**: Restored correct file permissions and corrected CLI log message in Grafana entrypoint. (Fixes #1053)
+
+### Governance and Workflow
+
+- **PR Creation Governance**: Tightened workflow to prevent label-assignee race conditions. (Fixes #1068)
+- **PR Validation Reliability**: Fixed silent failures in PR validation workflow by adding proper GitHub CLI authentication and error visibility. (Fixes #1073, #1080)
+- **GPG Terminal Setup**: Documented terminal configuration requirements and added `configure_terminal` helper to `setup-gpg.sh`. (Fixes #1071)
+- **Security Documentation**: Created missing security documentation referenced by SECURITY.md. (Fixes #1064)
+
+### Configuration
+
+- **Cloud Provider Agnostic**: Made `opencode.json` provider-agnostic and removed hardcoded `small_model` to enable cloud provider fallback. (Fixes #1058, #1062)
+- **Environment Variable Hardening**: Replaced hardcoded Vault dev token and PostgreSQL fallback with proper environment variable configuration. (Fixes #998)
+
+### Documentation
+
+- **Agent Context Update**: Updated `agent-context.md` with latest conventions and references. (Fixes #1057)
+
+### Related Issues
+
+- Fixes #998 - Replace hardcoded Vault dev token
+- Fixes #1051 - Vault single-source-of-truth credential sync
+- Fixes #1053 - Grafana entrypoint permissions
+- Fixes #1054 - Auto-run vault init after stack start
+- Fixes #1055 - Poll Vault KV for bootstrap passwords
+- Fixes #1057 - Update agent-context.md
+- Fixes #1058 - Remove hardcoded small_model
+- Fixes #1062 - Make opencode.json provider-agnostic
+- Fixes #1064 - Create missing security documentation
+- Fixes #1068 - Tighten PR creation governance
+- Fixes #1071 - Document GPG terminal setup
+- Fixes #1073 - Fix PR validation race condition
+- Fixes #1076 - Remove baked-in credential defaults
+- Fixes #1079 - Respect user-changed passwords after first start
+- Fixes #1080 - PR validation workflow authentication
+
+---
+
 ## [v1.1.6] - 2026-05-05
 
 ### Configuration

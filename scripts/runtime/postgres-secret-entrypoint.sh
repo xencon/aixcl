@@ -78,7 +78,7 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
     # Wait for PostgreSQL to be ready via TCP
     pg_ready=false
     for i in $(seq 1 30); do
-        if pg_isready -h 127.0.0.1 -p 5432 -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+        if pg_isready -h 127.0.0.1 -p 5432 -U "${POSTGRES_USER}" >/dev/null 2>&1; then
             pg_ready=true
             break
         fi
@@ -89,11 +89,15 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
     if [ "$pg_ready" = false ]; then
         echo "[Vault] Warning: PostgreSQL did not become ready, skipping password sync"
     else
+        if [ -z "${OLD_POSTGRES_PASSWORD:-}" ]; then
+            echo "[Vault] ERROR: OLD_POSTGRES_PASSWORD is not set — cannot authenticate to sync password"
+            exit 1
+        fi
         # Connect with OLD password to ALTER USER to NEW password
-        export PGPASSWORD="${OLD_POSTGRES_PASSWORD:-admin}"
+        export PGPASSWORD="${OLD_POSTGRES_PASSWORD}"
         echo "[Vault] Updating PostgreSQL admin password to match Vault secret..."
-        psql -U "${POSTGRES_USER:-admin}" -h 127.0.0.1 -d "${POSTGRES_DATABASE:-webui}" \
-            -Atc "ALTER USER ${POSTGRES_USER:-admin} WITH PASSWORD '${VAULT_PASS}';" 2> /tmp/pg_sync.log && \
+        psql -U "${POSTGRES_USER}" -h 127.0.0.1 -d "${POSTGRES_DATABASE}" \
+            -Atc "ALTER USER ${POSTGRES_USER} WITH PASSWORD '${VAULT_PASS}';" 2> /tmp/pg_sync.log && \
             echo "[Vault] Password updated successfully" && \
             echo "[Vault] PostgreSQL will restart with new password"
     fi
@@ -102,7 +106,11 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
     pg_ctl -D "$PGDATA" stop -m fast
 
     # Restore original password for the official entrypoint
-    POSTGRES_PASSWORD="${OLD_POSTGRES_PASSWORD:-admin}"
+    if [ -z "${OLD_POSTGRES_PASSWORD:-}" ]; then
+        echo "[Vault] ERROR: OLD_POSTGRES_PASSWORD is not set — cannot restore for official entrypoint"
+        exit 1
+    fi
+    POSTGRES_PASSWORD="${OLD_POSTGRES_PASSWORD}"
     export POSTGRES_PASSWORD
 
     echo "[Vault] Starting PostgreSQL with official entrypoint..."

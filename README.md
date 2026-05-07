@@ -132,7 +132,7 @@ Vault initializes automatically when the stack starts. No manual steps required.
 ./aixcl vault status
 
 # Or access Vault UI at http://localhost:8200
-# Token: aixcl-dev-token
+# Token: Set via VAULT_DEV_TOKEN env var (default: aixcl-dev-token)
 ```
 
 ### Step 6: Test Inference (Hello World)
@@ -197,7 +197,7 @@ curl http://localhost:11434/v1/chat/completions \
 | Open WebUI | http://localhost:8080 | First user = admin |
 | pgAdmin | http://localhost:5050 | Vault credentials |
 | Grafana | http://localhost:3000 | Vault credentials |
-| Vault UI | http://localhost:8200 | Token: `aixcl-dev-token` |
+| Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
 | Loki | http://localhost:3100 | No auth (localhost only) |
 | Alertmanager | http://localhost:9093 | No auth (localhost only) |

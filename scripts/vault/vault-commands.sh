@@ -3,7 +3,7 @@
 # Usage: Source this file or run commands directly
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-aixcl-dev-token}"
+VAULT_TOKEN="${VAULT_DEV_TOKEN:-aixcl-dev-token}"
 
 # Colors for output
 RED='\033[0;31m'
