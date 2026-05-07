@@ -227,13 +227,30 @@ Additional PR rules:
 - All CI checks must be green before the PR is considered complete
 
 ```bash
-gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assignee <github-username>
-gh pr edit <number> --add-assignee <github-username> --add-label "component:..."
+# CORRECT: Pass assignee and labels at creation time
+gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assignee <github-username> --label "component:..."
+
+# INCORRECT: Two-step creates race condition
+# gh pr create --title "..." --body "..." --assignee <github-username>
+# gh pr edit <number> --add-label "component:..."
 ```
 
-**Critical**: Always pass `--assignee` to `gh pr create`. The PR Validation workflow fires immediately on PR creation. If the assignee is not set at creation time, the "Validate PR Assignee" check will fail on the `opened` event. The fallback two-step (`create` then `gh pr edit`) creates a race condition where the first check run sees no assignee and permanently blocks the PR.
+**Critical**: Always pass `--assignee` and `--label` to `gh pr create` at creation time. The PR Validation workflow fires immediately on PR creation. If the assignee or label is not set at creation time, the validation check will fail on the `opened` event. The fallback two-step (`create` then `gh pr edit`) creates a race condition where the first check run sees no assignee/label and permanently blocks the PR.
 
-**Recommended**: Use the wrapper script `./scripts/utils/create-pr.sh` which validates the title format, validates the branch name, uses `/tmp` for body files, and always passes `--assignee` at creation time.
+**Required**: Use the wrapper script `./scripts/utils/create-pr.sh` for all PRs. This script validates the title format, validates the branch name, uses `/tmp` for body files, and always passes `--assignee` and `--label` at creation time.
+
+If you must use raw `gh pr create`, always include `--label`:
+```bash
+git push -u origin issue-<number>/<description>
+gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assignee <github-username> --label "component:..."
+```
+
+**Never** use `gh pr edit` to add labels after creation. The validation workflow has already fired and the failed check will persist.
+
+**Workaround if race condition occurs:**
+1. Close the PR
+2. Reopen the PR immediately (this triggers a new check run)
+3. Or: Merge with admin privileges if all current checks pass
 
 ---
 

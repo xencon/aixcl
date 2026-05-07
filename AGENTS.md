@@ -62,10 +62,25 @@ Labels: Must match issue
 Assignee: Required
 ```
 
-**Post-creation label and assignee enforcement**
+**PR creation — pass labels at creation time**
+
+The PR Validation workflow fires on the `opened` event. Labels and assignees must be passed together to `gh pr create` to prevent a race condition.
+
+**Required approach:**
+```bash
+# Use the wrapper script (validates title, passes --label and --assignee)
+./scripts/utils/create-pr.sh "<title> (#<number>)" "Fixes #<number>" "component:cli" "<username>"
+
+# Or pass explicitly:
+git push -u origin issue-<number>/<description>
+gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assignee <username> --label "component:..."
+```
+
+**Never** use two-step creation (`gh pr create` then `gh pr edit --add-label`). The fallback creates a race condition where the first validation run sees no labels and permanently blocks the PR. See DEVELOPMENT.md for details.
+
+**Post-creation label enforcement (issues only)**
 ```bash
 gh issue edit <number> --add-label "component:cli" --add-assignee <username>
-gh pr edit <number> --add-label "component:cli" --add-assignee <username>
 ```
 
 **Template loading (MANDATORY before composing any issue/PR body)**
