@@ -342,7 +342,9 @@ services:
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - USER_ID=1000
       - GROUP_ID=1000
+      - ENABLE_LOGIN_FORM=true
       - ENABLE_SIGNUP=true
+      - ENABLE_INITIAL_ADMIN_SIGNUP=true
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

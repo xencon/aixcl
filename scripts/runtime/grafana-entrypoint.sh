@@ -1,25 +1,41 @@
 #!/usr/bin/env bash
 # grafana-entrypoint.sh — Grafana entrypoint wrapper
-# Reads admin password from Vault secrets volume and starts Grafana.
-# This entrypoint requires the admin password to be provided via Vault.
-# If the Vault secret is missing, Grafana will fail fast — no hardcoded fallback.
+# On first start: sets initial admin password from Vault
+# On restart: skips password reset, respecting user changes
+# Never falls back to hardcoded defaults; fails fast if Vault secret missing
 set -euo pipefail
 
 echo "=== Grafana Vault-Secure Entrypoint ==="
 
-# --- Mandatory: admin password from Vault secrets ---
+# --- Detect first-start vs restart ---
+GRAFANA_DB="/var/lib/grafana/grafana.db"
+if [ -f "$GRAFANA_DB" ] && [ -s "$GRAFANA_DB" ]; then
+    IS_FIRST_START=false
+    echo "Grafana database found ($GRAFANA_DB) — restart mode, skipping password reset"
+else
+    IS_FIRST_START=true
+    echo "No Grafana database found — first-start mode"
+fi
+
+# --- On restart: just start Grafana and exit ---
+if [ "$IS_FIRST_START" = false ]; then
+    echo "Starting Grafana (restart) — admin password unchanged"
+    exec /run.sh
+fi
+
+# --- First-start: require Vault password ---
 if [ -f /run/secrets/grafana-password ] && [ -s /run/secrets/grafana-password ]; then
     GRAFANA_ADMIN_PASSWORD="$(tr -d '\n' < /run/secrets/grafana-password)"
     echo "[Vault] Grafana admin password loaded from /run/secrets/grafana-password"
 else
     echo "[Vault] ERROR: /run/secrets/grafana-password not found or empty."
-    echo "  Grafana requires a Vault-generated admin password to start securely."
+    echo "  Cannot create initial admin on first start without Vault-generated password."
+    echo "  Ensure Vault is initialized and bootstrap has run."
     exit 1
 fi
 
-echo "[Vault] Starting Grafana with Vault-managed credentials..."
-
-# Pass password via file for first-start admin creation
+# --- Use Vault password for first-start admin creation ---
+echo "[Vault] Configuring Grafana with initial admin password..."
 GRAFANA_PASS_FILE="/tmp/grafana-admin-password"
 echo "$GRAFANA_ADMIN_PASSWORD" > "$GRAFANA_PASS_FILE"
 chown 472:472 "$GRAFANA_PASS_FILE" 2>/dev/null || true
@@ -34,19 +50,23 @@ GRAFANA_PID=$!
 echo "[Vault] Waiting for Grafana to be ready..."
 for _ in {1..60}; do
     if curl -sf http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
-        echo "[Vault] Grafana is ready"
+        echo "[Vault] Grafana is ready (first start)"
         break
     fi
     sleep 1
 done
 
-# Sync admin password with Vault (idempotent)
-echo "[Vault] Syncing admin password with Vault..."
-grafana cli admin reset-admin-password "$GRAFANA_ADMIN_PASSWORD" 2>/dev/null || \
-    echo "[Vault] Note: Password already matches Vault or admin does not exist yet"
+# Verify admin was created (optional sanity check)
+if curl -sf http://127.0.0.1:3000/api/admin/settings \
+    -u "admin:${GRAFANA_ADMIN_PASSWORD}" >/dev/null 2>&1; then
+    echo "[Vault] Initial admin verified"
+else
+    echo "[Vault] Warning: Could not verify initial admin (may need manual setup)"
+fi
 
-# Unset the file env var so it doesn't leak in child processes
+# Unset password file env var for security
 unset GF_SECURITY_ADMIN_PASSWORD__FILE
+rm -f "$GRAFANA_PASS_FILE"
 
 # Keep Grafana running as PID 1 for clean signal handling
 echo "[Vault] Grafana is running (PID: $GRAFANA_PID)"

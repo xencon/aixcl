@@ -132,7 +132,7 @@ init_bootstrap_passwords() {
     
     # --- Admin identity (no hardcoded defaults) ---
     # The user must provide these via .env or stdin before stack init.
-    # If not provided, fail with clear instructions.
+    # If not provided, fail fast instead of silently using 'admin'.
     local admin_email="${AIXCL_ADMIN_EMAIL:-}"
     local admin_user="${AIXCL_ADMIN_USER:-}"
 
@@ -149,6 +149,8 @@ init_bootstrap_passwords() {
         log_error "AIXCL_ADMIN_EMAIL ($admin_email) does not appear to be a valid email address."
         exit 1
     fi
+
+    log_info "Admin identity: ${admin_user} / ${admin_email}"
     
     # PostgreSQL bootstrap password
     # Always sync from shared volume/container to KV to ensure KV matches PostgreSQL
