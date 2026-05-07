@@ -214,9 +214,9 @@ services:
     pull_policy: missing
     user: "999:999"  # Run as postgres user (official image default)
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_USER: ${POSTGRES_USER}
       # NOTE: Password managed by Vault. The entrypoint reads /run/secrets/postgres-password.
-      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
@@ -326,7 +326,10 @@ services:
     environment:
       - DATA_DIR=/app/data
       - STATIC_DIR=/app/backend/data/static
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE:-webui}
+      # NOTE: No DATABASE_URL here — entrypoint constructs it from /run/secrets/postgres-password
+      # POSTGRES_USER and POSTGRES_DATABASE must be set in .env or docker-compose
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
       - WEBUI_NAME=AIXCL
       - OPENAI_API_BASE_URLS=http://127.0.0.1:11434/v1
       - OPENAI_API_BASE_URL=http://127.0.0.1:11434/v1
@@ -334,8 +337,7 @@ services:
       - ENABLE_OPENAI_API=true
       - ENABLE_OLLAMA_API=${ENABLE_OLLAMA_API:-true}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
-      - OPENWEBUI_EMAIL=${OPENWEBUI_EMAIL}
-      - OPENWEBUI_PASSWORD=${OPENWEBUI_PASSWORD}
+      # NOTE: No OPENWEBUI_EMAIL or OPENWEBUI_PASSWORD — admin user and password are managed separately via Vault
       - RAG_EMBEDDING_ENGINE=ollama
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - USER_ID=1000
@@ -451,7 +453,8 @@ services:
       - ../scripts/runtime/grafana-entrypoint.sh:/usr/local/bin/grafana-entrypoint.sh:ro
     entrypoint: ["/usr/local/bin/grafana-entrypoint.sh"]
     environment:
-      - GF_SECURITY_ADMIN_USER=${AIXCL_ADMIN_USER:-admin}
+      # NOTE: No GF_SECURITY_ADMIN_USER or GF_SECURITY_ADMIN_PASSWORD here -- Grafana
+      # will prompt for first-time admin creation when neither is set.
       - GF_SERVER_HTTP_PORT=3000
     command: []
     network_mode: host
@@ -528,8 +531,9 @@ services:
     environment:
       # PostgreSQL credentials are read from Vault by the entrypoint
       # Do not set DATA_SOURCE_NAME here; it is constructed from /run/secrets/postgres-password
-      POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-webui}
+      # These must be explicitly set by the user (via .env) — no hardcoded defaults.
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
     network_mode: host
     depends_on:
       - postgres

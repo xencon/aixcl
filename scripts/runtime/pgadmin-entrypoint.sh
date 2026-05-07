@@ -1,10 +1,34 @@
 #!/usr/bin/env bash
 # pgAdmin entrypoint wrapper - runs pgAdmin as non-root user
 # This script sets up permissions and runs pgAdmin with reduced privileges
+# Reads all credentials from Vault-mounted secrets; no hardcoded defaults.
 
 set -e
 
 echo "=== pgAdmin Non-Root Entrypoint ==="
+
+# Determine admin identity.
+# Priority: (1) environment variable, (2) Vault secrets file, (3) prompt stdin.
+if [ -n "${PGADMIN_DEFAULT_EMAIL:-}" ]; then
+    echo "[Env] PGADMIN_DEFAULT_EMAIL set from environment"
+else
+    # No env var — try Vault secrets mount
+    if [ -f /run/secrets/pgadmin-email ] && [ -s /run/secrets/pgadmin-email ]; then
+        PGADMIN_DEFAULT_EMAIL="$(tr -d '\n' < /run/secrets/pgadmin-email)"
+        export PGADMIN_DEFAULT_EMAIL
+        echo "[Vault] Admin email loaded from /run/secrets/pgadmin-email"
+    fi
+fi
+
+# Fail fast if still missing
+if [ -z "${PGADMIN_DEFAULT_EMAIL:-}" ]; then
+    echo "[ERROR] PGADMIN_DEFAULT_EMAIL is not set."
+    echo "  Set it via one of:"
+    echo "    - .env (PGADMIN_DEFAULT_EMAIL=...)"
+    echo "    - docker-compose environment block (PGADMIN_DEFAULT_EMAIL=...)"
+    echo "    - Vault secrets mount (/run/secrets/pgadmin-email)"
+    exit 1
+fi
 
 # Read Vault secrets if available (only root can read /run/secrets)
 if [ "$(id -u)" = "0" ]; then
@@ -12,13 +36,17 @@ if [ "$(id -u)" = "0" ]; then
         PGADMIN_DEFAULT_PASSWORD=$(cat /run/secrets/pgadmin-password)
         export PGADMIN_DEFAULT_PASSWORD
         echo "[Vault] pgAdmin root password loaded from /run/secrets/pgadmin-password"
+    else
+        echo "[Vault] Warning: /run/secrets/pgadmin-password not found"
     fi
 
     # Read PostgreSQL password for connection in servers.json
-    PG_CONNECT_PASSWORD="admin"
+    PG_CONNECT_PASSWORD=""
     if [ -f /run/secrets/postgres-password ]; then
         PG_CONNECT_PASSWORD=$(cat /run/secrets/postgres-password)
         echo "[Vault] PostgreSQL connection password loaded from /run/secrets/postgres-password"
+    else
+        echo "[Vault] Warning: /run/secrets/postgres-password not found — servers.json will not have a password"
     fi
 
     # Persist passwords to /var/lib/pgadmin so the pgadmin user can read them after su

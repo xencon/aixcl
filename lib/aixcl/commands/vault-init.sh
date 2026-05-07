@@ -130,11 +130,25 @@ init_bootstrap_passwords() {
     # Clear old artifacts first (prevents stale credentials after re-init)
     clear_bootstrap_artifacts
     
-    # Read admin identity from .env if available
-    local admin_email="${AIXCL_ADMIN_EMAIL:-admin@example.com}"
-    local admin_user="${AIXCL_ADMIN_USER:-admin}"
-    
-    log_info "Admin identity: ${admin_user} / ${admin_email}"
+    # --- Admin identity (no hardcoded defaults) ---
+    # The user must provide these via .env or stdin before stack init.
+    # If not provided, fail with clear instructions.
+    local admin_email="${AIXCL_ADMIN_EMAIL:-}"
+    local admin_user="${AIXCL_ADMIN_USER:-}"
+
+    if [ -z "$admin_email" ] || [ -z "$admin_user" ]; then
+        log_error "AIXCL_ADMIN_USER and AIXCL_ADMIN_EMAIL must be set before running vault init."
+        log_error "  Set them in .env or via environment variables:"
+        log_error "    export AIXCL_ADMIN_USER='your-username'"
+        log_error "    export AIXCL_ADMIN_EMAIL='your-email@example.com'"
+        exit 1
+    fi
+
+    # Validate admin email format (basic check)
+    if ! echo "$admin_email" | grep -qE '^[^@]+@[^@]+\.[^@]+$'; then
+        log_error "AIXCL_ADMIN_EMAIL ($admin_email) does not appear to be a valid email address."
+        exit 1
+    fi
     
     # PostgreSQL bootstrap password
     # Always sync from shared volume/container to KV to ensure KV matches PostgreSQL

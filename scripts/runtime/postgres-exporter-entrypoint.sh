@@ -1,38 +1,50 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # postgres-exporter Vault entrypoint
-# Reads PostgreSQL password from Vault secrets and constructs DATA_SOURCE_NAME
+# Reads PostgreSQL credentials from Vault secrets and constructs DATA_SOURCE_NAME.
+# This entrypoint requires the POSTGRES_USER and POSTGRES_DATABASE environment
+# variables to be explicitly set.  There are no hardcoded defaults.
 #
 # IMPORTANT: The official postgres_exporter binary is at /bin/postgres_exporter,
 # not /postgres_exporter. Always use the full path.
 
-set -e
+set -euo pipefail
 
 echo "=== PostgreSQL Exporter Vault Entrypoint ==="
 
-# Read password from Vault secrets
+# --- Mandatory environment variables ---
+# POSTGRES_USER and POSTGRES_DATABASE must be provided by docker-compose or .env.
+# If they are missing, fail fast instead of falling back to a default.
+if [ -z "${POSTGRES_USER:-}" ]; then
+    echo "[ERROR] POSTGRES_USER is not set. Provide it in docker-compose or .env."
+    exit 1
+fi
+if [ -z "${POSTGRES_DATABASE:-}" ]; then
+    echo "[ERROR] POSTGRES_DATABASE is not set. Provide it in docker-compose or .env."
+    exit 1
+fi
+
+# --- Read password from Vault secrets ---
 PGPASSWORD=""
 if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
-    PGPASSWORD=$(cat /run/secrets/postgres-password | tr -d '\n')
+    PGPASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
     echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
 else
     echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty"
     exit 1
 fi
 
-# Resolve other variables with defaults
-PGUSER="${POSTGRES_USER:-admin}"
-PGDATABASE="${POSTGRES_DATABASE:-webui}"
+# --- Resolve optional connection parameters ---
 PGHOST="${POSTGRES_HOST:-127.0.0.1}"
 PGPORT="${POSTGRES_PORT:-5432}"
 
-# Build DATA_SOURCE_NAME for postgres_exporter
-export DATA_SOURCE_NAME="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=disable"
+# --- Build DATA_SOURCE_NAME ---
+export DATA_SOURCE_NAME="postgresql://${POSTGRES_USER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${POSTGRES_DATABASE}?sslmode=disable"
 
 echo "[Vault] DATA_SOURCE_NAME configured (password redacted)"
 
-# Unset plaintext password from environment
+# --- Security: unset plaintext password from this shell ---
 unset PGPASSWORD
 unset POSTGRES_PASSWORD
 
-# Start the official postgres_exporter
+# --- Start the official postgres_exporter ---
 exec /bin/postgres_exporter
