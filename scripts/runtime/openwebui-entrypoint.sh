@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Open WebUI Non-Root Entrypoint
-# This script sets up proper permissions and then runs Open WebUI as non-root user
+# Reads all credentials from Vault-mounted secrets; no hardcoded defaults.
 
-set -e
+set -euo pipefail
 
 # Default user/group IDs
 USER_ID="${USER_ID:-1000}"
@@ -12,73 +12,60 @@ echo "=== Open WebUI Non-Root Entrypoint ==="
 echo "Target UID: $USER_ID"
 echo "Target GID: $GROUP_ID"
 
-# Read PostgreSQL password from Vault secrets volume if available
-# This overrides any stale .env password with the Vault-generated secret
-if [ -f /run/secrets/postgres-password ]; then
-    POSTGRES_PASSWORD=$(cat /run/secrets/postgres-password)
+# --- Mandatory database identity ---
+# POSTGRES_USER and POSTGRES_DATABASE must be provided by docker-compose or .env.
+if [ -z "${POSTGRES_USER:-}" ]; then
+    echo "[ERROR] POSTGRES_USER is not set. Provide it in docker-compose or .env."
+    exit 1
+fi
+if [ -z "${POSTGRES_DATABASE:-}" ]; then
+    echo "[ERROR] POSTGRES_DATABASE is not set. Provide it in docker-compose or .env."
+    exit 1
+fi
+
+# --- Read PostgreSQL password from Vault secrets volume ---
+if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+    POSTGRES_PASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
     export POSTGRES_PASSWORD
     echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
-fi
-
-# Read Open WebUI admin password from Vault secrets volume if available
-# This ensures the admin user is created with the correct Vault-managed password
-if [ -f /run/secrets/openwebui-password ]; then
-    OPENWEBUI_PASSWORD=$(cat /run/secrets/openwebui-password)
-    export OPENWEBUI_PASSWORD
-    echo "[Vault] Open WebUI admin password loaded from /run/secrets/openwebui-password"
 else
-    echo "[Vault] Warning: /run/secrets/openwebui-password not found, admin may be created with empty password"
+    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty"
+    exit 1
 fi
 
-# Build DATABASE_URL from env vars or defaults, using Vault password if available
-POSTGRES_USER="${POSTGRES_USER:-admin}"
-POSTGRES_DATABASE="${POSTGRES_DATABASE:-webui}"
+# --- Build DATABASE_URL ---
 export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DATABASE}"
+echo "[Vault] DATABASE_URL configured (password redacted)"
 
-# Note: Open WebUI uses this DATABASE_URL for its database connection.
-# We reconstruct it here to ensure POSTGRES_PASSWORD reflects the Vault secret.
+# --- Wait for PostgreSQL ---
+echo "Waiting for PostgreSQL to be ready..."
+pg_host="127.0.0.1"
+pg_port="5432"
 
-# Wait for PostgreSQL to be ready before starting Open WebUI
-# This prevents Open WebUI from falling back to SQLite
-if [ -n "${DATABASE_URL:-}" ]; then
-    echo "Waiting for PostgreSQL to be ready..."
-    # Extract host and port from DATABASE_URL
-    # Format: postgresql://user:pass@host:port/dbname
-    # Use '#' as delimiter to avoid conflict with '/' in URL
-    pg_host=$(echo "$DATABASE_URL" | sed -n 's#.*@\([^:]*\):.*#\1#p')
-    pg_port=$(echo "$DATABASE_URL" | sed -n 's#.*:\([0-9]*\)/.*#\1#p')
-    pg_host="${pg_host:-127.0.0.1}"
-    pg_port="${pg_port:-5432}"
-
-    # Wait for PostgreSQL with timeout (60 seconds)
-    pg_ready=false
-    for i in {1..30}; do
-        if timeout 2 bash -c "echo > /dev/tcp/$pg_host/$pg_port" 2>/dev/null; then
-            pg_ready=true
-            echo "PostgreSQL is ready!"
-            break
-        fi
-        echo "Waiting for PostgreSQL... ($i/30)"
-        sleep 2
-    done
-
-    if [ "$pg_ready" = false ]; then
-        echo "Warning: PostgreSQL did not become ready, Open WebUI may fall back to SQLite"
+pg_ready=false
+for i in {1..30}; do
+    if timeout 2 bash -c "echo > /dev/tcp/$pg_host/$pg_port" 2>/dev/null; then
+        pg_ready=true
+        echo "PostgreSQL is ready!"
+        break
     fi
+    echo "Waiting for PostgreSQL... ($i/30)"
+    sleep 2
+done
+
+if [ "$pg_ready" = false ]; then
+    echo "Warning: PostgreSQL did not become ready, Open WebUI may fall back to SQLite"
 fi
 
-# Check if running as root (required for permission setup)
+# If running as root, set up permissions and re-exec as non-root
 if [ "$(id -u)" = "0" ]; then
     echo "Running as root - setting up permissions..."
-    
-    # Create non-root user if it doesn't exist
+
     if ! id "webui" &>/dev/null; then
         groupadd -g "$GROUP_ID" -o webui 2>/dev/null || true
         useradd -u "$USER_ID" -g "$GROUP_ID" -o -m -s /bin/bash webui 2>/dev/null || true
     fi
-    
-    # Ensure data directories exist and have correct ownership
-    # These are the volumes mounted from docker-compose
+
     for dir in /app/backend/data /app/data /app/backend/data/static; do
         if [ -d "$dir" ]; then
             echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
@@ -91,9 +78,7 @@ if [ "$(id -u)" = "0" ]; then
             chmod 755 "$dir" 2>/dev/null || true
         fi
     done
-    
-    # Open WebUI also uses /app/backend/open_webui for static files
-    # This directory must be writable by the non-root user
+
     for dir in /app/backend/open_webui /app/backend/open_webui/static; do
         if [ -d "$dir" ]; then
             echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
@@ -101,43 +86,50 @@ if [ "$(id -u)" = "0" ]; then
             chmod 755 "$dir" 2>/dev/null || true
         fi
     done
-    
-    # Ensure the startup script is executable (ignore errors if read-only mount)
+
     if [ -f "/app/backend/openwebui.sh" ]; then
         chmod +x /app/backend/openwebui.sh 2>/dev/null || true
         chown "$USER_ID:$GROUP_ID" /app/backend/openwebui.sh 2>/dev/null || true
     fi
-    
-    # Ensure the entrypoint can write to /tmp (uvicorn needs this)
+
     chown -R "$USER_ID:$GROUP_ID" /tmp 2>/dev/null || true
     chmod 1777 /tmp
-    
+
     echo "Switching to webui user (UID: $USER_ID)..."
-    # Re-run this script as the non-root user using su
-    # Preserve environment variables needed by OpenWebUI (DATABASE_URL, etc.)
-    # Using 'su -m' preserves the environment but keeps HOME=/root which causes
-    # asyncpg to look for /root/.postgresql/sslkey. Set HOME to webui's home.
-    export -n USER_ID GROUP_ID  # Don't export these to avoid confusion
+    export -n USER_ID GROUP_ID
     export HOME=/home/webui
     exec su -m webui -c 'exec /usr/local/bin/openwebui-entrypoint.sh'
 fi
 
-# At this point, we should be running as non-root
+# Running as non-root
 CURRENT_UID="$(id -u)"
 CURRENT_GID="$(id -g)"
 echo "Running as user: $CURRENT_UID:$CURRENT_GID"
 
-# Ensure data directory exists and is writable
 DATA_DIR="/app/backend/data"
 if [ ! -d "$DATA_DIR" ]; then
     echo "Error: Data directory $DATA_DIR does not exist"
     exit 1
 fi
 
-# Change to data directory where the secret key will be stored
-cd "$DATA_DIR" || exit 1
+echo "Data directory: $DATA_DIR"
+
+# Generate secret key if not present
+KEY_FILE="$DATA_DIR/.webui_secret_key"
+if [ ! -e "$KEY_FILE" ]; then
+    echo "Generating WEBUI_SECRET_KEY"
+    head -c 12 /dev/random | base64 > "$KEY_FILE"
+fi
+WEBUI_SECRET_KEY=$(cat "$KEY_FILE")
+export WEBUI_SECRET_KEY
+PORT="${PORT:-8080}"
+HOST="${HOST:-127.0.0.1}"
+
+# Change to the app directory where open_webui module is located
+cd /app/backend || exit 1
 echo "Working directory: $(pwd)"
 
-# Execute the original Open WebUI startup script
 echo "Starting Open WebUI..."
-exec bash /app/backend/openwebui.sh "$@"
+# NOTE: Admin user (and password) must be created manually via the web UI.
+# There is no auto-creation. Use "./aixcl vault passwords" to view the Vault-generated password.
+exec uvicorn open_webui.main:app --host "$HOST" --port "$PORT" --forwarded-allow-ips '*'
