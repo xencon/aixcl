@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # postgres-exporter Vault entrypoint
 # Reads PostgreSQL credentials from Vault secrets and constructs DATA_SOURCE_NAME.
 # This entrypoint requires the POSTGRES_USER and POSTGRES_DATABASE environment
@@ -7,7 +7,7 @@
 # IMPORTANT: The official postgres_exporter binary is at /bin/postgres_exporter,
 # not /postgres_exporter. Always use the full path.
 
-set -euo pipefail
+set -eu
 
 echo "=== PostgreSQL Exporter Vault Entrypoint ==="
 
