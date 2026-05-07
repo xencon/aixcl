@@ -100,7 +100,7 @@ set_compose_cmd() {
         fi
     fi
 
-    COMPOSE_CMD=("${cmd[@]}" "${files[@]}")
+    COMPOSE_CMD=("${cmd[@]}" -p "aixcl" "${files[@]}")
     COMPOSE_WORKDIR="${SERVICES_DIR}"
     
     # Set and export DOCKER_SOCK for use in docker-compose files

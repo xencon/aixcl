@@ -583,34 +583,34 @@ services:
 
 volumes:
   aixcl-ollama-data:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-hf-cache:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-vllm-data:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-llamacpp-data:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-open-webui-main:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-open-webui-data:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-pgdata:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-prometheus:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-grafana:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-loki:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-alertmanager-data:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-pgadmin-storage:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-pgadmin-main:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-pgadmin-config:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-vault-data:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true
   aixcl-vault-secrets:
-    # external: true  # Disabled: volumes created automatically by compose
+    external: true

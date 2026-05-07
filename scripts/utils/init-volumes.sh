@@ -17,7 +17,7 @@ VOLUMES=(
   "aixcl-hf-cache"
   "aixcl-vllm-data"
   "aixcl-llamacpp-data"
-  "aixcl-open-webui"
+  "aixcl-open-webui-main"
   "aixcl-open-webui-data"
   "aixcl-pgdata"
   "aixcl-prometheus"
