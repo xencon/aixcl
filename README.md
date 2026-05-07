@@ -154,13 +154,16 @@ Vault initializes automatically when the stack starts. No manual steps required.
 **B. Via OpenCode CLI**
 
 ```bash
-# Add the model
+# Add the model (for local provider)
 ./aixcl models add qwen2.5-coder:0.5b
 
 # Start OpenCode
 opencode
 
-# At the prompt, type:
+# At the prompt, connect to your preferred provider
+/connect
+
+# Then type:
 # > Hello! Can you help me write a Python function?
 
 # Expected: The AI responds with code suggestions
