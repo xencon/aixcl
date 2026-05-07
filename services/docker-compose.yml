@@ -383,6 +383,7 @@ services:
     user: "0:0"  # Start as root, entrypoint drops to pgadmin user
     # Note: Security hardening removed - cap_drop/no-new-privileges breaks su authentication
     # The entrypoint requires privilege escalation to switch from root to pgadmin user
+    restart: unless-stopped
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:

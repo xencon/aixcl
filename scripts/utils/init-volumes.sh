@@ -25,7 +25,7 @@ VOLUMES=(
   "aixcl-loki"
   "aixcl-alertmanager-data"
   "aixcl-pgadmin-storage"
-  "aixcl-pgadmin"
+  "aixcl-pgadmin-main"
   "aixcl-pgadmin-config"
   "aixcl-vault-data"
   "aixcl-vault-secrets"
