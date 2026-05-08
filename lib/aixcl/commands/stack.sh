@@ -1020,7 +1020,6 @@ function service() {
                 
                 # Force remove any existing containers (including hash-prefixed ones)
                 echo "Removing existing containers for clean rebuild..."
-                run_compose rm -f "$service" 2>/dev/null || true
                 local container_name
                 container_name=$(get_container_name "$service")
                 "${DOCKER_BIN:-docker}" rm -f "$container_name" 2>/dev/null || true
