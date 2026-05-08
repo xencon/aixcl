@@ -24,12 +24,20 @@ if [ -z "${POSTGRES_DATABASE:-}" ]; then
 fi
 
 # --- Read PostgreSQL password from Vault secrets volume ---
-if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
-    POSTGRES_PASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
-    export POSTGRES_PASSWORD
-    echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
-else
-    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty"
+POSTGRES_PASSWORD=""
+for i in $(seq 1 60); do
+    if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+        POSTGRES_PASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
+        export POSTGRES_PASSWORD
+        echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
+        break
+    fi
+    echo "[Vault] Waiting for postgres-password secret... ($i/30)"
+    sleep 2
+done
+
+if [ -z "$POSTGRES_PASSWORD" ]; then
+    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty after 60 seconds"
     exit 1
 fi
 
@@ -43,7 +51,7 @@ pg_host="127.0.0.1"
 pg_port="5432"
 
 pg_ready=false
-for i in {1..30}; do
+for i in {1..60}; do
     if timeout 2 bash -c "echo > /dev/tcp/$pg_host/$pg_port" 2>/dev/null; then
         pg_ready=true
         echo "PostgreSQL is ready!"

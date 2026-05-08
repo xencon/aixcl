@@ -23,7 +23,7 @@ export VAULT_TOKEN
 # Wait for Vault to be ready
 wait_for_vault() {
   log_info "Waiting for Vault to be ready..."
-  local retries=30
+  local retries=60
   while [ $retries -gt 0 ]; do
     output=$(vault status 2>&1 || true)
     if echo "$output" | grep -q "Sealed.*false"; then
@@ -47,16 +47,23 @@ enable_database_engine() {
   vault secrets enable database || log_warn "Database engine already enabled"
 }
 
-# Read PostgreSQL bootstrap password from Vault KV
+# Read PostgreSQL bootstrap password from Vault KV with retry
 get_postgres_password() {
-  local password
-  password=$(vault kv get -field=password kv/bootstrap/postgres 2>/dev/null || true)
-  if [ -n "$password" ]; then
-    echo "$password"
-    return 0
-  fi
-  log_warn "Could not read bootstrap password from Vault KV"
-  log_warn "Ensure bootstrap agents have written to kv/bootstrap/postgres"
+  local password=""
+  local retries=60
+  log_info "Waiting for bootstrap password in Vault KV..."
+  while [ $retries -gt 0 ]; do
+    password=$(vault kv get -field=password kv/bootstrap/postgres 2>/dev/null || true)
+    if [ -n "$password" ]; then
+      echo "$password"
+      return 0
+    fi
+    log_warn "KV not ready yet, retrying... ($retries left)"
+    sleep 2
+    retries=$((retries - 1))
+  done
+  log_error "Could not read bootstrap password from Vault KV after 60 seconds"
+  log_error "Ensure bootstrap agents have written to kv/bootstrap/postgres"
   return 1
 }
 

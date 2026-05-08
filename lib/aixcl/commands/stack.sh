@@ -43,7 +43,7 @@ function ensure_databases() {
     # Wait for PostgreSQL to be ready
     local pg_ready
     pg_ready=false
-    for i in {1..10}; do
+    for i in {1..20}; do
         if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
             pg_ready=true
             break
@@ -481,7 +481,7 @@ function start() {
     
     echo "Waiting for runtime core services to be ready..."
     local max_attempts
-    max_attempts=150  # 5 minutes (reduced timeout)
+    max_attempts=300  # 10 minutes
     local attempt
     attempt=1
     local all_ready
@@ -523,13 +523,13 @@ function start() {
             echo "Waiting for PostgreSQL to be ready..."
             local pg_attempt=1
             local pg_ready=false
-            while [ $pg_attempt -le 30 ]; do  # 60 seconds
+            while [ $pg_attempt -le 60 ]; do  # 120 seconds
                 if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
                     echo "PostgreSQL is ready!"
                     pg_ready=true
                     break
                 fi
-                echo "Waiting for PostgreSQL... ($pg_attempt/15)"
+                echo "Waiting for PostgreSQL... ($pg_attempt/60)"
                 sleep 2
                 pg_attempt=$((pg_attempt + 1))
             done
@@ -564,21 +564,21 @@ function start() {
                 echo "Waiting for bootstrap agents to write passwords to Vault KV..."
                 local wait_attempt=0
                 local kv_ready=false
-                while [ $wait_attempt -lt 30 ]; do
+                while [ $wait_attempt -lt 180 ]; do
                     if curl -sf "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" \
                         --header "X-Vault-Token: ${VAULT_DEV_TOKEN:-aixcl-dev-token}" >/dev/null 2>&1; then
                         kv_ready=true
                         echo "Bootstrap passwords found in Vault KV."
                         break
                     fi
-                    echo "Waiting for bootstrap agents... ($wait_attempt/30)"
+                    echo "Waiting for bootstrap agents... ($wait_attempt/90)"
                     sleep 1
                     wait_attempt=$((wait_attempt + 1))
                 done
                 
                 if [ "$kv_ready" != true ]; then
                     echo ""
-                    echo "WARNING: Bootstrap agents did not populate Vault KV within 30 seconds."
+                    echo "WARNING: Bootstrap agents did not populate Vault KV within 90 seconds."
                     echo "Run manually after services stabilize:"
                     echo "  ./aixcl vault init"
                     echo ""
@@ -676,7 +676,7 @@ function stop() {
     run_compose down --remove-orphans || true
     
     echo "Waiting for containers to stop..."
-    for i in {1..15}; do
+    for i in {1..30}; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
             echo ""
             echo "AIXCL Stack Stopped"

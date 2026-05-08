@@ -285,7 +285,7 @@ test_stack_status() {
     WEBUI_STATUS="000"
     WEBUI_READY=false
     # Try multiple endpoints - /health might not exist in all versions, try root and /api/config as fallbacks
-    for i in {1..15}; do
+    for i in {1..30}; do
         # Try /health endpoint first (preferred)
         WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/health 2>/dev/null || echo "000")
         if [ "$WEBUI_STATUS" = "200" ]; then
@@ -574,7 +574,7 @@ test_model_inference() {
     start_section "Model Inference - Prompt & Response"
     
     local test_model="${1:-}"
-    local max_retries=5
+    local max_retries=10
     local retry_count=0
     
     # Try to find a model already installed/loaded with retries
@@ -937,7 +937,7 @@ test_component_ui() {
         # Health check with retries
         WEBUI_STATUS="000"
         WEBUI_READY=false
-        for i in {1..15}; do
+        for i in {1..30}; do
             WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/health 2>/dev/null || echo "000")
             if [ "$WEBUI_STATUS" = "200" ]; then
                 WEBUI_READY=true

@@ -38,7 +38,7 @@ fetch_credentials() {
 
 # Wait for Vault to be initialized with retry logic
 log "Waiting for Vault database role to be available..."
-retries=30
+retries=60
 while [ $retries -gt 0 ]; do
     if vault read database/roles/aixcl-app >/dev/null 2>&1; then
         log "Vault role is ready"

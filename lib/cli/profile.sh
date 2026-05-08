@@ -54,7 +54,7 @@ get_profile_services_for_profile() {
             echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
             ;;
         sys)
-            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap vault-init"
+            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap"
             ;;
         *)
             echo ""
