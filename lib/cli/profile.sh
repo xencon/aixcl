@@ -8,7 +8,7 @@
 # See: docs/developer/adding-services.md for complete checklist
 
 # Valid profiles array
-VALID_PROFILES=(ops sys)
+VALID_PROFILES=(bld sys)
 
 # Engine detection
 INFERENCE_ENGINE=${INFERENCE_ENGINE:-ollama}
@@ -30,14 +30,14 @@ get_runtime_core_services() {
 declare -A PROFILE_DESCRIPTIONS=(
     [usr]="DEPRECATED — Not supported (Vault now required for database secrets)"
     [dev]="DEPRECATED — Not supported (Vault now required for database secrets)"
-    [ops]="Observability-focused (monitoring/logging)"
+    [bld]="Builder-focused (monitoring/logging)"
     [sys]="System-oriented (complete stack)"
 )
 
 # Profile service mappings (Docker-managed services only)
 # Each profile includes runtime core services plus profile-specific services.
 # NOTE: This is now a function to ensure INFERENCE_ENGINE is read after .env loading
-# Vault and bootstrap services are ONLY included in ops and sys profiles.
+# Vault and bootstrap services are ONLY included in bld and sys profiles.
 get_profile_services_for_profile() {
     local profile="$1"
     # Use current INFERENCE_ENGINE value (may have been updated after .env loading)
@@ -50,7 +50,7 @@ get_profile_services_for_profile() {
         dev)
             echo "$engine open-webui postgres pgadmin"
             ;;
-        ops)
+        bld)
             echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
             ;;
         sys)
@@ -69,7 +69,7 @@ get_profile_services_for_profile() {
 declare -A PROFILE_SERVICES=(
     [usr]="INFERENCE_ENGINE_PLACEHOLDER vault postgres vault-agent-postgres-bootstrap"
     [dev]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
-    [ops]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
+    [bld]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
     [sys]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
 )
 
@@ -78,7 +78,7 @@ declare -A PROFILE_SERVICES=(
 declare -A PROFILE_DB_STORAGE=(
     [usr]="true"
     [dev]="true"
-    [ops]="true"
+    [bld]="true"
     [sys]="true"
 )
 
@@ -88,10 +88,10 @@ is_valid_profile() {
     if [ -z "$profile" ]; then
         return 1
     fi
-    # Only ops and sys are supported — usr and dev removed because Vault is now
+    # Only bld and sys are supported — usr and dev removed because Vault is now
     # required for database secrets and all services depend on Vault agents.
     case "$profile" in
-        ops|sys)
+        bld|sys)
             return 0
             ;;
         *)
@@ -146,7 +146,7 @@ list_profiles() {
     echo "Available profiles:"
     echo "==================="
     echo ""
-    echo "  - ops: $(get_profile_description "ops")"
+    echo "  - bld: $(get_profile_description "bld")"
     echo "  - sys: $(get_profile_description "sys")"
     echo ""
     echo "Deprecated (not supported):"

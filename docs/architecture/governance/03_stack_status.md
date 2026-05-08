@@ -66,7 +66,7 @@ Overall:      OK All critical services healthy
 
 ## Profile-Specific Status
 
-### ops Profile
+### bld Profile
 ```
 Runtime Core: 2/2 healthy
 Operational:  7/7 healthy (postgres, prometheus, grafana, loki, cadvisor, node-exporter, postgres-exporter)

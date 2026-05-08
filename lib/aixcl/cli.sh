@@ -39,7 +39,7 @@ COMMANDS
 
 PROFILES
 
-    ops     Observability-focused (monitoring stack)
+    bld     Builder-focused (monitoring stack)
     sys     Complete stack with automation
 
 NOTES

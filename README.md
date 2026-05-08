@@ -76,8 +76,8 @@ podman info | grep "rootless"
 # You will be prompted for admin username and email
 ./aixcl stack init
 
-# Start with ops profile (monitoring-focused) or sys profile (complete stack)
-./aixcl stack start --profile ops
+# Start with bld profile (monitoring-focused) or sys profile (complete stack)
+./aixcl stack start --profile bld
 # or
 ./aixcl stack start --profile sys
 
@@ -130,7 +130,7 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 
 **A. Via Open WebUI (Browser)**
 
-**A. Via Open WebUI (Browser)**
+**A. Via OpenCode (CLI)**
 
 ```bash
 # Add a small test model first
@@ -139,10 +139,11 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 
 1. Open http://localhost:8080 in your browser
 2. Log in with username `admin` and the password from `./aixcl vault passwords`
-3. Click "New Chat" in the top left
-4. Select "qwen2.5-coder:0.5b" from the model dropdown
-5. Type: "Hello! Can you confirm you're working?"
-6. **Expected:** The model responds with a greeting
+3. Configure the AIXCL endpoint via the admin setting `http://localhost:11434/`
+4. Click "New Chat" in the top left
+5. Select "qwen2.5-coder:0.5b" from the model dropdown
+6. Type: "Hello! Can you confirm you're working?"
+7. **Expected:** The model responds with a greeting
 
 **B. Via OpenCode CLI**
 

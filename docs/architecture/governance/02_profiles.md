@@ -19,14 +19,14 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 
 | Profile | Purpose | Audience |
 |---------|---------|----------|
-| ops     | Operations-focused | Servers, operators, monitoring deployments |
+| bld     | Operations-focused | Servers, operators, monitoring deployments |
 | sys     | System-oriented | Complete deployments with all features |
 
 ---
 
 ## 3. Profile Definitions
 
-### ops
+### bld
 **Purpose**: Observability-focused deployment for servers and operators.
 
 **Includes**:
@@ -55,7 +55,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 **Includes**:
 - Runtime core: Inference Engine, OpenCode (plugin)
 - Vault (dynamic secrets management)
-- All ops services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+- All bld services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
 - Open WebUI (web interface for model interaction)
 - pgAdmin (database administration UI)
 
@@ -81,7 +81,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 
 ## 5. Profile Selection Guidelines
 
-- **ops**: Use for production deployments requiring observability (no WebUI)
+- **bld**: Use for production deployments requiring observability (no WebUI)
 - **sys**: Use for complete deployments with WebUI and all features
 
 ---
@@ -97,4 +97,4 @@ All profiles **must**:
 Profiles **may**:
 - Add operational services as needed
 - Configure operational services differently
-- Exclude operational services based on use case (e.g., no WebUI in ops)
+- Exclude operational services based on use case (e.g., no WebUI in bld)

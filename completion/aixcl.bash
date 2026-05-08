@@ -59,7 +59,7 @@ _aixcl_complete() {
     local services="$runtime_core_services $operational_services engine"
     
     # Valid profiles (must match VALID_PROFILES in lib/cli/profile.sh)
-    local profiles="ops sys"
+    local profiles="bld sys"
     
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then

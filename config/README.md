@@ -9,7 +9,7 @@ config/
 ├── .env.example           # Template for environment variables
 ├── README.md              # This file
 └── profiles/
-    ├── ops.env            # Observability-focused profile
+    ├── bld.env            # Observability-focused profile
     └── sys.env            # System-oriented profile
 ```
 
@@ -29,7 +29,7 @@ Profile-specific configuration files. These define the services and settings for
 
 | Profile | Description | Services |
 |---------|-------------|----------|
-| ops | Observability-focused | Inference engine + full monitoring stack |
+| bld | Observability-focused | Inference engine + full monitoring stack |
 | sys | System-oriented | Complete stack with automation |
 
 ## Usage

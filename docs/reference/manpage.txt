@@ -108,7 +108,7 @@ ENVIRONMENT
        .env.example on first run). Key variables include:
 
        PROFILE
-              Default profile for stack commands (usr, dev, ops, sys).
+               Default profile for stack commands (bld, sys).
               Set this to avoid specifying --profile on every command.
 
        INFERENCE_ENGINE

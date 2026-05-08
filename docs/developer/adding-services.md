@@ -55,7 +55,7 @@ get_profile_services_for_profile() {
         dev)
             echo "$engine open-webui postgres pgadmin"
             ;;
-        ops)
+        bld)
             echo "$engine postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
             ;;
         sys)
@@ -71,7 +71,7 @@ Also update the deprecated `PROFILE_SERVICES` array for backward compatibility:
 declare -A PROFILE_SERVICES=(
     [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
     [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
-    [ops]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+    [bld]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
     [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
 )
 ```
@@ -82,7 +82,7 @@ declare -A PROFILE_SERVICES=(
 |---------|---------|----------------------|
 | **usr** | Minimal footprint | Required for basic runtime (e.g., postgres for persistence) |
 | **dev** | Developer workstation | Developer/admin tool (e.g., pgadmin, Open WebUI) |
-| **ops** | Observability | Monitoring/logging service (e.g., prometheus, grafana, cadvisor) |
+| **bld** | Observability | Monitoring/logging service (e.g., prometheus, grafana, cadvisor) |
 | **sys** | Complete stack | All services except excluded (privileged or incompatible) |
 
 ## Verification Checklist

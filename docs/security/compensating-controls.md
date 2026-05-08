@@ -77,7 +77,7 @@ done
 | Task | Agent | Human |
 |------|-------|-------|
 | Apply rules on startup | Automated via stack start | Verify once |
-| Verify rules active | Check every 5 minutes in ops/sys profiles | Review weekly |
+| Verify rules active | Check every 5 minutes in bld/sys profiles | Review weekly |
 | Modify rules | **NEVER** -- requires approval | Only after documented change request |
 | Diagnose failures | Run verification commands, report | Decide on remediation |
 
@@ -370,7 +370,7 @@ Run these checks to verify all compensating controls are operational:
 ```bash
 #!/bin/bash
 # Quick verification of all compensating controls
-# Run this daily in ops/sys profiles
+# Run this daily in bld/sys profiles
 
 echo "=== Host Firewall ==="
 iptables -L -n | grep -E "Policy|DROP" | head -5

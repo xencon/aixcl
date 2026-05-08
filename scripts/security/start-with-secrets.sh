@@ -6,7 +6,7 @@
 # This ensures credentials are never exposed in environment variables
 #
 # Usage: ./scripts/security/start-with-secrets.sh [profile]
-#   profile: usr (default), dev, ops, sys
+#   profile: bld, sys
 
 set -euo pipefail
 

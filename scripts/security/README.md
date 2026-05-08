@@ -122,7 +122,7 @@ services/
 ### Daily Operations
 
 ```bash
-# Start with secrets (profile: ops, sys)
+# Start with secrets (profile: bld, sys)
 ./scripts/security/start-with-secrets.sh sys
 
 # Verify secrets exist

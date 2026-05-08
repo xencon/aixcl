@@ -6,8 +6,8 @@ For installation and quick start, see [README.md](/README.md).
 
 | Profile | Purpose | Services |
 |---------|---------|----------|
-| **ops** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter |
-| **sys** | Full stack | ops + Open WebUI, pgAdmin |
+| **bld** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter |
+| **sys** | Full stack | bld + Open WebUI, pgAdmin |
 
 Deprecated (not supported):
 - `usr` — DEPRECATED (Vault now required for database secrets)

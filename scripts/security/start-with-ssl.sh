@@ -9,7 +9,7 @@
 #   ./scripts/security/init-postgres-ssl.sh
 #
 # Usage: ./scripts/security/start-with-ssl.sh [profile]
-#   profile: usr (default), dev, ops, sys
+#   profile: bld, sys
 
 set -euo pipefail
 
