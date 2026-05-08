@@ -14,7 +14,7 @@ lib/
 │   ├── logging.sh       # Logging utilities
 │   └── pgadmin_utils.sh # pgAdmin utilities
 └── cli/            # CLI-specific libraries
-    └── profile.sh  # Profile management (usr, dev, ops, sys)
+    └── profile.sh  # Profile management (ops, sys)
 ```
 
 ## Usage

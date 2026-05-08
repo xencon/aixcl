@@ -113,7 +113,7 @@ cat .github/PULL_REQUEST_TEMPLATE.md
 
 **Other Labels**:
 - Priority: `P1`, `P2`, `P3`
-- Profile: `profile:usr`, `profile:dev`, `profile:ops`, `profile:sys`
+- Profile: `profile:ops`, `profile:sys`
 - Category: `Fix`, `Enhancement`, `Refactor`, `Maintenance`
 
 ## Platform Invariants (NON-NEGOTIABLE)
@@ -135,7 +135,7 @@ cat .github/PULL_REQUEST_TEMPLATE.md
 ### Stack Operations
 ```bash
 ./aixcl utils check-env               # Validate environment prerequisites
-./aixcl stack start --profile usr    # Start stack: usr/dev/ops/sys
+./aixcl stack start --profile sys    # Start stack: ops/sys
 ./aixcl stack status                  # Check service health
 ./aixcl stack logs engine             # View inference logs
 ./aixcl stack stop                    # Stop all services gracefully

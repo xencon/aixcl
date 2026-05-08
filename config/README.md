@@ -9,8 +9,6 @@ config/
 ├── .env.example           # Template for environment variables
 ├── README.md              # This file
 └── profiles/
-    ├── usr.env            # User-oriented runtime profile
-    ├── dev.env            # Developer workstation profile
     ├── ops.env            # Observability-focused profile
     └── sys.env            # System-oriented profile
 ```
@@ -31,8 +29,6 @@ Profile-specific configuration files. These define the services and settings for
 
 | Profile | Description | Services |
 |---------|-------------|----------|
-| usr | User-oriented runtime (minimal footprint) | Inference engine + PostgreSQL |
-| dev | Developer workstation | Inference engine + UI + DB + pgAdmin |
 | ops | Observability-focused | Inference engine + full monitoring stack |
 | sys | System-oriented | Complete stack with automation |
 

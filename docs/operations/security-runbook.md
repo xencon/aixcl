@@ -20,14 +20,14 @@ Run these checks automatically every day in `ops` and `sys` profiles.
 
 - [ ] `./aixcl stack status` returns all services as running or stopped (no errors)
 - [ ] No unexpected service restarts in last 24 hours
-- [ ] Expected service count matches profile (usr=3, dev=5, ops=10, sys=13)
+- [ ] Expected service count matches profile (ops=10, sys=13)
 
 ```bash
 #!/bin/bash
 # daily-health-check.sh
 profile=$(grep "^PROFILE=" .env | cut -d= -f2)
 count=$(./aixcl stack status | grep -c "[x]")
-expected=$(case $profile in usr) echo 3;; dev) echo 5;; ops) echo 10;; sys) echo 13;; *) echo 0;; esac)
+expected=$(case $profile in ops) echo 10;; sys) echo 13;; *) echo 0;; esac)
 if [ "$count" -lt "$expected" ]; then
     echo "FAIL: Only $count/$expected services healthy"
     exit 1

@@ -168,8 +168,8 @@ Labels are organized into categories using prefixes:
 - `P3` - Low priority issue
 
 #### Profile Labels (Select All That Apply)
-- `profile:usr` - Affects usr profile (minimal footprint)
-- `profile:dev` - Affects dev profile (developer workstation)
+- `profile:ops` - Affects ops profile (observability-focused)
+- `profile:sys` - Affects sys profile (full deployment)
 - `profile:ops` - Affects ops profile (observability-focused)
 - `profile:sys` - Affects sys profile (full deployment)
 
@@ -215,7 +215,7 @@ gh issue edit <number> --add-label "component:cli"
 - New feature for observability: Type: **Feature**, Labels: `component:observability`
 - Fix for database issue: Type: **Bug**, Labels: `Fix,component:persistence`
 - Task for infrastructure: Type: **Task**, Labels: `component:infrastructure`
-- Enhancement affecting all profiles: Type: **Feature**, Labels: `Enhancement,profile:usr,profile:dev,profile:ops,profile:sys`
+- Enhancement affecting all profiles: Type: **Feature**, Labels: `Enhancement,profile:ops,profile:sys`
 - High priority bug: Type: **Bug**, Labels: `component:runtime-core,P1`
 - Dependency update: Type: **Task**, Labels: `dependencies,Maintenance`
 

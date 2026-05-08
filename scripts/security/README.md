@@ -122,8 +122,8 @@ services/
 ### Daily Operations
 
 ```bash
-# Start with secrets (profile: usr, dev, ops, sys)
-./scripts/security/start-with-secrets.sh dev
+# Start with secrets (profile: ops, sys)
+./scripts/security/start-with-secrets.sh sys
 
 # Verify secrets exist
 ./scripts/security/init-secrets.sh --verify
@@ -216,7 +216,7 @@ docker compose -f services/docker-compose.yml \
 ./scripts/security/init-secrets.sh --clean
 
 # Start with standard .env
-./aixcl stack start --profile dev
+./aixcl stack start --profile sys
 ```
 
 ---

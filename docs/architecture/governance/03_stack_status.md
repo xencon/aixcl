@@ -17,7 +17,7 @@
 AIXCL Stack Status
 ==================
 
-Profile: dev
+Profile: sys
 Status: Running
 
 Runtime Core (Strict - Always Enabled)
@@ -27,21 +27,21 @@ OK opencode        Active     Connected (VS Code plugin)
 
 Configured Models
 -----------------
-  ✅ OpenCode (VS Code) Models: qwen2.5-coder:1.5b, qwen2.5-coder:3b
-  ✅ OpenCode CLI       Config: AIXCL CLI (Ollama)   Model: qwen2.5-coder:1.5b
+  - OpenCode (VS Code) Models: qwen2.5-coder:1.5b, qwen2.5-coder:3b
+  - OpenCode CLI       Config: AIXCL CLI (Ollama)   Model: qwen2.5-coder:1.5b
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
 OK   postgres        Running
 OK   open-webui      Running
 OK   pgadmin         Running
-SKIP prometheus      Stopped    (not in 'dev' profile)
-SKIP grafana         Stopped    (not in 'dev' profile)
+OK   prometheus      Running
+OK   grafana         Running
 
 Health Summary
 --------------
 Runtime Core: 2/2 healthy
-Operational:  3/3 healthy (of 3 enabled)
+Operational:  5/5 healthy (of 5 enabled)
 Overall:      OK All critical services healthy
 ```
 
@@ -65,18 +65,6 @@ Overall:      OK All critical services healthy
   - SKIP: Service is not enabled in the active profile
 
 ## Profile-Specific Status
-
-### usr Profile
-```
-Runtime Core: 2/2 healthy
-Operational:  1/1 healthy (postgres)
-```
-
-### dev Profile
-```
-Runtime Core: 2/2 healthy
-Operational:  3/3 healthy (postgres, open-webui, pgadmin)
-```
 
 ### ops Profile
 ```

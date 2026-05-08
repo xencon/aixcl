@@ -14,7 +14,7 @@
 **Issue Types** (select exactly one): `Bug`, `Feature`, `Task`
 **Component Labels** (required): `component:runtime-core`, `component:ollama`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`
 **Priority** (optional): `P1`, `P2`, `P3`
-**Profile** (optional): `profile:usr`, `profile:dev`, `profile:ops`, `profile:sys`
+**Profile** (optional): `profile:ops`, `profile:sys`
 **Category** (optional): `Fix`, `Enhancement`, `Refactor`, `Maintenance`
 
 ## Commits

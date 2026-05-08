@@ -37,7 +37,7 @@ Select the correct template from `.github/ISSUE_TEMPLATE/` based on the type of 
 ### Bug report - `.github/ISSUE_TEMPLATE/bug_report.md`
 
 - Title prefix: `[BUG]`
-- Labels: `priority:medium`, `profile:dev`
+- Labels: `priority:medium`, `profile:sys`
 - Assignee: `<assignee>`
 - Required sections: Bug Summary, Steps to Reproduce, Expected Behavior, Actual Behavior,
   Impact (component / severity / frequency), Root Cause Analysis, Remediation, Verification,
@@ -73,7 +73,7 @@ Brief description here.
 - [ ] Step 1
 - [ ] Step 2
 EOF
-gh issue create --title "[BUG] <title>" --body-file /tmp/issue-body.md --label "priority:medium,profile:dev" --assignee <assignee>
+gh issue create --title "[BUG] <title>" --body-file /tmp/issue-body.md --label "priority:medium,profile:sys" --assignee <assignee>
 gh issue create --title "[FEATURE] <title>" --body-file /tmp/issue-body.md --label "enhancement" --assignee <assignee>
 gh issue create --title "[TASK] <title>" --body-file /tmp/issue-body.md --label "maintenance" --assignee <assignee>
 ```
@@ -311,7 +311,7 @@ Consult these before making architectural or structural decisions:
 When working via the OpenCode CLI:
 
 - This file is loaded automatically via the `instructions` field in `opencode.json`
-- The AIXCL local provider is configured in `opencode.json` — use `/connect` in the OpenCode TUI to select a provider, or connect to the local provider with `./aixcl stack start --profile dev`
+- The AIXCL local provider is configured in `opencode.json` — use `/connect` in the OpenCode TUI to select a provider, or connect to the local provider with `./aixcl stack start --profile sys`
 - Custom agents can be added under `.opencode/agents/`
 - Rules can be added under `.opencode/rules/`
 - Permissions for `bash`, `edit`, and `webfetch` tools are configured in `opencode.json`

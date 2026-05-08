@@ -472,10 +472,6 @@ function start() {
         fi
     fi
     
-    if [ "$profile" = "usr" ]; then
-        echo "Note: Usr profile includes PostgreSQL for database persistence (minimal footprint)"
-    fi
-    
     echo "Starting services for profile: $profile..."
     run_compose up -d "${profile_services[@]}"
     
