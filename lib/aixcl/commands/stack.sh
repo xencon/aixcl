@@ -1054,110 +1054,120 @@ function service() {
 }
 
 function logs() {
-    if [ $# -eq 0 ]; then
-        log_info "Fetching logs for all services (following)..."
-        log_info "Press Ctrl+C to stop"
+    local follow=false
+    local tail_count=100
+    local service_name=""
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -f|--follow)
+                follow=true
+                shift
+                ;;
+            [0-9]*)
+                tail_count="$1"
+                shift
+                ;;
+            *)
+                service_name="$1"
+                shift
+                ;;
+        esac
+    done
+
+    # No service specified: print last 100 lines of all services, then optionally follow
+    if [ -z "$service_name" ]; then
+        log_info "Fetching logs for all services..."
         echo ""
-        
-        # Check if any containers are running
+
         local found_any=false
         local running_containers=()
-        
+
         for service in "${ALL_SERVICES[@]}"; do
-            # Skip the 'engine' alias itself in the loop, as it's not a real container name
             [ "$service" = "engine" ] && continue
-            
-            # Find the actual container name (exact or hash-prefixed)
+
             local actual_container
             actual_container=$("${DOCKER_BIN:-docker}" ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1 || true)
-            
+
             if [ -n "$actual_container" ]; then
                 found_any=true
                 running_containers+=("$actual_container")
             fi
         done
-        
+
         if [ "$found_any" = false ]; then
             log_warning "No services are currently running."
             log_info "   Start services with: ./aixcl stack start"
             return 0
         fi
-        
-        # Use "${DOCKER_BIN:-docker}" logs directly for each running container
-        # Show last 100 lines for each container as summary
+
+        # Print last $tail_count lines for each container
         for service in "${running_containers[@]}"; do
             echo "=== $service ==="
-            "${DOCKER_BIN:-docker}" logs --tail=100 "$service" 2>/dev/null || echo "  (no logs available)"
+            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$service" 2>/dev/null || echo "  (no logs available)"
             echo ""
         done
-        
-        log_info "Following new logs (Press Ctrl+C to stop)..."
+
+        # Follow streaming logs if -f or --follow was passed
+        if [ "$follow" = true ]; then
+            log_info "Following new logs (Press Ctrl+C to stop)..."
+            echo ""
+
+            local pids=()
+            trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
+
+            for service in "${running_containers[@]}"; do
+                ( "${DOCKER_BIN:-docker}" logs --follow "$service" 2>/dev/null | sed "s/^/[$service] /" || true ) &
+                pids+=($!)
+            done
+
+            if [ ${#pids[@]} -gt 0 ]; then
+                wait "${pids[@]}" 2>/dev/null || true
+            fi
+
+            trap - EXIT INT TERM
+        fi
+
+        return 0
+    fi
+
+    # Resolve 'engine' alias
+    local actual_service="$service_name"
+    if [ "$service_name" = "engine" ]; then
+        actual_service=$(get_container_name "engine")
+    fi
+
+    # Validate service name
+    if ! is_valid_service "$service_name"; then
+        log_error "Unknown container '$service_name'"
         echo ""
-        
-        # Follow logs from all containers in parallel using background processes
-        local pids=()
-        
-        # Set up trap to kill background processes on exit (Ctrl+C)
-        # Using a more robust trap that handles function return and signals
-        trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
-        
-        for service in "${running_containers[@]}"; do
-            # Use sed to prefix each line with the service name
-            # Appending || true to subshell to prevent it from failing the main script
-            ( "${DOCKER_BIN:-docker}" logs --follow "$service" 2>/dev/null | sed "s/^/[$service] /" || true ) &
-            pids+=($!)
-        done
-        
-        # Wait for all background processes
-        if [ ${#pids[@]} -gt 0 ]; then
-            wait "${pids[@]}" 2>/dev/null || true
-        fi
-        
-        # Clear trap after wait
-        trap - EXIT INT TERM
-    else
-        local service_name="$1"
-        local tail_count="${2:-50}"  # Default to 50 lines if not specified
-        
-        # Resolve 'engine' alias
-        local actual_service="$service_name"
-        if [ "$service_name" = "engine" ]; then
-            actual_service=$(get_container_name "engine")
-        fi
+        log_info "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
+        log_info "  engine (ollama, vllm, llamacpp)"
+        echo ""
+        log_info "Operational Services:"
+        log_info "  ${ALL_SERVICES[*]}"
+        echo ""
+        log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
+        return 1
+    fi
 
-        # Validate tail_count
-        if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
-            log_error "tail count must be a number between 1 and 10000"
-            return 1
-        fi
-        
-        # Validate service name
-        if ! is_valid_service "$service_name"; then
-            log_error "Unknown container '$service_name'"
-            echo ""
-            log_info "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
-            log_info "  engine (ollama, vllm, llamacpp)"
-            echo ""
-            log_info "Operational Services:"
-            log_info "  ${ALL_SERVICES[*]}"
-            echo ""
-            log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
-            return 1
-        fi
+    log_info "Fetching logs for $actual_service..."
 
-        log_info "Fetching logs for $actual_service..."
-        
-        # Try exact name first, then hash-prefixed name (running or stopped)
-        local actual_container
-        actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
-        
-        if [ -n "$actual_container" ]; then
-            # Fetch logs without --follow to avoid hanging in scripts/tests
-            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
+    local actual_container
+    actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
+
+    if [ -n "$actual_container" ]; then
+        if [ "$follow" = true ]; then
+            # Stream logs with prefix
+            ( "${DOCKER_BIN:-docker}" logs --follow --tail="$tail_count" "$actual_container" 2>/dev/null || true )
         else
-            log_error "Container for service '$actual_service' not found"
-            return 1
+            # Print last $tail_count lines and exit
+            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
         fi
+    else
+        log_error "Container for service '$actual_service' not found"
+        return 1
     fi
 }
 
