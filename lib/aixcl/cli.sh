@@ -16,7 +16,7 @@ COMMANDS
         restart [--profile <profile>]                   Restart services
         status                                          Show service status
         logs [<service>] [<lines>=50]                   Show service logs
-        export-quadlet                                  Export as Podman Quadlets
+        init                                            Initialize .env and credentials
 
     engine <action> [<engine>]
         set {ollama|vllm|llamacpp}                      Set inference engine

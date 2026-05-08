@@ -33,7 +33,6 @@ For installation and quick start, see [README.md](/README.md).
 | List models | `./aixcl models list` |
 | Vault passwords | `./aixcl vault passwords` |
 | Vault credentials | `./aixcl vault credentials` |
-| Export systemd | `./aixcl stack export-quadlet` |
 
 ## Architecture
 

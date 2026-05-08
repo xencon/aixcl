@@ -70,7 +70,7 @@ _aixcl_complete() {
     # Handle subcommands
     case "$prev" in
         'stack')
-            local stack_actions="start stop restart status logs init export-quadlet"
+            local stack_actions="start stop restart status logs init"
             mapfile -t COMPREPLY < <(compgen -W "$stack_actions" -- "$cur")
             return 0
             ;;

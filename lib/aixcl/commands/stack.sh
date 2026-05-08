@@ -1170,86 +1170,6 @@ function logs() {
     fi
 }
 
-function export_quadlet() {
-    local profile=""
-    # Load profile from .env if not specified
-    if [ -f "${SCRIPT_DIR}/.env" ]; then
-        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-    fi
-    
-    if [ -z "$profile" ]; then
-        profile="sys" # Default to sys if not found
-    fi
-    
-    echo "Exporting Podman Quadlets for profile: $profile..."
-    
-    local export_dir="${SCRIPT_DIR}/export/quadlets"
-    mkdir -p "$export_dir"
-    
-    # Source profile lib to get services
-    # shellcheck disable=SC1091
-    source "${SCRIPT_DIR}/lib/cli/profile.sh"
-    
-    local profile_services
-    read -r -a profile_services <<< "$(get_profile_services "$profile")"
-    
-    # We need to parse docker-compose.yml to get image and environment
-    local compose_file="${SERVICES_DIR}/docker-compose.yml"
-    if [ ! -f "$compose_file" ]; then
-        echo "[ ] Error: $compose_file not found"
-        return 1
-    fi
-    
-    for service in "${profile_services[@]}"; do
-        echo "  Generating Quadlet for: $service"
-        local quadlet_file="${export_dir}/${service}.container"
-        
-        # Resolve actual service name if 'engine' alias is used
-        local actual_service="$service"
-        if [ "$service" = "engine" ]; then
-             actual_service="${INFERENCE_ENGINE:-ollama}"
-        fi
-
-        # Simple extraction of image name from compose file (very basic)
-        local image
-        image=$(grep -A 20 "^[[:space:]]*${actual_service}:" "$compose_file" | grep "image:" | head -1 | awk '{print $2}')
-        
-        {
-            echo "[Unit]"
-            echo "Description=AIXCL Service: $service"
-            echo "After=network-online.target"
-            echo ""
-            echo "[Container]"
-            echo "Image=$image"
-            echo "ContainerName=$service"
-            echo "AutoUpdate=registry"
-            
-            # Use host networking as AIXCL standard
-            echo "Network=host"
-            
-            # Export environment variables from .env
-            if [ -f "${SCRIPT_DIR}/.env" ]; then
-                # This is a bit naive but works for standard AIXCL envs
-                # Filter out comments and internal bash vars
-                grep -E "^[A-Z_]+=" "${SCRIPT_DIR}/.env" | while read -r line; do
-                    echo "Environment=$line"
-                done
-            fi
-            
-            # Service specific logic (ports, volumes) would go here
-            # In a real implementation, we'd parse the 'volumes' section of compose
-            echo "Volume=aixcl_${service}_data:/data"
-            
-            echo ""
-            echo "[Install]"
-            echo "WantedBy=multi-user.target"
-        } > "$quadlet_file"
-    done
-    
-    echo "[x] Quadlets exported to: $export_dir"
-    echo "   To install: Copy to /etc/containers/systemd/ and run 'systemctl daemon-reload'"
-}
-
 function status() {
     # Profile library is sourced at script startup (lib/cli/profile.sh)
     
@@ -1529,7 +1449,7 @@ function status() {
 function stack_cmd() {
     if [[ $# -lt 1 ]]; then
         echo "Error: Stack action is required"
-        echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
+        echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
         echo "Examples:"
         echo "  $0 stack start                - Start all services with sys profile (default)"
         echo "  $0 stack start --profile usr  - Start runtime core + PostgreSQL (minimal footprint)"
@@ -1543,8 +1463,6 @@ function stack_cmd() {
         echo "  $0 stack logs engine          - Show logs for the active inference engine"
         echo "  $0 stack logs engine 100      - Show last 100 lines for the active engine"
         echo "  $0 stack logs open-webui      - Show logs for a specific service"
-        echo "  $0 utils clean                - Remove unused Docker resources"
-        echo "  $0 stack export-quadlet       - Export services as Podman Quadlets (Systemd)"
         echo ""
         echo "Valid profiles: usr, dev, ops, sys (default: sys)"
         echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
@@ -1583,22 +1501,14 @@ function stack_cmd() {
         init)
             if [ $# -gt 0 ]; then
                 echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
                 return 1
             fi
             init_stack
             ;;
-        export-quadlet)
-            if [ $# -gt 0 ]; then
-                echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
-                return 1
-            fi
-            export_quadlet
-            ;;
         *)
             echo "Error: Unknown stack action '$action'"
-            echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
+            echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
             echo ""
             echo "For profiles and service contracts, see: docs/architecture/governance/"
             return 1
