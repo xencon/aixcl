@@ -139,7 +139,7 @@ cat .github/PULL_REQUEST_TEMPLATE.md
 ./aixcl stack status                  # Check service health
 ./aixcl stack logs engine             # View inference logs
 ./aixcl stack stop                    # Stop all services gracefully
-./aixcl utils clean                   # Wipe containers/volumes (destructive — confirm first)
+./aixcl stack logs -f                 # Follow logs for all services
 ```
 
 ### Engine & Model Management
@@ -156,7 +156,6 @@ cat .github/PULL_REQUEST_TEMPLATE.md
 ./tests/run-tests.sh                  # Run all platform tests
 ./tests/run-tests.sh --quick          # Quick mode
 ./tests/run-tests.sh --category cmd   # Run specific category
-cat tests/test-results.md             # View latest run results
 ```
 
 ### Validation & Lint

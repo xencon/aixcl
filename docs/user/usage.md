@@ -52,7 +52,7 @@ Then chat via [Open WebUI](http://localhost:8080) (first user = admin), `opencod
 
 | Service | URL | Notes |
 |---------|-----|-------|
-| Open WebUI | http://localhost:8080 | First user becomes admin |
+| Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault passwords` |
 | pgAdmin | http://localhost:5050 | Email/password from `vault credentials` |
 | Grafana | http://localhost:3000 | Email/password from `vault credentials` |
 | Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
@@ -73,7 +73,7 @@ Get current credentials:
 | Stop stack | `./aixcl stack stop` |
 | Add model | `./aixcl models add <model>` |
 | List models | `./aixcl models list` |
-| Clean resources | `./aixcl utils clean` |
+| Clean resources | `./aixcl stack stop` + remove containers/volumes manually |
 | Export systemd | `./aixcl stack export-quadlet` |
 
 ---
@@ -86,9 +86,11 @@ Get current credentials:
 # Check for port conflicts
 sudo lsof -i :11434 -i :8080 -i :8200
 
-# Full reset (removes containers and volumes)
+# Base build (clean restart without wiping images)
 ./aixcl stack stop
-./aixcl utils clean
+rm -f .aixcl.initialized .env pgadmin-servers.json
+podman ps -aq | xargs podman rm -f 2>/dev/null
+podman volume ls -q | xargs podman volume rm 2>/dev/null
 ./aixcl stack init
 ./aixcl stack start --profile sys
 ```

@@ -45,28 +45,22 @@ Vault provides **dynamic, short-lived credentials** for AIXCL services, replacin
 
 ## Quick Start
 
-### 1. Start Vault Server
+### 1. Start the Stack
+
+Vault is included in the `sys` profile and auto-initializes during stack startup:
 
 ```bash
-# Create volume
-podman volume create aixcl-vault-data
-
-# Start Vault (dev mode for testing)
-export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
-podman compose -f services/docker-compose.vault.yml up -d vault
+./aixcl stack start --profile sys
 ```
 
-### 2. Initialize Vault
+### 2. Verify Initialization
+
+Wait 2-3 minutes for stabilization, then check status:
 
 ```bash
-./scripts/vault/init-vault.sh
+./aixcl vault status
+./aixcl vault passwords
 ```
-
-This configures:
-- Database secrets engine
-- Dynamic roles (aixcl-app, aixcl-admin)
-- Policies and AppRole authentication
-- Audit logging
 
 ### 3. Test Dynamic Credentials
 
