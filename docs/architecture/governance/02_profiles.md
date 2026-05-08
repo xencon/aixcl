@@ -13,62 +13,25 @@ The runtime core consists of two components:
 
 OpenCode is a client-side IDE plugin that connects to the Inference Engine via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or `PROFILE_SERVICES` mappings in `lib/cli/profile.sh`.
 
-Note: Runtime persistence is provided by PostgreSQL as an operational service in all current profiles.
-
 ---
 
 ## 2. Profile Overview
 
 | Profile | Purpose | Audience |
 |---------|---------|----------|
-| usr     | User-oriented runtime | End users, minimal deployments |
-| dev     | Developer workstation | Local development |
-| ops     | Operations-focused | Servers/operators |
-| sys     | System-oriented | Complete deployments |
+| ops     | Operations-focused | Servers, operators, monitoring deployments |
+| sys     | System-oriented | Complete deployments with all features |
 
 ---
 
 ## 3. Profile Definitions
-
-### usr
-**Purpose**: User-oriented runtime with minimal footprint, optimized for end-user deployments.
-
-**Includes**:
-- Runtime core: Inference Engine, OpenCode (plugin)
-- PostgreSQL (database for runtime persistence)
-
-**Excludes**:
-- Open WebUI (web interface)
-- pgAdmin (database admin)
-- Prometheus, Grafana, Loki (monitoring/logging)
-- cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
-
-**Use Cases**: End-user deployments, resource-constrained environments, minimal installations with database persistence
-
----
-
-### dev
-**Purpose**: Developer workstation with UI and database tools.
-
-**Includes**:
-- Runtime core: Inference Engine, OpenCode (plugin)
-- Open WebUI (web interface for model interaction)
-- PostgreSQL (database for conversations and data)
-- pgAdmin (database administration UI)
-
-**Excludes**:
-- Prometheus, Grafana, Loki (monitoring/logging)
-- cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter (metrics)
-
-**Use Cases**: Local development, testing, interactive model exploration
-
----
 
 ### ops
 **Purpose**: Observability-focused deployment for servers and operators.
 
 **Includes**:
 - Runtime core: Inference Engine, OpenCode (plugin)
+- Vault (dynamic secrets management)
 - PostgreSQL (database for runtime data)
 - Prometheus (metrics collection)
 - Grafana (metrics visualization and dashboards)
@@ -87,32 +50,51 @@ Note: Runtime persistence is provided by PostgreSQL as an operational service in
 ---
 
 ### sys
-**Purpose**: System-oriented deployment with complete feature set and automation.
+**Purpose**: System-oriented deployment with complete feature set.
 
 **Includes**:
 - Runtime core: Inference Engine, OpenCode (plugin)
-- All dev services: Open WebUI, PostgreSQL, pgAdmin
+- Vault (dynamic secrets management)
 - All ops services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+- Open WebUI (web interface for model interaction)
+- pgAdmin (database administration UI)
 
-**Use Cases**: System deployments, demonstrations, full-featured environments with automation
+**Use Cases**: System deployments, demonstrations, full-featured environments
 
 ---
 
-## 4. Profile Selection Guidelines
+## 4. Deprecated Profiles
 
-- **usr**: Use for user-oriented deployments with minimal footprint (runtime core + PostgreSQL)
-- **dev**: Use for local development and interactive work
-- **ops**: Use for production deployments requiring observability
-- **sys**: Use for system-oriented deployments with complete feature set and automatic updates
+### usr (DEPRECATED)
+**Status**: Not supported as of 2026-05-08.
 
-## 5. Profile Invariants
+**Reason**: All services now require Vault for database secrets. PostgreSQL, Open WebUI, and pgAdmin all depend on Vault agents to provide passwords via `/run/secrets/`. Without Vault, these services fail to start.
+
+---
+
+### dev (DEPRECATED)
+**Status**: Not supported as of 2026-05-08.
+
+**Reason**: Same as `usr` — Vault is required for database secrets. The `dev` profile (Open WebUI + pgAdmin + PostgreSQL) cannot function without Vault agents.
+
+---
+
+## 5. Profile Selection Guidelines
+
+- **ops**: Use for production deployments requiring observability (no WebUI)
+- **sys**: Use for complete deployments with WebUI and all features
+
+---
+
+## 6. Profile Invariants
 
 All profiles **must**:
 - Include the complete runtime core (Inference Engine, OpenCode)
+- Include Vault for secret management (required by all database-dependent services)
 - Never disable or conditionally exclude runtime core components
 - Maintain runtime core independence from operational services
 
 Profiles **may**:
 - Add operational services as needed
 - Configure operational services differently
-- Exclude operational services based on use case
+- Exclude operational services based on use case (e.g., no WebUI in ops)

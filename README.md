@@ -75,6 +75,14 @@ podman info | grep "rootless"
 # Generate .env file, admin credentials, and Vault secrets (one-time)
 # You will be prompted for admin username and email
 ./aixcl stack init
+
+# Start with ops profile (monitoring-focused) or sys profile (complete stack)
+./aixcl stack start --profile ops
+# or
+./aixcl stack start --profile sys
+
+# Wait for healthy status (about 2-3 minutes for full stabilization)
+./aixcl stack status
 ```
 
 ### Step 4: Start the Stack

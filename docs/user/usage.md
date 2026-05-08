@@ -6,10 +6,12 @@ For installation and quick start, see [README.md](/README.md).
 
 | Profile | Purpose | Services |
 |---------|---------|----------|
-| **usr** | Minimal footprint | Ollama, PostgreSQL |
-| **dev** | Workstation | usr + Open WebUI, pgAdmin |
-| **ops** | Monitoring | usr + Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter |
-| **sys** | Full stack | All services |
+| **ops** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter |
+| **sys** | Full stack | ops + Open WebUI, pgAdmin |
+
+Deprecated (not supported):
+- `usr` — DEPRECATED (Vault now required for database secrets)
+- `dev` — DEPRECATED (Vault now required for database secrets)
 
 ## Service URLs (sys profile)
 

@@ -39,8 +39,6 @@ COMMANDS
 
 PROFILES
 
-    usr     User runtime (minimal footprint)
-    dev     Developer workstation (UI + DB tools)
     ops     Observability-focused (monitoring stack)
     sys     Complete stack with automation
 

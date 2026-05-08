@@ -8,7 +8,7 @@
 # See: docs/developer/adding-services.md for complete checklist
 
 # Valid profiles array
-VALID_PROFILES=(usr dev ops sys)
+VALID_PROFILES=(ops sys)
 
 # Engine detection
 INFERENCE_ENGINE=${INFERENCE_ENGINE:-ollama}
@@ -28,8 +28,8 @@ get_runtime_core_services() {
 
 # Profile descriptions
 declare -A PROFILE_DESCRIPTIONS=(
-    [usr]="User-oriented runtime (minimal footprint with database persistence)"
-    [dev]="Developer workstation (UI + DB + admin tools)"
+    [usr]="DEPRECATED — Not supported (Vault now required for database secrets)"
+    [dev]="DEPRECATED — Not supported (Vault now required for database secrets)"
     [ops]="Observability-focused (monitoring/logging)"
     [sys]="System-oriented (complete stack)"
 )
@@ -88,12 +88,16 @@ is_valid_profile() {
     if [ -z "$profile" ]; then
         return 1
     fi
-    for valid_profile in "${VALID_PROFILES[@]}"; do
-        if [ "$profile" = "$valid_profile" ]; then
+    # Only ops and sys are supported — usr and dev removed because Vault is now
+    # required for database secrets and all services depend on Vault agents.
+    case "$profile" in
+        ops|sys)
             return 0
-        fi
-    done
-    return 1
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # Get description for a profile
@@ -142,9 +146,12 @@ list_profiles() {
     echo "Available profiles:"
     echo "==================="
     echo ""
-    for profile in "${VALID_PROFILES[@]}"; do
-        echo "  - $profile: $(get_profile_description "$profile")"
-    done
+    echo "  - ops: $(get_profile_description "ops")"
+    echo "  - sys: $(get_profile_description "sys")"
+    echo ""
+    echo "Deprecated (not supported):"
+    echo "  - usr: DEPRECATED — Not supported (Vault now required for database secrets)"
+    echo "  - dev: DEPRECATED — Not supported (Vault now required for database secrets)"
     echo ""
     echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
 }

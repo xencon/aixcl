@@ -224,8 +224,8 @@ function start() {
             echo "Note: Set PROFILE=<profile> in .env file to use a default profile"
             echo ""
             echo "Examples:"
-            echo "  ./aixcl stack start --profile usr    # User-oriented runtime (minimal footprint with database persistence)"
-            echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
+            echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
+            echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack)"
             echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
             echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
             echo ""
@@ -237,7 +237,7 @@ function start() {
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "[ ] Error: Invalid profile: $profile" >&2
-        echo "Valid profiles: usr, dev, ops, sys"
+        echo "Valid profiles: ops, sys (default: sys)"
         echo ""
         list_profiles
         exit 1
@@ -856,7 +856,8 @@ function restart() {
             echo "" >&2
             echo "Examples:" >&2
             echo "  ./aixcl stack start                      # Start using .env profile" >&2
-            echo "  ./aixcl stack start --profile dev        # Start dev profile" >&2
+            echo "  ./aixcl stack start --profile ops        # Start ops profile" >&2
+            echo "  ./aixcl stack start --profile sys        # Start sys profile" >&2
             echo "  ./aixcl stack logs engine                   # Show logs for active engine" >&2
             echo "  ./aixcl stack restart engine                # Restart active engine" >&2
             echo "  ./aixcl stack stop                          # Stop all services" >&2
@@ -871,7 +872,7 @@ function restart() {
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "[ ] Error: Invalid profile: $profile" >&2
-        echo "Valid profiles: usr, dev, ops, sys" >&2
+        echo "Valid profiles: ops, sys (default: sys)" >&2
         echo ""
         list_profiles
         exit 1
@@ -1452,8 +1453,6 @@ function stack_cmd() {
         echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
         echo "Examples:"
         echo "  $0 stack start                - Start all services with sys profile (default)"
-        echo "  $0 stack start --profile usr  - Start runtime core + PostgreSQL (minimal footprint)"
-        echo "  $0 stack start --profile dev  - Start dev profile (runtime core + UI + DB)"
         echo "  $0 stack start --profile ops  - Start ops profile (runtime core + observability)"
         echo "  $0 stack start --profile sys  - Start all services"
         echo "  $0 stack stop                 - Stop all services"
@@ -1464,7 +1463,7 @@ function stack_cmd() {
         echo "  $0 stack logs engine 100      - Show last 100 lines for the active engine"
         echo "  $0 stack logs open-webui      - Show logs for a specific service"
         echo ""
-        echo "Valid profiles: usr, dev, ops, sys (default: sys)"
+        echo "Valid profiles: ops, sys (default: sys)"
         echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
         return 1
     fi
