@@ -1,45 +1,8 @@
 # AIXCL Usage Guide
 
-## Quick Start
+For installation and quick start, see [README.md](/README.md).
 
-### 1. Initialize (first run only)
-
-```bash
-./aixcl utils check-env
-./aixcl stack init
-```
-
-`init` generates `.env`, admin credentials, and Vault secrets. It is safe to re-run.
-
-### 2. Start the Stack
-
-```bash
-# First time (or to switch profile)
-./aixcl stack start --profile sys
-
-# After that (remembers profile in .env)
-./aixcl stack start
-```
-
-### 3. Verify Health
-
-```bash
-./aixcl stack status
-```
-
-Wait until all services show `OK running`.
-
-### 4. Add Models
-
-```bash
-./aixcl models add qwen2.5-coder:1.5b
-```
-
-Then chat via [Open WebUI](http://localhost:8080) (first user = admin), `opencode`, or `curl http://localhost:11434/v1/chat/completions`.
-
----
-
-## Services by Profile
+## Profile-Specific Services
 
 | Profile | Purpose | Services |
 |---------|---------|----------|
@@ -48,66 +11,29 @@ Then chat via [Open WebUI](http://localhost:8080) (first user = admin), `opencod
 | **ops** | Monitoring | usr + Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter |
 | **sys** | Full stack | All services |
 
-## Access Points (sys profile)
+## Service URLs (sys profile)
 
-| Service | URL | Notes |
-|---------|-----|-------|
-| Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault passwords` |
-| pgAdmin | http://localhost:5050 | Email/password from `vault credentials` |
-| Grafana | http://localhost:3000 | Email/password from `vault credentials` |
-| Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
-| Prometheus | http://localhost:9090 | No auth (localhost only) |
-| Ollama API | http://localhost:11434 | OpenAI-compatible endpoint |
-
-Get current credentials:
-```bash
-./aixcl vault credentials
-```
+| Service | URL |
+|---------|-----|
+| Open WebUI | http://localhost:8080 |
+| pgAdmin | http://localhost:5050 |
+| Grafana | http://localhost:3000 |
+| Vault UI | http://localhost:8200 |
+| Prometheus | http://localhost:9090 |
+| Ollama API | http://localhost:11434 |
 
 ## Common Commands
 
 | Task | Command |
 |------|---------|
 | Check status | `./aixcl stack status` |
-| View logs | `./aixcl stack logs <service> <n>` |
+| View logs | `./aixcl stack logs <service> [n] [-f]` |
 | Stop stack | `./aixcl stack stop` |
 | Add model | `./aixcl models add <model>` |
 | List models | `./aixcl models list` |
-| Clean resources | `./aixcl stack stop` + remove containers/volumes manually |
+| Vault passwords | `./aixcl vault passwords` |
+| Vault credentials | `./aixcl vault credentials` |
 | Export systemd | `./aixcl stack export-quadlet` |
-
----
-
-## Troubleshooting
-
-### Services Won't Start
-
-```bash
-# Check for port conflicts
-sudo lsof -i :11434 -i :8080 -i :8200
-
-# Base build (clean restart without wiping images)
-./aixcl stack stop
-rm -f .aixcl.initialized .env pgadmin-servers.json
-podman ps -aq | xargs podman rm -f 2>/dev/null
-podman volume ls -q | xargs podman volume rm 2>/dev/null
-./aixcl stack init
-./aixcl stack start --profile sys
-```
-
-### Vault Not Ready
-
-```bash
-./aixcl vault status
-# Check logs if unsealed
-./aixcl stack logs vault
-```
-
-### Model Not in WebUI
-
-If using vLLM or llama.cpp, add a Direct Connection in Open WebUI Settings > Connections pointing to `http://127.0.0.1:11434/v1`. Ollama users don't need this.
-
----
 
 ## Architecture
 

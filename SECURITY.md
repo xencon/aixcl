@@ -237,10 +237,10 @@ Planned capabilities:
 
 ### Layer 2: Platform (AIXCL)
 
-- **LLM Security**: llm-firewall agent
-- **Threat Detection**: threat-detector agent
-- **Audit Logging**: PostgreSQL + cryptographic chain
-- **Secret Management**: Docker secrets + Vault (in progress)
+- **Secret Management**: Vault dynamic secrets (implemented)
+- **LLM Security**: llm-firewall agent (future work)
+- **Threat Detection**: threat-detector agent (future work)
+- **Audit Logging**: Vault audit file (future: PostgreSQL hash-chain)
 
 ### Layer 3: Application (Built on Platform)
 
@@ -248,6 +248,65 @@ Planned capabilities:
 - **Output Encoding**: Context-aware encoding
 - **Authentication**: OAuth2/OIDC (external)
 - **Authorization**: RBAC with principle of least privilege
+
+---
+
+## Control Mapping
+
+Each attack vector maps to specific compensating controls:
+
+| Attack Vector | Primary Control | Secondary Control | Tertiary Control |
+|---------------|-----------------|-------------------|------------------|
+| Prompt Injection | LLM Firewall (future) | Output PII scanning | Rate limiting |
+| Container Escape | Disable privileged containers | seccomp + no-new-privileges | Host firewall |
+| Credential Theft | Vault dynamic secrets | Host firewall (localhost) | Credential rotation |
+| Model Extraction | Rate limiting (future) | Anomaly detection (future) | Query pattern analysis |
+| Supply Chain | Local LLM preference | Image pinning | Provenance verification (future) |
+
+---
+
+## Agent Decision Guidance
+
+When an agent detects potential threat activity, use this decision tree:
+
+```
+Is activity in threat detector rules? (future system)
+|-- YES --> CRITICAL or HIGH?
+|   |-- CRITICAL --> Page human, do not auto-remediate
+|   \-- HIGH --> Alert security team, monitor
+\-- NO --> Is it in anomaly detection?
+    |-- YES --> Log + monitor (MEDIUM)
+    \-- NO --> Log only (LOW)
+        \-- But if pattern persists >1 hour --> Escalate to MEDIUM
+```
+
+**Never auto-remediate without human approval if:**
+- Action affects runtime core services (Ollama, PostgreSQL)
+- Action modifies firewall rules
+- Action deletes containers or volumes
+- Action accesses git repositories
+
+---
+
+## Verification
+
+### Quarterly Threat Model Review Checklist
+
+- [ ] Review all attack vectors for new preconditions (new services, new dependencies)
+- [ ] Verify all implemented mitigations are still effective
+- [ ] Check MITRE ATT&CK for newly published techniques relevant to AIXCL
+- [ ] Review residual risk ratings against actual incident data
+- [ ] Update control mapping if compensating controls changed
+- [ ] Check that planned mitigations have realistic timelines
+- [ ] Validate that agent decision guidance still matches current stack configuration
+
+### On-Demand Review Triggers
+
+- New service added to stack
+- New upstream dependency introduced
+- Security incident reveals new attack vector
+- Major version update of runtime core (Ollama, OpenCode)
+- Profile changes (new services enabled)
 
 ---
 
@@ -398,7 +457,6 @@ This document acknowledges the following security debts that cannot be resolved 
 - [AIXCL Platform Invariants](/docs/architecture/governance/00_invariants.md)
 - [Security Runbook](/docs/operations/security-runbook.md)
 - [Incident Response Playbook](/docs/operations/incident-response.md)
-- [Threat Model](/docs/security/threat-model.md)
 - [Compensating Controls](/docs/security/compensating-controls.md)
 
 ---
