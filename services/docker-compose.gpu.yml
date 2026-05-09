@@ -62,3 +62,12 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
     entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
     command: ["--host", "0.0.0.0", "--port", "11434"]
+
+  nvidia-gpu-exporter:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
