@@ -4,9 +4,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'AIXCL Dashboards'
+  - name: 'AIXCL'
     orgId: 1
-    folder: 'AIXCL Dashboards'
+    folder: 'AIXCL'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10
