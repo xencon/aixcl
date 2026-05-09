@@ -1,0 +1,21 @@
+# Podman CDI GPU support overlay for AIXCL
+# Loaded alongside docker-compose.gpu.yml when Podman is the container runtime
+# podman-compose translates devices entries to --device CDI flags
+# Requires: nvidia-ctk cdi generate (run setup-podman-rootless.sh)
+
+services:
+  ollama:
+    devices:
+      - nvidia.com/gpu=all
+
+  vllm:
+    devices:
+      - nvidia.com/gpu=all
+
+  llamacpp:
+    devices:
+      - nvidia.com/gpu=all
+
+  nvidia-gpu-exporter:
+    devices:
+      - nvidia.com/gpu=all

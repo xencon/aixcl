@@ -4,6 +4,23 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.9] - 2026-05-09
+
+### Fixed
+
+- **GPU Support Restored for Podman**: Restored full GPU support broken by the Docker-to-Podman migration. Root causes: podman-compose silently ignores `deploy.resources.reservations.devices` (Docker Swarm syntax); NVIDIA CDI was never configured; wrong exporter image (DCGM incompatible with WSL2). (Fixes #1118)
+- **NVIDIA CDI Auto-Configuration**: Added `setup_nvidia_cdi()` to `setup-podman-rootless.sh` to generate the NVIDIA CDI spec (`/etc/cdi/nvidia.yaml`) required for Podman GPU device allocation. CDI status now verified by `--verify` flag. (Fixes #1118)
+- **Podman GPU Compose Overlay**: Added `docker-compose.gpu-podman.yml` with CDI device entries for all GPU services. Restructured `set_compose_cmd()` to detect the container runtime before applying GPU overlays, loading the correct overlay per runtime. (Fixes #1118)
+- **GPU Metrics Exporter Replaced**: Replaced DCGM exporter (requires NVML, incompatible with WSL2) with `utkuozdemir/nvidia_gpu_exporter` (nvidia-smi based, WSL2 compatible) on port 9445. (Fixes #1118)
+- **Grafana GPU Dashboard Corrected**: Fixed `gpu-metrics.json` utilization expression (`nvidia_smi_utilization_gpu_ratio * 100`) and aligned all panel queries to exporter metric names. (Fixes #1118)
+- **Stack Status Health Check Port**: Updated `stack.sh` GPU exporter health check from port 9400 (DCGM) to 9445. (Fixes #1118)
+- **Grafana Duplicate Dashboard Folder**: Fixed provisioning mismatch that created an empty `AIXCL` folder and a populated `AIXCL Dashboards` folder. Dashboard provider now matches the folder name used by alert rules. (Fixes #1116)
+
+### Related Issues
+
+- Fixes #1116 - Grafana dashboard provisioning creates duplicate folders
+- Fixes #1118 - GPU not available to Podman after Docker migration CDI not configured
+
 ## [v1.1.7] - 2026-05-07
 
 ### Security

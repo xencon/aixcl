@@ -202,6 +202,55 @@ setup_volume_permissions() {
   log_info "Volume permissions configured"
 }
 
+# Generate NVIDIA CDI spec so Podman can allocate GPU devices to containers
+setup_nvidia_cdi() {
+  log_step "Configuring NVIDIA CDI for Podman GPU support..."
+
+  if ! command -v nvidia-ctk >/dev/null 2>&1; then
+    log_info "nvidia-ctk not found — skipping GPU setup (no NVIDIA Container Toolkit)"
+    return 0
+  fi
+
+  if ! nvidia-smi >/dev/null 2>&1; then
+    log_info "No NVIDIA GPU detected — skipping CDI setup"
+    return 0
+  fi
+
+  # Check if CDI spec already has devices
+  local cdi_count
+  cdi_count=$(nvidia-ctk cdi list 2>/dev/null | grep -c 'nvidia.com' || echo 0)
+  if [[ "$cdi_count" -gt 0 ]]; then
+    log_info "[OK] NVIDIA CDI already configured ($cdi_count devices)"
+    return 0
+  fi
+
+  log_info "Generating NVIDIA CDI specification..."
+
+  # Try system-level CDI spec first, fall back to user-level
+  if sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml 2>/dev/null; then
+    log_info "[OK] NVIDIA CDI spec written to /etc/cdi/nvidia.yaml"
+  else
+    log_warn "Could not write system CDI spec — trying user-level"
+    mkdir -p "${HOME}/.config/cdi"
+    if nvidia-ctk cdi generate --output="${HOME}/.config/cdi/nvidia.yaml" 2>/dev/null; then
+      log_info "[OK] NVIDIA CDI spec written to ${HOME}/.config/cdi/nvidia.yaml"
+    else
+      log_error "Failed to generate NVIDIA CDI spec"
+      log_info "Run manually: sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
+      return 1
+    fi
+  fi
+
+  # Verify
+  local device_count
+  device_count=$(nvidia-ctk cdi list 2>/dev/null | grep -c 'nvidia.com' || echo 0)
+  if [[ "$device_count" -gt 0 ]]; then
+    log_info "[OK] NVIDIA CDI devices available: $device_count"
+  else
+    log_warn "CDI spec written but no devices visible yet — a re-login may be required"
+  fi
+}
+
 # Create Podman-specific configuration
 create_podman_config() {
   log_step "Creating Podman configuration..."
@@ -346,6 +395,18 @@ verify_setup() {
     log_error "[FAIL] Test container failed"
     all_good=false
   fi
+
+  # Check NVIDIA CDI (optional — only relevant when GPU hardware is present)
+  if command -v nvidia-ctk >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+    local cdi_count
+    cdi_count=$(nvidia-ctk cdi list 2>/dev/null | grep -c 'nvidia.com' || echo 0)
+    if [[ "$cdi_count" -gt 0 ]]; then
+      log_info "[OK] NVIDIA CDI configured ($cdi_count devices)"
+    else
+      log_warn "[WARN] NVIDIA GPU detected but CDI not configured — GPU unavailable in containers"
+      log_info "       Run: sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
+    fi
+  fi
   
   if $all_good; then
     log_info ""
@@ -418,6 +479,7 @@ What This Does:
   3. Sets up Podman socket for Docker compatibility
   4. Configures volume permissions
   5. Creates Podman-optimized configuration
+  6. Generates NVIDIA CDI spec for GPU support (if NVIDIA GPU detected)
 
 Security Benefits:
   - No daemon process (eliminates attack surface)
@@ -447,6 +509,7 @@ case "${1:-}" in
     setup_podman_socket
     setup_volume_permissions
     create_podman_config
+    setup_nvidia_cdi
     verify_setup
     ;;
   *)

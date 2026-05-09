@@ -1405,7 +1405,7 @@ function status() {
     if is_operational_in_profile "nvidia-gpu-exporter"; then
         if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
             # shellcheck disable=SC2034
-            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9400/metrics 2>/dev/null || echo "000")
+            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9445/metrics 2>/dev/null || echo "000")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS"
         else
             echo "  ${ICON_ERROR:-❌} NVIDIA GPU Exporter"
