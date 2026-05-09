@@ -106,7 +106,7 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ### Documentation
 
-- **README Quick Start**: Added `./aixcl stack init` step and `utils bash-completion` / `utils clean` commands (Fixes #1020)
+- **README Quick Start**: Added `./aixcl stack init` step and `utils bash-completion` / `utils prune` commands (Fixes #1020)
 
 ### Related Issues
 

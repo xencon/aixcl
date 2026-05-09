@@ -29,8 +29,6 @@ get_runtime_core_services() {
 
 # Profile descriptions
 declare -A PROFILE_DESCRIPTIONS=(
-    [usr]="DEPRECATED — Not supported (Vault now required for database secrets)"
-    [dev]="DEPRECATED — Not supported (Vault now required for database secrets)"
     [bld]="Builder-focused (monitoring/logging)"
     [sys]="System-oriented (complete stack)"
 )
@@ -45,12 +43,6 @@ get_profile_services_for_profile() {
     local engine="${INFERENCE_ENGINE:-ollama}"
     
     case "$profile" in
-        usr)
-            echo "$engine postgres"
-            ;;
-        dev)
-            echo "$engine open-webui postgres pgadmin"
-            ;;
         bld)
             echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
             ;;
@@ -64,12 +56,8 @@ get_profile_services_for_profile() {
     esac
 }
 
-# Deprecated: Static array kept for backward compatibility
-# Use get_profile_services_for_profile() or get_profile_services() instead
 # shellcheck disable=SC2034
 declare -A PROFILE_SERVICES=(
-    [usr]="INFERENCE_ENGINE_PLACEHOLDER vault postgres vault-agent-postgres-bootstrap"
-    [dev]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
     [bld]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
     [sys]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
 )
@@ -77,8 +65,6 @@ declare -A PROFILE_SERVICES=(
 # Profile database storage settings
 # All profiles use database storage for persistence
 declare -A PROFILE_DB_STORAGE=(
-    [usr]="true"
-    [dev]="true"
     [bld]="true"
     [sys]="true"
 )
@@ -89,8 +75,6 @@ is_valid_profile() {
     if [ -z "$profile" ]; then
         return 1
     fi
-    # Only bld and sys are supported — usr and dev removed because Vault is now
-    # required for database secrets and all services depend on Vault agents.
     case "$profile" in
         bld|sys)
             return 0
@@ -149,10 +133,6 @@ list_profiles() {
     echo ""
     echo "  - bld: $(get_profile_description "bld")"
     echo "  - sys: $(get_profile_description "sys")"
-    echo ""
-    echo "Deprecated (not supported):"
-    echo "  - usr: DEPRECATED — Not supported (Vault now required for database secrets)"
-    echo "  - dev: DEPRECATED — Not supported (Vault now required for database secrets)"
     echo ""
     echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
 }

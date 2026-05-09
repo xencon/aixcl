@@ -3,6 +3,7 @@
 .env.local
 .env.backup.*
 .env.*.local
+.env.podman
 config/.env
 .pythonenv
 venv/
