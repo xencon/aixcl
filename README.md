@@ -69,27 +69,26 @@ podman info | grep "rootless"
 # Should show: "rootless: true"
 ```
 
-### Step 3: Initialize the Stack (Interactive)
+### Step 3: Check, Initialize and Start
+
+The quickest way to get started — add this alias to your shell:
 
 ```bash
-# Generate .env file, admin credentials, and Vault secrets (one-time)
-# You will be prompted for admin username and email
-./aixcl stack init
-
-# Start with bld profile (monitoring-focused) or sys profile (complete stack)
-./aixcl stack start --profile bld
-# or
-./aixcl stack start --profile sys
-
-# Wait for healthy status (about 2-3 minutes for full stabilization)
-./aixcl stack status
+alias aixcl-setup='./aixcl utils check-env && ./aixcl stack init && ./aixcl stack start --profile sys'
 ```
 
-### Step 4: Start the Stack
+Then run:
 
 ```bash
-# Start with system profile (includes all services)
-./aixcl stack start --profile sys
+aixcl-setup
+```
+
+Or run each step manually:
+
+```bash
+./aixcl utils check-env          # Verify environment prerequisites
+./aixcl stack init               # Generate .env, credentials and Vault secrets (one-time)
+./aixcl stack start --profile sys  # Start the full stack
 
 # Wait for healthy status (about 2-3 minutes for full stabilization)
 ./aixcl stack status
@@ -313,13 +312,13 @@ sudo lsof -i :11434  # Ollama
 sudo lsof -i :8080   # Open WebUI
 sudo lsof -i :8200   # Vault
 
-# Base build (clean restart without wiping images)
-./aixcl stack stop
-rm -f .aixcl.initialized .env pgadmin-servers.json
-podman ps -aq | xargs podman rm -f 2>/dev/null
-podman volume ls -q | xargs podman volume rm 2>/dev/null
-./aixcl stack init
-./aixcl stack start --profile sys
+# Soft reset — removes volumes and state, keeps images for fast restart
+./aixcl utils prune
+aixcl-setup
+
+# Full wipe — removes everything including images (slow rebuild)
+./aixcl utils prune --all
+aixcl-setup
 ```
 
 ---
