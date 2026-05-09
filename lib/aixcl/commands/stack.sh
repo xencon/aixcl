@@ -48,14 +48,16 @@ function ensure_databases() {
             pg_ready=true
             break
         fi
+        echo "   Waiting for PostgreSQL to accept connections... ($i/20)"
         sleep 1
     done
-    
+
     if [ "$pg_ready" = false ]; then
         echo "   PostgreSQL is not ready, skipping database creation"
         return 0
     fi
-    
+    echo "   PostgreSQL ready. Checking databases..."
+
     # Create webui database if it doesn't exist
     if "${DOCKER_BIN:-docker}" exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$webui_db"; then
         echo "WebUI database already exists: $webui_db"
