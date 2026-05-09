@@ -15,3 +15,7 @@ services:
   llamacpp:
     devices:
       - nvidia.com/gpu=all
+
+  nvidia-gpu-exporter:
+    devices:
+      - nvidia.com/gpu=all

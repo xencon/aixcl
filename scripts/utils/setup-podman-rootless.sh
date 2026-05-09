@@ -227,7 +227,7 @@ setup_nvidia_cdi() {
   log_info "Generating NVIDIA CDI specification..."
 
   # Try system-level CDI spec first, fall back to user-level
-  if sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml 2>/dev/null; then
+  if sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml 2>/dev/null; then
     log_info "[OK] NVIDIA CDI spec written to /etc/cdi/nvidia.yaml"
   else
     log_warn "Could not write system CDI spec — trying user-level"
@@ -236,7 +236,7 @@ setup_nvidia_cdi() {
       log_info "[OK] NVIDIA CDI spec written to ${HOME}/.config/cdi/nvidia.yaml"
     else
       log_error "Failed to generate NVIDIA CDI spec"
-      log_info "Run manually: sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
+      log_info "Run manually: sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
       return 1
     fi
   fi

@@ -92,7 +92,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "nvidia_smi_utilization_gpu",
+          "expr": "nvidia_smi_utilization_gpu_ratio * 100",
           "refId": "A",
           "legendFormat": "GPU {{gpu}}"
         }
