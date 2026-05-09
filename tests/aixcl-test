@@ -38,7 +38,7 @@ TEST_DIR="${SCRIPT_DIR}/command-tests"
 ENGINE="current"  # current, ollama, vllm, llamacpp, all
 MODEL=""
 TEST_RANGE="all"
-PROFILE="usr"
+PROFILE="sys"
 # shellcheck disable=SC2034
 VERBOSE=false
 
@@ -74,8 +74,8 @@ OPTIONS
         Default: all
 
     -p, --profile <profile>
-        Stack profile: sys, usr
-        Default: usr
+        Stack profile: bld, sys
+        Default: sys
 
     -v, --verbose
         Enable verbose output
@@ -93,7 +93,7 @@ ENGINES
 
 PROFILES
 
-    usr     User runtime (minimal footprint)
+    bld     Builder-focused (monitoring/logging)
     sys     System runtime (full stack)
 
 EXAMPLES
@@ -172,8 +172,8 @@ parse_arguments() {
     fi
 
     # Validate profile
-    if [[ ! "$PROFILE" =~ ^(sys|usr)$ ]]; then
-        echo "Error: Invalid profile '$PROFILE'. Must be: sys, usr" >&2
+    if [[ ! "$PROFILE" =~ ^(bld|sys)$ ]]; then
+        echo "Error: Invalid profile '$PROFILE'. Must be: bld, sys" >&2
         exit 1
     fi
 }
