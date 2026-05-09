@@ -31,7 +31,7 @@ COMPOSE_WORKDIR="${SERVICES_DIR}"
 # Podman is preferred over Docker for rootless security
 set_compose_cmd() {
     local files=( -f "${SERVICES_DIR}/${COMPOSE_FILE}" )
-    
+
     # Check for ARM64 architecture
     if is_arm64 && [ -f "${SERVICES_DIR}/docker-compose.arm.yml" ]; then
         if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
@@ -39,38 +39,24 @@ set_compose_cmd() {
         fi
         files+=( -f "${SERVICES_DIR}/docker-compose.arm.yml" )
     fi
-    
-    # Check for NVIDIA GPU hardware AND toolkit availability
-    if has_nvidia && has_nvidia_container_toolkit && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
-        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
-            echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
-        fi
-        files+=( -f "${SERVICES_DIR}/docker-compose.gpu.yml" )
-    else
-        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
-            echo "No NVIDIA GPU support detected. Running without GPU overrides."
-        fi
-    fi
-    
-    # Detect appropriate compose command - Podman preferred for rootless security
+
+    # Detect container runtime first — GPU overlay selection depends on it
     local cmd=()
     local bin="docker"
-    
-    # Check if Podman is available and functional (preferred for security)
+
+    # Podman preferred for rootless security
     if command -v podman &>/dev/null && podman info &>/dev/null; then
-        # Podman is installed and working
         if command -v podman-compose &>/dev/null; then
             bin="podman"
             cmd=(podman-compose)
             [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Using Podman (rootless mode) with podman-compose"
         else
-            # podman installed but podman-compose missing
             echo "⚠️  Podman found but podman-compose not installed" >&2
             echo "   Install: pip3 install podman-compose" >&2
             echo "   Falling back to Docker..." >&2
         fi
     fi
-    
+
     # Docker fallback
     if [[ "$bin" == "docker" ]]; then
         if command -v docker &>/dev/null; then
@@ -80,11 +66,31 @@ set_compose_cmd() {
             exit 1
         fi
     fi
-    
+
     # Export DOCKER_BIN for use in other scripts
     export DOCKER_BIN="$bin"
     if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
         echo "Using container engine: $DOCKER_BIN"
+    fi
+
+    # Check for NVIDIA GPU hardware AND toolkit availability
+    # Runtime must be detected above before this block runs
+    if has_nvidia && has_nvidia_container_toolkit && [ -f "${SERVICES_DIR}/docker-compose.gpu.yml" ]; then
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "Detected NVIDIA GPU hardware and Container Toolkit. Enabling GPU overrides."
+        fi
+        files+=( -f "${SERVICES_DIR}/docker-compose.gpu.yml" )
+        # Podman ignores deploy.resources.reservations.devices — load CDI overlay instead
+        if [[ "$bin" == "podman" ]] && [ -f "${SERVICES_DIR}/docker-compose.gpu-podman.yml" ]; then
+            if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+                echo "Podman runtime detected: enabling CDI GPU device overlay."
+            fi
+            files+=( -f "${SERVICES_DIR}/docker-compose.gpu-podman.yml" )
+        fi
+    else
+        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+            echo "No NVIDIA GPU support detected. Running without GPU overrides."
+        fi
     fi
 
     if [ ${#cmd[@]} -eq 0 ]; then
