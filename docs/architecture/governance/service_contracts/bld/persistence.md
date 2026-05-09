@@ -24,6 +24,6 @@ Provides PostgreSQL database storage for runtime data (Open WebUI conversations,
 ## Notes
 - **Runtime/Operational Boundary**: PostgreSQL serves both runtime (conversation storage) and operational (admin) purposes. This creates a design tension with the invariant that "runtime core must be runnable without operational services."
 - **Resolution**: AIXCL services may use PostgreSQL if available, but must function gracefully if it is unavailable.
-- **Current Implementation**: All profiles (`usr`, `dev`, `ops`, `sys`) include PostgreSQL for persistence. The `usr` profile includes PostgreSQL as the minimal operational service for runtime persistence.
+- **Current Implementation**: Only active profiles (`bld`, `sys`) include PostgreSQL for persistence. The `bld` profile includes PostgreSQL as part of the observability stack, while `sys` includes it along with the full UI and monitoring suite.
 - **pgAdmin**: Purely operational/admin tooling, never required for runtime.
 - **Database Separation**: OpenCode conversations use a separate database (`opencode`) from Open WebUI conversations, maintaining logical separation.

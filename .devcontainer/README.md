@@ -50,7 +50,7 @@ docker exec -it devcontainer-devcontainer-1 /bin/bash
 su vscode
 
 # 6. Start AIXCL
-./aixcl stack start --profile usr
+./aixcl stack start --profile sys
 
 # 7. Verify services
 ./aixcl stack status
@@ -167,7 +167,7 @@ Once in the dev container:
 ./aixcl engine auto
 
 # Start services
-./aixcl stack start --profile usr
+./aixcl stack start --profile sys
 
 # Check status
 ./aixcl stack status
@@ -315,7 +315,7 @@ lsof -i :11434
 
 3. **Start AIXCL:**
    ```bash
-   ./aixcl stack start --profile usr
+   ./aixcl stack start --profile sys
    ```
 
 4. **Use OpenCode:**

@@ -93,7 +93,7 @@ test_engine() {
     
     # Start stack
     echo -e "${YELLOW}Starting stack...${NC}"
-    cd "$REPO_ROOT" && ./aixcl stack start --profile usr
+    cd "$REPO_ROOT" && ./aixcl stack start --profile sys
     echo ""
     
     # Add model

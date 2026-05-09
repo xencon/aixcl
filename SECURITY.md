@@ -50,7 +50,9 @@ This document outlines the security architecture for AIXCL in adversarial enviro
 
 ## Compensating Controls
 
-### 1. Host Firewall (iptables)
+**Legend:** ✅ Implemented | 🔄 In Progress | 📝 Future Work
+
+### 1. Host Firewall (iptables) ✅
 
 Since containers use `network_mode: host`, we enforce network policies at the host level:
 
@@ -67,63 +69,76 @@ Since containers use `network_mode: host`, we enforce network policies at the ho
 **Limitations**: Bypassable if attacker gains host root access  
 **Verification**: `iptables -L -n -v | grep DROP`
 
-### 2. LLM Firewall (llm-firewall agent)
+### 2. LLM Firewall (llm-firewall agent) 📝
 
-Sanitizes all LLM interactions:
+> **Status:** Not yet implemented. Documented as architectural target.
+
+Planned capabilities:
 - Prompt injection detection
 - PII/PCI data redaction  
 - Rate limiting (100 requests/hour)
 - Output filtering
 - Audit logging
 
-**Deployment**: localhost:11435 (proxy to Ollama on :11434)
+**Planned Deployment**: localhost:11435 (proxy to Ollama on :11434)
 
-**Effectiveness**: High  
-**Limitations**: Adds latency (~50ms per request)  
-**Verification**: Check `llm_interactions` table in PostgreSQL
+**Projected Effectiveness**: High  
+**Projected Limitations**: Adds latency (~50ms per request)  
+**Projected Verification**: Check `llm_interactions` table in PostgreSQL
 
-### 3. Threat Detection (threat-detector agent)
+### 3. Threat Detection (threat-detector agent) 📝
 
-Continuous monitoring for:
+> **Status:** Not yet implemented. Documented as architectural target.
+
+Planned capabilities:
 - Model extraction attempts (high query volume)
 - Data exfiltration (encoding requests)
 - Privilege escalation (docker socket access)
 - Anomalous behavior (after-hours access)
 
-**Alerting**: Slack #security channel
+**Planned Alerting**: Slack #security channel
 
-**Effectiveness**: High  
-**False Positive Rate**: ~5% (tuned via ML)  
-**Verification**: Prometheus alerts, Loki logs
+**Projected Effectiveness**: High  
+**Projected False Positive Rate**: ~5% (tuned via ML)  
+**Projected Verification**: Prometheus alerts, Loki logs
 
-### 4. Audit Trail
+### 4. Audit Trail 📝
 
-Immutable logging to PostgreSQL:
-- All agent actions with cryptographic chain
+> **Status:** Partially implemented. File-based audit logging active. PostgreSQL hash-chain target is future work.
+
+Current implementation:
+- Vault audit logs to file (`/vault/logs/audit.log`)
+- Credential access timestamps recorded
+
+Planned enhancements:
+- Immutable logging to PostgreSQL with cryptographic chain
 - LLM prompts/responses (sanitized)
 - Human approval workflow
 - Security events
 
-**Retention**: 30 days live, optional S3 archive
+**Projected Retention**: 30 days live, optional S3 archive
 
-**Effectiveness**: High  
-**Tamper Resistance**: Hash chain + append-only  
-**Verification**: `scripts/audit/verify-chain.sh`
+**Projected Effectiveness**: High  
+**Projected Tamper Resistance**: Hash chain + append-only  
+**Projected Verification**: `scripts/audit/verify-chain.sh`
 
-### 5. Human-in-the-Loop
+### 5. Human-in-the-Loop 📝
 
-Critical actions require human approval:
-- git push to main/dev
-- rm -rf operations
-- Docker container deletion
-- Schema changes
-- External network requests
+> **Status:** Not yet implemented. Documented as architectural target.
 
-**Approval SLA**: 4 hours (24 hour timeout)
+Planned capabilities:
+- Critical actions require human approval:
+  - git push to main/dev
+  - rm -rf operations
+  - Docker container deletion
+  - Schema changes
+  - External network requests
 
-**Effectiveness**: Very High  
-**Limitation**: Requires 24/7 security team coverage  
-**Verification**: `human_approvals` table
+**Projected Approval SLA**: 4 hours (24 hour timeout)
+
+**Projected Effectiveness**: Very High  
+**Projected Limitation**: Requires 24/7 security team coverage  
+**Projected Verification**: `human_approvals` table
 
 ---
 
@@ -222,10 +237,10 @@ Critical actions require human approval:
 
 ### Layer 2: Platform (AIXCL)
 
-- **LLM Security**: llm-firewall agent
-- **Threat Detection**: threat-detector agent
-- **Audit Logging**: PostgreSQL + cryptographic chain
-- **Secret Management**: Docker secrets + Vault (in progress)
+- **Secret Management**: Vault dynamic secrets (implemented)
+- **LLM Security**: llm-firewall agent (future work)
+- **Threat Detection**: threat-detector agent (future work)
+- **Audit Logging**: Vault audit file (future: PostgreSQL hash-chain)
 
 ### Layer 3: Application (Built on Platform)
 
@@ -233,6 +248,65 @@ Critical actions require human approval:
 - **Output Encoding**: Context-aware encoding
 - **Authentication**: OAuth2/OIDC (external)
 - **Authorization**: RBAC with principle of least privilege
+
+---
+
+## Control Mapping
+
+Each attack vector maps to specific compensating controls:
+
+| Attack Vector | Primary Control | Secondary Control | Tertiary Control |
+|---------------|-----------------|-------------------|------------------|
+| Prompt Injection | LLM Firewall (future) | Output PII scanning | Rate limiting |
+| Container Escape | Disable privileged containers | seccomp + no-new-privileges | Host firewall |
+| Credential Theft | Vault dynamic secrets | Host firewall (localhost) | Credential rotation |
+| Model Extraction | Rate limiting (future) | Anomaly detection (future) | Query pattern analysis |
+| Supply Chain | Local LLM preference | Image pinning | Provenance verification (future) |
+
+---
+
+## Agent Decision Guidance
+
+When an agent detects potential threat activity, use this decision tree:
+
+```
+Is activity in threat detector rules? (future system)
+|-- YES --> CRITICAL or HIGH?
+|   |-- CRITICAL --> Page human, do not auto-remediate
+|   \-- HIGH --> Alert security team, monitor
+\-- NO --> Is it in anomaly detection?
+    |-- YES --> Log + monitor (MEDIUM)
+    \-- NO --> Log only (LOW)
+        \-- But if pattern persists >1 hour --> Escalate to MEDIUM
+```
+
+**Never auto-remediate without human approval if:**
+- Action affects runtime core services (Ollama, PostgreSQL)
+- Action modifies firewall rules
+- Action deletes containers or volumes
+- Action accesses git repositories
+
+---
+
+## Verification
+
+### Quarterly Threat Model Review Checklist
+
+- [ ] Review all attack vectors for new preconditions (new services, new dependencies)
+- [ ] Verify all implemented mitigations are still effective
+- [ ] Check MITRE ATT&CK for newly published techniques relevant to AIXCL
+- [ ] Review residual risk ratings against actual incident data
+- [ ] Update control mapping if compensating controls changed
+- [ ] Check that planned mitigations have realistic timelines
+- [ ] Validate that agent decision guidance still matches current stack configuration
+
+### On-Demand Review Triggers
+
+- New service added to stack
+- New upstream dependency introduced
+- Security incident reveals new attack vector
+- Major version update of runtime core (Ollama, OpenCode)
+- Profile changes (new services enabled)
 
 ---
 
@@ -383,7 +457,6 @@ This document acknowledges the following security debts that cannot be resolved 
 - [AIXCL Platform Invariants](/docs/architecture/governance/00_invariants.md)
 - [Security Runbook](/docs/operations/security-runbook.md)
 - [Incident Response Playbook](/docs/operations/incident-response.md)
-- [Threat Model](/docs/security/threat-model.md)
 - [Compensating Controls](/docs/security/compensating-controls.md)
 
 ---

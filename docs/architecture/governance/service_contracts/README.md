@@ -13,7 +13,7 @@ Purpose:
 ## Contract Scope
 
 - Name
-- Category (runtime | ops)
+- Category (runtime | bld)
 - Purpose
 - Depends On
 - Exposes

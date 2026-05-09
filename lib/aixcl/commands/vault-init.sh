@@ -233,7 +233,7 @@ init_bootstrap_passwords() {
 # Wait for Vault to be ready using REST API
 wait_for_vault() {
     log_info "Waiting for Vault to be ready..."
-    local retries=30
+    local retries=60
     while [[ $retries -gt 0 ]]; do
         local health
         health=$(curl -sf "${VAULT_ADDR}/v1/sys/health" 2>/dev/null | jq -r '.sealed // "unreachable"')

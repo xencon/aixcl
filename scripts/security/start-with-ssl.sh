@@ -9,13 +9,13 @@
 #   ./scripts/security/init-postgres-ssl.sh
 #
 # Usage: ./scripts/security/start-with-ssl.sh [profile]
-#   profile: usr (default), dev, ops, sys
+#   profile: bld, sys
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-PROFILE="${1:-dev}"
+PROFILE="${1:-sys}"
 
 # Colors
 RED='\033[0;31m'

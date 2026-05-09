@@ -34,11 +34,18 @@ fi
 
 # --- Read password from Vault secrets ---
 PGPASSWORD=""
-if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
-    PGPASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
-    echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
-else
-    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty"
+for i in $(seq 1 60); do
+    if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+        PGPASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
+        echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
+        break
+    fi
+    echo "[Vault] Waiting for postgres-password secret... ($i/30)"
+    sleep 2
+done
+
+if [ -z "$PGPASSWORD" ]; then
+    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty after 60 seconds"
     exit 1
 fi
 

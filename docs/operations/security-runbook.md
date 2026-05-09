@@ -14,20 +14,20 @@ This runbook provides **day-to-day operational security procedures** for AIXCL. 
 
 ## Daily Automated Checks (Agent)
 
-Run these checks automatically every day in `ops` and `sys` profiles.
+Run these checks automatically every day in `bld` and `sys` profiles.
 
 ### Check 1 -- Stack Health
 
 - [ ] `./aixcl stack status` returns all services as running or stopped (no errors)
 - [ ] No unexpected service restarts in last 24 hours
-- [ ] Expected service count matches profile (usr=3, dev=5, ops=10, sys=13)
+- [ ] Expected service count matches profile (bld=10, sys=13)
 
 ```bash
 #!/bin/bash
 # daily-health-check.sh
 profile=$(grep "^PROFILE=" .env | cut -d= -f2)
 count=$(./aixcl stack status | grep -c "[x]")
-expected=$(case $profile in usr) echo 3;; dev) echo 5;; ops) echo 10;; sys) echo 13;; *) echo 0;; esac)
+expected=$(case $profile in bld) echo 10;; sys) echo 13;; *) echo 0;; esac)
 if [ "$count" -lt "$expected" ]; then
     echo "FAIL: Only $count/$expected services healthy"
     exit 1
@@ -271,11 +271,11 @@ Run after closing any security incident:
 
 | Check | Frequency | Threshold | Response |
 |-------|-----------|-----------|----------|
-| Stack health | Daily | < expected services | Alert ops team |
+| Stack health | Daily | < expected services | Alert operations team |
 | Firewall rules | Daily | Rules differ from baseline | Alert security team |
 | Audit chain | Daily | Chain broken or gaps | **HALT** automation, page on-call |
 | Approval queue | Daily | >5 pending or >1 critical >1h | Alert security team |
-| Threat detector | Daily | Agent down or invalid rules | Alert ops team |
+| Threat detector | Daily | Agent down or invalid rules | Alert operations team |
 | Credential rotation | Weekly | No rotation in >7 days | Alert security team |
 | Container security | Weekly | Root or privileged containers | Alert security team |
 | Log review | Weekly | Repeated failures or anomalies | Alert security team |
@@ -283,7 +283,7 @@ Run after closing any security incident:
 | Full controls | Monthly | Any check fails | Page on-call |
 | Threat model | Monthly | Out of date | Create update task |
 | Access control | Monthly | Orphaned accounts found | Alert security team |
-| Backup test | Monthly | Backup unrecoverable | Alert ops team + create recovery task |
+| Backup test | Monthly | Backup unrecoverable | Alert bld team + create recovery task |
 
 ---
 

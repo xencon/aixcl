@@ -43,7 +43,7 @@ function ensure_databases() {
     # Wait for PostgreSQL to be ready
     local pg_ready
     pg_ready=false
-    for i in {1..10}; do
+    for i in {1..20}; do
         if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "$pg_user" >/dev/null 2>&1; then
             pg_ready=true
             break
@@ -223,10 +223,8 @@ function start() {
             echo "Note: Set PROFILE=<profile> in .env file to use a default profile"
             echo ""
             echo "Examples:"
-            echo "  ./aixcl stack start --profile usr    # User-oriented runtime (minimal footprint with database persistence)"
-            echo "  ./aixcl stack start --profile dev    # Developer workstation (UI + DB)"
-            echo "  ./aixcl stack start --profile ops    # Observability-focused (monitoring/logging)"
-            echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
+            echo "  ./aixcl stack start --profile bld    # Observability-focused (monitoring/logging)"
+            echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack)"
             echo ""
             echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
             exit 0
@@ -236,7 +234,7 @@ function start() {
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "[ ] Error: Invalid profile: $profile" >&2
-        echo "Valid profiles: usr, dev, ops, sys"
+        echo "Valid profiles: bld, sys (default: sys)"
         echo ""
         list_profiles
         exit 1
@@ -471,16 +469,12 @@ function start() {
         fi
     fi
     
-    if [ "$profile" = "usr" ]; then
-        echo "Note: Usr profile includes PostgreSQL for database persistence (minimal footprint)"
-    fi
-    
     echo "Starting services for profile: $profile..."
     run_compose up -d "${profile_services[@]}"
     
     echo "Waiting for runtime core services to be ready..."
     local max_attempts
-    max_attempts=150  # 5 minutes (reduced timeout)
+    max_attempts=300  # 10 minutes
     local attempt
     attempt=1
     local all_ready
@@ -522,13 +516,13 @@ function start() {
             echo "Waiting for PostgreSQL to be ready..."
             local pg_attempt=1
             local pg_ready=false
-            while [ $pg_attempt -le 30 ]; do  # 60 seconds
+            while [ $pg_attempt -le 60 ]; do  # 120 seconds
                 if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
                     echo "PostgreSQL is ready!"
                     pg_ready=true
                     break
                 fi
-                echo "Waiting for PostgreSQL... ($pg_attempt/15)"
+                echo "Waiting for PostgreSQL... ($pg_attempt/60)"
                 sleep 2
                 pg_attempt=$((pg_attempt + 1))
             done
@@ -563,21 +557,21 @@ function start() {
                 echo "Waiting for bootstrap agents to write passwords to Vault KV..."
                 local wait_attempt=0
                 local kv_ready=false
-                while [ $wait_attempt -lt 30 ]; do
+                while [ $wait_attempt -lt 180 ]; do
                     if curl -sf "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" \
                         --header "X-Vault-Token: ${VAULT_DEV_TOKEN:-aixcl-dev-token}" >/dev/null 2>&1; then
                         kv_ready=true
                         echo "Bootstrap passwords found in Vault KV."
                         break
                     fi
-                    echo "Waiting for bootstrap agents... ($wait_attempt/30)"
+                    echo "Waiting for bootstrap agents... ($wait_attempt/90)"
                     sleep 1
                     wait_attempt=$((wait_attempt + 1))
                 done
                 
                 if [ "$kv_ready" != true ]; then
                     echo ""
-                    echo "WARNING: Bootstrap agents did not populate Vault KV within 30 seconds."
+                    echo "WARNING: Bootstrap agents did not populate Vault KV within 90 seconds."
                     echo "Run manually after services stabilize:"
                     echo "  ./aixcl vault init"
                     echo ""
@@ -675,7 +669,7 @@ function stop() {
     run_compose down --remove-orphans || true
     
     echo "Waiting for containers to stop..."
-    for i in {1..15}; do
+    for i in {1..30}; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
             echo ""
             echo "AIXCL Stack Stopped"
@@ -855,11 +849,12 @@ function restart() {
             echo "" >&2
             echo "Examples:" >&2
             echo "  ./aixcl stack start                      # Start using .env profile" >&2
-            echo "  ./aixcl stack start --profile dev        # Start dev profile" >&2
+            echo "  ./aixcl stack start --profile bld        # Start bld profile" >&2
+            echo "  ./aixcl stack start --profile sys        # Start sys profile" >&2
             echo "  ./aixcl stack logs engine                   # Show logs for active engine" >&2
             echo "  ./aixcl stack restart engine                # Restart active engine" >&2
             echo "  ./aixcl stack stop                          # Stop all services" >&2
-            echo "  ./aixcl stack start -p ops                  # Start ops profile" >&2
+            echo "  ./aixcl stack start -p bld                  # Start bld profile" >&2
             echo "  ./aixcl stack status                        # Show all service status" >&2
             echo "  ./aixcl stack logs -f engine                # Follow logs for active engine" >&2
             echo "  ./aixcl utils clean                      # Clean unused Docker resources" >&2
@@ -870,7 +865,7 @@ function restart() {
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "[ ] Error: Invalid profile: $profile" >&2
-        echo "Valid profiles: usr, dev, ops, sys" >&2
+        echo "Valid profiles: bld, sys (default: sys)" >&2
         echo ""
         list_profiles
         exit 1
@@ -1019,7 +1014,6 @@ function service() {
                 
                 # Force remove any existing containers (including hash-prefixed ones)
                 echo "Removing existing containers for clean rebuild..."
-                run_compose rm -f "$service" 2>/dev/null || true
                 local container_name
                 container_name=$(get_container_name "$service")
                 "${DOCKER_BIN:-docker}" rm -f "$container_name" 2>/dev/null || true
@@ -1053,191 +1047,121 @@ function service() {
 }
 
 function logs() {
-    if [ $# -eq 0 ]; then
-        log_info "Fetching logs for all services (following)..."
-        log_info "Press Ctrl+C to stop"
+    local follow=false
+    local tail_count=100
+    local service_name=""
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -f|--follow)
+                follow=true
+                shift
+                ;;
+            [0-9]*)
+                tail_count="$1"
+                shift
+                ;;
+            *)
+                service_name="$1"
+                shift
+                ;;
+        esac
+    done
+
+    # No service specified: print last 100 lines of all services, then optionally follow
+    if [ -z "$service_name" ]; then
+        log_info "Fetching logs for all services..."
         echo ""
-        
-        # Check if any containers are running
+
         local found_any=false
         local running_containers=()
-        
+
         for service in "${ALL_SERVICES[@]}"; do
-            # Skip the 'engine' alias itself in the loop, as it's not a real container name
             [ "$service" = "engine" ] && continue
-            
-            # Find the actual container name (exact or hash-prefixed)
+
             local actual_container
             actual_container=$("${DOCKER_BIN:-docker}" ps --format "{{.Names}}" 2>/dev/null | grep -E "^${service}$|_[0-9a-f]+_${service}$|^[0-9a-f]+_${service}$" | head -1 || true)
-            
+
             if [ -n "$actual_container" ]; then
                 found_any=true
                 running_containers+=("$actual_container")
             fi
         done
-        
+
         if [ "$found_any" = false ]; then
             log_warning "No services are currently running."
             log_info "   Start services with: ./aixcl stack start"
             return 0
         fi
-        
-        # Use "${DOCKER_BIN:-docker}" logs directly for each running container
-        # Show last 100 lines for each container as summary
+
+        # Print last $tail_count lines for each container
         for service in "${running_containers[@]}"; do
             echo "=== $service ==="
-            "${DOCKER_BIN:-docker}" logs --tail=100 "$service" 2>/dev/null || echo "  (no logs available)"
+            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$service" 2>/dev/null || echo "  (no logs available)"
             echo ""
         done
-        
-        log_info "Following new logs (Press Ctrl+C to stop)..."
+
+        # Follow streaming logs if -f or --follow was passed
+        if [ "$follow" = true ]; then
+            log_info "Following new logs (Press Ctrl+C to stop)..."
+            echo ""
+
+            local pids=()
+            trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
+
+            for service in "${running_containers[@]}"; do
+                ( "${DOCKER_BIN:-docker}" logs --follow "$service" 2>/dev/null | sed "s/^/[$service] /" || true ) &
+                pids+=($!)
+            done
+
+            if [ ${#pids[@]} -gt 0 ]; then
+                wait "${pids[@]}" 2>/dev/null || true
+            fi
+
+            trap - EXIT INT TERM
+        fi
+
+        return 0
+    fi
+
+    # Resolve 'engine' alias
+    local actual_service="$service_name"
+    if [ "$service_name" = "engine" ]; then
+        actual_service=$(get_container_name "engine")
+    fi
+
+    # Validate service name
+    if ! is_valid_service "$service_name"; then
+        log_error "Unknown container '$service_name'"
         echo ""
-        
-        # Follow logs from all containers in parallel using background processes
-        local pids=()
-        
-        # Set up trap to kill background processes on exit (Ctrl+C)
-        # Using a more robust trap that handles function return and signals
-        trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
-        
-        for service in "${running_containers[@]}"; do
-            # Use sed to prefix each line with the service name
-            # Appending || true to subshell to prevent it from failing the main script
-            ( "${DOCKER_BIN:-docker}" logs --follow "$service" 2>/dev/null | sed "s/^/[$service] /" || true ) &
-            pids+=($!)
-        done
-        
-        # Wait for all background processes
-        if [ ${#pids[@]} -gt 0 ]; then
-            wait "${pids[@]}" 2>/dev/null || true
-        fi
-        
-        # Clear trap after wait
-        trap - EXIT INT TERM
-    else
-        local service_name="$1"
-        local tail_count="${2:-50}"  # Default to 50 lines if not specified
-        
-        # Resolve 'engine' alias
-        local actual_service="$service_name"
-        if [ "$service_name" = "engine" ]; then
-            actual_service=$(get_container_name "engine")
-        fi
-
-        # Validate tail_count
-        if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
-            log_error "tail count must be a number between 1 and 10000"
-            return 1
-        fi
-        
-        # Validate service name
-        if ! is_valid_service "$service_name"; then
-            log_error "Unknown container '$service_name'"
-            echo ""
-            log_info "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
-            log_info "  engine (ollama, vllm, llamacpp)"
-            echo ""
-            log_info "Operational Services:"
-            log_info "  ${ALL_SERVICES[*]}"
-            echo ""
-            log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
-            return 1
-        fi
-
-        log_info "Fetching logs for $actual_service..."
-        
-        # Try exact name first, then hash-prefixed name (running or stopped)
-        local actual_container
-        actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
-        
-        if [ -n "$actual_container" ]; then
-            # Fetch logs without --follow to avoid hanging in scripts/tests
-            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
-        else
-            log_error "Container for service '$actual_service' not found"
-            return 1
-        fi
-    fi
-}
-
-function export_quadlet() {
-    local profile=""
-    # Load profile from .env if not specified
-    if [ -f "${SCRIPT_DIR}/.env" ]; then
-        profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "${SCRIPT_DIR}/.env" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-    fi
-    
-    if [ -z "$profile" ]; then
-        profile="sys" # Default to sys if not found
-    fi
-    
-    echo "Exporting Podman Quadlets for profile: $profile..."
-    
-    local export_dir="${SCRIPT_DIR}/export/quadlets"
-    mkdir -p "$export_dir"
-    
-    # Source profile lib to get services
-    # shellcheck disable=SC1091
-    source "${SCRIPT_DIR}/lib/cli/profile.sh"
-    
-    local profile_services
-    read -r -a profile_services <<< "$(get_profile_services "$profile")"
-    
-    # We need to parse docker-compose.yml to get image and environment
-    local compose_file="${SERVICES_DIR}/docker-compose.yml"
-    if [ ! -f "$compose_file" ]; then
-        echo "[ ] Error: $compose_file not found"
+        log_info "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
+        log_info "  engine (ollama, vllm, llamacpp)"
+        echo ""
+        log_info "Operational Services:"
+        log_info "  ${ALL_SERVICES[*]}"
+        echo ""
+        log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
-    
-    for service in "${profile_services[@]}"; do
-        echo "  Generating Quadlet for: $service"
-        local quadlet_file="${export_dir}/${service}.container"
-        
-        # Resolve actual service name if 'engine' alias is used
-        local actual_service="$service"
-        if [ "$service" = "engine" ]; then
-             actual_service="${INFERENCE_ENGINE:-ollama}"
-        fi
 
-        # Simple extraction of image name from compose file (very basic)
-        local image
-        image=$(grep -A 20 "^[[:space:]]*${actual_service}:" "$compose_file" | grep "image:" | head -1 | awk '{print $2}')
-        
-        {
-            echo "[Unit]"
-            echo "Description=AIXCL Service: $service"
-            echo "After=network-online.target"
-            echo ""
-            echo "[Container]"
-            echo "Image=$image"
-            echo "ContainerName=$service"
-            echo "AutoUpdate=registry"
-            
-            # Use host networking as AIXCL standard
-            echo "Network=host"
-            
-            # Export environment variables from .env
-            if [ -f "${SCRIPT_DIR}/.env" ]; then
-                # This is a bit naive but works for standard AIXCL envs
-                # Filter out comments and internal bash vars
-                grep -E "^[A-Z_]+=" "${SCRIPT_DIR}/.env" | while read -r line; do
-                    echo "Environment=$line"
-                done
-            fi
-            
-            # Service specific logic (ports, volumes) would go here
-            # In a real implementation, we'd parse the 'volumes' section of compose
-            echo "Volume=aixcl_${service}_data:/data"
-            
-            echo ""
-            echo "[Install]"
-            echo "WantedBy=multi-user.target"
-        } > "$quadlet_file"
-    done
-    
-    echo "[x] Quadlets exported to: $export_dir"
-    echo "   To install: Copy to /etc/containers/systemd/ and run 'systemctl daemon-reload'"
+    log_info "Fetching logs for $actual_service..."
+
+    local actual_container
+    actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${actual_service}$|_[0-9a-f]+_${actual_service}$|^[0-9a-f]+_${actual_service}$" | head -1)
+
+    if [ -n "$actual_container" ]; then
+        if [ "$follow" = true ]; then
+            # Stream logs with prefix
+            ( "${DOCKER_BIN:-docker}" logs --follow --tail="$tail_count" "$actual_container" 2>/dev/null || true )
+        else
+            # Print last $tail_count lines and exit
+            "${DOCKER_BIN:-docker}" logs --tail="$tail_count" "$actual_container" 2>/dev/null || echo "  (no logs available)"
+        fi
+    else
+        log_error "Container for service '$actual_service' not found"
+        return 1
+    fi
 }
 
 function status() {
@@ -1519,12 +1443,10 @@ function status() {
 function stack_cmd() {
     if [[ $# -lt 1 ]]; then
         echo "Error: Stack action is required"
-        echo "Usage: $0 stack {start|stop|restart|status|logs|export-quadlet}"
+        echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
         echo "Examples:"
         echo "  $0 stack start                - Start all services with sys profile (default)"
-        echo "  $0 stack start --profile usr  - Start runtime core + PostgreSQL (minimal footprint)"
-        echo "  $0 stack start --profile dev  - Start dev profile (runtime core + UI + DB)"
-        echo "  $0 stack start --profile ops  - Start ops profile (runtime core + observability)"
+        echo "  $0 stack start --profile bld  - Start bld profile (runtime core + observability)"
         echo "  $0 stack start --profile sys  - Start all services"
         echo "  $0 stack stop                 - Stop all services"
         echo "  $0 stack restart [--profile <profile>] [service1] [service2] ... - Restart stack or specific services"
@@ -1533,10 +1455,8 @@ function stack_cmd() {
         echo "  $0 stack logs engine          - Show logs for the active inference engine"
         echo "  $0 stack logs engine 100      - Show last 100 lines for the active engine"
         echo "  $0 stack logs open-webui      - Show logs for a specific service"
-        echo "  $0 utils clean                - Remove unused Docker resources"
-        echo "  $0 stack export-quadlet       - Export services as Podman Quadlets (Systemd)"
         echo ""
-        echo "Valid profiles: usr, dev, ops, sys (default: sys)"
+        echo "Valid profiles: bld, sys (default: sys)"
         echo "For detailed profile definitions, see: docs/architecture/governance/02_profiles.md"
         return 1
     fi
@@ -1573,22 +1493,14 @@ function stack_cmd() {
         init)
             if [ $# -gt 0 ]; then
                 echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
+                echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
                 return 1
             fi
             init_stack
             ;;
-        export-quadlet)
-            if [ $# -gt 0 ]; then
-                echo "Error: Unknown argument '$1'"
-                echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
-                return 1
-            fi
-            export_quadlet
-            ;;
         *)
             echo "Error: Unknown stack action '$action'"
-            echo "Usage: $0 stack {start|stop|restart|status|logs|init|export-quadlet}"
+            echo "Usage: $0 stack {start|stop|restart|status|logs|init}"
             echo ""
             echo "For profiles and service contracts, see: docs/architecture/governance/"
             return 1

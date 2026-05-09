@@ -25,7 +25,7 @@ trap cleanup EXIT
 # Setup: Start stack and set engine
 log_info "Starting stack with llama.cpp..."
 "${SCRIPT_DIR}/aixcl" engine set llamacpp > /dev/null 2>&1 || true
-"${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+"${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1
 
 wait_for_container "llamacpp"
 

@@ -6,7 +6,7 @@ OpenCode is the recommended AI coding assistant for AIXCL. It connects to any pr
 
 ```bash
 # Ensure the stack is running (for local provider)
-./aixcl stack start --profile dev
+./aixcl stack start --profile sys
 ./aixcl stack status
 
 # Start OpenCode from the repo root

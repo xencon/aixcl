@@ -69,38 +69,29 @@ podman info | grep "rootless"
 # Should show: "rootless: true"
 ```
 
-### Step 3: Configure GPG (CODEOWNERS Only)
-
-**Note:** GPG signing is required only for CODEOWNERS pushing directly to `main`. Contributors using the fork+PR workflow do not need GPG. See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-**For CODEOWNERS:**
-
-```bash
-# Generate GPG key (if you don't have one)
-gpg --full-generate-key
-
-# List your keys
-gpg --list-secret-keys --keyid-format LONG
-
-# Configure Git to sign commits
-git config --global commit.gpgsign true
-git config --global user.signingkey YOUR_KEY_ID
-
-# Export public key for GitHub
-gpg --armor --export YOUR_KEY_ID
-# Copy output and add to GitHub Settings → SSH and GPG keys
-```
-
-### Step 4: Initialize the Stack
+### Step 3: Initialize the Stack (Interactive)
 
 ```bash
 # Generate .env file, admin credentials, and Vault secrets (one-time)
+# You will be prompted for admin username and email
 ./aixcl stack init
 
+# Start with bld profile (monitoring-focused) or sys profile (complete stack)
+./aixcl stack start --profile bld
+# or
+./aixcl stack start --profile sys
+
+# Wait for healthy status (about 2-3 minutes for full stabilization)
+./aixcl stack status
+```
+
+### Step 4: Start the Stack
+
+```bash
 # Start with system profile (includes all services)
 ./aixcl stack start --profile sys
 
-# Wait for healthy status (about 60 seconds)
+# Wait for healthy status (about 2-3 minutes for full stabilization)
 ./aixcl stack status
 ```
 
@@ -125,19 +116,21 @@ Services started (12 in sys profile):
 
 ### Step 5: Verify Vault (Auto-Initialized)
 
-Vault initializes automatically when the stack starts. No manual steps required.
+Vault initializes automatically during stack startup. The process takes 2-3 minutes:
 
 ```bash
 # Check Vault status
 ./aixcl vault status
 
-# Or access Vault UI at http://localhost:8200
-# Token: Set via VAULT_DEV_TOKEN env var (default: aixcl-dev-token)
+# View generated bootstrap passwords
+./aixcl vault passwords
 ```
 
 ### Step 6: Test Inference (Hello World)
 
 **A. Via Open WebUI (Browser)**
+
+**A. Via OpenCode (CLI)**
 
 ```bash
 # Add a small test model first
@@ -145,11 +138,12 @@ Vault initializes automatically when the stack starts. No manual steps required.
 ```
 
 1. Open http://localhost:8080 in your browser
-2. Click "Get Started" to create an account (first user becomes admin)
-3. Click "New Chat" in the top left
-4. Select "qwen2.5-coder:0.5b" from the model dropdown
-5. Type: "Hello! Can you confirm you're working?"
-6. **Expected:** The model responds with a greeting
+2. Log in with username `admin` and the password from `./aixcl vault passwords`
+3. Configure the AIXCL endpoint via the admin setting `http://localhost:11434/`
+4. Click "New Chat" in the top left
+5. Select "qwen2.5-coder:0.5b" from the model dropdown
+6. Type: "Hello! Can you confirm you're working?"
+7. **Expected:** The model responds with a greeting
 
 **B. Via OpenCode CLI**
 
@@ -194,9 +188,9 @@ curl http://localhost:11434/v1/chat/completions \
 
 | Service | URL | Login |
 |---------|-----|-------|
-| Open WebUI | http://localhost:8080 | First user = admin |
-| pgAdmin | http://localhost:5050 | Vault credentials |
-| Grafana | http://localhost:3000 | Vault credentials |
+| Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault passwords` |
+| pgAdmin | http://localhost:5050 | Email: `pgadmin@admin.com`, Password: `./aixcl vault passwords` |
+| Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault passwords` |
 | Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
 | Loki | http://localhost:3100 | No auth (localhost only) |
@@ -319,9 +313,12 @@ sudo lsof -i :11434  # Ollama
 sudo lsof -i :8080   # Open WebUI
 sudo lsof -i :8200   # Vault
 
-# Clean restart
+# Base build (clean restart without wiping images)
 ./aixcl stack stop
-./aixcl utils clean
+rm -f .aixcl.initialized .env pgadmin-servers.json
+podman ps -aq | xargs podman rm -f 2>/dev/null
+podman volume ls -q | xargs podman volume rm 2>/dev/null
+./aixcl stack init
 ./aixcl stack start --profile sys
 ```
 

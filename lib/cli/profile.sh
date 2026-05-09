@@ -8,7 +8,8 @@
 # See: docs/developer/adding-services.md for complete checklist
 
 # Valid profiles array
-VALID_PROFILES=(usr dev ops sys)
+# shellcheck disable=SC2034
+VALID_PROFILES=(bld sys)
 
 # Engine detection
 INFERENCE_ENGINE=${INFERENCE_ENGINE:-ollama}
@@ -28,16 +29,16 @@ get_runtime_core_services() {
 
 # Profile descriptions
 declare -A PROFILE_DESCRIPTIONS=(
-    [usr]="User-oriented runtime (minimal footprint with database persistence)"
-    [dev]="Developer workstation (UI + DB + admin tools)"
-    [ops]="Observability-focused (monitoring/logging)"
+    [usr]="DEPRECATED — Not supported (Vault now required for database secrets)"
+    [dev]="DEPRECATED — Not supported (Vault now required for database secrets)"
+    [bld]="Builder-focused (monitoring/logging)"
     [sys]="System-oriented (complete stack)"
 )
 
 # Profile service mappings (Docker-managed services only)
 # Each profile includes runtime core services plus profile-specific services.
 # NOTE: This is now a function to ensure INFERENCE_ENGINE is read after .env loading
-# Vault and bootstrap services are ONLY included in ops and sys profiles.
+# Vault and bootstrap services are ONLY included in bld and sys profiles.
 get_profile_services_for_profile() {
     local profile="$1"
     # Use current INFERENCE_ENGINE value (may have been updated after .env loading)
@@ -50,11 +51,11 @@ get_profile_services_for_profile() {
         dev)
             echo "$engine open-webui postgres pgadmin"
             ;;
-        ops)
+        bld)
             echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
             ;;
         sys)
-            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap vault-init"
+            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap"
             ;;
         *)
             echo ""
@@ -69,7 +70,7 @@ get_profile_services_for_profile() {
 declare -A PROFILE_SERVICES=(
     [usr]="INFERENCE_ENGINE_PLACEHOLDER vault postgres vault-agent-postgres-bootstrap"
     [dev]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
-    [ops]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
+    [bld]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
     [sys]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
 )
 
@@ -78,7 +79,7 @@ declare -A PROFILE_SERVICES=(
 declare -A PROFILE_DB_STORAGE=(
     [usr]="true"
     [dev]="true"
-    [ops]="true"
+    [bld]="true"
     [sys]="true"
 )
 
@@ -88,12 +89,16 @@ is_valid_profile() {
     if [ -z "$profile" ]; then
         return 1
     fi
-    for valid_profile in "${VALID_PROFILES[@]}"; do
-        if [ "$profile" = "$valid_profile" ]; then
+    # Only bld and sys are supported — usr and dev removed because Vault is now
+    # required for database secrets and all services depend on Vault agents.
+    case "$profile" in
+        bld|sys)
             return 0
-        fi
-    done
-    return 1
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # Get description for a profile
@@ -142,9 +147,12 @@ list_profiles() {
     echo "Available profiles:"
     echo "==================="
     echo ""
-    for profile in "${VALID_PROFILES[@]}"; do
-        echo "  - $profile: $(get_profile_description "$profile")"
-    done
+    echo "  - bld: $(get_profile_description "bld")"
+    echo "  - sys: $(get_profile_description "sys")"
+    echo ""
+    echo "Deprecated (not supported):"
+    echo "  - usr: DEPRECATED — Not supported (Vault now required for database secrets)"
+    echo "  - dev: DEPRECATED — Not supported (Vault now required for database secrets)"
     echo ""
     echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
 }

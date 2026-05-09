@@ -99,7 +99,7 @@ test_engine_model() {
     
     # Step 2: Start stack
     log_info "Step 2: Starting stack with $engine..."
-    if ! "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1; then
+    if ! "${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1; then
         log_error "Failed to start stack with $engine"
         return 1
     fi

@@ -23,7 +23,7 @@ version: 2.0
 git clone https://github.com/xencon/aixcl.git
 cd aixcl
 ./aixcl utils check-env
-./aixcl stack start --profile usr
+./aixcl stack start --profile sys
 ```
 
 ### Documentation

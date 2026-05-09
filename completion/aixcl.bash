@@ -59,7 +59,7 @@ _aixcl_complete() {
     local services="$runtime_core_services $operational_services engine"
     
     # Valid profiles (must match VALID_PROFILES in lib/cli/profile.sh)
-    local profiles="usr dev ops sys"
+    local profiles="bld sys"
     
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then
@@ -70,7 +70,7 @@ _aixcl_complete() {
     # Handle subcommands
     case "$prev" in
         'stack')
-            local stack_actions="start stop restart status logs init export-quadlet"
+            local stack_actions="start stop restart status logs init"
             mapfile -t COMPREPLY < <(compgen -W "$stack_actions" -- "$cur")
             return 0
             ;;
