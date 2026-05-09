@@ -123,7 +123,6 @@ function init_stack() {
         fi
         echo "A valid email address is required."
     done
-
     # Set PostgreSQL defaults based on admin username
     local postgres_user="${AIXCL_ADMIN_USER}"
     local postgres_db="webui"
