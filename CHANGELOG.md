@@ -4,6 +4,16 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.10] - 2026-05-09
+
+### Added
+
+- **NVIDIA CDI Auto-Configuration on Stack Start**: `stack start` now automatically generates the NVIDIA CDI spec if NVIDIA hardware and `nvidia-ctk` are present but no CDI devices are registered. Tries `/etc/cdi/nvidia.yaml` (system-level) first, falls back to `~/.config/cdi/nvidia.yaml`. Non-fatal — stack start continues with a warning if generation fails. (Fixes #1123)
+
+### Related Issues
+
+- Fixes #1123 - Auto-configure NVIDIA CDI on stack start
+
 ## [v1.1.9] - 2026-05-09
 
 ### Fixed
