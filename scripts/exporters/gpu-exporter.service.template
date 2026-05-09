@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /home/sbadakhc/src/github.com/xencon/aixcl/scripts/exporters/gpu-exporter.py
+ExecStart=/usr/bin/python3 @INSTALL_PATH@/scripts/exporters/gpu-exporter.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
