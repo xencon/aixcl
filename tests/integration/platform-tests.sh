@@ -11,7 +11,6 @@
 #
 # Usage:
 #   ./tests/platform-tests.sh                    # Run all tests (backward compatible)
-#   ./tests/platform-tests.sh --profile bld      # Run tests for bld profile
 #   ./tests/platform-tests.sh --profile sys      # Run tests for sys profile
 #   ./tests/platform-tests.sh --component runtime-core  # Test runtime core only
 #   ./tests/platform-tests.sh --component database     # Test database components
@@ -974,24 +973,6 @@ test_component_ui() {
 # PROFILE-BASED TEST RUNNERS
 # ============================================================================
 
-# Test bld profile (runtime core + database + monitoring/logging, no UI)
-test_profile_bld() {
-    echo "Running tests for profile: bld"
-    echo "Profile includes: runtime core, database, monitoring, logging"
-    echo ""
-
-    test_environment_check
-    test_component_runtime_core
-    test_component_database
-    test_component_monitoring
-    test_component_logging
-    test_llm_state
-    test_model_inference
-    test_opencode_integration
-    test_cli_aliases
-    test_security_validation
-}
-
 # Test sys profile (all services)
 test_profile_sys() {
     echo "Running tests for profile: sys"
@@ -1186,10 +1167,9 @@ main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
-                # Check if argument exists before accessing it
                 if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "Error: Profile name is required after --profile" >&2
-                    echo "Usage: $0 --profile <bld|sys>" >&2
+                    echo "Usage: $0 --profile sys" >&2
                     exit 1
                 fi
                 test_profile="$2"
@@ -1218,8 +1198,7 @@ main() {
                 echo "  $0 --component <component>   # Run tests for specific component"
                 echo "  $0 --list                    # List available targets"
                 echo ""
-                echo "Profiles:"
-                echo "  bld   - Runtime core + database + monitoring + logging"
+                echo "Profile:"
                 echo "  sys   - All services (complete stack)"
                 echo ""
                 echo "Components:"
@@ -1245,8 +1224,7 @@ main() {
         echo "Available Test Targets"
         echo "======================"
         echo ""
-        echo "Profiles:"
-        echo "  bld   - Runtime core + database + monitoring + logging"
+        echo "Profile:"
         echo "  sys   - All services (complete stack)"
         echo ""
         echo "Components:"
@@ -1269,8 +1247,7 @@ main() {
         echo "  $0 --list                    # List available targets"
         echo "  $0 --help                    # Show detailed help"
         echo ""
-        echo "Profiles:"
-        echo "  bld   - Runtime core + database + monitoring + logging ($INFERENCE_ENGINE, postgres)"
+        echo "Profile:"
         echo "  sys   - All services (complete stack)"
         echo ""
         echo "Components:"
@@ -1299,16 +1276,13 @@ main() {
     # Run tests based on arguments
     if [ -n "$test_profile" ]; then
         # Validate profile
-        if ! is_valid_profile "$test_profile" 2>/dev/null; then
+        if [[ "$test_profile" != "sys" ]]; then
             echo "Error: Invalid profile: $test_profile" >&2
-            echo "Valid profiles: bld, sys" >&2
+            echo "Valid profile: sys" >&2
             exit 1
         fi
-        
+
         case "$test_profile" in
-            bld)
-                test_profile_bld
-                ;;
             sys)
                 test_profile_sys
                 ;;
