@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run shellcheck on staged shell scripts
+# Mirrors CI settings: --severity=warning --exclude=SC1091
+
+set -euo pipefail
+
+SHELLCHECK=$(command -v shellcheck 2>/dev/null \
+    || command -v /home/linuxbrew/.linuxbrew/bin/shellcheck 2>/dev/null \
+    || true)
+
+if [ -z "$SHELLCHECK" ]; then
+    echo "SKIP: shellcheck not found — install it to enable pre-commit linting"
+    echo "      brew install shellcheck"
+    exit 0
+fi
+
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sh)$|^aixcl$' || true)
+
+if [ -z "$staged" ]; then
+    exit 0
+fi
+
+echo "Running shellcheck on staged files..."
+failed=0
+for file in $staged; do
+    if ! "$SHELLCHECK" --severity=warning --exclude=SC1091 "$file"; then
+        failed=1
+    fi
+done
+
+if [ "$failed" -ne 0 ]; then
+    echo ""
+    echo "shellcheck failed. Fix the warnings above before committing."
+    echo "To skip (not recommended): git commit --no-verify"
+    exit 1
+fi
+
+echo "shellcheck passed."

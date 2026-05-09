@@ -8,6 +8,7 @@
 # See: docs/developer/adding-services.md for complete checklist
 
 # Valid profiles array
+# shellcheck disable=SC2034
 VALID_PROFILES=(bld sys)
 
 # Engine detection

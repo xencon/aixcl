@@ -23,7 +23,7 @@ export VAULT_TOKEN
 # Wait for Vault to be ready
 wait_for_vault() {
   log_info "Waiting for Vault to be ready..."
-  local retries=60
+  retries=60
   while [ $retries -gt 0 ]; do
     output=$(vault status 2>&1 || true)
     if echo "$output" | grep -q "Sealed.*false"; then
@@ -49,8 +49,8 @@ enable_database_engine() {
 
 # Read PostgreSQL bootstrap password from Vault KV with retry
 get_postgres_password() {
-  local password=""
-  local retries=60
+  password=""
+  retries=60
   log_info "Waiting for bootstrap password in Vault KV..."
   while [ $retries -gt 0 ]; do
     password=$(vault kv get -field=password kv/bootstrap/postgres 2>/dev/null || true)
@@ -71,7 +71,7 @@ get_postgres_password() {
 configure_postgres_connection() {
   log_info "Configuring PostgreSQL connection..."
 
-  local postgres_password
+  postgres_password=""
   if ! postgres_password=$(get_postgres_password); then
     log_error "Could not read bootstrap password from Vault KV"
     log_error "Ensure bootstrap agents have written to kv/bootstrap/postgres"
@@ -165,7 +165,7 @@ enable_approle_auth() {
 test_credentials() {
   log_info "Testing credential generation..."
 
-  local output
+  output=""
   output=$(vault read -format=json database/creds/aixcl-app 2>/dev/null || true)
 
   if [ -z "$output" ]; then
@@ -173,7 +173,8 @@ test_credentials() {
     return 1
   fi
 
-  local username password
+  username=""
+  password=""
   # Parse JSON without jq (busybox compatible)
   username=$(echo "$output" | grep '"username"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
   password=$(echo "$output" | grep '"password"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
@@ -184,7 +185,7 @@ test_credentials() {
   log_info "  TTL: 1 hour (auto-expires)"
 
   # Revoke test credentials
-  local lease_id
+  lease_id=""
   lease_id=$(echo "$output" | grep '"lease_id"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
   if [ -n "$lease_id" ]; then
     vault lease revoke "$lease_id" >/dev/null 2>&1 || true
