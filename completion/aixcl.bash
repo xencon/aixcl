@@ -148,7 +148,7 @@ _aixcl_complete() {
             return 0
             ;;
         'utils')
-            local utils_actions="check-env bash-completion clean"
+            local utils_actions="check-env bash-completion prune"
             mapfile -t COMPREPLY < <(compgen -W "$utils_actions" -- "$cur")
             return 0
             ;;
