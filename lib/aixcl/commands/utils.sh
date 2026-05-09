@@ -19,7 +19,7 @@ function needs_rebuild() {
 }
 
 function prune() {
-    local docker_cmd="${DOCKER_BIN:-docker}"
+    local docker_cmd="${DOCKER_BIN:-podman}"
 
     echo "Pruning AIXCL stack (volumes and state, images kept)..."
     echo ""
@@ -45,7 +45,7 @@ function prune() {
 }
 
 function prune_all() {
-    local docker_cmd="${DOCKER_BIN:-docker}"
+    local docker_cmd="${DOCKER_BIN:-podman}"
 
     echo "SCORCHED EARTH: Removing ALL container resources including images..."
     echo "Using container engine: $docker_cmd"
