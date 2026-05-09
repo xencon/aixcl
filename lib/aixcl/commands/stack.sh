@@ -578,7 +578,24 @@ function start() {
             echo "  ./aixcl vault status"
             echo ""
         fi
-        
+
+        # Wait for all services to pass their health checks before printing final status.
+        # Open WebUI and pgAdmin can take 60-120s after Vault init.
+        local hw_attempt=0
+        local hw_max=36  # 3 minutes at 5s intervals
+        echo "Waiting for all services to be healthy..."
+        while [ $hw_attempt -lt $hw_max ]; do
+            local still_starting
+            still_starting=$("${DOCKER_BIN:-podman}" ps --format "{{.Status}}" 2>/dev/null | grep -cE "\(health: starting\)|\(unhealthy\)" || true)
+            if [ "${still_starting:-0}" -eq 0 ]; then
+                break
+            fi
+            printf "  %d service(s) still starting... (%ds/%ds)\r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))"
+            sleep 5
+            hw_attempt=$((hw_attempt + 1))
+        done
+        echo ""
+
         status
         return 0
     else
