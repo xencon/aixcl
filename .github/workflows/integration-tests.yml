@@ -112,7 +112,7 @@ jobs:
           
           # Create minimal .env
           echo "INFERENCE_ENGINE=ollama" > .env
-          echo "PROFILE=usr" >> .env
+          echo "PROFILE=sys" >> .env
           
           # Test engine set commands
           chmod +x ./aixcl
@@ -136,7 +136,7 @@ jobs:
           
           # Create minimal .env
           echo "INFERENCE_ENGINE=ollama" > .env
-          echo "PROFILE=usr" >> .env
+          echo "PROFILE=sys" >> .env
           
           # Validate stack configs without starting
           ./aixcl stack status 2>/dev/null || true
