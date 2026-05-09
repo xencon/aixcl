@@ -154,6 +154,31 @@ function init_stack() {
     echo "Run './aixcl stack start --profile sys' to begin."
 }
 
+function ensure_nvidia_cdi() {
+    # Skip if no NVIDIA hardware or nvidia-ctk is unavailable
+    if ! has_nvidia || ! command -v nvidia-ctk >/dev/null 2>&1; then
+        return 0
+    fi
+    # Skip if CDI devices are already registered
+    local cdi_count
+    cdi_count=$(nvidia-ctk cdi list 2>/dev/null | grep -c 'nvidia.com' || echo 0)
+    if [[ "$cdi_count" -gt 0 ]]; then
+        return 0
+    fi
+    echo "Configuring NVIDIA CDI for GPU support..."
+    if sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml 2>/dev/null; then
+        echo "[x] NVIDIA CDI configured (/etc/cdi/nvidia.yaml)"
+    else
+        mkdir -p "${HOME}/.config/cdi"
+        if nvidia-ctk cdi generate --output="${HOME}/.config/cdi/nvidia.yaml" 2>/dev/null; then
+            echo "[x] NVIDIA CDI configured (${HOME}/.config/cdi/nvidia.yaml)"
+        else
+            echo "   Warning: Could not configure NVIDIA CDI — GPU may not be available to containers"
+            echo "   Run manually: sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
+        fi
+    fi
+}
+
 function start() {
     local profile
     profile=""
@@ -432,9 +457,12 @@ function start() {
         generate_pgadmin_config
     fi
     
+    # Auto-configure NVIDIA CDI if GPU is present but CDI has no devices registered
+    ensure_nvidia_cdi
+
     # Set up compose command with GPU detection
     set_compose_cmd
-    
+
     # Check if any runtime core services are running
     local core_running=false
     for service in "${RUNTIME_CORE_SERVICES[@]}"; do
