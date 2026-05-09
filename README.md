@@ -62,6 +62,8 @@ AIXCL requires rootless Podman. Run the setup script once per machine:
 source ~/.bashrc
 ```
 
+> **NVIDIA GPU users:** NVIDIA CDI configuration is handled automatically by `stack start` — no additional GPU setup step is required.
+
 **Verify rootless mode:**
 
 ```bash
