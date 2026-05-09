@@ -77,9 +77,13 @@ COMMANDS
         utils bash-completion
                Install bash completion support
 
-        utils clean
-               Clean up unused Docker resources (dangling images, unused images,
-               stopped containers, unused volumes)
+        utils prune
+               Remove volumes and state files, keep images for fast restart
+               (mirrors podman system prune)
+
+        utils prune --all
+               Remove everything including images — full scorched-earth wipe
+               (mirrors podman system prune --all)
 
         help
                Show help message

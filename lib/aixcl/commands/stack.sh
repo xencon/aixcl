@@ -857,7 +857,7 @@ function restart() {
             echo "  ./aixcl stack start -p bld                  # Start bld profile" >&2
             echo "  ./aixcl stack status                        # Show all service status" >&2
             echo "  ./aixcl stack logs -f engine                # Follow logs for active engine" >&2
-            echo "  ./aixcl utils clean                      # Clean unused Docker resources" >&2
+            echo "  ./aixcl utils prune                      # Remove volumes and state, keep images" >&2
             exit 1
         fi
     fi
