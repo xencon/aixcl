@@ -131,8 +131,6 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 
 **A. Via Open WebUI (Browser)**
 
-**A. Via OpenCode (CLI)**
-
 ```bash
 # Add a small test model first
 ./aixcl models add qwen2.5-coder:0.5b
