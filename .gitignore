@@ -120,6 +120,9 @@ build-docs/
 context/
 .dev/
 
+# Claude Code worktrees and session data
+.claude/
+
 # Database files
 *.db
 *.sqlite
