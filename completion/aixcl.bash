@@ -152,6 +152,12 @@ _aixcl_complete() {
             mapfile -t COMPREPLY < <(compgen -W "$utils_actions" -- "$cur")
             return 0
             ;;
+        'prune')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "utils" ]]; then
+                mapfile -t COMPREPLY < <(compgen -W "--all" -- "$cur")
+                return 0
+            fi
+            ;;
         'vault')
             local vault_actions="init status credentials passwords rotate"
             mapfile -t COMPREPLY < <(compgen -W "$vault_actions" -- "$cur")
