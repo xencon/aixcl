@@ -41,7 +41,7 @@ if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo "----------------------------"
     if [ -f .env ]; then
         grep "^INFERENCE_ENGINE" .env 2>/dev/null || echo "INFERENCE_ENGINE: not set (will use default)"
-        grep "^PROFILE" .env 2>/dev/null || echo "PROFILE: not set (will use 'usr')"
+        grep "^PROFILE" .env 2>/dev/null || echo "PROFILE: not set (will use 'sys')"
     else
         echo "No .env file found"
     fi
@@ -68,7 +68,7 @@ else
     echo "AIXCL services not running"
     echo ""
     echo "To start services, run:"
-    echo "  ./aixcl stack start --profile usr"
+    echo "  ./aixcl stack start --profile sys"
     echo ""
     echo "Or auto-detect and start:"
     echo "  ./aixcl engine auto && ./aixcl stack start"
@@ -77,7 +77,7 @@ fi
 echo ""
 echo "=========================================="
 echo "Quick start commands:"
-echo "  ./aixcl stack start --profile usr    # Start AIXCL services"
+  echo "  ./aixcl stack start --profile sys    # Start AIXCL services"
 echo "  ./aixcl stack status                 # Check service status"
 echo "  opencode                             # Start OpenCode CLI"
 echo ""

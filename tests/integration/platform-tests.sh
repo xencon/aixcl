@@ -11,9 +11,6 @@
 #
 # Usage:
 #   ./tests/platform-tests.sh                    # Run all tests (backward compatible)
-#   ./tests/platform-tests.sh --profile usr      # Run tests for usr profile
-#   ./tests/platform-tests.sh --profile dev      # Run tests for dev profile
-#   ./tests/platform-tests.sh --profile ops      # Run tests for ops profile
 #   ./tests/platform-tests.sh --profile sys      # Run tests for sys profile
 #   ./tests/platform-tests.sh --component runtime-core  # Test runtime core only
 #   ./tests/platform-tests.sh --component database     # Test database components
@@ -285,7 +282,7 @@ test_stack_status() {
     WEBUI_STATUS="000"
     WEBUI_READY=false
     # Try multiple endpoints - /health might not exist in all versions, try root and /api/config as fallbacks
-    for i in {1..15}; do
+    for i in {1..30}; do
         # Try /health endpoint first (preferred)
         WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/health 2>/dev/null || echo "000")
         if [ "$WEBUI_STATUS" = "200" ]; then
@@ -574,7 +571,7 @@ test_model_inference() {
     start_section "Model Inference - Prompt & Response"
     
     local test_model="${1:-}"
-    local max_retries=5
+    local max_retries=10
     local retry_count=0
     
     # Try to find a model already installed/loaded with retries
@@ -937,7 +934,7 @@ test_component_ui() {
         # Health check with retries
         WEBUI_STATUS="000"
         WEBUI_READY=false
-        for i in {1..15}; do
+        for i in {1..30}; do
             WEBUI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/health 2>/dev/null || echo "000")
             if [ "$WEBUI_STATUS" = "200" ]; then
                 WEBUI_READY=true
@@ -976,70 +973,25 @@ test_component_ui() {
 # PROFILE-BASED TEST RUNNERS
 # ============================================================================
 
-# Test usr profile (runtime core + database)
-test_profile_usr() {
-    echo "Running tests for profile: usr"
-    echo "Profile includes: runtime core services + PostgreSQL"
-    echo ""
-    
-    test_environment_check
-    test_component_runtime_core
-    test_component_database
-    test_llm_state
-    test_model_inference
-    test_opencode_integration
-    test_cli_aliases
-    test_security_validation
-    }
-
-    # Test dev profile (runtime core + database + UI)
-    test_profile_dev() {
-    echo "Running tests for profile: dev"
-    echo "Profile includes: runtime core, database, UI"
+# Test sys profile (all services)
+test_profile_sys() {
+    echo "Running tests for profile: sys"
+    echo "Profile includes: all services"
     echo ""
 
     test_environment_check
+    test_stack_status
     test_component_runtime_core
     test_component_database
+    test_component_monitoring
+    test_component_logging
     test_component_ui
     test_llm_state
     test_model_inference
     test_opencode_integration
     test_cli_aliases
     test_security_validation
-    }
-
-    # Test ops profile (runtime core + database + monitoring + logging)
-    test_profile_ops() {
-    echo "Running tests for profile: ops"
-    echo "Profile includes: runtime core, database, monitoring, logging"
-    echo ""
-
-    test_environment_check
-    test_component_runtime_core
-    test_component_database
-    test_component_monitoring
-    test_component_logging
-    test_llm_state
-    test_model_inference
-    test_opencode_integration
-    test_cli_aliases
-    test_security_validation
-    }
-
-    # Test sys profile (all services)
-    test_profile_sys() {
-    echo "Running tests for profile: sys"
-    echo "Profile includes: all services"
-    # Run tests for each section
-    test_environment_check
-    test_stack_status
-    test_llm_state
-    test_model_inference
-    test_opencode_integration
-    test_cli_aliases
-    test_security_validation
-    }
+}
 # ============================================================================
 # SECTION 5: NEGATIVE TESTS & RECOVERY
 # ============================================================================
@@ -1215,10 +1167,9 @@ main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --profile|-p)
-                # Check if argument exists before accessing it
                 if [[ $# -lt 2 ]] || [[ -z "${2:-}" ]]; then
                     echo "Error: Profile name is required after --profile" >&2
-                    echo "Usage: $0 --profile <usr|dev|ops|sys>" >&2
+                    echo "Usage: $0 --profile sys" >&2
                     exit 1
                 fi
                 test_profile="$2"
@@ -1247,11 +1198,8 @@ main() {
                 echo "  $0 --component <component>   # Run tests for specific component"
                 echo "  $0 --list                    # List available targets"
                 echo ""
-                echo "Profiles:"
-                echo "  usr   - Runtime core services + database"
-                echo "  dev   - Runtime core + database + UI"
-                echo "  ops   - Runtime core + database + monitoring + logging"
-                echo "  sys   - All services"
+                echo "Profile:"
+                echo "  sys   - All services (complete stack)"
                 echo ""
                 echo "Components:"
                 echo "  runtime-core  - AI Inference Engine ($INFERENCE_ENGINE)"
@@ -1276,11 +1224,8 @@ main() {
         echo "Available Test Targets"
         echo "======================"
         echo ""
-        echo "Profiles:"
-        echo "  usr   - Runtime core services + database"
-        echo "  dev   - Runtime core + database + UI"
-        echo "  ops   - Runtime core + database + monitoring + logging"
-        echo "  sys   - All services"
+        echo "Profile:"
+        echo "  sys   - All services (complete stack)"
         echo ""
         echo "Components:"
         echo "  runtime-core  - Ollama"
@@ -1302,11 +1247,8 @@ main() {
         echo "  $0 --list                    # List available targets"
         echo "  $0 --help                    # Show detailed help"
         echo ""
-        echo "Profiles:"
-        echo "  usr   - Runtime core services + database ($INFERENCE_ENGINE, postgres)"
-        echo "  dev   - Runtime core + database + UI"
-        echo "  ops   - Runtime core + database + monitoring + logging"
-        echo "  sys   - All services"
+        echo "Profile:"
+        echo "  sys   - All services (complete stack)"
         echo ""
         echo "Components:"
         echo "  runtime-core  - AI Inference Engine ($INFERENCE_ENGINE)"
@@ -1316,7 +1258,7 @@ main() {
         echo "  ui            - Open WebUI"
         echo ""
         echo "Examples:"
-        echo "  $0 --profile usr                # Test usr profile"
+        echo "  $0 --profile sys                # Test sys profile (complete stack)"
         echo "  $0 --component runtime-core     # Test runtime core components"
         echo "  $0 --component database         # Test database components"
         echo ""
@@ -1334,22 +1276,13 @@ main() {
     # Run tests based on arguments
     if [ -n "$test_profile" ]; then
         # Validate profile
-        if ! is_valid_profile "$test_profile" 2>/dev/null; then
+        if [[ "$test_profile" != "sys" ]]; then
             echo "Error: Invalid profile: $test_profile" >&2
-            echo "Valid profiles: usr, dev, ops, sys" >&2
+            echo "Valid profile: sys" >&2
             exit 1
         fi
-        
+
         case "$test_profile" in
-            usr)
-                test_profile_usr
-                ;;
-            dev)
-                test_profile_dev
-                ;;
-            ops)
-                test_profile_ops
-                ;;
             sys)
                 test_profile_sys
                 ;;

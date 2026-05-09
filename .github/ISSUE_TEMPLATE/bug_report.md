@@ -2,7 +2,7 @@
 name: "Bug Report"
 about: "Report an unexpected behavior or problem"
 title: "[BUG] "
-labels: ["priority:medium","profile:dev"]
+labels: ["priority:medium","profile:sys"]
 assignees: ["<assignee>"]
 ---
 

@@ -234,7 +234,7 @@ CURRENT_ENGINE="ollama"
 
 if ! docker ps | grep -qE "ollama"; then
     log_info "Starting stack with Ollama..."
-    "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+    "${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1
 fi
 
 # Wait for Ollama container (forced above)

@@ -30,7 +30,8 @@ container_start() {
     
     # Remove existing containers (running or stopped)
     log_info "Cleaning up existing containers for $actual_service..."
-    run_compose rm -f "$actual_service" 2>/dev/null || true
+    # podman-compose does not support 'rm' subcommand; use direct podman rm instead
+    "${DOCKER_BIN:-docker}" rm -f "$container_name" 2>/dev/null || true
     
     # Remove hash-prefixed containers directly
     local hash_prefixed

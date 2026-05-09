@@ -55,7 +55,7 @@ if [[ "$MODEL_CACHED" == "false" ]]; then
     log_warn "Model not cached - first download may take 5+ minutes"
 fi
 "${SCRIPT_DIR}/aixcl" engine set vllm > /dev/null 2>&1 || true
-"${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1 || {
+"${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1 || {
     log_warn "Stack start returned error, checking if already running..."
     docker ps | grep -q "vllm" || {
         log_error "vLLM container not running after start attempt"

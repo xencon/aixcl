@@ -59,7 +59,7 @@ _aixcl_complete() {
     local services="$runtime_core_services $operational_services engine"
     
     # Valid profiles (must match VALID_PROFILES in lib/cli/profile.sh)
-    local profiles="usr dev ops sys"
+    local profiles="bld sys"
     
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then
@@ -70,7 +70,7 @@ _aixcl_complete() {
     # Handle subcommands
     case "$prev" in
         'stack')
-            local stack_actions="start stop restart status logs init export-quadlet"
+            local stack_actions="start stop restart status logs init"
             mapfile -t COMPREPLY < <(compgen -W "$stack_actions" -- "$cur")
             return 0
             ;;
@@ -148,9 +148,15 @@ _aixcl_complete() {
             return 0
             ;;
         'utils')
-            local utils_actions="check-env bash-completion clean"
+            local utils_actions="check-env bash-completion prune"
             mapfile -t COMPREPLY < <(compgen -W "$utils_actions" -- "$cur")
             return 0
+            ;;
+        'prune')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "utils" ]]; then
+                mapfile -t COMPREPLY < <(compgen -W "--all" -- "$cur")
+                return 0
+            fi
             ;;
         'vault')
             local vault_actions="init status credentials passwords rotate"

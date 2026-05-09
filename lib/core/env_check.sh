@@ -54,7 +54,7 @@ check_env() {
         else
             # Get current profile if possible (it might not be loaded yet in utils check-env)
             local profile="${PROFILE:-}"
-            if [[ "$profile" == "ops" || "$profile" == "sys" ]]; then
+            if [[ "$profile" == "bld" || "$profile" == "sys" ]]; then
                 print_warning "Root container engine detected in production profile ($profile)."
                 echo "   Consider migrating to rootless Podman/Docker for better security isolation."
             else

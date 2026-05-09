@@ -1,20 +1,8 @@
-#!/usr/bin/env bash
-# postgres-exporter Vault entrypoint
-# Reads PostgreSQL credentials from Vault secrets and constructs DATA_SOURCE_NAME.
-# This entrypoint requires the POSTGRES_USER and POSTGRES_DATABASE environment
-# variables to be explicitly set.  There are no hardcoded defaults.
-#
-# IMPORTANT: The official postgres_exporter binary is at /bin/postgres_exporter,
-# not /postgres_exporter. Always use the full path.
-
 #!/bin/sh
 # postgres-exporter Vault entrypoint
 # Reads PostgreSQL credentials from Vault secrets and constructs DATA_SOURCE_NAME.
-# This entrypoint requires the POSTGRES_USER and POSTGRES_DATABASE environment
-# variables to be explicitly set.  There are no hardcoded defaults.
-#
-# IMPORTANT: The official postgres_exporter binary is at /bin/postgres_exporter,
-# not /postgres_exporter. Always use the full path.
+# Requires POSTGRES_USER and POSTGRES_DATABASE to be set in environment.
+# IMPORTANT: The official postgres_exporter binary is at /bin/postgres_exporter.
 
 set -eu
 
@@ -34,11 +22,18 @@ fi
 
 # --- Read password from Vault secrets ---
 PGPASSWORD=""
-if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
-    PGPASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
-    echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
-else
-    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty"
+for i in $(seq 1 60); do
+    if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+        PGPASSWORD="$(tr -d '\n' < /run/secrets/postgres-password)"
+        echo "[Vault] PostgreSQL password loaded from /run/secrets/postgres-password"
+        break
+    fi
+    echo "[Vault] Waiting for postgres-password secret... ($i/30)"
+    sleep 2
+done
+
+if [ -z "$PGPASSWORD" ]; then
+    echo "[Vault] ERROR: /run/secrets/postgres-password not found or empty after 60 seconds"
     exit 1
 fi
 

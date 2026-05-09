@@ -51,7 +51,7 @@ fetch_bootstrap_password() {
 
 # Wait for Vault to be available
 log "Waiting for Vault..."
-retries=30
+retries=60
 while [ $retries -gt 0 ]; do
     if wget -qO- "${VAULT_ADDR}/v1/sys/health" >/dev/null 2>&1; then
         log "Vault is ready"

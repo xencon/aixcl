@@ -24,7 +24,7 @@ Verify end-to-end dev container functionality including:
 
 ### Phase 2: AIXCL Startup
 1. Run ./aixcl utils check-env
-2. Start stack with usr profile
+2. Start stack with sys profile
 3. Wait for services to be healthy
 4. Verify Ollama is running
 

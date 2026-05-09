@@ -33,7 +33,7 @@ if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password 
 else
     echo "[Vault] Waiting for Vault to generate PostgreSQL bootstrap password..."
     vault_ready=false
-    for i in $(seq 1 30); do
+    for i in $(seq 1 60); do
         if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
             VAULT_PASS=$(cat /run/secrets/postgres-password | tr -d '\n')
             echo "[Vault] PostgreSQL password loaded after $((i * 2)) seconds"
@@ -77,7 +77,7 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
 
     # Wait for PostgreSQL to be ready via TCP
     pg_ready=false
-    for i in $(seq 1 30); do
+    for i in $(seq 1 60); do
         if pg_isready -h 127.0.0.1 -p 5432 -U "${POSTGRES_USER}" >/dev/null 2>&1; then
             pg_ready=true
             break

@@ -47,20 +47,22 @@ jobs:
     steps:
       - name: Check PR has assignee
         env:
-          PR_ASSIGNEES_JSON: ${{ toJson(github.event.pull_request.assignees) }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          
-          # Use event payload directly to avoid API race conditions
-          # github.event.pull_request.assignees is a JSON array of user objects
-          count=$(echo "$PR_ASSIGNEES_JSON" | jq 'length')
-          
+
+          # Fetch live PR state via API — event payload may not reflect assignees
+          # set immediately after creation (webhook fires before GitHub processes mutations)
+          count=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.assignees | length')
+
           if [[ "$count" -gt 0 ]]; then
-            echo "PR has $count assignee(s)"
-            echo "$PR_ASSIGNEES_JSON" | jq -r '.[].login'
+            echo "PR has $count assignee(s):"
+            gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.assignees[].login'
             exit 0
           fi
-          
+
           echo "ERROR: PR must have at least one assignee"
           exit 1
 
@@ -70,19 +72,21 @@ jobs:
     steps:
       - name: Check PR has component label
         env:
-          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          
-          # Use event payload directly to avoid API race conditions
-          # github.event.pull_request.labels is a JSON array of label objects
-          labels=$(echo "$PR_LABELS_JSON" | jq -r '.[].name')
-          
+
+          # Fetch live PR state via API — event payload may not reflect labels
+          # set immediately after creation (webhook fires before GitHub processes mutations)
+          labels=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.labels[].name')
+
           if echo "$labels" | grep -q "component:"; then
             echo "PR has component label: $(echo "$labels" | grep "component:" | head -1)"
             exit 0
           fi
-          
+
           echo "ERROR: PR must have at least one component label (component:*)"
           echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
           exit 1

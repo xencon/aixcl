@@ -85,7 +85,7 @@ function cmd_vault_restart() {
 function cmd_vault_init() {
     if ! vault_is_enabled_in_profile; then
         echo "Vault is not enabled in the current profile."
-        echo "Use --profile ops or --profile sys to enable Vault."
+        echo "Use --profile bld or --profile sys to enable Vault."
         return 1
     fi
     # Run the idempotent initialization
@@ -101,7 +101,7 @@ function cmd_vault_init() {
 function cmd_vault_status() {
     if ! vault_is_enabled_in_profile; then
         echo "Vault is not enabled in the current profile."
-        echo "Use --profile ops or --profile sys to enable Vault."
+        echo "Use --profile bld or --profile sys to enable Vault."
         return 1
     fi
     # Run the status check
@@ -117,7 +117,7 @@ function cmd_vault_status() {
 function cmd_vault_credentials() {
     if ! vault_is_enabled_in_profile; then
         echo "Vault is not enabled in the current profile."
-        echo "Use --profile ops or --profile sys to enable Vault."
+        echo "Use --profile bld or --profile sys to enable Vault."
         return 1
     fi
     # Source existing vault commands
@@ -135,7 +135,7 @@ function cmd_vault_credentials() {
 function cmd_vault_passwords() {
     if ! vault_is_enabled_in_profile; then
         echo "Vault is not enabled in the current profile."
-        echo "Use --profile ops or --profile sys to enable Vault."
+        echo "Use --profile bld or --profile sys to enable Vault."
         return 1
     fi
     # Source existing vault commands
@@ -153,7 +153,7 @@ function cmd_vault_passwords() {
 function cmd_vault_rotate() {
     if ! vault_is_enabled_in_profile; then
         echo "Vault is not enabled in the current profile."
-        echo "Use --profile ops or --profile sys to enable Vault."
+        echo "Use --profile bld or --profile sys to enable Vault."
         return 1
     fi
     echo "Triggering manual credential rotation..."

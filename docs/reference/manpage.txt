@@ -39,8 +39,8 @@ COMMANDS
               then follow. Use 'engine' as svc to see logs for the active
               inference engine (ollama, vllm, or llamacpp).
 
-        stack export-quadlet
-              Export current profile services as Podman Quadlet files for Systemd integration.
+        stack init
+               Generate .env file, admin credentials, and Vault secrets (one-time).
 
        restart [service]
               Shorthand for 'stack restart [service]'.
@@ -77,9 +77,13 @@ COMMANDS
         utils bash-completion
                Install bash completion support
 
-        utils clean
-               Clean up unused Docker resources (dangling images, unused images,
-               stopped containers, unused volumes)
+        utils prune
+               Remove volumes and state files, keep images for fast restart
+               (mirrors podman system prune)
+
+        utils prune --all
+               Remove everything including images — full scorched-earth wipe
+               (mirrors podman system prune --all)
 
         help
                Show help message
@@ -108,7 +112,7 @@ ENVIRONMENT
        .env.example on first run). Key variables include:
 
        PROFILE
-              Default profile for stack commands (usr, dev, ops, sys).
+               Default profile for stack commands (bld, sys).
               Set this to avoid specifying --profile on every command.
 
        INFERENCE_ENGINE

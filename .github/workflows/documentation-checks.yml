@@ -81,7 +81,7 @@ jobs:
           cat > .env << 'EOF'
           # Core configuration
           INFERENCE_ENGINE=ollama
-          PROFILE=usr
+          PROFILE=sys
           
           # PostgreSQL configuration
           POSTGRES_USER=admin
