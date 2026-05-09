@@ -170,8 +170,6 @@ Labels are organized into categories using prefixes:
 #### Profile Labels (Select All That Apply)
 - `profile:bld` - Affects bld profile (observability-focused)
 - `profile:sys` - Affects sys profile (full deployment)
-- `profile:bld` - Affects bld profile (observability-focused)
-- `profile:sys` - Affects sys profile (full deployment)
 
 #### Category Labels (Select All That Apply)
 - `Fix` - A fix for a bug or issue (use with Bug issue type)

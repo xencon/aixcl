@@ -226,8 +226,6 @@ function start() {
             echo "Examples:"
             echo "  ./aixcl stack start --profile bld    # Observability-focused (monitoring/logging)"
             echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack)"
-            echo "  ./aixcl stack start --profile bld    # Observability-focused (monitoring/logging)"
-            echo "  ./aixcl stack start --profile sys    # System-oriented (complete stack with automation)"
             echo ""
             echo "For detailed profile information, see: docs/architecture/governance/02_profiles.md"
             exit 0

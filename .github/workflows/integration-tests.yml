@@ -71,7 +71,7 @@ jobs:
           # Create minimal .env with required vars for validation
           cat > .env << 'EOF'
           INFERENCE_ENGINE=ollama
-          PROFILE=usr
+          PROFILE=sys
           POSTGRES_USER=admin
           POSTGRES_PASSWORD=test
           POSTGRES_DATABASE=webui

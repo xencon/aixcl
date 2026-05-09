@@ -35,7 +35,7 @@ sleep 2
 # Setup: Start stack and set engine
 log_info "Starting stack with ollama..."
 "${SCRIPT_DIR}/aixcl" engine set ollama > /dev/null 2>&1 || true
-"${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+"${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1
 
 # Mark that test has started
 TEST_STARTED=1

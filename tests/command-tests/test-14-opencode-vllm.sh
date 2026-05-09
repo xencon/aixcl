@@ -63,7 +63,7 @@ verify_opencode || exit 1
 # Setup vLLM
 log_info "Setting up vLLM engine..."
 "${SCRIPT_DIR}/aixcl" engine set vllm > /dev/null 2>&1
-"${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+"${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1
 wait_for_container "vllm" 60
 
 # Add vLLM model if not present

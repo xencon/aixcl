@@ -41,7 +41,7 @@ if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo "----------------------------"
     if [ -f .env ]; then
         grep "^INFERENCE_ENGINE" .env 2>/dev/null || echo "INFERENCE_ENGINE: not set (will use default)"
-        grep "^PROFILE" .env 2>/dev/null || echo "PROFILE: not set (will use 'usr')"
+        grep "^PROFILE" .env 2>/dev/null || echo "PROFILE: not set (will use 'sys')"
     else
         echo "No .env file found"
     fi

@@ -56,7 +56,7 @@ verify_opencode || exit 1
 # Setup llama.cpp
 log_info "Setting up llama.cpp engine..."
 "${SCRIPT_DIR}/aixcl" engine set llamacpp > /dev/null 2>&1
-"${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+"${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1
 wait_for_container "llamacpp" 60
 
 # Check for GGUF model

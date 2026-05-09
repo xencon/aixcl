@@ -63,30 +63,14 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 
 ---
 
-## 4. Deprecated Profiles
-
-### usr (DEPRECATED)
-**Status**: Not supported as of 2026-05-08.
-
-**Reason**: All services now require Vault for database secrets. PostgreSQL, Open WebUI, and pgAdmin all depend on Vault agents to provide passwords via `/run/secrets/`. Without Vault, these services fail to start.
-
----
-
-### dev (DEPRECATED)
-**Status**: Not supported as of 2026-05-08.
-
-**Reason**: Same as `usr` — Vault is required for database secrets. The `dev` profile (Open WebUI + pgAdmin + PostgreSQL) cannot function without Vault agents.
-
----
-
-## 5. Profile Selection Guidelines
+## 4. Profile Selection Guidelines
 
 - **bld**: Use for production deployments requiring observability (no WebUI)
 - **sys**: Use for complete deployments with WebUI and all features
 
 ---
 
-## 6. Profile Invariants
+## 5. Profile Invariants
 
 All profiles **must**:
 - Include the complete runtime core (Inference Engine, OpenCode)

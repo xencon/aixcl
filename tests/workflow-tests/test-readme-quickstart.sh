@@ -37,7 +37,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Step 2: Start the Stack"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-assert_command_success "${SCRIPT_DIR}/aixcl stack start --profile usr" "Step 2: Stack starts with usr profile"
+assert_command_success "${SCRIPT_DIR}/aixcl stack start --profile sys" "Step 2: Stack starts with sys profile"
 wait_for_container "ollama" 60
 wait_for_container "postgres" 60
 wait_for_api "http://localhost:11434/v1/models" 60

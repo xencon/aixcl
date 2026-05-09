@@ -25,7 +25,7 @@ trap cleanup EXIT
 # Setup: Ensure stack is running
 if ! docker ps | grep -q "ollama"; then
     log_info "Starting stack..."
-    "${SCRIPT_DIR}/aixcl" stack start --profile usr > /dev/null 2>&1
+    "${SCRIPT_DIR}/aixcl" stack start --profile sys > /dev/null 2>&1
     wait_for_container "ollama"
 fi
 
