@@ -69,15 +69,19 @@ ALL_SERVICES=(
     "pgadmin"
     "prometheus"
     "grafana"
+    "alertmanager"
     "cadvisor"
     "node-exporter"
     "postgres-exporter"
     "nvidia-gpu-exporter"
     "loki"
     "vault"
+    "vault-agent-postgres"
+    "vault-agent-openwebui"
     "vault-agent-postgres-bootstrap"
     "vault-agent-openwebui-bootstrap"
     "vault-agent-pgadmin-bootstrap"
+    "vault-agent-grafana-bootstrap"
 )
 
 # Function to validate service name
@@ -117,7 +121,7 @@ get_container_name() {
 }
 
 # Detect if NVIDIA GPU is available (hardware OR toolkit OR runtime)
- has_nvidia() {
+has_nvidia() {
      # Check for NVIDIA hardware via nvidia-smi
      if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
          return 0
@@ -150,8 +154,8 @@ get_container_name() {
      return 1
  }
  
- # Check for NVIDIA Container Toolkit (specifically for GPU monitoring)
- has_nvidia_container_toolkit() {
+# Check for NVIDIA Container Toolkit (specifically for GPU monitoring)
+has_nvidia_container_toolkit() {
      # Check for NVIDIA Container Toolkit CLI (primary method)
      if command -v nvidia-ctk >/dev/null 2>&1; then
          return 0

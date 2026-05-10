@@ -41,7 +41,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
-    local commands="stack service models engine utils vault help restart config"
+    local commands="stack service models engine utils vault help restart"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function

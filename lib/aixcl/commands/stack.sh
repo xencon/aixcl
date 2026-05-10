@@ -4,6 +4,38 @@
 # Container name for Open WebUI - must match docker-compose service name
 readonly CONTAINER_NAME="open-webui"
 
+_print_stopped_status() {
+    local profile="$1"
+    echo ""
+    echo "AIXCL Stack Stopped"
+    echo "==================="
+    echo ""
+    echo "Profile: $profile"
+    echo "Status: Stopped"
+    echo ""
+    echo "Services"
+    echo "--------------------------------------------------"
+    echo ""
+    echo "Runtime Core"
+    for service in "${RUNTIME_CORE_SERVICES[@]}"; do
+        echo "  ❌ $service"
+    done
+    echo ""
+    echo "Operational Services"
+    local profile_services
+    profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
+    for service in $profile_services; do
+        local is_core=false
+        for core in "${RUNTIME_CORE_SERVICES[@]}"; do
+            [ "$service" = "$core" ] && is_core=true && break
+        done
+        [ "$is_core" = true ] && continue
+        echo "  ❌ $service"
+    done
+    echo ""
+    echo "All services have been stopped."
+}
+
 function ensure_databases() {
     # Ensure required databases exist (webui)
     # This function is idempotent - it won't fail if databases already exist
@@ -277,11 +309,7 @@ function start() {
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
                     # Update existing PROFILE line
-                    if [[ "$(uname)" == "Darwin" ]]; then
-                        sed -i '' "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
-                    else
-                        sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
-                    fi
+                    sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
                 else
                     # Add PROFILE line at the end
                     {
@@ -295,7 +323,7 @@ function start() {
         fi
     fi
     
-    echo "Starting Docker Compose deployment with profile: $profile"
+    echo "Starting services with profile: $profile"
     print_profile_info "$profile"
     
     # Check for .env file and restore from backup or create from .env.example if missing
@@ -653,35 +681,7 @@ function stop() {
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
     if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-        # Services already stopped - show status
-        echo ""
-        echo "AIXCL Stack Stopped"
-        echo "==================="
-        echo ""
-        echo "Profile: $profile"
-        echo "Status: Stopped"
-        echo ""
-        echo "Services"
-        echo "--------------------------------------------------"
-        echo ""
-        echo "Runtime Core"
-        for service in "${RUNTIME_CORE_SERVICES[@]}"; do
-            echo "  ❌ $service"
-        done
-        echo ""
-        echo "Operational Services"
-        local profile_services
-        profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
-        for service in $profile_services; do
-            local is_core=false
-            for core in "${RUNTIME_CORE_SERVICES[@]}"; do
-                [ "$service" = "$core" ] && is_core=true && break
-            done
-            [ "$is_core" = true ] && continue
-            echo "  ❌ $service"
-        done
-        echo ""
-        echo "All services have been stopped."
+        _print_stopped_status "$profile"
         return 0
     fi
     
@@ -692,34 +692,7 @@ function stop() {
     echo "Waiting for containers to stop..."
     for i in {1..30}; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
-            echo ""
-            echo "AIXCL Stack Stopped"
-            echo "==================="
-            echo ""
-            echo "Profile: $profile"
-            echo "Status: Stopped"
-            echo ""
-            echo "Services"
-            echo "--------------------------------------------------"
-            echo ""
-            echo "Runtime Core"
-            for service in "${RUNTIME_CORE_SERVICES[@]}"; do
-                echo "  ❌ $service"
-            done
-            echo ""
-            echo "Operational Services"
-            local profile_services
-            profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
-            for service in $profile_services; do
-                local is_core=false
-                for core in "${RUNTIME_CORE_SERVICES[@]}"; do
-                    [ "$service" = "$core" ] && is_core=true && break
-                done
-                [ "$is_core" = true ] && continue
-                echo "  ❌ $service"
-            done
-            echo ""
-            echo "All services have been stopped."
+            _print_stopped_status "$profile"
             return 0
         fi
         echo "Waiting for services to stop... ($i/15)"
@@ -730,35 +703,8 @@ function stop() {
     run_compose down --remove-orphans -v
     "${DOCKER_BIN:-docker}" ps -q | xargs -r "${DOCKER_BIN:-docker}" stop
     
-    echo ""
-    echo "AIXCL Stack Stopped"
-    echo "==================="
-    echo ""
-    echo "Profile: $(get_profile_services "$profile" 2>/dev/null || echo 'N/A')"
-    echo "Status: Stopped"
-    echo ""
-    echo "Services"
-    echo "--------------------------------------------------"
-    echo ""
-    echo "Runtime Core"
-    for service in "${RUNTIME_CORE_SERVICES[@]}"; do
-        echo "  ❌ $service"
-    done
-    echo ""
-    echo "Operational Services"
-    local profile_services
-    profile_services=$(get_profile_services "$profile" 2>/dev/null) || true
-    for service in $profile_services; do
-        local is_core=false
-        for core in "${RUNTIME_CORE_SERVICES[@]}"; do
-            [ "$service" = "$core" ] && is_core=true && break
-        done
-        [ "$is_core" = true ] && continue
-        echo "  ❌ $service"
-    done
-    echo ""
-    echo "All services have been stopped."
-    
+    _print_stopped_status "$profile"
+
     # Clean up pgAdmin configuration file for security
     if [ -f "pgadmin-servers.json" ]; then
         rm -f pgadmin-servers.json
@@ -902,11 +848,7 @@ function restart() {
                 # Update or add PROFILE in .env file
                 if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
                     # Update existing PROFILE line
-                    if [[ "$(uname)" == "Darwin" ]]; then
-                        sed -i '' "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
-                    else
-                        sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
-                    fi
+                    sed -i "s/^[[:space:]]*PROFILE[[:space:]]*=.*/PROFILE=$profile/" "$env_file"
                 else
                     # Add PROFILE line at the end
                     {
