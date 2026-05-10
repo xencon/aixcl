@@ -48,3 +48,29 @@ jobs:
           else
             echo "✓ No CRLF files found - all line endings are Unix style (LF)"
           fi
+
+  check-ascii-markdown:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check for non-ASCII Unicode punctuation in markdown files
+        run: |
+          echo "Checking markdown files for non-ASCII Unicode punctuation..."
+          BAD_FILES=$(grep -rlP "[\x{2013}\x{2014}\x{2018}\x{2019}\x{201C}\x{201D}\x{2026}\x{00A0}]" \
+            --include="*.md" \
+            --exclude-dir=node_modules \
+            --exclude-dir=.git \
+            . 2>/dev/null || true)
+          if [ -n "$BAD_FILES" ]; then
+            echo "ERROR: Found markdown files containing non-ASCII Unicode punctuation:"
+            echo "$BAD_FILES"
+            echo ""
+            echo "Prohibited characters: em dash (--), en dash (-), smart quotes, ellipsis, non-breaking space"
+            echo "Replace with ASCII equivalents: -- for em/en dash, ... for ellipsis, plain quotes"
+            exit 1
+          else
+            echo "PASS: All markdown files use ASCII-only punctuation"
+          fi

@@ -1,4 +1,4 @@
-# Service Contract — Observability Stack
+# Service Contract -- Observability Stack
 
 **Category:** Operational Services  
 **Enforcement Level:** Guided

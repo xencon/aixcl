@@ -62,7 +62,7 @@ Labels: Must match issue
 Assignee: Required
 ```
 
-**PR creation — pass labels at creation time**
+**PR creation -- pass labels at creation time**
 
 The PR Validation workflow fires on the `opened` event. Labels and assignees must be passed together to `gh pr create` to prevent a race condition.
 
@@ -270,12 +270,12 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 
 ## External References
 
-- `DEVELOPMENT.md` — Full workflow rules and templates
-- `docs/developer/development-workflow.md` — Complete developer guide
-- `docs/architecture/governance/00_invariants.md` — Platform invariants
-- `docs/architecture/governance/01_ai_guidance.md` — Agentic behavioral guidance
-- `.opencode/rules/workflow.md` — Workflow constraints
-- `opencode.json` — OpenCode configuration
+- `DEVELOPMENT.md` -- Full workflow rules and templates
+- `docs/developer/development-workflow.md` -- Complete developer guide
+- `docs/architecture/governance/00_invariants.md` -- Platform invariants
+- `docs/architecture/governance/01_ai_guidance.md` -- Agentic behavioral guidance
+- `.opencode/rules/workflow.md` -- Workflow constraints
+- `opencode.json` -- OpenCode configuration
 
 ---
 

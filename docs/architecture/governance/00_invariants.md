@@ -53,7 +53,7 @@ AIXCL services are divided into two categories:
 
 ### Runtime Core
 - Required for AIXCL to function as a product
-- Defines “what AIXCL is”
+- Defines "what AIXCL is"
 
 ### Operational Services
 - Support, observe, or operate the runtime
@@ -149,5 +149,5 @@ Agents interacting with this repository must:
 
 - Preserve all invariants in this document
 - Treat runtime core components as non-refactorable unless explicitly instructed
-- Avoid introducing new dependencies from runtime → operations
+- Avoid introducing new dependencies from runtime -> operations
 - Prefer declarative configuration over imperative logic

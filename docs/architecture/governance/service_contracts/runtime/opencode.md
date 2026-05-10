@@ -1,4 +1,4 @@
-# Service Contract — OpenCode
+# Service Contract -- OpenCode
 
 **Category:** Runtime Core  
 **Enforcement Level:** Strict

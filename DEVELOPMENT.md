@@ -18,10 +18,10 @@ It complements `AGENTS.md` (the operating contract) and `.opencode/rules/` (beha
 
 Read the following documents before beginning work:
 
-1. `AGENTS.md` — agent operating contract and authority hierarchy
-2. `DEVELOPMENT.md` — workflow rules, issue and PR templates
-3. `docs/developer/development-workflow.md` — full workflow guide
-4. `docs/architecture/governance/` — platform invariants and service contracts
+1. `AGENTS.md` -- agent operating contract and authority hierarchy
+2. `DEVELOPMENT.md` -- workflow rules, issue and PR templates
+3. `docs/developer/development-workflow.md` -- full workflow guide
+4. `docs/architecture/governance/` -- platform invariants and service contracts
 
 **VALIDATION REQUIRED:** If any documents in #3 or #4 are absent → **HALT** and create [TASK] issue: "Missing governance documentation". Await human clarification before proceeding.
 
@@ -63,7 +63,7 @@ considered ready to work.
 
 ```bash
 # IMPORTANT: Use --body-file (not inline --body) to prevent backtick command substitution.
-# Never use inline --body with multiline strings containing backticks — shell will
+# Never use inline --body with multiline strings containing backticks -- shell will
 # execute them and inject output into the issue body.
 cat > /tmp/issue-body.md << 'EOF'
 ## Summary
@@ -206,7 +206,7 @@ git log --show-signature --oneline -1
 
 ---
 
-## 5. Pull request format — `.github/PULL_REQUEST_TEMPLATE.md`
+## 5. Pull request format -- `.github/PULL_REQUEST_TEMPLATE.md`
 
 All PRs must follow this structure exactly:
 
@@ -285,7 +285,7 @@ gh pr create --title "<description> (#<number>)" --body "Fixes #<number>" --assi
 
 ## 6. Formatting guidelines
 
-- Use markdown checkboxes: `- [x]` for completed items — not Unicode checkmarks or emoji
+- Use markdown checkboxes: `- [x]` for completed items -- not Unicode checkmarks or emoji
 - Use standard markdown: `**bold**`, `*italic*`, `` `code` ``
 - Avoid special characters and non-ASCII symbols in technical documentation
 - Use plain ASCII for cross-platform consistency
@@ -298,7 +298,7 @@ Consult these before making architectural or structural decisions:
 
 | Document | Purpose |
 |---|---|
-| `docs/architecture/governance/00_invariants.md` | Platform invariants — do not violate |
+| `docs/architecture/governance/00_invariants.md` | Platform invariants -- do not violate |
 | `docs/architecture/governance/01_ai_guidance.md` | AI assistant behavioural guidance |
 | `docs/architecture/governance/02_profiles.md` | Stack profile definitions |
 | `docs/architecture/governance/03_stack_status.md` | Stack status specification |
@@ -311,7 +311,7 @@ Consult these before making architectural or structural decisions:
 When working via the OpenCode CLI:
 
 - This file is loaded automatically via the `instructions` field in `opencode.json`
-- The AIXCL local provider is configured in `opencode.json` — use `/connect` in the OpenCode TUI to select a provider, or connect to the local provider with `./aixcl stack start --profile sys`
+- The AIXCL local provider is configured in `opencode.json` -- use `/connect` in the OpenCode TUI to select a provider, or connect to the local provider with `./aixcl stack start --profile sys`
 - Custom agents can be added under `.opencode/agents/`
 - Rules can be added under `.opencode/rules/`
 - Permissions for `bash`, `edit`, and `webfetch` tools are configured in `opencode.json`
