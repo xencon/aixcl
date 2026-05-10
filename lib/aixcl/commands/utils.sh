@@ -70,7 +70,11 @@ function prune_all() {
     fi
     echo ""
 
-    echo "Stopping all containers..."
+    echo "Stopping stack gracefully..."
+    ./aixcl stack stop 2>/dev/null || true
+    echo ""
+
+    echo "Stopping all remaining containers..."
     $docker_cmd stop -a 2>/dev/null || true
     echo "Removing all containers..."
     $docker_cmd rm -f -a 2>/dev/null || true
