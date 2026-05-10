@@ -1,44 +1,53 @@
 # AIXCL Scripts
 
-This directory contains essential scripts required by AIXCL and GitHub Actions.
+This directory contains scripts used by AIXCL, Docker Compose, and GitHub Actions CI.
 
 ## Structure
 
 ```
 scripts/
-├── checks/           # Validation and compliance checks
-│   └── check-agents.sh
-└── runtime/          # Container runtime entrypoints
-    ├── llamacpp-entrypoint.sh
-    └── openwebui.sh
+├── checks/           # CI validation scripts
+│   ├── check-agents.sh
+│   ├── check-generated-files.sh
+│   └── check-paths.sh
+├── db/               # Database management
+├── exporters/        # Metrics exporters
+├── hooks/            # Git hooks
+├── runtime/          # Container entrypoint scripts
+│   ├── configure-openwebui-direct-connections.sh
+│   ├── grafana-entrypoint.sh
+│   ├── llamacpp-entrypoint.sh
+│   ├── ollama-entrypoint.sh
+│   ├── openwebui-entrypoint.sh
+│   ├── openwebui-vault-entrypoint.sh
+│   ├── pgadmin-entrypoint.sh
+│   ├── postgres-exporter-entrypoint.sh
+│   ├── postgres-secret-entrypoint.sh
+│   └── vllm-entrypoint.sh
+├── security/         # Security checks
+├── utils/            # Setup and utility scripts
+│   ├── init-volumes.sh
+│   ├── setup-gpg.sh
+│   ├── setup-hooks.sh
+│   ├── setup-podman-rootless.sh
+│   └── validate-volume-consistency.sh
+└── vault/            # Vault agent and bootstrap scripts
 ```
 
 ## Categories
 
 ### checks/
-Scripts for validation and compliance checking.
-
-- **check-agents.sh** - Validates AI agents and skills in `ai/` directory for naming conventions and YAML frontmatter compliance.
-  - Called by: GitHub Actions (`.github/workflows/check-opencode.yml`)
+Scripts for CI validation and compliance checking. Called by GitHub Actions workflows.
 
 ### runtime/
-Docker container entrypoint scripts.
+Container entrypoint scripts mounted and executed by Docker Compose services.
 
-- **llamacpp-entrypoint.sh** - Entrypoint for llama.cpp containers with graceful error handling
-  - Called by: `services/docker-compose.yml` (volume mount)
-  
-- **openwebui.sh** - Sets up Open WebUI with secret generation and admin user
-  - Called by: `services/docker-compose.yml` (volume mount)
+### utils/
+One-time setup and maintenance utilities run directly by the operator.
 
-## Note
+- **setup-podman-rootless.sh** - Configure rootless Podman (requires `sudo`)
+- **setup-gpg.sh** - Configure GPG signing for commits
+- **init-volumes.sh** - Initialise Docker volumes before first stack start
 
-Only essential scripts that are actively used by AIXCL or CI/CD workflows are kept here. Standalone utilities and maintenance scripts have been removed per repository maintenance guidelines.
-
-## Usage
-
-```bash
-# Check agents compliance (called by CI)
-./scripts/checks/check-agents.sh
-```
-
-All other scripts are called automatically by Docker Compose or AIXCL.
+### vault/
+Vault agent configuration and secret bootstrap scripts.
