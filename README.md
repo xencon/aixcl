@@ -56,11 +56,15 @@ AIXCL requires rootless Podman. Run the setup script once per machine:
 | `~/.config/containers/storage.conf` | Rootless storage driver settings |
 | `.env.podman` (repo root) | Project-specific `DOCKER_HOST` override |
 
-**After setup, reload your shell:**
+**After setup, reload your shell and install bash completion:**
 
 ```bash
 source ~/.bashrc
+./aixcl utils bash-completion
+source ~/.local/share/bash-completion/completions/aixcl
 ```
+
+The last line activates tab completion in your current shell. New shell sessions pick it up automatically.
 
 > **NVIDIA GPU users:** NVIDIA CDI configuration is handled automatically by `stack start` -- no additional GPU setup step is required.
 
@@ -115,18 +119,7 @@ Services started (12 in sys profile):
 | **Secrets** | Vault | 8200 |
 | **UI** | Open WebUI | 8080 |
 
-### Step 4: Install Bash Completion (Recommended)
-
-Enable tab completion for all `aixcl` commands and flags, including `./aixcl utils prune --all`:
-
-```bash
-./aixcl utils bash-completion
-source ~/.local/share/bash-completion/completions/aixcl
-```
-
-The second line activates completion in your current shell. New shell sessions pick it up automatically.
-
-### Step 5: Verify Vault (Auto-Initialized)
+### Step 4: Verify Vault (Auto-Initialized)
 
 Vault initializes automatically during stack startup. The process takes 2-3 minutes:
 
@@ -138,7 +131,7 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 ./aixcl vault passwords
 ```
 
-### Step 6: Test Inference (Hello World)
+### Step 5: Test Inference (Hello World)
 
 **A. Via Open WebUI (Browser)**
 
