@@ -75,15 +75,26 @@ COMMANDS
               Validate environment setup
 
         utils bash-completion
-               Install bash completion support
+               Install bash completion for aixcl and ./aixcl. Enables tab
+               completion for all commands, subcommands, and flags. Run once
+               after initial setup; new shell sessions pick it up automatically.
+               To activate in the current shell:
+                 source ~/.local/share/bash-completion/completions/aixcl
 
         utils prune
-               Remove volumes and state files, keep images for fast restart
-               (mirrors podman system prune)
+               Remove volumes and state files, keep images for fast restart.
 
         utils prune --all
-               Remove everything including images — full scorched-earth wipe
-               (mirrors podman system prune --all)
+               Full removal of all AIXCL resources and configuration. Requires
+               typing 'PURGE' at the confirmation prompt. Removes: containers,
+               images, volumes, networks, state files, project directories
+               (logs/, .security/, .audit/), AIXCL Podman configuration
+               (~/.config/containers/), NVIDIA CDI user config, and bash
+               completion files. Intentionally preserves /etc/subuid,
+               /etc/subgid, ~/.local/share/containers/, and podman.socket as
+               these are standard system config shared with other tools.
+               The system remains fully operational after this command.
+               To also reset Podman storage: podman system reset --force
 
         help
                Show help message

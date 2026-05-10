@@ -115,6 +115,17 @@ Services started (12 in sys profile):
 | **Secrets** | Vault | 8200 |
 | **UI** | Open WebUI | 8080 |
 
+### Step 4: Install Bash Completion (Recommended)
+
+Enable tab completion for all `aixcl` commands and flags, including `./aixcl utils prune --all`:
+
+```bash
+./aixcl utils bash-completion
+source ~/.local/share/bash-completion/completions/aixcl
+```
+
+The second line activates completion in your current shell. New shell sessions pick it up automatically.
+
 ### Step 5: Verify Vault (Auto-Initialized)
 
 Vault initializes automatically during stack startup. The process takes 2-3 minutes:
@@ -234,6 +245,8 @@ git log --show-signature -1
 | Vault credentials | `./aixcl vault credentials` |
 | Rotate credentials | `./aixcl vault rotate` |
 | Verify GPG | `gpg --list-secret-keys --keyid-format LONG` |
+| Install bash completion | `./aixcl utils bash-completion` |
+| Full clean removal | `./aixcl utils prune --all` |
 
 ---
 

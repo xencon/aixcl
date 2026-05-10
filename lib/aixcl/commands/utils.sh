@@ -47,8 +47,27 @@ function prune() {
 function prune_all() {
     local docker_cmd="${DOCKER_BIN:-podman}"
 
-    echo "SCORCHED EARTH: Removing ALL container resources including images..."
-    echo "Using container engine: $docker_cmd"
+    echo "WARNING: This will remove all AIXCL container resources AND system configuration."
+    echo "The system will remain operational. This cannot be undone."
+    echo ""
+    echo "Will remove:"
+    echo "  - All containers, images, volumes, networks"
+    echo "  - State files (.env, .aixcl.initialized, pgadmin-servers.json)"
+    echo "  - Project directories (logs/, .security/, .audit/)"
+    echo "  - AIXCL Podman configuration (~/.config/containers/)"
+    echo "  - AIXCL NVIDIA CDI user config (~/.config/cdi/nvidia.yaml, if present)"
+    echo "  - Bash completion files and ~/.bashrc AIXCL entries"
+    echo ""
+    echo "Will NOT remove (standard system config, shared with other tools):"
+    echo "  - /etc/subuid, /etc/subgid"
+    echo "  - ~/.local/share/containers/ (Podman storage)"
+    echo "  - podman.socket systemd service"
+    echo ""
+    read -r -p "Type 'PURGE' to confirm: " reply
+    if [[ "$reply" != "PURGE" ]]; then
+        echo "Aborted."
+        return 0
+    fi
     echo ""
 
     echo "Stopping all containers..."
@@ -81,15 +100,52 @@ function prune_all() {
     $docker_cmd system prune -f --all --volumes 2>/dev/null || true
     echo ""
 
-    if [ -f "pgadmin-servers.json" ]; then
-        rm -f pgadmin-servers.json
-        echo "Cleaned up pgAdmin configuration file"
-    fi
-    rm -f .aixcl.initialized .env
+    echo "Removing state files..."
+    rm -f .aixcl.initialized .env pgadmin-servers.json .env.podman
     echo ""
 
-    echo "Purge complete. All container resources removed."
-    $docker_cmd system df 2>/dev/null || echo "No resources found (good!)"
+    echo "Removing project directories..."
+    rm -rf logs .security .audit
+    echo ""
+
+    echo "Removing AIXCL Podman configuration..."
+    if [[ -d "${HOME}/.config/containers" ]]; then
+        rm -rf "${HOME}/.config/containers"
+        echo "  Removed ~/.config/containers"
+    fi
+    if [[ -f "${HOME}/.config/cdi/nvidia.yaml" ]]; then
+        rm -f "${HOME}/.config/cdi/nvidia.yaml"
+        rmdir "${HOME}/.config/cdi" 2>/dev/null || true
+        echo "  Removed ~/.config/cdi/nvidia.yaml"
+    fi
+    echo ""
+
+    echo "Removing bash completion..."
+    rm -f "${HOME}/.local/share/bash-completion/completions/aixcl"
+    rm -f "/etc/bash_completion.d/aixcl" 2>/dev/null || true
+    if [[ -f "${HOME}/.bashrc" ]]; then
+        local temp_bashrc
+        temp_bashrc="$(mktemp)"
+        sed '/Added by aixcl installer/,/^[[:space:]]*fi[[:space:]]*$/d' "${HOME}/.bashrc" > "$temp_bashrc" \
+            || cp "${HOME}/.bashrc" "$temp_bashrc"
+        if ! cmp -s "${HOME}/.bashrc" "$temp_bashrc"; then
+            cp "${HOME}/.bashrc" "${HOME}/.bashrc.backup.$(date +%s)" 2>/dev/null || true
+            mv "$temp_bashrc" "${HOME}/.bashrc"
+            echo "  Cleaned AIXCL entries from ~/.bashrc"
+        else
+            rm -f "$temp_bashrc"
+        fi
+    fi
+    echo ""
+
+    echo "Purge complete. All AIXCL resources removed."
+    echo ""
+    echo "NOTE: The following standard system config was intentionally preserved:"
+    echo "  /etc/subuid, /etc/subgid   -- required for rootless containers system-wide"
+    echo "  ~/.local/share/containers/ -- Podman storage (may contain non-AIXCL data)"
+    echo "  podman.socket              -- standard Podman systemd service"
+    echo ""
+    echo "To also reset Podman storage: podman system reset --force"
 }
 
 function utils_cmd() {
