@@ -40,7 +40,7 @@ services:
       - CONTAINER_ENGINE=podman
     working_dir: /workspace
     command: sleep infinity
-    
+
     healthcheck:
       test: ["CMD-SHELL", "podman info || exit 1"]
       interval: 10s

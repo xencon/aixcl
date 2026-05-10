@@ -10,19 +10,19 @@ global:
 route:
   # Default receiver (can be changed when notification channels are configured)
   receiver: 'default'
-  
+
   # Group alerts by these labels
   group_by: ['alertname', 'cluster', 'service']
-  
+
   # Group wait time before sending first notification
   group_wait: 10s
-  
+
   # Group interval between notifications
   group_interval: 10s
-  
+
   # Repeat interval for alerts that haven't been resolved
   repeat_interval: 12h
-  
+
   # Child routes for specific alert routing (can be added later)
   routes:
     # Route critical alerts (can add specific receivers later)
@@ -30,7 +30,7 @@ route:
         severity: critical
       receiver: 'default'
       continue: false
-    
+
     # Route warning alerts
     - match:
         severity: warning
@@ -50,19 +50,19 @@ receivers:
     #     auth_password: 'password'
     #     headers:
     #       Subject: 'AIXCL Alert: {{ .GroupLabels.alertname }}'
-    
+
     # Slack configuration (commented out - ready for future use)
     # slack_configs:
     #   - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
     #     channel: '#alerts'
     #     title: 'AIXCL Alert'
     #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    
+
     # Webhook configuration (commented out - ready for future use)
     # webhook_configs:
     #   - url: 'http://localhost:5001/webhook'
     #     send_resolved: true
-    
+
     # For now, alerts will be stored in Alertmanager UI
     # To view alerts: http://localhost:9093
 

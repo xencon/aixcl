@@ -43,7 +43,7 @@ services:
       - AIXCL_ENTRYPOINT_DIR=/scripts/runtime
     working_dir: /workspace
     command: sleep infinity
-    
+
     # Health check to ensure dev container is ready
     healthcheck:
       test: ["CMD-SHELL", "docker info || exit 1"]

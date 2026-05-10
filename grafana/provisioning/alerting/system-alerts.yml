@@ -8,7 +8,7 @@
 # Threshold: 80% for 5 minutes
 # Severity: Warning
 
-# High Memory Usage Alert  
+# High Memory Usage Alert
 # Query: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
 # Threshold: 80% for 5 minutes
 # Severity: Warning

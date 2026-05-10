@@ -2,11 +2,11 @@ name: Integration Tests
 
 on:
   push:
-    branches: 
+    branches:
       - "main"
       - "dev"
   pull_request:
-    branches: 
+    branches:
       - "main"
       - "dev"
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
       - name: Validate Compose Files
         run: |
           echo "Validating Docker Compose files..."
-          
+
           # Create minimal .env with required vars for validation
           cat > .env << 'EOF'
           INFERENCE_ENGINE=ollama
@@ -52,11 +52,11 @@ jobs:
           VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
           VLLM_CUDA_GRAPH_CAPTURE=0
           EOF
-          
+
           # Validate main compose file
           docker compose -f services/docker-compose.yml config > /dev/null || exit 1
           echo "✓ Main compose file valid"
-          
+
           # Check compose override files by combining with main compose
           # Override files (gpu.yml, arm.yml) require main compose for complete validation
           for file in services/docker-compose.*.yml; do
@@ -65,43 +65,43 @@ jobs:
               echo "✓ $(basename $file) valid"
             fi
           done
-          
+
           echo "All compose files validated successfully"
 
       - name: Test Engine Configuration
         run: |
           echo "Testing engine configuration..."
-          
+
           # Create minimal .env
           echo "INFERENCE_ENGINE=ollama" > .env
           echo "PROFILE=sys" >> .env
-          
+
           # Test engine set commands
           chmod +x ./aixcl
-          
+
           # Test each engine
           for engine in ollama vllm llamacpp; do
             ./aixcl engine set $engine
             grep -q "INFERENCE_ENGINE=$engine" .env || exit 1
             echo "✓ Engine $engine configured"
           done
-          
+
           # Test auto-detect
           ./aixcl engine auto
           echo "✓ Engine auto-detect works"
-          
+
           echo "Engine configuration tests PASSED"
 
       - name: Test Stack Configuration
         run: |
           echo "Testing stack configuration..."
-          
+
           # Create minimal .env
           echo "INFERENCE_ENGINE=ollama" > .env
           echo "PROFILE=sys" >> .env
-          
+
           # Validate stack configs without starting
           ./aixcl stack status 2>/dev/null || true
-          
+
           echo "✓ Stack configuration validated"
           echo "Stack configuration tests PASSED"
