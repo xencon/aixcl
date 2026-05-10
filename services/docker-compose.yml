@@ -29,7 +29,7 @@ services:
       start_period: 30s
 
   vault:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault
     pull_policy: missing
     cap_add:
@@ -54,7 +54,7 @@ services:
 
   # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
   vault-agent-postgres:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault-agent-postgres
     pull_policy: missing
     cap_drop:
@@ -75,7 +75,7 @@ services:
 
   # Vault Agent sidecar for Open WebUI (runs alongside open-webui)
   vault-agent-openwebui:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault-agent-openwebui
     pull_policy: missing
     cap_drop:
@@ -96,7 +96,7 @@ services:
 
   # Bootstrap service for PostgreSQL Vault KV password
   vault-agent-postgres-bootstrap:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault-agent-postgres-bootstrap
     pull_policy: missing
     cap_drop:
@@ -119,7 +119,7 @@ services:
 
   # Bootstrap service for Open WebUI Vault KV password
   vault-agent-openwebui-bootstrap:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault-agent-openwebui-bootstrap
     pull_policy: missing
     cap_drop:
@@ -142,7 +142,7 @@ services:
 
    # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault-agent-pgadmin-bootstrap
     pull_policy: missing
     cap_drop:
@@ -165,7 +165,7 @@ services:
 
    # Bootstrap service for Grafana Vault KV password
   vault-agent-grafana-bootstrap:
-    image: hashicorp/vault:1.18
+    image: docker.io/hashicorp/vault:1.18
     container_name: vault-agent-grafana-bootstrap
     pull_policy: missing
     cap_drop:
@@ -291,14 +291,13 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.1
+    image: ghcr.io/open-webui/open-webui:v0.9.4
     container_name: open-webui
     pull_policy: missing
     user: "0:0"
     volumes:
       - aixcl-open-webui-main:/app/backend/data
       - aixcl-open-webui-data:/app/data
-      - ../scripts/runtime/openwebui.sh:/app/backend/openwebui.sh
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
       - aixcl-vault-secrets:/run/secrets:ro
     environment:
