@@ -20,7 +20,7 @@ Validates that all actions comply with the Issue-First development workflow befo
 - [ ] Issue is assigned to someone
 - [ ] Issue has appropriate labels (component:* required)
 - [ ] Issue title follows format: `[TYPE] Description` (no colons)
-- [ ] **Issue body is clean** — no shell command output, no backtick artifacts, no garbled CLI text
+- [ ] **Issue body is clean** -- no shell command output, no backtick artifacts, no garbled CLI text
   - *Prevention*: When creating via `gh issue create`, always use `--body-file` with a file, or a quoted HEREDOC (`cat << 'EOF'`). Never use inline `--body` with multiline strings containing backticks.
   - *Detection*: If body contains strings like "Error:", "Usage:", log timestamps (e.g., "2024-01-01T..."), or container IDs (64-char hex), reject as garbled.
 

@@ -64,8 +64,8 @@ If an agent encounters ambiguity:
 
 ## 6. Relationship to Other Documents
 
-- `00_invariants.md` — architectural non-negotiables
-- `02_profiles.md` — allowed compositions
-- `service_contracts/` — dependency direction and scope
+- `00_invariants.md` -- architectural non-negotiables
+- `02_profiles.md` -- allowed compositions
+- `service_contracts/` -- dependency direction and scope
 
 If guidance conflicts, **invariants take precedence**.

@@ -15,8 +15,8 @@ Documentation organized by audience. Keep it lean -- if something can be regener
 ## Root-Level Contracts
 
 These files are canonical and loaded by all agents:
-- `AGENTS.md` — Operating contract
-- `DEVELOPMENT.md` — Workflow rules
-- `CONTRIBUTING.md` — External contributor guide
-- `SECURITY.md` — Security policy
+- `AGENTS.md` -- Operating contract
+- `DEVELOPMENT.md` -- Workflow rules
+- `CONTRIBUTING.md` -- External contributor guide
+- `SECURITY.md` -- Security policy
 
