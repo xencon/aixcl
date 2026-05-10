@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Run path validation
         run: |
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Run generated file check
         run: |
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Check for broken links
         uses: lycheeverse/lychee-action@v2
@@ -57,21 +57,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install yamllint
         run: pip install yamllint
 
       - name: Validate YAML files
         run: |
-          yamllint -c .yamllint.yml . || true
+          yamllint -c .yamllint.yml .
 
   validate-compose-files:
     name: Validate Docker Compose Files
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
@@ -82,27 +82,25 @@ jobs:
           # Core configuration
           INFERENCE_ENGINE=ollama
           PROFILE=sys
-          
+
           # PostgreSQL configuration
           POSTGRES_USER=admin
           POSTGRES_PASSWORD=test
           POSTGRES_DATABASE=webui
-          
+
           # PGAdmin configuration
           PGADMIN_EMAIL=admin@test.com
           PGADMIN_PASSWORD=test
-          
+
           # Open WebUI configuration
-          OPENWEBUI_EMAIL=admin@test.com
-          OPENWEBUI_PASSWORD=test
           OPENAI_API_KEY=
           ENABLE_OLLAMA_API=true
           OLLAMA_BASE_URL=http://localhost:11434
-          
+
           # Grafana configuration
           GRAFANA_ADMIN_USER=admin
           GRAFANA_ADMIN_PASSWORD=admin
-          
+
           # Ollama configuration
           OLLAMA_HOST=0.0.0.0:11434
           OLLAMA_NUM_PARALLEL=8
@@ -111,17 +109,13 @@ jobs:
           OLLAMA_NUM_GPU=1
           OLLAMA_NUM_THREAD=8
           INFERENCE_MODEL=Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
-          
+
           # vLLM configuration
           VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
           VLLM_CUDA_GRAPH_CAPTURE=0
           VLLM_MODEL=Qwen/Qwen2.5-Coder-0.5B-Instruct
           VLLM_GPU_MEMORY_UTILIZATION=0.8
           VLLM_MAX_MODEL_LEN=32768
-          
-          # Docker configuration
-          DOCKER_SOCK=/var/run/docker.sock
-          DOCKER_GID=989
           EOF
 
       - name: Validate main compose file
