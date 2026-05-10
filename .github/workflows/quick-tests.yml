@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Run security tests
         run: |
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Check script syntax
         run: |
@@ -53,5 +53,5 @@ jobs:
         run: |
           echo "Testing critical scripts can be sourced..."
           chmod +x ./aixcl
-          ./aixcl --help > /dev/null || exit 1
+          ./aixcl help > /dev/null || exit 1
           echo "Scripts are executable!"

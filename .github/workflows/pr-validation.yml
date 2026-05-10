@@ -23,7 +23,7 @@ jobs:
           PR_TITLE: "${{ github.event.pull_request.title }}"
         run: |
           echo "Checking PR title: $PR_TITLE"
-          
+
           # Check for issue reference (#number)
           if ! echo "$PR_TITLE" | grep -qE '\(#[0-9]+\)$'; then
             echo "ERROR: PR title must end with issue reference '(#<number>)'"
@@ -31,14 +31,14 @@ jobs:
             echo "Current title: $PR_TITLE"
             exit 1
           fi
-          
+
           # Check for colons in title (not allowed)
           if echo "$PR_TITLE" | grep -qE '^[^:]+:'; then
             echo "ERROR: PR title should not contain colons before the issue reference"
             echo "Expected format: '<description> (#<number>)' (NO colons)"
             exit 1
           fi
-          
+
           echo "PR title format is valid"
 
   validate-pr-assignee:
