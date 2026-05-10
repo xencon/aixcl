@@ -187,7 +187,6 @@ _aixcl_complete() {
     return 0
 }
 
-# Register the completion function
-# This will work for: aixcl, ./aixcl, /path/to/aixcl, etc.
-# -o default is not set, so filename completion won't be used as fallback
+# Register the completion function for both PATH and relative invocation
 complete -F _aixcl_complete aixcl
+complete -F _aixcl_complete ./aixcl
