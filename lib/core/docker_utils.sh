@@ -22,9 +22,7 @@ if [[ ! "$COMPOSE_FILE" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$COMPOSE_FILE" =~ \.\. ]
     exit 1
 fi
 
-# Default compose command (before set_compose_cmd detects GPU/ARM overrides)
-# Initialize with a basic command that will be updated by set_compose_cmd
-COMPOSE_CMD=(docker-compose -f "${SERVICES_DIR}/${COMPOSE_FILE}")
+COMPOSE_CMD=()
 COMPOSE_WORKDIR="${SERVICES_DIR}"
 
 # Build docker-compose command with optional GPU and ARM overrides if present
