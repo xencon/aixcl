@@ -1,8 +1,8 @@
 # Security and Architecture Policy
 
 ## Fixed Core Runtime (Non-Negotiable)
-- **Inference Engine** (Ollama) — Docker-managed, always enabled
-- **OpenCode** — AI-powered code assistance (VS Code plugin, client-side), always enabled
+- **Inference Engine** (Ollama) -- Docker-managed, always enabled
+- **OpenCode** -- AI-powered code assistance (VS Code plugin, client-side), always enabled
 - Never remove, replace, or conditionally disable runtime core components
 
 ## Runtime vs Operational Services Boundary

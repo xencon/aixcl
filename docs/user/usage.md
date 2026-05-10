@@ -10,8 +10,8 @@ For installation and quick start, see [README.md](/README.md).
 | **sys** | Full stack | bld + Open WebUI, pgAdmin |
 
 Deprecated (not supported):
-- `usr` — DEPRECATED (Vault now required for database secrets)
-- `dev` — DEPRECATED (Vault now required for database secrets)
+- `usr` -- DEPRECATED (Vault now required for database secrets)
+- `dev` -- DEPRECATED (Vault now required for database secrets)
 
 ## Service URLs (sys profile)
 

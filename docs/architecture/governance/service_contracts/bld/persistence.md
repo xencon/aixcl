@@ -1,4 +1,4 @@
-# Service Contract — Persistence Stack
+# Service Contract -- Persistence Stack
 
 **Category:** Operational Services  
 **Enforcement Level:** Guided

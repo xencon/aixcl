@@ -8,7 +8,7 @@
 ## Text
 - Use plain ASCII. No Unicode checkmarks, no emoji.
 - Use markdown checkboxes: `- [x]` for completed, `- [ ]` for incomplete
-- Use Unix line endings (LF) — CRLF is rejected by CI
+- Use Unix line endings (LF) -- CRLF is rejected by CI
 
 ## Labels
 **Issue Types** (select exactly one): `Bug`, `Feature`, `Task`

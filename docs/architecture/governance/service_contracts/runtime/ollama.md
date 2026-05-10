@@ -1,4 +1,4 @@
-# Service Contract — Ollama
+# Service Contract -- Ollama
 
 **Category:** Runtime Core  
 **Enforcement Level:** Strict

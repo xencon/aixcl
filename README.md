@@ -62,7 +62,7 @@ AIXCL requires rootless Podman. Run the setup script once per machine:
 source ~/.bashrc
 ```
 
-> **NVIDIA GPU users:** NVIDIA CDI configuration is handled automatically by `stack start` — no additional GPU setup step is required.
+> **NVIDIA GPU users:** NVIDIA CDI configuration is handled automatically by `stack start` -- no additional GPU setup step is required.
 
 **Verify rootless mode:**
 
@@ -73,7 +73,7 @@ podman info | grep "rootless"
 
 ### Step 3: Check, Initialize and Start
 
-The quickest way to get started — add this alias to your shell:
+The quickest way to get started -- add this alias to your shell:
 
 ```bash
 alias aixcl-setup='./aixcl utils check-env && ./aixcl stack init && ./aixcl stack start --profile sys'
@@ -130,8 +130,6 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 ### Step 6: Test Inference (Hello World)
 
 **A. Via Open WebUI (Browser)**
-
-**A. Via OpenCode (CLI)**
 
 ```bash
 # Add a small test model first
@@ -314,11 +312,11 @@ sudo lsof -i :11434  # Ollama
 sudo lsof -i :8080   # Open WebUI
 sudo lsof -i :8200   # Vault
 
-# Soft reset — removes volumes and state, keeps images for fast restart
+# Soft reset -- removes volumes and state, keeps images for fast restart
 ./aixcl utils prune
 aixcl-setup
 
-# Full wipe — removes everything including images (slow rebuild)
+# Full wipe -- removes everything including images (slow rebuild)
 ./aixcl utils prune --all
 aixcl-setup
 ```
