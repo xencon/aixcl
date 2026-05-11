@@ -4,7 +4,7 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.11] - 2026-05-11
+## [v1.1.13] - 2026-05-11
 
 ### Security
 
