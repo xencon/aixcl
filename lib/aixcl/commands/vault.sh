@@ -37,6 +37,9 @@ function cmd_vault() {
         logs)
             cmd_vault_logs "$@"
             ;;
+        unseal)
+            cmd_vault_unseal "$@"
+            ;;
         *)
             echo "AIXCL Vault Management"
             echo ""
@@ -48,7 +51,8 @@ function cmd_vault() {
             echo "  restart      Restart the Vault container"
             echo ""
             echo "Query Commands:"
-            echo "  init         Initialize Vault (idempotent)"
+            echo "  init         Initialize Vault (idempotent, one-time operator init on first run)"
+            echo "  unseal       Unseal Vault using GPG-encrypted key shares"
             echo "  status       Check Vault health and initialization state"
             echo "  credentials  View generated dynamic credentials"
             echo "  passwords    View static bootstrap passwords (from Vault KV)"
@@ -59,7 +63,8 @@ function cmd_vault() {
             echo "  ./aixcl vault start         # Start Vault container"
             echo "  ./aixcl vault stop          # Stop Vault container"
             echo "  ./aixcl vault restart       # Restart Vault container"
-            echo "  ./aixcl vault init          # Initialize Vault on first run"
+            echo "  ./aixcl vault init          # Initialize Vault (first run) or unseal (subsequent)"
+            echo "  ./aixcl vault unseal        # Unseal after a restart"
             echo "  ./aixcl vault status        # Check if Vault is ready"
             echo "  ./aixcl vault credentials   # View service credentials"
             echo "  ./aixcl vault passwords     # View bootstrap passwords"
@@ -231,6 +236,21 @@ vault_is_enabled_in_profile() {
     return 1
 }
 
+function cmd_vault_unseal() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile bld or --profile sys to enable Vault."
+        return 1
+    fi
+    local unseal_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-unseal.sh"
+    if [ -f "$unseal_script" ]; then
+        bash "$unseal_script" "$@"
+    else
+        echo "Error: vault-unseal.sh not found at $unseal_script"
+        return 1
+    fi
+}
+
 # Export the main command
 export -f cmd_vault
 export -f cmd_vault_start
@@ -242,3 +262,4 @@ export -f cmd_vault_credentials
 export -f cmd_vault_passwords
 export -f cmd_vault_rotate
 export -f cmd_vault_logs
+export -f cmd_vault_unseal

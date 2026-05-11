@@ -523,7 +523,20 @@ function start() {
     ENABLE_DB_STORAGE=$(get_profile_db_storage_enabled "$profile")
     export ENABLE_DB_STORAGE
     echo "Setting ENABLE_DB_STORAGE=${ENABLE_DB_STORAGE} for profile: $profile"
-    
+
+    # Inject Vault root token for bootstrap agents if a previous init has run.
+    # On first run the file won't exist; bootstrap agents will retry every 30s
+    # after vault-init.sh populates the KV store and recreates them below.
+    local _vault_token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
+    if [ -f "$_vault_token_file" ]; then
+        local _vault_token
+        _vault_token=$(gpg --quiet --decrypt "$_vault_token_file" 2>/dev/null) || true
+        if [ -n "${_vault_token:-}" ]; then
+            export VAULT_TOKEN="$_vault_token"
+            echo "Vault root token loaded from .security/ for bootstrap agents"
+        fi
+    fi
+
     echo "Pulling latest images..."
     run_compose pull
     
@@ -631,6 +644,26 @@ function start() {
                     echo "  ./aixcl vault init"
                 fi
                 
+                # Recreate bootstrap agents so they start with the correct token.
+                # On the very first init, VAULT_TOKEN was unknown at compose-up time;
+                # now that vault-init.sh has encrypted it to .security/, we reload it
+                # and force-recreate the bootstrap containers with the real token.
+                local _vault_token_file_post="${SCRIPT_DIR}/.security/vault-root-token.gpg"
+                if [ -f "$_vault_token_file_post" ]; then
+                    local _vtoken
+                    _vtoken=$(gpg --quiet --decrypt "$_vault_token_file_post" 2>/dev/null) || true
+                    if [ -n "${_vtoken:-}" ]; then
+                        export VAULT_TOKEN="$_vtoken"
+                        echo ""
+                        echo "Refreshing bootstrap agents with vault token..."
+                        run_compose up -d --force-recreate --no-deps \
+                            vault-agent-postgres-bootstrap \
+                            vault-agent-openwebui-bootstrap \
+                            vault-agent-pgadmin-bootstrap \
+                            vault-agent-grafana-bootstrap 2>/dev/null || true
+                    fi
+                fi
+
                 # Show current passwords
                 echo ""
                 echo "Retrieving bootstrap passwords..."

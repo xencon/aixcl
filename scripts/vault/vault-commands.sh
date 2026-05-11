@@ -3,7 +3,14 @@
 # Usage: Source this file or run commands directly
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${VAULT_DEV_TOKEN:-aixcl-dev-token}"
+
+# Load root token from GPG-encrypted store if not already in environment.
+# SCRIPT_DIR is set by the calling script (vault.sh) when sourced.
+_VAULT_TOKEN_FILE="${SCRIPT_DIR:+${SCRIPT_DIR}/.security/vault-root-token.gpg}"
+if [ -z "${VAULT_TOKEN:-}" ] && [ -n "${_VAULT_TOKEN_FILE:-}" ] && [ -f "$_VAULT_TOKEN_FILE" ]; then
+    VAULT_TOKEN=$(gpg --quiet --decrypt "$_VAULT_TOKEN_FILE" 2>/dev/null) || VAULT_TOKEN=""
+fi
+VAULT_TOKEN="${VAULT_TOKEN:-}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -15,29 +22,21 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Check if Vault is running
+# Check if Vault is running and unsealed
 vault_status() {
     local health_response
-    health_response=$(curl -sf "${VAULT_ADDR}/v1/sys/health" 2>/dev/null || echo '{}')
-    
-    # In dev mode, Vault responds with version even when "sealed"
-    local version
-    version=$(echo "$health_response" | jq -r '.version // ""')
-    if [ -n "$version" ]; then
-        log_info "Vault is running (version: $version)"
-        return 0
-    fi
-    
+    health_response=$(curl -sf "${VAULT_ADDR}/v1/sys/health?sealedok=true&uninitok=true" 2>/dev/null || echo '{}')
+
     local sealed
     sealed=$(echo "$health_response" | jq -r '.sealed // "unreachable"')
-    
+
     case "$sealed" in
         "false")
             log_info "Vault is running and unsealed"
             return 0
             ;;
         "true")
-            log_error "Vault is sealed"
+            log_error "Vault is sealed — run: ./aixcl vault unseal"
             return 1
             ;;
         *)
