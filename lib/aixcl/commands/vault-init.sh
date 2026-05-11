@@ -310,7 +310,10 @@ clear_bootstrap_artifacts() {
     log_info "Clearing old bootstrap password artifacts..."
     local files="/run/secrets/postgres-password /run/secrets/openwebui-password /run/secrets/pgadmin-password /run/secrets/grafana-password"
     for f in $files; do
-        [ -f "$f" ] && rm -f "$f" && log_info "Cleared old artifact: $f"
+        if [ -f "$f" ]; then
+            rm -f "$f"
+            log_info "Cleared old artifact: $f"
+        fi
     done
 }
 
