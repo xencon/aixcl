@@ -24,7 +24,15 @@ This checks:
 
 ## 2. Start OpenCode
 
-Navigate to your repository and start OpenCode:
+`./aixcl stack init` (run during setup) creates `opencode.json` from `config/opencode.json.example`
+and pre-configures the AIXCL local provider. Add a model before starting OpenCode so the provider
+has something to connect to:
+
+```bash
+./aixcl models add qwen2.5-coder:0.5b
+```
+
+Then start OpenCode:
 
 ```bash
 cd /path/to/aixcl

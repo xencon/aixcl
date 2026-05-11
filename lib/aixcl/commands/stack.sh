@@ -135,6 +135,18 @@ function init_stack() {
         fi
     fi
 
+    # Create opencode.json from example if not exists
+    local opencode_file="${SCRIPT_DIR}/opencode.json"
+    local opencode_example="${SCRIPT_DIR}/config/opencode.json.example"
+    if [ ! -f "$opencode_file" ]; then
+        if [ -f "$opencode_example" ]; then
+            cp "$opencode_example" "$opencode_file"
+            echo "Created opencode.json from config/opencode.json.example"
+        else
+            echo "Warning: config/opencode.json.example not found, skipping opencode.json creation"
+        fi
+    fi
+
     # Load current values
     load_env_file "$env_file"
 

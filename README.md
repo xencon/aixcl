@@ -93,7 +93,7 @@ Or run each step manually:
 
 ```bash
 ./aixcl utils check-env          # Verify environment prerequisites
-./aixcl stack init               # Generate .env, credentials and Vault secrets (one-time)
+./aixcl stack init               # Generate .env, opencode.json, credentials and Vault secrets (one-time)
 ./aixcl stack start --profile sys  # Start the full stack
 
 # Wait for healthy status (about 2-3 minutes for full stabilization)
@@ -150,8 +150,12 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 
 **B. Via OpenCode CLI**
 
+`opencode.json` is created from `config/opencode.json.example` by `stack init`. It pre-configures
+the `aixcl-local` provider pointing at the Ollama endpoint (`http://localhost:11434/v1`). Models
+are registered into it automatically when you run `./aixcl models add`.
+
 ```bash
-# Add the model (for local provider)
+# Add the model (registers it in opencode.json and pulls it via Ollama)
 ./aixcl models add qwen2.5-coder:0.5b
 
 # Start OpenCode
