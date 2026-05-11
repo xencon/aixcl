@@ -28,6 +28,7 @@ VOLUMES=(
   "aixcl-pgadmin-main"
   "aixcl-pgadmin-config"
   "aixcl-vault-data"
+  "aixcl-vault-logs"
   "aixcl-vault-secrets"
 )
 
