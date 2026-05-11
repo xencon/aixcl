@@ -4,6 +4,18 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.14] - 2026-05-11
+
+### Fixed
+
+- **vault_status jq false/unreachable bug**: `vault_status` used `.sealed // "unreachable"` which always evaluated to `"unreachable"` when Vault was unsealed (jq treats `false` as falsy in the `//` alternative operator). This silently caused `vault passwords` and `vault credentials` to exit without output. Fixed by replacing `//` with `if has("sealed") then (.sealed | tostring) else "unreachable" end`. (Fixes #1159)
+
+### Related Issues
+
+- Fixes #1159 - vault_status jq treats false as unreachable
+
+---
+
 ## [v1.1.13] - 2026-05-11
 
 ### Security
@@ -24,6 +36,55 @@ All notable changes to the AIXCL project will be documented in this file.
 ### Related Issues
 
 - Fixes #1159 - Vault production mode
+
+---
+
+## [v1.1.12] - 2026-05-10
+
+### Removed
+
+- **Dead Script Cleanup**: Deleted `scripts/setup-rootless-env.sh` (duplicate of `setup-podman-rootless.sh` with bugs), `scripts/runtime/openwebui-v2.sh` (unreferenced), and `scripts/runtime/openwebui.sh` (mounted but never executed). Removed dead volume mount from `docker-compose.yml`. Rewrote `scripts/README.md` to reflect actual directory structure. (Fixes #1144)
+
+### Fixed
+
+- **Shell Script Bugs**: Removed macOS `sed -i ''` dead code from `stack.sh`; fixed profile display bug in `get_profile_services`; corrected startup message; added missing services to `ALL_SERVICES` in `common.sh` (`vault-agent-postgres`, `vault-agent-openwebui`, `vault-agent-grafana-bootstrap`, `alertmanager`); removed leading whitespace from function definitions; removed premature `COMPOSE_CMD` initialisation before `set_compose_cmd()` runs; removed deprecated `config` command from bash completion. (Fixes #1145)
+
+### Changed
+
+- **Duplicate Logic Elimination**: Extracted triplicated stopped-status output block in `stack.sh` into `_print_stopped_status()` helper. Extracted duplicated `opencode.json` model-clearing block in `engine.sh` into `_clear_opencode_model()` helper. (Fixes #1146)
+
+### Related Issues
+
+- Fixes #1144 - Dead script removal
+- Fixes #1145 - Shell script bugs
+- Fixes #1146 - Duplicate logic elimination
+
+---
+
+## [v1.1.11] - 2026-05-10
+
+### Added
+
+- **check-ascii-markdown CI Job**: New CI job blocks non-ASCII Unicode punctuation (em dashes, smart quotes, non-breaking spaces) in markdown files. Replaced all such characters with ASCII equivalents across 16 files. (Fixes #1127)
+
+### Fixed
+
+- **CI Workflow Hardening**: Replaced non-existent `actions/checkout@v6` with `@v4` across all 7 workflow files; added `.yamllint.yml` config making YAML validation blocking; removed duplicate `check-env` and `check-line-endings` jobs from `integration-tests.yml`; fixed `./aixcl --help` to `./aixcl help` in `quick-tests.yml`. (Fixes #1143)
+- **Vault Image Short-Name Resolution**: Qualified all Vault image references with `docker.io/hashicorp/vault:1.18` to fix pull failure after `prune --all`. (Fixes #1140)
+- **prune --all Reliability**: Added `stack stop` before force-removing containers in `prune --all` to prevent orphaned volumes. Added `PURGE` confirmation prompt with clear summary of destructive actions. Fixed bash completion script path after `prune --all` restores pre-install state. (Fixes #1133, #1130)
+
+### Changed
+
+- **Quick Start Reordering**: Moved bash completion install into Quick Start Step 2 alongside shell reload and renumbered subsequent steps. (Fixes #1136)
+
+### Related Issues
+
+- Fixes #1127 - check-ascii-markdown CI job
+- Fixes #1130 - prune --all state restoration
+- Fixes #1133 - prune --all orphaned volumes
+- Fixes #1136 - bash completion Quick Start placement
+- Fixes #1140 - vault image short-name resolution
+- Fixes #1143 - CI workflow audit
 
 ---
 
