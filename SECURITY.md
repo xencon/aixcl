@@ -409,6 +409,7 @@ Is activity in threat detector rules? (future system)
 ### Phase 3 (Q3 2026)
 
 - [x] Vault integration (HashiCorp)
+- [x] Vault production mode (persistent storage, GPG-encrypted unseal keys)
 - [ ] mTLS between services
 - [ ] Zero-trust service mesh
 - [ ] Red team exercises
@@ -419,6 +420,70 @@ Is activity in threat detector rules? (future system)
 - [ ] PCI DSS audit
 - [ ] SOC 2 Type II certification
 - [ ] Bug bounty program
+
+---
+
+## Vault Unseal Key Management
+
+Vault now runs in **production server mode** (not `-dev`). Secrets persist to the
+`aixcl-vault-data` volume across restarts. This requires operator management of unseal
+keys and the root token.
+
+### How Keys Are Stored
+
+On first `./aixcl vault init` (or `./aixcl stack start` with Vault enabled):
+
+1. `vault operator init` generates **5 unseal key shares** (threshold: 3-of-5) and a **root token**.
+2. Both are GPG-encrypted with your git signing key and written to `.security/`:
+   - `.security/vault-keys.gpg` - encrypted JSON containing all 5 key shares
+   - `.security/vault-root-token.gpg` - encrypted root token string
+3. Vault is immediately unsealed using key shares 1, 2, and 3.
+
+The `.security/` directory is gitignored. The files are mode 600 and the directory is mode 700.
+
+### Unseal on Restart
+
+After a stack restart, Vault starts **sealed**. `stack start` automatically unseals it by
+decrypting the key file using your GPG key. If your GPG key is not in the keyring (e.g.
+fresh login, key on a hardware token), the auto-unseal will fail and you will see:
+
+```
+[ERROR] Failed to decrypt unseal keys. Is your GPG key available?
+  Check: gpg --list-secret-keys
+```
+
+Manually unseal with:
+
+```bash
+./aixcl vault unseal
+```
+
+### Backup Requirement (Critical)
+
+**Loss of all 5 key shares = permanent loss of all Vault data** (passwords, leases, audit
+log, policies). There is no recovery path.
+
+Recommended backup procedure:
+
+```bash
+# Export your GPG private key to a secure offline location
+gpg --export-secret-keys --armor <your-key-id> > my-gpg-key.asc
+
+# Copy .security/vault-keys.gpg to a separate encrypted USB or offline store
+cp .security/vault-keys.gpg /path/to/secure/location/
+```
+
+The backup remains encrypted (requires your GPG private key to decrypt), so storing it
+on a USB drive or a separate encrypted volume is safe.
+
+### Root Token Usage
+
+The root token is used only by `./aixcl vault init` and the Vault bootstrap agents. It is
+never written to plaintext files or shell history. Scripts load it on demand by calling
+`gpg --decrypt .security/vault-root-token.gpg`.
+
+For day-to-day operations, prefer scoped AppRole tokens (already configured for
+`aixcl-open-webui` and `aixcl-postgres-exporter`) over the root token.
 
 ---
 
