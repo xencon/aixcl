@@ -7,6 +7,7 @@ This directory contains configuration files for AIXCL.
 ```
 config/
 ├── .env.example           # Template for environment variables
+├── opencode.json.example  # Template for OpenCode AI configuration
 ├── README.md              # This file
 └── profiles/
     ├── bld.env            # Observability-focused profile
@@ -20,6 +21,18 @@ Template for environment configuration. Copy this to `.env` in the project root:
 
 ```bash
 cp config/.env.example .env
+```
+
+### opencode.json.example
+Template for OpenCode configuration. Defines the AIXCL local provider pointing to the Ollama
+OpenAI-compatible endpoint. The live `opencode.json` is gitignored because `./aixcl models add`
+writes model entries into it at runtime.
+
+`./aixcl stack init` copies this file to `opencode.json` automatically on first run. To reset
+a customised config back to the vanilla state:
+
+```bash
+cp config/opencode.json.example opencode.json
 ```
 
 ### profiles/*.env

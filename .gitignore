@@ -109,6 +109,9 @@ build/
 opencode/config.json
 !opencode/config.json.example
 
+# OpenCode runtime config (models added via `aixcl` CLI; template at config/opencode.json.example)
+opencode.json
+
 # System files
 Thumbs.db
 ehthumbs.db
