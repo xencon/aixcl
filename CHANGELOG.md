@@ -4,6 +4,29 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.11] - 2026-05-11
+
+### Security
+
+- **Vault Production Mode**: Migrated Vault from ephemeral dev mode to production file-storage backend with persistent secrets across restarts. Unseal keys (5-of-5, threshold 3) and root token are GPG-encrypted and stored in `.security/` (gitignored). Stack start auto-unseals using the operator's GPG key. (Fixes #1159)
+- **Dynamic Credential Revocation Hardening**: Vault database roles now include `revocation_statements` (`REASSIGN OWNED BY`, `DROP OWNED BY`, `DROP ROLE`) preventing SQLSTATE 2BP01 shutdown loops when dynamic roles own PostgreSQL objects. (Fixes #1159)
+- **Postgres Connection Config Sync**: Vault database engine always re-POSTs the current PostgreSQL password on init, preventing authentication failures after password changes. Previously skipped if config already existed. (Fixes #1159)
+
+### Fixed
+
+- **Bootstrap Agent Cascade Seal**: Bootstrap agent refresh no longer seals Vault via `depends_on` restart cascade -- `--no-deps` flag added to agent recreate. (Fixes #1159)
+- **Shell Script Execute Bits**: Restored execute permissions on `vault-init.sh`, `completion/aixcl.bash`, and all runtime shell scripts stripped by editor tooling. (Fixes #1159)
+
+### Changed
+
+- **Bash Autocomplete**: Added missing vault subcommands (`start`, `stop`, `restart`, `unseal`, `logs`) to `completion/aixcl.bash`. (Fixes #1159)
+
+### Related Issues
+
+- Fixes #1159 - Vault production mode
+
+---
+
 ## [v1.1.10] - 2026-05-09
 
 ### Added
