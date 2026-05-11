@@ -435,8 +435,8 @@ On first `./aixcl vault init` (or `./aixcl stack start` with Vault enabled):
 
 1. `vault operator init` generates **5 unseal key shares** (threshold: 3-of-5) and a **root token**.
 2. Both are GPG-encrypted with your git signing key and written to `.security/`:
-   - `.security/vault-keys.gpg` — encrypted JSON containing all 5 key shares
-   - `.security/vault-root-token.gpg` — encrypted root token string
+   - `.security/vault-keys.gpg` - encrypted JSON containing all 5 key shares
+   - `.security/vault-root-token.gpg` - encrypted root token string
 3. Vault is immediately unsealed using key shares 1, 2, and 3.
 
 The `.security/` directory is gitignored. The files are mode 600 and the directory is mode 700.
