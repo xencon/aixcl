@@ -46,9 +46,9 @@ services:
     network_mode: host
     restart: unless-stopped
     healthcheck:
-      # sealedok/uninitok: container is healthy as soon as API responds,
-      # even before operator init or unseal. vault-init.sh handles those steps.
-      test: ["CMD", "sh", "-c", "wget -qO- 'http://127.0.0.1:8200/v1/sys/health?sealedok=true&uninitok=true' >/dev/null 2>&1"]
+      # seal-status always returns 200 regardless of seal/init state.
+      # vault-init.sh handles operator init and unseal separately.
+      test: ["CMD", "sh", "-c", "wget -qO- 'http://127.0.0.1:8200/v1/sys/seal-status' >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
