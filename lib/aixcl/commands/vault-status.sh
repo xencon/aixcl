@@ -6,8 +6,16 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../.. && pwd)}"
+
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${VAULT_DEV_TOKEN:-aixcl-dev-token}"
+
+# Load root token from GPG-encrypted store if not already in environment
+_VAULT_TOKEN_FILE="${SCRIPT_DIR}/.security/vault-root-token.gpg"
+if [ -z "${VAULT_TOKEN:-}" ] && [ -f "$_VAULT_TOKEN_FILE" ]; then
+    VAULT_TOKEN=$(gpg --quiet --decrypt "$_VAULT_TOKEN_FILE" 2>/dev/null) || VAULT_TOKEN=""
+fi
+VAULT_TOKEN="${VAULT_TOKEN:-}"
 
 export VAULT_ADDR
 export VAULT_TOKEN
@@ -53,30 +61,26 @@ check_container() {
 # Check Vault API health using REST API
 check_vault_health() {
     local health_status
-    health_status=$(curl -sf "${VAULT_ADDR}/v1/sys/health" 2>/dev/null || echo '{}')
-    
+    health_status=$(curl -sf "${VAULT_ADDR}/v1/sys/health?sealedok=true&uninitok=true" 2>/dev/null || echo '{}')
+
     if [ -z "$health_status" ] || [ "$health_status" = '{}' ]; then
         echo -e "Vault API:            ${RED}Not Responding${NC}"
         return 1
     fi
-    
-    # In dev mode, Vault doesn't require unsealing
-    local version
-    version=$(echo "$health_status" | jq -r '.version // ""' 2>/dev/null)
-    if [ -n "$version" ]; then
-        echo -e "Vault API:            ${GREEN}Healthy (Dev Mode)${NC}"
-        return 0
-    fi
-    
-    local sealed
+
+    local initialized sealed
+    initialized=$(echo "$health_status" | jq -r '.initialized // false' 2>/dev/null)
     sealed=$(echo "$health_status" | jq -r '.sealed // "unknown"' 2>/dev/null || echo "unknown")
-    
-    if [ "$sealed" = "false" ]; then
+
+    if [ "$initialized" = "false" ]; then
+        echo -e "Vault API:            ${YELLOW}Not Initialized (run: ./aixcl vault init)${NC}"
+        return 1
+    elif [ "$sealed" = "true" ]; then
+        echo -e "Vault API:            ${YELLOW}Sealed (run: ./aixcl vault unseal)${NC}"
+        return 1
+    elif [ "$sealed" = "false" ]; then
         echo -e "Vault API:            ${GREEN}Healthy (Unsealed)${NC}"
         return 0
-    elif [ "$sealed" = "true" ]; then
-        echo -e "Vault API:            ${YELLOW}Sealed${NC}"
-        return 1
     else
         echo -e "Vault API:            ${YELLOW}Unknown State${NC}"
         return 1
@@ -260,7 +264,7 @@ show_vault_info() {
     echo ""
     echo "Vault Configuration:"
     echo "  Address: $VAULT_ADDR"
-    echo "  Token:   ${VAULT_TOKEN:0:8}... (dev mode)"
+    echo "  Token:   ${VAULT_TOKEN:0:8}... (loaded from .security/)"
     echo ""
     
     # Try to get version from health endpoint
