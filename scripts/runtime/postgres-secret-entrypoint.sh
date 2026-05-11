@@ -88,12 +88,12 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
 
     if [ "$pg_ready" = false ]; then
         echo "[Vault] Warning: PostgreSQL did not become ready, skipping password sync"
+    elif [ -z "${OLD_POSTGRES_PASSWORD:-}" ]; then
+        # No OLD_POSTGRES_PASSWORD — normal restart with no rotation.
+        # The DB was initialized with VAULT_PASS; no ALTER USER needed.
+        echo "[Vault] No OLD_POSTGRES_PASSWORD set — DB already uses Vault password, skipping sync"
     else
-        if [ -z "${OLD_POSTGRES_PASSWORD:-}" ]; then
-            echo "[Vault] ERROR: OLD_POSTGRES_PASSWORD is not set — cannot authenticate to sync password"
-            exit 1
-        fi
-        # Connect with OLD password to ALTER USER to NEW password
+        # Rotation case: connect with OLD password and change to new Vault password.
         export PGPASSWORD="${OLD_POSTGRES_PASSWORD}"
         echo "[Vault] Updating PostgreSQL admin password to match Vault secret..."
         psql -U "${POSTGRES_USER}" -h 127.0.0.1 -d "${POSTGRES_DATABASE}" \
@@ -105,12 +105,14 @@ if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
     echo "[Vault] Stopping temporary PostgreSQL instance..."
     pg_ctl -D "$PGDATA" stop -m fast
 
-    # Restore original password for the official entrypoint
-    if [ -z "${OLD_POSTGRES_PASSWORD:-}" ]; then
-        echo "[Vault] ERROR: OLD_POSTGRES_PASSWORD is not set — cannot restore for official entrypoint"
-        exit 1
+    # Set password for the official entrypoint.
+    # Rotation: restore OLD so postgres can verify data-dir ownership.
+    # Normal restart: use VAULT_PASS directly (it matches the data dir).
+    if [ -n "${OLD_POSTGRES_PASSWORD:-}" ]; then
+        POSTGRES_PASSWORD="${OLD_POSTGRES_PASSWORD}"
+    else
+        POSTGRES_PASSWORD="$VAULT_PASS"
     fi
-    POSTGRES_PASSWORD="${OLD_POSTGRES_PASSWORD}"
     export POSTGRES_PASSWORD
 
     echo "[Vault] Starting PostgreSQL with official entrypoint..."
