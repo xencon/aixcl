@@ -96,7 +96,7 @@ vault read database/creds/aixcl-app
 - **Permissions**: USAGE/CREATE on public schema; SELECT, INSERT, UPDATE, DELETE on all tables
 - **TTL**: 1 hour (auto-rotates)
 - **Max TTL**: 24 hours
-- **Revocation**: `REASSIGN OWNED BY` + `DROP OWNED BY` + `DROP ROLE` — handles roles that own tables
+- **Revocation**: `REASSIGN OWNED BY` + `DROP OWNED BY` + `DROP ROLE` -- handles roles that own tables
 
 ### aixcl-admin (Maintenance Credentials)
 
@@ -111,15 +111,15 @@ Vault uses a **5-of-5 Shamir key split with a 3-of-5 unseal threshold**. On firs
 
 1. `vault operator init` generates 5 key shares and a root token
 2. Both are GPG-encrypted with your git signing key and written to `.security/`:
-   - `.security/vault-keys.gpg` — encrypted JSON with all 5 key shares
-   - `.security/vault-root-token.gpg` — encrypted root token
+   - `.security/vault-keys.gpg` -- encrypted JSON with all 5 key shares
+   - `.security/vault-root-token.gpg` -- encrypted root token
 3. Vault is immediately unsealed using shares 1, 2, and 3
 
 The `.security/` directory is gitignored, mode 700, files mode 600.
 
 **Critical**: Loss of all key shares means permanent loss of all Vault data. Back up your GPG private key and `.security/vault-keys.gpg` to a secure offline location.
 
-For full key management guidance see [SECURITY.md — Vault Unseal Key Management](/SECURITY.md).
+For full key management guidance see [SECURITY.md -- Vault Unseal Key Management](/SECURITY.md).
 
 ## Security Benefits
 
@@ -166,7 +166,7 @@ No static passwords in config
 
 ### Vault Won't Start / Keeps Shutting Down
 
-The most common cause is expired dynamic leases from a prior session. Vault attempts to revoke them on unseal and shuts down if revocation fails (SQLSTATE 2BP01 — role owns objects).
+The most common cause is expired dynamic leases from a prior session. Vault attempts to revoke them on unseal and shuts down if revocation fails (SQLSTATE 2BP01 -- role owns objects).
 
 **Diagnosis**:
 ```bash
@@ -253,7 +253,7 @@ podman logs -f vault
 - [Vault PostgreSQL Database Secrets Engine](https://developer.hashicorp.com/vault/docs/secrets/databases/postgresql)
 - [Vault AppRole Authentication](https://developer.hashicorp.com/vault/docs/auth/approle)
 - [Vault Agent with Auto-Auth](https://developer.hashicorp.com/vault/docs/agent/autoauth)
-- [SECURITY.md — Vault Unseal Key Management](/SECURITY.md)
+- [SECURITY.md -- Vault Unseal Key Management](/SECURITY.md)
 
 ---
 
