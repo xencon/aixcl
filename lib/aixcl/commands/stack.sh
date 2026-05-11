@@ -656,7 +656,7 @@ function start() {
                         export VAULT_TOKEN="$_vtoken"
                         echo ""
                         echo "Refreshing bootstrap agents with vault token..."
-                        run_compose up -d --force-recreate \
+                        run_compose up -d --force-recreate --no-deps \
                             vault-agent-postgres-bootstrap \
                             vault-agent-openwebui-bootstrap \
                             vault-agent-pgadmin-bootstrap \
