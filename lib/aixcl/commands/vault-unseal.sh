@@ -30,7 +30,7 @@ is_vault_api_ready() {
 
 is_vault_sealed() {
     local sealed
-    sealed=$(curl -sf "${VAULT_ADDR}/v1/sys/health?sealedok=true" \
+    sealed=$(curl -s "${VAULT_ADDR}/v1/sys/seal-status" \
         2>/dev/null | jq -r '.sealed // "unknown"')
     [ "$sealed" = "true" ]
 }

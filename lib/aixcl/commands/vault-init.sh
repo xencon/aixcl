@@ -79,9 +79,9 @@ is_vault_running() {
 # Returns true if the Vault HTTP API is responding (even when sealed/uninitialized)
 is_vault_api_ready() {
     local code
-    code=$(curl -sf -o /dev/null -w "%{http_code}" \
-        "${VAULT_ADDR}/v1/sys/health?sealedok=true&uninitok=true" 2>/dev/null || echo "000")
-    [ "$code" != "000" ]
+    code=$(curl -s -o /dev/null -w "%{http_code}" \
+        "${VAULT_ADDR}/v1/sys/seal-status" 2>/dev/null || echo "000")
+    [ "$code" = "200" ]
 }
 
 # Returns true if Vault has been operator-init'd
@@ -94,7 +94,7 @@ is_vault_initialized() {
 # Returns true if Vault is currently sealed
 is_vault_sealed() {
     local sealed
-    sealed=$(curl -sf "${VAULT_ADDR}/v1/sys/health?sealedok=true&uninitok=true" \
+    sealed=$(curl -s "${VAULT_ADDR}/v1/sys/seal-status" \
         2>/dev/null | jq -r '.sealed // "unknown"')
     [ "$sealed" = "true" ]
 }
