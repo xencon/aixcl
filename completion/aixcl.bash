@@ -159,7 +159,7 @@ _aixcl_complete() {
             fi
             ;;
         'vault')
-            local vault_actions="init status credentials passwords rotate"
+            local vault_actions="start stop restart init unseal status credentials passwords rotate logs"
             mapfile -t COMPREPLY < <(compgen -W "$vault_actions" -- "$cur")
             return 0
             ;;
