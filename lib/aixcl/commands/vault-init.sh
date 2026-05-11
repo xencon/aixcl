@@ -411,15 +411,11 @@ is_postgres_configured() {
 
 configure_postgres_connection() {
     delete_broken_postgres_config
-    if is_postgres_configured; then
-        log_info "PostgreSQL connection already configured (skipping)"
-        return 0
-    fi
-    log_info "Configuring PostgreSQL connection..."
 
     local postgres_password=""
     local postgres_user="${POSTGRES_USER:-admin}"
 
+    # Always read the current password from Vault KV (authoritative) or the secrets volume
     postgres_password=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null | jq -r '.data.data.password // empty')
     if [ -z "$postgres_password" ] && command -v podman >/dev/null 2>&1; then
@@ -433,6 +429,9 @@ configure_postgres_connection() {
         postgres_password="admin"
     fi
 
+    # Always (re)configure — idempotent POST updates credentials if already present.
+    # This ensures the stored password stays in sync after postgres password rotations.
+    log_info "Configuring PostgreSQL connection (syncing credentials)..."
     curl -sf -X POST "${VAULT_ADDR}/v1/database/config/postgresql" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         -H "Content-Type: application/json" \
@@ -442,7 +441,7 @@ configure_postgres_connection() {
             \"connection_url\": \"postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable\",
             \"username\": \"${postgres_user}\",
             \"password\": \"${postgres_password}\"
-        }" >/dev/null 2>&1 || log_warn "Failed to configure PostgreSQL connection (may already exist)"
+        }" >/dev/null 2>&1 || log_warn "Failed to configure PostgreSQL connection"
 }
 
 role_exists() {
@@ -462,6 +461,7 @@ create_app_role() {
         -d '{
             "db_name": "postgresql",
             "creation_statements": "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '"'"'{{password}}'"'"' VALID UNTIL '"'"'{{expiration}}'"'"'; GRANT USAGE, CREATE ON SCHEMA public TO \"{{name}}\"; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
+            "revocation_statements": "REASSIGN OWNED BY \"{{name}}\" TO CURRENT_USER; DROP OWNED BY \"{{name}}\"; DROP ROLE IF EXISTS \"{{name}}\";",
             "default_ttl": "1h",
             "max_ttl": "24h"
         }' >/dev/null 2>&1 || log_warn "Failed to create app role"
