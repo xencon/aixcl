@@ -18,7 +18,7 @@ services:
       - aixcl-vault-logs:/vault/logs
       - ../vault/vault.hcl:/vault/config/vault.hcl:ro
       - ../scripts/vault/init-vault.sh:/usr/local/bin/init-vault.sh:ro
-    command: server -config=/vault/config/vault.hcl
+    command: server
     network_mode: host
     healthcheck:
       test: ["CMD", "sh", "-c", "wget -qO- 'http://127.0.0.1:8200/v1/sys/health?sealedok=true&uninitok=true' >/dev/null 2>&1"]

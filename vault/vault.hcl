@@ -15,3 +15,9 @@ listener "tcp" {
 
 api_addr = "http://127.0.0.1:8200"
 ui       = true
+
+# mlock prevents memory being swapped to disk but requires elevated kernel
+# privileges. Rootless Podman and WSL do not grant these, so we disable it.
+# Compensating control: the host filesystem is the security boundary here,
+# not kernel memory locking.
+disable_mlock = true

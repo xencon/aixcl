@@ -42,7 +42,7 @@ services:
       - aixcl-vault-logs:/vault/logs
       - ../vault/vault.hcl:/vault/config/vault.hcl:ro
       - ../scripts/vault/init:/vault/init:ro
-    command: server -config=/vault/config/vault.hcl
+    command: server
     network_mode: host
     restart: unless-stopped
     healthcheck:
