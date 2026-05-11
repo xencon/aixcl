@@ -363,8 +363,8 @@ Is activity in threat detector rules? (future system)
 |-------------|--------|-----|------|
 | 1. Network Security | ⚠️ Partial | Host networking | Compensating controls documented |
 | 2. System Hardening | ⚠️ Partial | Privileged containers | Remove cAdvisor, secure Alloy |
-| 3. Data Protection | ⚠️ Partial | Plaintext .env | Docker secrets (in progress) |
-| 4. Encryption | ⚠️ Partial | PostgreSQL SSL | Enable SSL (in progress) |
+| 3. Data Protection | ✅ Implemented | - | Vault secrets management (Phase 1.6) |
+| 4. Encryption | ✅ Implemented | - | PostgreSQL SSL enabled (Phase 1.6) |
 | 6. Secure Development | ✅ Implemented | - | Issue-First workflow, code review |
 | 8. Authentication | ✅ Implemented | - | Human approval, RBAC |
 | 10. Logging | ✅ Implemented | - | Comprehensive audit trail |
@@ -384,9 +384,9 @@ Is activity in threat detector rules? (future system)
 
 ### Phase 1.5 (Completed - April 2026)
 
-- [x] LLM firewall agent
+- [ ] LLM firewall agent
 - [x] Host firewall rules
-- [x] Threat detection agent
+- [ ] Threat detection agent
 - [x] Blast radius controller
 - [x] SECURITY.md (this document)
 
@@ -408,7 +408,7 @@ Is activity in threat detector rules? (future system)
 
 ### Phase 3 (Q3 2026)
 
-- [ ] Vault integration (HashiCorp)
+- [x] Vault integration (HashiCorp)
 - [ ] mTLS between services
 - [ ] Zero-trust service mesh
 - [ ] Red team exercises
@@ -426,13 +426,9 @@ Is activity in threat detector rules? (future system)
 
 | Role | Responsibility | Contact |
 |------|---------------|---------|
-| Security Lead | Overall security strategy | security@company.com |
-| Incident Response | 24/7 incident handling | incident@company.com |
-| Compliance | Regulatory compliance | compliance@company.com |
-| Red Team | Offensive security testing | redteam@company.com |
+| Maintainer | Security strategy, incident response, compliance | @sbadakhc (GitHub) |
 
-**Emergency**: Call on-call via PagerDuty  
-**Non-Emergency**: Slack #security
+**Emergency / Non-Emergency**: Open a security advisory at https://github.com/xencon/aixcl/security/advisories
 
 ---
 
