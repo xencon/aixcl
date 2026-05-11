@@ -661,6 +661,11 @@ function start() {
                             vault-agent-openwebui-bootstrap \
                             vault-agent-pgadmin-bootstrap \
                             vault-agent-grafana-bootstrap 2>/dev/null || true
+                        echo ""
+                        echo "Refreshing non-bootstrap vault agents with vault token..."
+                        run_compose up -d --force-recreate --no-deps \
+                            vault-agent-postgres \
+                            vault-agent-openwebui 2>/dev/null || true
                     fi
                 fi
 

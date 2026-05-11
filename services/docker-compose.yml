@@ -48,7 +48,9 @@ services:
     healthcheck:
       # seal-status always returns 200 regardless of seal/init state.
       # vault-init.sh handles operator init and unseal separately.
-      test: ["CMD", "sh", "-c", "wget -qO- 'http://127.0.0.1:8200/v1/sys/seal-status' >/dev/null 2>&1"]
+      # NOTE: CMD-SHELL is used here because ["CMD", "sh", "-c", ...] array syntax
+      # silently fails with exit 1 and no output inside the container (#1167).
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8200/v1/sys/seal-status >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,6 +71,7 @@ services:
       - ../scripts/vault/vault-agent.sh:/usr/local/bin/vault-agent.sh:ro
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/vault-agent.sh postgres
     network_mode: host
     depends_on:
@@ -90,6 +93,7 @@ services:
       - ../scripts/vault/vault-agent-openwebui.sh:/usr/local/bin/vault-agent-openwebui.sh:ro
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/vault-agent-openwebui.sh
     network_mode: host
     depends_on:
