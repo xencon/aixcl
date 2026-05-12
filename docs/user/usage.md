@@ -33,8 +33,12 @@ Deprecated (not supported):
 | Stop stack | `./aixcl stack stop` |
 | Add model | `./aixcl models add <model>` |
 | List models | `./aixcl models list` |
+| Vault status | `./aixcl vault status` |
+| Vault unseal | `./aixcl vault unseal` |
+| Vault init | `./aixcl vault init` |
 | Vault passwords | `./aixcl vault passwords` |
 | Vault credentials | `./aixcl vault credentials` |
+| Vault logs | `./aixcl vault logs [n]` |
 
 ## Architecture
 
