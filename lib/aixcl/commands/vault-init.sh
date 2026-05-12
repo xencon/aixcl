@@ -50,7 +50,8 @@ load_vault_token() {
     fi
     # Ensure GPG_TTY is set so passphrase prompts work (fixes #1169)
     if [ -z "${GPG_TTY:-}" ]; then
-        export GPG_TTY=$(tty 2>/dev/null || true)
+        GPG_TTY=$(tty 2>/dev/null || true)
+        export GPG_TTY
     fi
     local token
     token=$(gpg --quiet --decrypt "$VAULT_TOKEN_FILE" 2>/dev/null) || {
