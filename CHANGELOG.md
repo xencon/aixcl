@@ -4,6 +4,106 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.15] - 2026-05-12
+
+### Fixed
+
+- **Harden Vault init error handling**: Added `wait_for_postgres()` to ensure PostgreSQL is ready before configuring Vault database engine. Hardened `enable_database_engine()` and `configure_postgres_connection()` to fail hard on curl errors instead of silently swallowing failures. (Fixes #1170)
+- **Vault health check always unhealthy**: Fixed Docker container health check syntax from broken `["CMD", "sh", "-c", ...]` array to `["CMD-SHELL", ...]`, resolving permanent unhealthy status. (Fixes #1167)
+- **Vault agents using hardcoded dev token**: Replaced hardcoded `aixcl-dev-token` in `vault-agent.sh` and `vault-agent-openwebui.sh` with `${VAULT_TOKEN}` from environment. (Fixes #1171)
+- **GPG vault token decryption fails without TTY**: Added automatic `GPG_TTY` export in `load_vault_token()` for non-interactive passphrase prompts. (Fixes #1169)
+- **Non-bootstrap agents not recreated after init**: Added recreation of `vault-agent-postgres` and `vault-agent-openwebui` in `stack.sh` after Vault init completes. (Fixes #1168)
+
+### Infrastructure
+
+- **Vault agent environment**: Added `VAULT_TOKEN` environment variable to `vault-agent-postgres` and `vault-agent-openwebui` services in docker-compose, ensuring agents receive the real token. (Fixes #1171)
+
+---
+
+## [v1.1.14] - 2026-05-11
+
+### Fixed
+
+- **vault_status jq false/unreachable bug**: `vault_status` used `.sealed // "unreachable"` which always evaluated to `"unreachable"` when Vault was unsealed (jq treats `false` as falsy in the `//` alternative operator). This silently caused `vault passwords` and `vault credentials` to exit without output. Fixed by replacing `//` with `if has("sealed") then (.sealed | tostring) else "unreachable" end`. (Fixes #1159)
+
+### Related Issues
+
+- Fixes #1159 - vault_status jq treats false as unreachable
+
+---
+
+## [v1.1.13] - 2026-05-11
+
+### Security
+
+- **Vault Production Mode**: Migrated Vault from ephemeral dev mode to production file-storage backend with persistent secrets across restarts. Unseal keys (5-of-5, threshold 3) and root token are GPG-encrypted and stored in `.security/` (gitignored). Stack start auto-unseals using the operator's GPG key. (Fixes #1159)
+- **Dynamic Credential Revocation Hardening**: Vault database roles now include `revocation_statements` (`REASSIGN OWNED BY`, `DROP OWNED BY`, `DROP ROLE`) preventing SQLSTATE 2BP01 shutdown loops when dynamic roles own PostgreSQL objects. (Fixes #1159)
+- **Postgres Connection Config Sync**: Vault database engine always re-POSTs the current PostgreSQL password on init, preventing authentication failures after password changes. Previously skipped if config already existed. (Fixes #1159)
+
+### Fixed
+
+- **Bootstrap Agent Cascade Seal**: Bootstrap agent refresh no longer seals Vault via `depends_on` restart cascade -- `--no-deps` flag added to agent recreate. (Fixes #1159)
+- **Shell Script Execute Bits**: Restored execute permissions on `vault-init.sh`, `completion/aixcl.bash`, and all runtime shell scripts stripped by editor tooling. (Fixes #1159)
+
+### Changed
+
+- **Bash Autocomplete**: Added missing vault subcommands (`start`, `stop`, `restart`, `unseal`, `logs`) to `completion/aixcl.bash`. (Fixes #1159)
+
+### Related Issues
+
+- Fixes #1159 - Vault production mode
+
+---
+
+## [v1.1.12] - 2026-05-10
+
+### Removed
+
+- **Dead Script Cleanup**: Deleted `scripts/setup-rootless-env.sh` (duplicate of `setup-podman-rootless.sh` with bugs), `scripts/runtime/openwebui-v2.sh` (unreferenced), and `scripts/runtime/openwebui.sh` (mounted but never executed). Removed dead volume mount from `docker-compose.yml`. Rewrote `scripts/README.md` to reflect actual directory structure. (Fixes #1144)
+
+### Fixed
+
+- **Shell Script Bugs**: Removed macOS `sed -i ''` dead code from `stack.sh`; fixed profile display bug in `get_profile_services`; corrected startup message; added missing services to `ALL_SERVICES` in `common.sh` (`vault-agent-postgres`, `vault-agent-openwebui`, `vault-agent-grafana-bootstrap`, `alertmanager`); removed leading whitespace from function definitions; removed premature `COMPOSE_CMD` initialisation before `set_compose_cmd()` runs; removed deprecated `config` command from bash completion. (Fixes #1145)
+
+### Changed
+
+- **Duplicate Logic Elimination**: Extracted triplicated stopped-status output block in `stack.sh` into `_print_stopped_status()` helper. Extracted duplicated `opencode.json` model-clearing block in `engine.sh` into `_clear_opencode_model()` helper. (Fixes #1146)
+
+### Related Issues
+
+- Fixes #1144 - Dead script removal
+- Fixes #1145 - Shell script bugs
+- Fixes #1146 - Duplicate logic elimination
+
+---
+
+## [v1.1.11] - 2026-05-10
+
+### Added
+
+- **check-ascii-markdown CI Job**: New CI job blocks non-ASCII Unicode punctuation (em dashes, smart quotes, non-breaking spaces) in markdown files. Replaced all such characters with ASCII equivalents across 16 files. (Fixes #1127)
+
+### Fixed
+
+- **CI Workflow Hardening**: Replaced non-existent `actions/checkout@v6` with `@v4` across all 7 workflow files; added `.yamllint.yml` config making YAML validation blocking; removed duplicate `check-env` and `check-line-endings` jobs from `integration-tests.yml`; fixed `./aixcl --help` to `./aixcl help` in `quick-tests.yml`. (Fixes #1143)
+- **Vault Image Short-Name Resolution**: Qualified all Vault image references with `docker.io/hashicorp/vault:1.18` to fix pull failure after `prune --all`. (Fixes #1140)
+- **prune --all Reliability**: Added `stack stop` before force-removing containers in `prune --all` to prevent orphaned volumes. Added `PURGE` confirmation prompt with clear summary of destructive actions. Fixed bash completion script path after `prune --all` restores pre-install state. (Fixes #1133, #1130)
+
+### Changed
+
+- **Quick Start Reordering**: Moved bash completion install into Quick Start Step 2 alongside shell reload and renumbered subsequent steps. (Fixes #1136)
+
+### Related Issues
+
+- Fixes #1127 - check-ascii-markdown CI job
+- Fixes #1130 - prune --all state restoration
+- Fixes #1133 - prune --all orphaned volumes
+- Fixes #1136 - bash completion Quick Start placement
+- Fixes #1140 - vault image short-name resolution
+- Fixes #1143 - CI workflow audit
+
+---
+
 ## [v1.1.10] - 2026-05-09
 
 ### Added
@@ -413,12 +513,12 @@ Release Candidate 6 for v1.0.0. This release includes 15+ commits since RC5 focu
 - **Service Security Matrix**: Each hardened service now runs with minimal privileges:
   | Service | User | cap_drop | no-new-priv | read_only |
   |---------|------|----------|-------------|-----------|
-  | prometheus | default | ALL | ✅ | ✅ |
-  | grafana | default | ALL | ✅ | ❌* |
-  | loki | default | ALL | ✅ | ❌* |
-  | postgres-exporter | 65534:65534 | ALL | ✅ | ✅ |
-  | node-exporter | 65534:65534 | ALL | ✅ | ✅ |
-  | alloy | 12345:12345 | ALL | ✅ | ✅ |
+  | prometheus | default | ALL | [x] | [x] |
+  | grafana | default | ALL | [x] | [-]* |
+  | loki | default | ALL | [x] | [-]* |
+  | postgres-exporter | 65534:65534 | ALL | [x] | [x] |
+  | node-exporter | 65534:65534 | ALL | [x] | [x] |
+  | alloy | 12345:12345 | ALL | [x] | [x] |
   
   *\*Requires data volume writes*
 
@@ -460,6 +560,7 @@ Release Candidate 5 for v1.0.0. This release includes 27 commits since RC4 with 
 - Pre-created logs directory to prevent root ownership issues (#770)
 - Added PostgreSQL readiness check to Open WebUI startup sequence (#768)
 - Ensured CLI profile flag updates .env on fresh installations (#766)
+- Fixed pgAdmin connection and permission issues
 
 ### Fixed
 
@@ -607,7 +708,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 ### Documentation
 
 - Clarified OpenCode plugin omission from `RUNTIME_CORE_SERVICES`
-- Added assignee and PR labeling requirements to development workflow
+- Added assignee and labeling requirements to development workflow
 - Improved overall documentation consistency
 
 ---
@@ -760,4 +861,3 @@ None
 - Database credentials are managed via environment variables
 - Connection pooling with configurable pool size
 - Graceful degradation when database is unavailable (service opencodes without persistence)
-
