@@ -65,17 +65,6 @@ get_profile_services_for_profile() {
 }
 ```
 
-Also update the deprecated `PROFILE_SERVICES` array for backward compatibility:
-
-```bash
-declare -A PROFILE_SERVICES=(
-    [usr]="INFERENCE_ENGINE_PLACEHOLDER postgres"
-    [dev]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin"
-    [bld]="INFERENCE_ENGINE_PLACEHOLDER postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
-    [sys]="INFERENCE_ENGINE_PLACEHOLDER open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
-)
-```
-
 ## Profile Selection Guide
 
 | Profile | Purpose | Include Service If... |
@@ -94,7 +83,6 @@ Before submitting a PR, verify:
 - [ ] Health check configured
 - [ ] Security hardening applied (if compatible)
 - [ ] Service added to `get_profile_services_for_profile()` for each applicable profile
-- [ ] Service added to `PROFILE_SERVICES` array (backward compatibility)
 - [ ] Volume created in `volumes:` section (if needed)
 - [ ] Test with `./aixcl stack start --profile sys` - service starts
 - [ ] Test with `./aixcl stack status` - service shows as healthy
