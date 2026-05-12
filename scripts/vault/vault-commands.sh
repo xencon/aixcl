@@ -263,36 +263,38 @@ vault_passwords() {
     echo ""
 }
 
-# Main dispatcher
-case "${1:-}" in
-    status|info)
-        vault_info
-        ;;
-    credentials|creds)
-        vault_credentials
-        ;;
-    passwords|password)
-        vault_passwords
-        ;;
-    admin)
-        vault_admin_credentials
-        ;;
-    rotate)
-        vault_rotate
-        ;;
-    init)
-        vault_init
-        ;;
-    *)
-        echo "Usage: ./aixcl vault [command]"
-        echo ""
-        echo "Commands:"
-        echo "  status      - Show Vault status"
-        echo "  credentials - Get database credentials"
-        echo "  passwords   - Get bootstrap passwords from Vault KV"
-        echo "  admin       - Get admin credentials (short TTL)"
-        echo "  rotate      - Force credential rotation"
-        echo "  init        - Initialize Vault (one-time)"
-        echo ""
-        ;;
-esac
+# Main dispatcher -- only runs when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    case "${1:-}" in
+        status|info)
+            vault_info
+            ;;
+        credentials|creds)
+            vault_credentials
+            ;;
+        passwords|password)
+            vault_passwords
+            ;;
+        admin)
+            vault_admin_credentials
+            ;;
+        rotate)
+            vault_rotate
+            ;;
+        init)
+            vault_init
+            ;;
+        *)
+            echo "Usage: ./aixcl vault [command]"
+            echo ""
+            echo "Commands:"
+            echo "  status      - Show Vault status"
+            echo "  credentials - Get database credentials"
+            echo "  passwords   - Get bootstrap passwords from Vault KV"
+            echo "  admin       - Get admin credentials (short TTL)"
+            echo "  rotate      - Force credential rotation"
+            echo "  init        - Initialize Vault (one-time)"
+            echo ""
+            ;;
+    esac
+fi
