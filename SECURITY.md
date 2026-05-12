@@ -5,7 +5,7 @@
 This document outlines the security architecture for AIXCL in adversarial environments, including known security debt, compensating controls, and threat model.
 
 **Classification**: Internal Use Only  
-**Last Updated**: 2026-05-01  
+**Last Updated**: 2026-05-11  
 **Owner**: Security Team  
 **Review Cycle**: Quarterly
 
