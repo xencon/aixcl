@@ -28,7 +28,7 @@ vault_status() {
     health_response=$(curl -sf "${VAULT_ADDR}/v1/sys/health?sealedok=true&uninitok=true" 2>/dev/null || echo '{}')
 
     local sealed
-    sealed=$(echo "$health_response" | jq -r 'if has("sealed") then (.sealed | tostring) else "unreachable" end')
+    sealed=$(echo "$health_response" | jq -r '.sealed // "unreachable"')
 
     case "$sealed" in
         "false")

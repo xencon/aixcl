@@ -48,10 +48,16 @@ load_vault_token() {
     if [ ! -f "$VAULT_TOKEN_FILE" ]; then
         return 1
     fi
+    # Ensure GPG_TTY is set so passphrase prompts work (fixes #1169)
+    if [ -z "${GPG_TTY:-}" ]; then
+        GPG_TTY=$(tty 2>/dev/null || true)
+        export GPG_TTY
+    fi
     local token
     token=$(gpg --quiet --decrypt "$VAULT_TOKEN_FILE" 2>/dev/null) || {
         log_error "Failed to decrypt Vault root token from ${VAULT_TOKEN_FILE}"
         log_error "  Is your GPG key available? Check: gpg --list-secret-keys"
+        log_error "  Try: export GPG_TTY=\$(tty)"
         return 1
     }
     if [ -z "$token" ]; then
@@ -128,6 +134,32 @@ wait_for_vault() {
         retries=$((retries - 1))
     done
     log_error "Vault is still sealed after 60 seconds"
+    return 1
+}
+
+# Wait for PostgreSQL container to accept connections before configuring Vault DB engine
+wait_for_postgres() {
+    log_info "Waiting for PostgreSQL to be ready..."
+    local docker_bin=""
+    if command -v podman >/dev/null 2>&1; then
+        docker_bin="podman"
+    elif command -v docker >/dev/null 2>&1; then
+        docker_bin="docker"
+    else
+        log_warn "No container runtime found; skipping PostgreSQL readiness check"
+        return 0
+    fi
+
+    local retries=30
+    while [ $retries -gt 0 ]; do
+        if $docker_bin exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+            log_info "PostgreSQL is ready"
+            return 0
+        fi
+        sleep 2
+        retries=$((retries - 1))
+    done
+    log_error "PostgreSQL is not ready after 60 seconds"
     return 1
 }
 
@@ -386,7 +418,10 @@ enable_database_engine() {
     curl -sf -X POST "${VAULT_ADDR}/v1/sys/mounts/database" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d '{"type": "database"}' >/dev/null 2>&1 || true
+        -d '{"type": "database"}' >/dev/null 2>&1 || {
+        log_error "Failed to enable database secrets engine"
+        return 1
+    }
     log_info "Database secrets engine enabled"
 }
 
@@ -441,15 +476,11 @@ configure_postgres_connection() {
             \"connection_url\": \"postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable\",
             \"username\": \"${postgres_user}\",
             \"password\": \"${postgres_password}\"
-        }" >/dev/null 2>&1 || log_warn "Failed to configure PostgreSQL connection"
-}
-
-role_exists() {
-    local role_name="$1"
-    local role_data
-    role_data=$(curl -sf "${VAULT_ADDR}/v1/database/roles/$role_name" \
-        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null || true)
-    [ -n "$role_data" ] && echo "$role_data" | jq -e '.data' >/dev/null 2>&1
+        }" >/dev/null 2>&1 || {
+        log_error "Failed to configure PostgreSQL connection"
+        return 1
+    }
+    log_info "PostgreSQL connection configured"
 }
 
 create_app_role() {
@@ -464,7 +495,7 @@ create_app_role() {
             "revocation_statements": "REASSIGN OWNED BY \"{{name}}\" TO CURRENT_USER; DROP OWNED BY \"{{name}}\"; DROP ROLE IF EXISTS \"{{name}}\";",
             "default_ttl": "1h",
             "max_ttl": "24h"
-        }' >/dev/null 2>&1 || log_warn "Failed to create app role"
+        }' >/dev/null 2>&1 || true
 }
 
 create_admin_role() {
@@ -657,16 +688,18 @@ main() {
 
     # Configure secrets engines and roles (all idempotent)
     # NOTE: init_bootstrap_passwords must run before configure_postgres_connection
-    enable_database_engine
-    enable_kv_engine
-    init_bootstrap_passwords
-    configure_postgres_connection
-    create_app_role
-    create_admin_role
-    create_readonly_role
-    create_policies
-    enable_approle_auth
-    enable_audit_logging
+    # NOTE: PostgreSQL must be ready before the database engine tries to connect.
+    wait_for_postgres || return 1
+    enable_database_engine || return 1
+    enable_kv_engine || return 1
+    init_bootstrap_passwords || return 1
+    configure_postgres_connection || return 1
+    create_app_role || return 1
+    create_admin_role || return 1
+    create_readonly_role || return 1
+    create_policies || return 1
+    enable_approle_auth || return 1
+    enable_audit_logging || return 1
     test_credentials
 
     show_summary

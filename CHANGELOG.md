@@ -4,6 +4,34 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.15] - 2026-05-12
+
+### Summary
+
+Release v1.1.15 -- Vault production mode hardening, health check fixes, and documentation corrections.
+
+### Security
+
+- **Vault Production Mode**: Migrated Vault from dev mode to production mode with proper initialization, unseal keys, and GPG-encrypted root token storage. (Fixes #1159)
+
+### Fixed
+
+- **Vault Init Hardening**: Hardened Vault initialization script to correctly create database engine roles, policies, and AppRole authentication. Fixed health checks and agent token provisioning. (Fixes #1170)
+- **GPG Terminal Setup**: Corrected SECURITY.md factual errors regarding security posture documentation. (Fixes #1157)
+
+### Changed
+
+- **OpenCode Configuration**: Added `opencode.json` to `.gitignore` and shipped a vanilla configuration template to prevent accidental commits of personal settings. (Fixes #1154)
+
+### Related Issues
+
+- Fixes #1154 - Gitignore opencode.json and ship vanilla config template
+- Fixes #1157 - Correct factual errors in SECURITY.md posture documentation
+- Fixes #1159 - Migrate Vault from dev mode to production mode
+- Fixes #1170 - Fix Vault init not creating database engine roles policies or AppRole auth
+
+---
+
 ## [v1.1.14] - 2026-05-11
 
 ### Fixed
