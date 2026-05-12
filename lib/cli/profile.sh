@@ -56,12 +56,6 @@ get_profile_services_for_profile() {
     esac
 }
 
-# shellcheck disable=SC2034
-declare -A PROFILE_SERVICES=(
-    [bld]="INFERENCE_ENGINE_PLACEHOLDER vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
-    [sys]="INFERENCE_ENGINE_PLACEHOLDER vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-openwebui vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap"
-)
-
 # Profile database storage settings
 # All profiles use database storage for persistence
 declare -A PROFILE_DB_STORAGE=(
