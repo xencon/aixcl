@@ -12,35 +12,39 @@ Release v1.1.16 -- Open WebUI update, rootless Podman verification, and workflow
 
 ### Added
 
-- **Rootless Podman Verification**: `./aixcl utils check-env` now automatically displays the Podman rootless status during environment checks, mirroring the manual verification step in README.md. (Fixes #1181)
-- **Emergency Workflow Override Protocol**: Documented explicit authorization mechanism for proceeding without a pre-existing issue. Requires human operator instruction, retroactive documentation, and `[OVERRIDE]` commit prefix. (Fixes #1193)
-- **Human in the Loop Policy**: Formalized that Agent fills `[x]` for agent-completed checklist items, while human fills `[x]` for manual verification items. The checklist serves as a gate, not passive decoration. (Fixes #1193)
+- [x] **Rootless Podman Verification**: `./aixcl utils check-env` now automatically displays the Podman rootless status during environment checks, mirroring the manual verification step in README.md. (Fixes #1181)
+- [x] **Emergency Workflow Override Protocol**: Documented explicit authorization mechanism for proceeding without a pre-existing issue. Requires human operator instruction, retroactive documentation, and `[OVERRIDE]` commit prefix. (Fixes #1193)
+- [x] **Human in the Loop Policy**: Formalized that Agent fills `[x]` for agent-completed checklist items, while human fills `[x]` for manual verification items. The checklist serves as a gate, not passive decoration. (Fixes #1193)
 
 ### Changed
 
-- **Open WebUI Upgrade**: Bumped Open WebUI from v0.9.4 to v0.9.5 in `services/docker-compose.yml`. (Fixes #1185)
-- **Agent Terminology**: Replaced "AI" with "Agent" across all workflow documentation for clarity and precision. (Fixes #1193)
-- **Wrapper Scripts as Standard**: Elevated `create-issue.sh` and `create-pr.sh` from "recommended" to canonical usage in workflow documentation. (Fixes #1193)
+- [x] **Open WebUI Upgrade**: Bumped Open WebUI from v0.9.4 to v0.9.5 in `services/docker-compose.yml`. (Fixes #1185)
+- [x] **Agent Terminology**: Replaced "AI" with "Agent" across all workflow documentation for clarity and precision. (Fixes #1193)
+- [x] **Wrapper Scripts as Standard**: Elevated `create-issue.sh` and `create-pr.sh` from "recommended" to canonical usage in workflow documentation. (Fixes #1193)
 
 ### Fixed
 
-- **Dead Code Removal**: Removed the unused `PROFILE_SERVICES` associative array from `lib/cli/profile.sh`. (Fixes #1179)
+- [x] **Dead Code Removal**: Removed the unused `PROFILE_SERVICES` associative array from `lib/cli/profile.sh`. (Fixes #1179)
 
 ### Removed
 
-- **`.ai-context/` from `.gitignore`**: Removed exclusion for `.ai-context/` directory. All agent work goes to `/tmp` to prevent repository noise. (Fixes #1193)
+- [x] **`.ai-context/` from `.gitignore`**: Removed exclusion for `.ai-context/` directory. All agent work goes to `/tmp` to prevent repository noise. (Fixes #1193)
 
 ### Related Issues
 
-- Fixes #1179 - Remove dead PROFILE_SERVICES associative array
-- Fixes #1181 - Add rootless Podman verification to check-env
-- Fixes #1185 - Bump Open WebUI to v0.9.5
-- Fixes #1189 - Update README for automatic rootless verification
-- Fixes #1193 - Update workflow documentation for Human in the Loop model
+- [x] Fixes #1179 - Remove dead PROFILE_SERVICES associative array
+- [x] Fixes #1181 - Add rootless Podman verification to check-env
+- [x] Fixes #1185 - Bump Open WebUI to v0.9.5
+- [x] Fixes #1189 - Update README for automatic rootless verification
+- [x] Fixes #1193 - Update workflow documentation for Human in the Loop model
 
-### Workflow Note
+### Verification
 
-This release completes the formalization of the Human in the Loop model and the Emergency Workflow Override protocol. All documentation has been updated to reflect these governance changes.
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [x] All CI checks passing on main
+- [x] Documentation updated
+- [x] Workflow templates updated
 
 ---
 
@@ -50,23 +54,23 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Security
 
-- **Vault Production Mode**: Migrated Vault from dev mode to production mode with proper initialization, unseal keys, and GPG-encrypted root token storage. (Fixes #1159)
+- [x] **Vault Production Mode**: Migrated Vault from dev mode to production mode with proper initialization, unseal keys, and GPG-encrypted root token storage. (Fixes #1159)
 
 ### Fixed
 
-- **Vault Init Hardening**: Hardened Vault initialization script to correctly create database engine roles, policies, and AppRole authentication. Fixed health checks and agent token provisioning. (Fixes #1170)
-- **GPG Terminal Setup**: Corrected SECURITY.md factual errors regarding security posture documentation. (Fixes #1157)
+- [x] **Vault Init Hardening**: Hardened Vault initialization script to correctly create database engine roles, policies, and AppRole authentication. Fixed health checks and agent token provisioning. (Fixes #1170)
+- [x] **GPG Terminal Setup**: Corrected SECURITY.md factual errors regarding security posture documentation. (Fixes #1157)
 
 ### Changed
 
-- **OpenCode Configuration**: Added `opencode.json` to `.gitignore` and shipped a vanilla configuration template to prevent accidental commits of personal settings. (Fixes #1154)
+- [x] **OpenCode Configuration**: Added `opencode.json` to `.gitignore` and shipped a vanilla configuration template to prevent accidental commits of personal settings. (Fixes #1154)
 
 ### Related Issues
 
-- Fixes #1154 - Gitignore opencode.json and ship vanilla config template
-- Fixes #1157 - Correct factual errors in SECURITY.md posture documentation
-- Fixes #1159 - Migrate Vault from dev mode to production mode
-- Fixes #1170 - Fix Vault init not creating database engine roles policies or AppRole auth
+- [x] Fixes #1154 - Gitignore opencode.json and ship vanilla config template
+- [x] Fixes #1157 - Correct factual errors in SECURITY.md posture documentation
+- [x] Fixes #1159 - Migrate Vault from dev mode to production mode
+- [x] Fixes #1170 - Fix Vault init not creating database engine roles policies or AppRole auth
 
 ---
 
@@ -78,7 +82,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Related Issues
 
-- Fixes #1159 - vault_status jq treats false as unreachable
+- [x] Fixes #1159 - vault_status jq treats false as unreachable
 
 ---
 
@@ -86,7 +90,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Security
 
-- **Vault Production Mode**: Migrated Vault from ephemeral dev mode to production file-storage backend with persistent secrets across restarts. Unseal keys (5-of-5, threshold 3) and root token are GPG-encrypted and stored in `.security/` (gitignored). Stack start auto-unseals using the operator's GPG key. (Fixes #1159)
+- [x] **Vault Production Mode**: Migrated Vault from ephemeral dev mode to production file-storage backend with persistent secrets across restarts. Unseal keys (5-of-5, threshold 3) and root token are GPG-encrypted and stored in `.security/` (gitignored). Stack start auto-unseals using the operator's GPG key. (Fixes #1159)
 - **Dynamic Credential Revocation Hardening**: Vault database roles now include `revocation_statements` (`REASSIGN OWNED BY`, `DROP OWNED BY`, `DROP ROLE`) preventing SQLSTATE 2BP01 shutdown loops when dynamic roles own PostgreSQL objects. (Fixes #1159)
 - **Postgres Connection Config Sync**: Vault database engine always re-POSTs the current PostgreSQL password on init, preventing authentication failures after password changes. Previously skipped if config already existed. (Fixes #1159)
 
@@ -101,7 +105,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Related Issues
 
-- Fixes #1159 - Vault production mode
+- [x] Fixes #1159 - Vault production mode
 
 ---
 
@@ -199,7 +203,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 - **PR Creation Governance**: Tightened workflow to prevent label-assignee race conditions. (Fixes #1068)
 - **PR Validation Reliability**: Fixed silent failures in PR validation workflow by adding proper GitHub CLI authentication and error visibility. (Fixes #1073, #1080)
-- **GPG Terminal Setup**: Documented terminal configuration requirements and added `configure_terminal` helper to `setup-gpg.sh`. (Fixes #1071)
+- [x] **GPG Terminal Setup**: Documented terminal configuration requirements and added `configure_terminal` helper to `setup-gpg.sh`. (Fixes #1071)
 - **Security Documentation**: Created missing security documentation referenced by SECURITY.md. (Fixes #1064)
 
 ### Configuration

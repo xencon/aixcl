@@ -344,7 +344,7 @@ services:
       start_period: 60s
 
   pgadmin:
-    image: docker.io/dpage/pgadmin4:9.14.0
+    image: docker.io/dpage/pgadmin4:9.15.0
     container_name: pgadmin
     pull_policy: missing
     network_mode: host

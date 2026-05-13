@@ -7,7 +7,8 @@
 
 ## Text
 - Use plain ASCII. No Unicode checkmarks, no emoji.
-- Use markdown checkboxes: `- [x]` for completed, `- [ ]` for incomplete
+  - **Exception**: Release notes may use `✅` (green checkmark) for visual checkbox indicators in GitHub release pages, where markdown `- [x]` does not render interactively.
+- Use markdown checkboxes: `- [x]` for completed, `- [ ]` for incomplete (for issues, PRs, and documentation)
 - Use Unix line endings (LF) -- CRLF is rejected by CI
 
 ## Labels
