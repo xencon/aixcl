@@ -135,3 +135,4 @@ export/
 
 # Generated SSL/certificates
 .security/
+.ai-context/
