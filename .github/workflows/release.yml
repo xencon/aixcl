@@ -37,7 +37,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           # Extract the section for this version from CHANGELOG.md
-          awk "/^## \[$VERSION\]/ {flag=1; next} /^## \[/ {flag=0} flag" CHANGELOG.md > /tmp/release-notes.md || true
+          # Using index() for literal string matching instead of regex to avoid bracket interpretation issues
+          awk -v ver="$VERSION" 'index($0, "## [" ver "]") == 1 {flag=1; next} index($0, "## [") == 1 {flag=0} flag' CHANGELOG.md > /tmp/release-notes.md || true
           if [ -s /tmp/release-notes.md ]; then
             echo "Found changelog section for $VERSION"
             cat /tmp/release-notes.md
