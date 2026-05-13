@@ -70,6 +70,10 @@ The last line activates tab completion in your current shell. New shell sessions
 
 **Verify rootless mode:**
 
+The environment check now automatically verifies rootless status. When you run `./aixcl utils check-env`, you will see the Podman rootless status displayed in the output.
+
+You can also verify manually:
+
 ```bash
 podman info | grep "rootless"
 # Should show: "rootless: true"
