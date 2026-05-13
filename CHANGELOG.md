@@ -4,7 +4,45 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.15] - 2026-05-12
+## [v1.1.16] - 2026-05-13
+
+### Summary
+
+Release v1.1.16 -- Open WebUI update, rootless Podman verification, and workflow documentation hardening.
+
+### Added
+
+- **Rootless Podman Verification**: `./aixcl utils check-env` now automatically displays the Podman rootless status during environment checks, mirroring the manual verification step in README.md. (Fixes #1181)
+- **Emergency Workflow Override Protocol**: Documented explicit authorization mechanism for proceeding without a pre-existing issue. Requires human operator instruction, retroactive documentation, and `[OVERRIDE]` commit prefix. (Fixes #1193)
+- **Human in the Loop Policy**: Formalized that Agent fills `[x]` for agent-completed checklist items, while human fills `[x]` for manual verification items. The checklist serves as a gate, not passive decoration. (Fixes #1193)
+
+### Changed
+
+- **Open WebUI Upgrade**: Bumped Open WebUI from v0.9.4 to v0.9.5 in `services/docker-compose.yml`. (Fixes #1185)
+- **Agent Terminology**: Replaced "AI" with "Agent" across all workflow documentation for clarity and precision. (Fixes #1193)
+- **Wrapper Scripts as Standard**: Elevated `create-issue.sh` and `create-pr.sh` from "recommended" to canonical usage in workflow documentation. (Fixes #1193)
+
+### Fixed
+
+- **Dead Code Removal**: Removed the unused `PROFILE_SERVICES` associative array from `lib/cli/profile.sh`. (Fixes #1179)
+
+### Removed
+
+- **`.ai-context/` from `.gitignore`**: Removed exclusion for `.ai-context/` directory. All agent work goes to `/tmp` to prevent repository noise. (Fixes #1193)
+
+### Related Issues
+
+- Fixes #1179 - Remove dead PROFILE_SERVICES associative array
+- Fixes #1181 - Add rootless Podman verification to check-env
+- Fixes #1185 - Bump Open WebUI to v0.9.5
+- Fixes #1189 - Update README for automatic rootless verification
+- Fixes #1193 - Update workflow documentation for Human in the Loop model
+
+### Workflow Note
+
+This release completes the formalization of the Human in the Loop model and the Emergency Workflow Override protocol. All documentation has been updated to reflect these governance changes.
+
+---
 
 ### Summary
 
