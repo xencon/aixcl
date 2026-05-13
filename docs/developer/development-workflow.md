@@ -164,6 +164,24 @@ When releasing changes from `dev` to `main`:
 
 4. **Merge after final review and status checks**
 
+## Changelog Policy
+
+**CHANGELOG updates happen at release time, not at merge time.**
+
+This project uses the `[Unreleased]` section in `CHANGELOG.md` strictly as a placeholder. Individual feature or fix PRs **must not** edit `CHANGELOG.md`. This avoids:
+- Merge conflicts on the `[Unreleased]` section from parallel PRs
+- Wasted administrative commits and CI cycles for every merged change
+- Documenting changes that may later be reverted or superseded
+
+**How it works:**
+1. Changes merge to `dev` with no CHANGELOG edit
+2. Issues and PRs serve as the canonical pre-release history
+3. When cutting a release, the release author compiles all merged PRs since the last version
+4. The CHANGELOG is updated in the promotion PR (`dev` -> `main`) that creates the release
+5. The `[Unreleased]` section is replaced with the new version header and date
+
+**Rationale:** Issues and PRs already provide full traceability. The CHANGELOG is a release artifact for end-users, not a running development log.
+
 ## Human in the Loop Checklist Policy
 
 The agent MUST distinguish between agent-completed items and human-verification items.
