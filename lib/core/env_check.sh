@@ -49,6 +49,15 @@ check_env() {
 
     # Check for rootless mode
     if [ $engine_found -eq 1 ]; then
+        # Explicit diagnostic for Podman (mirrors README manual verification step)
+        if command -v podman &> /dev/null; then
+            local rootless_info
+            rootless_info=$(podman info 2>/dev/null | grep "rootless" || true)
+            if [ -n "$rootless_info" ]; then
+                print_info "Podman rootless status: $rootless_info"
+            fi
+        fi
+
         if is_rootless; then
             print_success "Rootless container engine detected (Enhanced Security)"
         else
