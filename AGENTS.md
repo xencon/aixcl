@@ -36,6 +36,8 @@ When conflicts arise, follow this order:
 
 **ALWAYS create an issue before starting work.** No exceptions without explicit override.
 
+**Override mechanism:** See Section 9 -- Emergency Workflow Override.
+
 **Issue format:**
 - Title: `[TYPE] Description` (NO colons in title, e.g. `[TASK] Setup agent`, not `[TASK]: Setup agent`)
 - Body: **Read the template file first**, then use its exact section headings
@@ -243,6 +245,65 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 2. **If no issue exists:** Ask human operator directly; do not create issue unilaterally
 3. **If security concern:** Flag with `[SECURITY]` prefix and await explicit approval
 4. **If authority conflict:** Document override request in a new `[TASK]` issue; obtain explicit written confirmation; prefix commits with `[OVERRIDE]` if proceeding. **NEVER silently bypass issue-first requirement.**
+
+## 9. Emergency Workflow Override
+
+In exceptional situations, a human operator may explicitly authorize the agent to proceed without a pre-existing issue. This is NOT the default path and must be clearly authorized per session.
+
+### Authorization (Required)
+
+The human operator must provide a **direct, explicit instruction** in the active session. Example:
+
+> "[OVERRIDE] Proceed without creating an issue first. Create a retroactive issue afterward."
+
+### Conditions
+
+- The override applies ONLY to the specific change being discussed
+- All OTHER rules still apply: branch naming, commits, GPG signing, PRs, CI verification
+- The change must be minimal and reversible
+
+### Retroactive Documentation (Required)
+
+After completing the work, the agent MUST create a [TASK] issue prefixed with [OVERRIDE]:
+
+```bash
+./scripts/utils/create-issue.sh "[OVERRIDE] Retroactive documentation for X" "task" "component:cli,Maintenance" "<assignee>"
+```
+
+The retroactive issue must document:
+
+- The original human instruction (quoted verbatim)
+- The reason the override was granted
+- The changes made and the PR that resulted
+
+### Commit Format Under Override
+
+Prefix the commit subject with [OVERRIDE]:
+
+```
+[OVERRIDE] type: Brief description
+
+- Change details
+
+Fixes #<retroactive-issue-number>
+```
+
+### What DOES NOT Qualify
+
+- "Just do it" without context
+- Vague urgency ("this is important")
+- Agent inferring urgency from tone
+
+## 10. Checklist Filling Policy (Human in the Loop)
+
+The agent MUST distinguish between agent-completed items and human-verification items.
+
+| Party | Fills [x] | Example |
+|-------|-----------|---------|
+| Agent | Items the agent performed | "Issue referenced", "Branch named correctly" |
+| Human | Items requiring manual verification | "Behavior works as expected", "No regressions observed" |
+
+The human sees [ ] on verification items and ticks them during code review. The checklist serves as a gate, not passive decoration.
 
 ## Tool Usage
 
