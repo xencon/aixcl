@@ -128,6 +128,16 @@ Feature Branch → Dev → Main
    # Merge to main after final testing
    ```
 
+   When creating a promotion PR from `dev` to `main`:
+   - Use the same PR template as feature PRs
+   - Title format: `Release X.Y.Z (#<release-issue>)`
+   - Ensure all CI checks pass on `dev` before opening the promotion PR
+   - Assign the PR and add `component:infrastructure` label
+
+### Emergency Workflow Override
+
+See AGENTS.md Section 9 -- Emergency Workflow Override for the protocol to proceed without a pre-existing issue when explicitly authorized by a human operator.
+
 ### ❌ INCORRECT Workflows
 
 | Workflow | Status | Why |
@@ -299,7 +309,7 @@ Consult these before making architectural or structural decisions:
 | Document | Purpose |
 |---|---|
 | `docs/architecture/governance/00_invariants.md` | Platform invariants -- do not violate |
-| `docs/architecture/governance/01_ai_guidance.md` | AI assistant behavioural guidance |
+| `docs/architecture/governance/01_ai_guidance.md` | Agent behavioural guidance |
 | `docs/architecture/governance/02_profiles.md` | Stack profile definitions |
 | `docs/architecture/governance/03_stack_status.md` | Stack status specification |
 | `docs/architecture/governance/service_contracts/` | Service dependency rules |

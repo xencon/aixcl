@@ -21,3 +21,7 @@ Context, related issues, references.
 ### Verification
 - [ ] Confirm task completion
 - [ ] Note results/findings
+
+## Human in the Loop
+
+The agent is responsible for completing all deliverables. The human is responsible for completing the verification checklist.

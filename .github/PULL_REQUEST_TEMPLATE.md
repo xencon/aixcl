@@ -20,6 +20,8 @@ The following are enforced by `.github/workflows/pr-validation.yml` and will blo
 
 **Note**: PR validation runs automatically and must pass before merging.
 
+**Note**: Agent completes change checklist, Human completes verification checklist.
+
 ### Testing Notes
 Describe how this change was tested:
 
