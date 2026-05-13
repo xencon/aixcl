@@ -134,6 +134,47 @@ Fixes #217
 - Address feedback
 - Once approved and status checks are passing, merge via GitHub UI or CLI
 
+### Promotion Workflow (Dev to Main)
+
+When releasing changes from `dev` to `main`:
+
+1. **Ensure all CI checks pass on `dev`:**
+   ```bash
+   git checkout dev
+   git pull origin dev
+   ```
+
+2. **Create a release issue (optional but recommended):**
+   ```bash
+   cat > /tmp/release-issue.md << 'EOF'
+   ## Release X.Y.Z
+   
+   ## Deliverables
+   - [ ] Changelog updated
+   - [ ] All tests passing on dev
+   - [ ] Documentation updated
+   EOF
+   gh issue create --title "Release X.Y.Z" --body-file /tmp/release-issue.md --label "component:infrastructure,Maintenance" --assignee <your-github-username>
+   ```
+
+3. **Create promotion PR:**
+   ```bash
+   gh pr create --title "Release X.Y.Z (#<release-issue>)" --body "Fixes #<release-issue>" --base main --head dev --assignee <your-github-username> --label "component:infrastructure"
+   ```
+
+4. **Merge after final review and status checks**
+
+## Human in the Loop Checklist Policy
+
+The agent MUST distinguish between agent-completed items and human-verification items.
+
+| Party | Fills [x] | Example |
+|-------|-----------|---------|
+| Agent | Items the agent performed | "Issue referenced", "Branch named correctly" |
+| Human | Items requiring manual verification | "Behavior works as expected", "No regressions observed" |
+
+The human sees `[ ]` on verification items and ticks them during code review. The checklist serves as a gate, not passive decoration.
+
 ## Label Guidelines
 
 **GitHub Issue Types and Labels are required for all issues.** GitHub has native issue types that are separate from labels. Both help organize issues, track work, and make it easier to find related issues.
@@ -268,7 +309,7 @@ find . -type f -name "*.md" -exec sed -i 's/\r$//' {} \;
 ### CI Check
 The CI workflow automatically checks for CRLF line endings and will fail the build if any are found.
 
-**GitHub Code Quality AI findings and automated fixes:**
+**GitHub Code Quality Agent findings and automated fixes:**
 - Automated PRs from GitHub Code Quality (Copilot Autofix) may bypass the Issue-First workflow
 - These PRs should still be reviewed carefully before merging
 - After merging automated PRs, create a documentation issue to track the work completed
@@ -292,15 +333,17 @@ See [opencode-setup.md](./opencode-setup.md) for installation and configuration 
 Follow the development workflow documented in this document:
 1. Always create an issue first using 'gh issue create' with appropriate labels and assignee
 2. Read the template file first before composing any issue or PR body
-3. Create a branch with format 'issue-<number>/<description>' from dev
-4. Make changes and commit with conventional commit format
-5. Push branch and create PR that references the issue
-6. Assign the PR and add matching labels to it
-7. Use plain text formatting (markdown checkboxes - [x], not Unicode)
-8. Reference the issue number in commits and PRs
-9. Add labels to issues (type, component, priority, profile as applicable)
-10. Verify CI status: Monitor GitHub Actions and ensure all checks are green before finalizing the task
-11. For automated PRs, document them retroactively with an issue
+3. Use /tmp for all generated body files and drafts (never commit generated artifacts)
+4. Create a branch with format 'issue-<number>/<description>' from dev
+5. Make changes and commit with conventional commit format
+6. Push branch and create PR that references the issue
+7. Assign the PR and add matching labels to it
+8. Use plain text formatting (markdown checkboxes - [x], not Unicode)
+9. Reference the issue number in commits and PRs
+10. Add labels to issues (type, component, priority, profile as applicable)
+11. Verify CI status: Monitor GitHub Actions and ensure all checks are green before finalizing the task
+12. For automated PRs, document them retroactively with an issue
+13. Follow Human in the Loop policy: Agent fills [x] for agent-completed items, Human fills [x] for verification items
 ```
 
 ## Quick Reference Commands
@@ -344,7 +387,7 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying AI agent files (`.opencode/agents/agent-*.md`), or AI reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+When creating or modifying Agent files (`.opencode/agents/agent-*.md`), or Agent reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
 ./scripts/checks/check-agents.sh
