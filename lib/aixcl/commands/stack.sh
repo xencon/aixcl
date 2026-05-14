@@ -1438,6 +1438,19 @@ function status() {
     LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
+    # Alertmanager
+    # shellcheck disable=SC2034
+    ALERTMANAGER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9093/-/healthy 2>/dev/null || echo "000")
+    check_operational_service "Alertmanager" "alertmanager" "alertmanager" "status_var" "ALERTMANAGER_STATUS"
+
+    # Vault Agents (sidecars -- no HTTP endpoints, check container running only)
+    check_operational_service "Vault Agent (PostgreSQL)" "vault-agent-postgres" "vault-agent-postgres" "" ""
+    check_operational_service "Vault Agent (Open WebUI)" "vault-agent-openwebui" "vault-agent-openwebui" "" ""
+    check_operational_service "Vault Agent Bootstrap (PostgreSQL)" "vault-agent-postgres-bootstrap" "vault-agent-postgres-bootstrap" "" ""
+    check_operational_service "Vault Agent Bootstrap (Open WebUI)" "vault-agent-openwebui-bootstrap" "vault-agent-openwebui-bootstrap" "" ""
+    check_operational_service "Vault Agent Bootstrap (pgAdmin)" "vault-agent-pgadmin-bootstrap" "vault-agent-pgadmin-bootstrap" "" ""
+    check_operational_service "Vault Agent Bootstrap (Grafana)" "vault-agent-grafana-bootstrap" "vault-agent-grafana-bootstrap" "" ""
+
     # Health Summary section
     echo ""
     if [ $total_services -gt 0 ]; then
