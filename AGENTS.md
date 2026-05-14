@@ -417,7 +417,7 @@ Before creating or editing a release, verify it matches `.github/RELEASE_TEMPLAT
 | Docs section | Relative paths (e.g., `README.md`) |
 | No blocks | No `Installation`, no `Related Issues` |
 
-### Clean House Verification
+### House Keeping Verification
 
 Before deleting branches or temp files, verify state:
 
