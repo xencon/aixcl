@@ -4,7 +4,43 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-<<<<<<< HEAD
+## [v1.1.19] - 2026-05-14
+
+### Summary
+
+Release v1.1.19 -- critical Vault bug fix, merge conflict prevention, and House Keeping workflow hardening.
+
+### Fixed
+
+- [x] **Vault jq False Handling**: Fixed `vault_status()` in `scripts/vault/vault-commands.sh` to correctly parse `"sealed": false` from Vault health API. jq's `//` operator treats JSON `false` as falsy, causing all password/credential commands to silently exit with empty output. Changed query to use `has("sealed")` with explicit boolean stringification. (Fixes #1229)
+- [x] **CHANGELOG Conflict Markers**: Removed git conflict markers (`<<<<<<< HEAD`, `=======`, `>>>>>>> origin/main`) accidentally committed during v1.1.18 dev->main promotion PR. (Fixes #1224)
+- [x] **Stack Status Under-reporting**: Fixed `lib/aixcl/commands/stack.sh` to include missing Alertmanager and 6x Vault Agent sidecars in `stack status` output. Status now correctly reports all 19 services for the `sys` profile. (Fixes #1219)
+- [x] **Body Pre-population Rule Accuracy**: Corrected AGENTS.md to state that `create-issue.sh` does not support `--body-file` and that raw `gh issue create --body-file` should be used for pre-populated issues. (Fixes #1217)
+
+### Changed
+
+- [x] **House Keeping Section**: Added Section 11 to AGENTS.md with release metadata standardization, RC naming conventions, body pre-population rules, merge conflict prevention, and "Do Not Close Issues That PRs Will Auto-Close" rule. (Fixes #1215, #1226, #1227, #1228)
+- [x] **Release Template Standardization**: Updated `.github/RELEASE_TEMPLATE.md` to v3.0 with standard categories (Added, Changed, Fixed, Removed), removed redundant Installation block, and updated link paths. Release workflow now enforces `AIXCL vX.Y.Z` title format. (Fixes #1213)
+- [x] **AGENTS.md Version**: Bumped from 1.5 to 1.6, last_updated to 2026-05-14. (Fixes #1215)
+
+### Related Issues
+
+- [x] Fixes #1213 - Remove redundant installation block from release template
+- [x] Fixes #1215 - Add House Keeping section to AGENTS.md
+- [x] Fixes #1217 - Correct Body Pre-population Rule in AGENTS.md
+- [x] Fixes #1219 - Stack status under-reports services and restart has dependency conflicts
+- [x] Fixes #1224 - Add merge conflict prevention to AGENTS.md
+- [x] Fixes #1229 - vault_passwords and vault_credentials return empty output
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
+
 ## [v1.1.18] - 2026-05-14
 
 ### Summary
@@ -30,31 +66,6 @@ Release v1.1.18 -- stack status reporting fix, AGENTS.md housekeeping, and relea
 - [x] Fixes #1215 - Add House Keeping section to AGENTS.md
 - [x] Fixes #1217 - Correct Body Pre-population Rule in AGENTS.md
 - [x] Fixes #1219 - Stack status under-reports services and restart has dependency conflicts
-=======
-## [v1.1.17] - 2026-05-13
-
-### Summary
-
-Release v1.1.17 -- pgAdmin version bump, release workflow fixes, and changelog policy documentation.
-
-### Changed
-
-- [x] **pgAdmin Upgrade**: Bumped pgAdmin from 9.14.0 to 9.15.0 in `services/docker-compose.yml`. (Fixes #1206)
-
-### Fixed
-
-- [x] **Release Changelog Extraction**: Fixed release workflow `awk` regex to use `index()` literal matching for version headers, preventing bracket interpretation issues. (Fixes #1204)
-
-### Added
-
-- [x] **Changelog Update-at-Release Policy**: Documented in `development-workflow.md` that CHANGELOG updates happen at release time, not merge time. The `[Unreleased]` section is a placeholder; individual PRs must not edit CHANGELOG.md. (Fixes #1208)
-
-### Related Issues
-
-- [x] Fixes #1204 - Fix release workflow changelog extraction
-- [x] Fixes #1206 - Bump pgAdmin to 9.15.0
-- [x] Fixes #1208 - Document CHANGELOG update at release time policy
->>>>>>> origin/main
 
 ### Verification
 
@@ -64,11 +75,41 @@ Release v1.1.17 -- pgAdmin version bump, release workflow fixes, and changelog p
 - [x] Release signed and published
 
 ---
-<<<<<<< HEAD
-=======
+
+## [v1.1.17] - 2026-05-13
+
+### Summary
+
+Release v1.1.17 -- pgAdmin version bump, release workflow fixes, and changelog policy documentation.
+
+### Added
+
+- [x] **Changelog Update-at-Release Policy**: Documented in `development-workflow.md` that CHANGELOG updates happen at release time, not merge time. The `[Unreleased]` section is a placeholder; individual PRs must not edit CHANGELOG.md. (Fixes #1208)
+
+### Fixed
+
+- [x] **Release Changelog Extraction**: Fixed release workflow `awk` regex to use `index()` literal matching for version headers, preventing bracket interpretation issues. (Fixes #1204)
+
+### Changed
+
+- [x] **pgAdmin Upgrade**: Bumped pgAdmin from 9.14.0 to 9.15.0 in `services/docker-compose.yml`. (Fixes #1206)
+
+### Related Issues
+
+- [x] Fixes #1204 - Fix release workflow changelog extraction
+- [x] Fixes #1206 - Bump pgAdmin to 9.15.0
+- [x] Fixes #1208 - Document CHANGELOG update at release time policy
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [x] All CI checks passing on main
+- [x] Release signed and published
+
+---
 
 ## [v1.1.16] - 2026-05-13
->>>>>>> origin/main
 
 ### Summary
 

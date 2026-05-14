@@ -234,6 +234,7 @@ Before ANY operation, confirm:
 - [ ] Required issue exists or override is documented per Section 8
 - [ ] No security principles are violated
 - [ ] No unauthorized dependencies are introduced
+- [ ] **Merged files scanned for conflict markers** (when merge was performed)
 
 If ANY check fails → **HALT** and escalate.
 
@@ -416,7 +417,7 @@ Before creating or editing a release, verify it matches `.github/RELEASE_TEMPLAT
 | Docs section | Relative paths (e.g., `README.md`) |
 | No blocks | No `Installation`, no `Related Issues` |
 
-### Clean House Verification
+### House Keeping Verification
 
 Before deleting branches or temp files, verify state:
 
@@ -426,6 +427,37 @@ git branch -vv | grep issue-<n>      # Check if local exists
 git push origin --delete <branch>      # Only if remote exists
 rm -f /tmp/v1.*-body.md               # Remove temp release bodies
 ```
+
+### Do Not Close Issues That PRs Will Auto-Close
+
+If an issue is referenced in an **open** PR body with `Fixes #N`, **do not manually close it**.
+GitHub will auto-close it on PR merge.
+
+Manual closure breaks the auto-close link and creates orphaned issues.
+
+Exception: If the PR is closed without merging, then manually close the issue.
+
+### Merge Conflict Prevention
+
+**Always review merged files for conflict markers before committing.**
+**This rule applies to ALL merges, including promotion PRs (dev -> main).**
+
+After any `git merge`, BEFORE committing or pushing:
+
+```bash
+# After resolving a merge, scan for residual markers
+grep -r "<<<<<<<\|=======\|>>>>>>>" --include="*.md" --include="*.sh" --include="*.yml" .
+
+# If any results found:
+# 1. Open the file and resolve manually
+# 2. Re-stage: git add <file>
+# 3. Amend commit: git commit --amend -S -m "message"
+```
+
+**Key rules:**
+- Never push a merge without reviewing file content for `<<<<<<<` markers
+- If markers exist, resolve the conflict properly -- do not commit the raw markers
+- Run the grep command as part of pre-push verification
 
 ## External References
 
