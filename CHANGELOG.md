@@ -4,6 +4,43 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.19] - 2026-05-14
+
+### Summary
+
+Release v1.1.19 -- critical Vault bug fix, merge conflict prevention, and House Keeping workflow hardening.
+
+### Fixed
+
+- [x] **Vault jq False Handling**: Fixed `vault_status()` in `scripts/vault/vault-commands.sh` to correctly parse `"sealed": false` from Vault health API. jq's `//` operator treats JSON `false` as falsy, causing all password/credential commands to silently exit with empty output. Changed query to use `has("sealed")` with explicit boolean stringification. (Fixes #1229)
+- [x] **CHANGELOG Conflict Markers**: Removed git conflict markers (`<<<<<<< HEAD`, `=======`, `>>>>>>> origin/main`) accidentally committed during v1.1.18 dev->main promotion PR. (Fixes #1224)
+- [x] **Stack Status Under-reporting**: Fixed `lib/aixcl/commands/stack.sh` to include missing Alertmanager and 6x Vault Agent sidecars in `stack status` output. Status now correctly reports all 19 services for the `sys` profile. (Fixes #1219)
+- [x] **Body Pre-population Rule Accuracy**: Corrected AGENTS.md to state that `create-issue.sh` does not support `--body-file` and that raw `gh issue create --body-file` should be used for pre-populated issues. (Fixes #1217)
+
+### Changed
+
+- [x] **House Keeping Section**: Added Section 11 to AGENTS.md with release metadata standardization, RC naming conventions, body pre-population rules, merge conflict prevention, and "Do Not Close Issues That PRs Will Auto-Close" rule. (Fixes #1215, #1226, #1227, #1228)
+- [x] **Release Template Standardization**: Updated `.github/RELEASE_TEMPLATE.md` to v3.0 with standard categories (Added, Changed, Fixed, Removed), removed redundant Installation block, and updated link paths. Release workflow now enforces `AIXCL vX.Y.Z` title format. (Fixes #1213)
+- [x] **AGENTS.md Version**: Bumped from 1.5 to 1.6, last_updated to 2026-05-14. (Fixes #1215)
+
+### Related Issues
+
+- [x] Fixes #1213 - Remove redundant installation block from release template
+- [x] Fixes #1215 - Add House Keeping section to AGENTS.md
+- [x] Fixes #1217 - Correct Body Pre-population Rule in AGENTS.md
+- [x] Fixes #1219 - Stack status under-reports services and restart has dependency conflicts
+- [x] Fixes #1224 - Add merge conflict prevention to AGENTS.md
+- [x] Fixes #1229 - vault_passwords and vault_credentials return empty output
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
+
 ## [v1.1.18] - 2026-05-14
 
 ### Summary
