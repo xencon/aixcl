@@ -1,7 +1,7 @@
 ---
 name: AIXCL Release Notes Template
-description: Template for creating GitHub releases
-version: 2.0
+description: Canonical source of truth for GitHub release formatting
+version: 3.0
 ---
 
 ## AIXCL vX.Y.Z
@@ -10,16 +10,21 @@ version: 2.0
 
 ### What's New in vX.Y.Z
 
-#### Thematic Category
-- ✅ Description of change or feature (#issue-number)
-- ✅ Another change or feature (#issue-number)
+#### Added
+- ✅ Description of added feature or capability (#issue-number)
 
-#### Another Category
-- ✅ Description (#issue-number)
+#### Changed
+- ✅ Description of change or enhancement (#issue-number)
+
+#### Fixed
+- ✅ Description of bug fix (#issue-number)
+
+#### Removed
+- ✅ Description of removed feature or file (#issue-number)
 
 ### Documentation
 - [Getting Started](README.md)
-- [Development Workflow](DEVELOPMENT.md)
+- [Development Workflow](docs/developer/development-workflow.md)
 - [Changelog](CHANGELOG.md)
 
 ---
