@@ -234,6 +234,7 @@ Before ANY operation, confirm:
 - [ ] Required issue exists or override is documented per Section 8
 - [ ] No security principles are violated
 - [ ] No unauthorized dependencies are introduced
+- [ ] **Merged files scanned for conflict markers** (when merge was performed)
 
 If ANY check fails → **HALT** and escalate.
 
@@ -427,11 +428,21 @@ git push origin --delete <branch>      # Only if remote exists
 rm -f /tmp/v1.*-body.md               # Remove temp release bodies
 ```
 
+### Do Not Close Issues That PRs Will Auto-Close
+
+If an issue is referenced in an **open** PR body with `Fixes #N`, **do not manually close it**.
+GitHub will auto-close it on PR merge.
+
+Manual closure breaks the auto-close link and creates orphaned issues.
+
+Exception: If the PR is closed without merging, then manually close the issue.
+
 ### Merge Conflict Prevention
 
 **Always review merged files for conflict markers before committing.**
+**This rule applies to ALL merges, including promotion PRs (dev -> main).**
 
-When `git merge` produces a conflict resolution commit, verify the output before pushing:
+After any `git merge`, BEFORE committing or pushing:
 
 ```bash
 # After resolving a merge, scan for residual markers
