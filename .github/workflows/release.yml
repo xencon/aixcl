@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Extract version from tag
         id: version
@@ -32,19 +34,127 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing version: $VERSION"
 
-      - name: Extract changelog section
+      - name: Extract and transform changelog to release notes
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          # Extract the section for this version from CHANGELOG.md
-          # Using index() for literal string matching instead of regex to avoid bracket interpretation issues
-          awk -v ver="$VERSION" 'index($0, "## [" ver "]") == 1 {flag=1; next} index($0, "## [") == 1 {flag=0} flag' CHANGELOG.md > /tmp/release-notes.md || true
-          if [ -s /tmp/release-notes.md ]; then
-            echo "Found changelog section for $VERSION"
+
+          # Determine previous tag for Full Changelog comparison
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 "${VERSION}"^ 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -v "^${VERSION}$" | head -1 || echo "")
+          fi
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG="previous"
+          fi
+          echo "Previous tag: $PREVIOUS_TAG"
+
+          # Run awk transformation: extract CHANGELOG section, emit release notes in RELEASE_TEMPLATE v3.0 format
+          awk -v VERSION="$VERSION" -v PREV="$PREVIOUS_TAG" '
+            # Locate the section for this version
+            index($0, "## [" VERSION "]") == 1 { in_section=1; next }
+            index($0, "## [") == 1 && in_section { in_section=0 }
+            !in_section { next }
+
+            # Section header detection
+            $1 $2 == "###Summary" { section="Summary"; is_summary=1; next }
+            $1 $2 == "###Fixed"    { section="Fixed";    next }
+            $1 $2 == "###Changed"  { section="Changed";  next }
+            $1 $2 == "###Added"    { section="Added";    next }
+            $1 $2 == "###Removed"  { section="Removed";  next }
+
+            # End on unknown header or separator
+            $1 == "###" || $0 == "---" { section=""; is_summary=0; next }
+
+            # Capture summary paragraph (first non-empty line after ###Summary)
+            is_summary && $0 != "" { summary_text=$0; is_summary=0; next }
+            is_summary { next }
+
+            # Collect checklist items only within recognised sections
+            section != "" && $1 == "-" && $2 == "[x]" {
+              $1=""; $2=""
+              sub(/^[ \t]+/, "")
+              item=$0
+
+              # Strip surrounding **bold** markers
+              gsub(/^\*\*/, "", item)
+              gsub(/\*\*:/, ":", item)
+              gsub(/\*\*$/, "", item)
+
+              # Normalise "(Fixes #N)" and "(fixes #N)" to "(#N)"
+              gsub(/\(Fixes #/, "(#", item)
+              gsub(/\(fixes #/, "(#", item)
+
+              # Store in the appropriate section list
+              if (section == "Fixed")    { fixed[++fi] = item }
+              if (section == "Changed")  { changed[++ch] = item }
+              if (section == "Added")    { added[++ad] = item }
+              if (section == "Removed")  { removed[++re] = item }
+              next
+            }
+
+            END {
+              # Emit release notes in RELEASE_TEMPLATE.md v3.0 format
+              print "## AIXCL " VERSION
+              print ""
+              if (summary_text != "") print summary_text
+              print ""
+              heading = "### What\x27s New in " VERSION
+              print heading
+              print ""
+
+              if (ad > 0) {
+                print "#### Added"
+                for (i=1; i<=ad; i++) print "- ✅ " added[i]
+                print ""
+              }
+              if (ch > 0) {
+                print "#### Changed"
+                for (i=1; i<=ch; i++) print "- ✅ " changed[i]
+                print ""
+              }
+              if (fi > 0) {
+                print "#### Fixed"
+                for (i=1; i<=fi; i++) print "- ✅ " fixed[i]
+                print ""
+              }
+              if (re > 0) {
+                print "#### Removed"
+                for (i=1; i<=re; i++) print "- ✅ " removed[i]
+                print ""
+              }
+
+              print "### Documentation"
+              print "- [Getting Started](README.md)"
+              print "- [Development Workflow](docs/developer/development-workflow.md)"
+              print "- [Changelog](CHANGELOG.md)"
+              print ""
+              print "---"
+              print ""
+              print "**Full Changelog**: [" PREV "..." VERSION "](../../compare/" PREV "..." VERSION ")"
+            }
+          ' CHANGELOG.md > /tmp/release-notes.md
+
+          if [ -s /tmp/release-notes.md ] && [ "$(wc -l < /tmp/release-notes.md)" -gt 5 ]; then
+            echo "Generated release notes for $VERSION"
             cat /tmp/release-notes.md
           else
-            echo "No changelog section found for $VERSION, using generic notes"
-            echo "Release $VERSION" > /tmp/release-notes.md
+            echo "No changelog content found, using generic fallback"
+            {
+              echo "## AIXCL ${VERSION}"
+              echo ""
+              echo "Release ${VERSION}"
+              echo ""
+              echo "### Documentation"
+              echo "- [Getting Started](README.md)"
+              echo "- [Development Workflow](docs/developer/development-workflow.md)"
+              echo "- [Changelog](CHANGELOG.md)"
+              echo ""
+              echo "---"
+              echo ""
+              echo "**Full Changelog**: [${PREVIOUS_TAG}...${VERSION}](../../compare/${PREVIOUS_TAG}...${VERSION})"
+            } > /tmp/release-notes.md
+            cat /tmp/release-notes.md
           fi
 
       - name: Create GitHub Release
