@@ -4,7 +4,6 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-<<<<<<< HEAD
 ## [v1.1.18] - 2026-05-14
 
 ### Summary
@@ -30,31 +29,6 @@ Release v1.1.18 -- stack status reporting fix, AGENTS.md housekeeping, and relea
 - [x] Fixes #1215 - Add House Keeping section to AGENTS.md
 - [x] Fixes #1217 - Correct Body Pre-population Rule in AGENTS.md
 - [x] Fixes #1219 - Stack status under-reports services and restart has dependency conflicts
-=======
-## [v1.1.17] - 2026-05-13
-
-### Summary
-
-Release v1.1.17 -- pgAdmin version bump, release workflow fixes, and changelog policy documentation.
-
-### Changed
-
-- [x] **pgAdmin Upgrade**: Bumped pgAdmin from 9.14.0 to 9.15.0 in `services/docker-compose.yml`. (Fixes #1206)
-
-### Fixed
-
-- [x] **Release Changelog Extraction**: Fixed release workflow `awk` regex to use `index()` literal matching for version headers, preventing bracket interpretation issues. (Fixes #1204)
-
-### Added
-
-- [x] **Changelog Update-at-Release Policy**: Documented in `development-workflow.md` that CHANGELOG updates happen at release time, not merge time. The `[Unreleased]` section is a placeholder; individual PRs must not edit CHANGELOG.md. (Fixes #1208)
-
-### Related Issues
-
-- [x] Fixes #1204 - Fix release workflow changelog extraction
-- [x] Fixes #1206 - Bump pgAdmin to 9.15.0
-- [x] Fixes #1208 - Document CHANGELOG update at release time policy
->>>>>>> origin/main
 
 ### Verification
 
@@ -64,11 +38,41 @@ Release v1.1.17 -- pgAdmin version bump, release workflow fixes, and changelog p
 - [x] Release signed and published
 
 ---
-<<<<<<< HEAD
-=======
+
+## [v1.1.17] - 2026-05-13
+
+### Summary
+
+Release v1.1.17 -- pgAdmin version bump, release workflow fixes, and changelog policy documentation.
+
+### Added
+
+- [x] **Changelog Update-at-Release Policy**: Documented in `development-workflow.md` that CHANGELOG updates happen at release time, not merge time. The `[Unreleased]` section is a placeholder; individual PRs must not edit CHANGELOG.md. (Fixes #1208)
+
+### Fixed
+
+- [x] **Release Changelog Extraction**: Fixed release workflow `awk` regex to use `index()` literal matching for version headers, preventing bracket interpretation issues. (Fixes #1204)
+
+### Changed
+
+- [x] **pgAdmin Upgrade**: Bumped pgAdmin from 9.14.0 to 9.15.0 in `services/docker-compose.yml`. (Fixes #1206)
+
+### Related Issues
+
+- [x] Fixes #1204 - Fix release workflow changelog extraction
+- [x] Fixes #1206 - Bump pgAdmin to 9.15.0
+- [x] Fixes #1208 - Document CHANGELOG update at release time policy
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [x] All CI checks passing on main
+- [x] Release signed and published
+
+---
 
 ## [v1.1.16] - 2026-05-13
->>>>>>> origin/main
 
 ### Summary
 

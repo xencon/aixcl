@@ -427,6 +427,27 @@ git push origin --delete <branch>      # Only if remote exists
 rm -f /tmp/v1.*-body.md               # Remove temp release bodies
 ```
 
+### Merge Conflict Prevention
+
+**Always review merged files for conflict markers before committing.**
+
+When `git merge` produces a conflict resolution commit, verify the output before pushing:
+
+```bash
+# After resolving a merge, scan for residual markers
+grep -r "<<<<<<<\|=======\|>>>>>>>" --include="*.md" --include="*.sh" --include="*.yml" .
+
+# If any results found:
+# 1. Open the file and resolve manually
+# 2. Re-stage: git add <file>
+# 3. Amend commit: git commit --amend -S -m "message"
+```
+
+**Key rules:**
+- Never push a merge without reviewing file content for `<<<<<<<` markers
+- If markers exist, resolve the conflict properly -- do not commit the raw markers
+- Run the grep command as part of pre-push verification
+
 ## External References
 
 - `DEVELOPMENT.md` -- Full workflow rules and templates
