@@ -69,8 +69,8 @@ check_vault_health() {
     fi
 
     local initialized sealed
-    initialized=$(echo "$health_status" | jq -r '.initialized // false' 2>/dev/null)
-    sealed=$(echo "$health_status" | jq -r '.sealed // "unknown"' 2>/dev/null || echo "unknown")
+    initialized=$(echo "$health_status" | jq -r 'if has("initialized") then (.initialized | tostring) else "false" end' 2>/dev/null)
+    sealed=$(echo "$health_status" | jq -r 'if has("sealed") then (.sealed | tostring) else "unknown" end' 2>/dev/null || echo "unknown")
 
     if [ "$initialized" = "false" ]; then
         echo -e "Vault API:            ${YELLOW}Not Initialized (run: ./aixcl vault init)${NC}"
@@ -219,7 +219,7 @@ check_credentials() {
         fi
     fi
     echo -e "Generated Creds:      ${YELLOW}None found${NC}"
-    return 1
+    return 0
 }
 
 # Overall initialization status
