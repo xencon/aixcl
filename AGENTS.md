@@ -370,7 +370,7 @@ Do not strip the `-rc` suffix from the title. Multiple RCs sharing the same disp
 
 **NEVER create an issue, PR, or release with a generic or empty body.**
 
-Before any `./scripts/utils/create-issue.sh`, `./scripts/utils/create-pr.sh`, or `gh release create`:
+Before creating any item, draft the complete body in `/tmp/`:
 
 1. **Read the template first** (lazy-loading)
 2. **Draft the complete body in `/tmp/`** -- every section populated with real content
@@ -380,7 +380,17 @@ Before any `./scripts/utils/create-issue.sh`, `./scripts/utils/create-pr.sh`, or
    - `[ ]` = Requires human verification
 5. Use `cat /tmp/body.md` to review the full body before creation
 
-Use `--body-file` with all CLI creation commands to prevent shell interpolation of backticks.
+**Important tool distinction:**
+
+| Tool | Supports custom body | When to use |
+|------|----------------------|-------------|
+| `./scripts/utils/create-issue.sh` | No | Quick creation using template only (default body) |
+| `./scripts/utils/create-pr.sh` | No | Quick creation using template only (default body) |
+| `gh issue create --body-file` | Yes | Pre-populated issues (drafted in /tmp first) |
+| `gh pr create --body-file` | Yes | Pre-populated PRs (drafted in /tmp first) |
+| `gh release edit --notes-file` | Yes | Release notes (drafted in /tmp first) |
+
+For pre-populated issues and PRs, use raw `gh` commands with `--body-file`:
 
 ```bash
 # Correct: draft full body first via heredoc, review visually, then create
@@ -389,7 +399,7 @@ cat > /tmp/issue-body.md << 'EOF'
 EOF
 cat /tmp/issue-body.md  # Review before creation
 
-./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:..." "..."
+gh issue create --title "[TASK] Title" --body-file /tmp/issue-body.md --label "component:..." --assignee "..."
 ```
 
 ### Release Template Compliance Checklist
