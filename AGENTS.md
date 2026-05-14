@@ -366,6 +366,32 @@ RC releases keep the `-rcN` suffix in both tag and title:
 
 Do not strip the `-rc` suffix from the title. Multiple RCs sharing the same display name causes confusion.
 
+### Body Pre-population Rule
+
+**NEVER create an issue, PR, or release with a generic or empty body.**
+
+Before any `./scripts/utils/create-issue.sh`, `./scripts/utils/create-pr.sh`, or `gh release create`:
+
+1. **Read the template first** (lazy-loading)
+2. **Draft the complete body in `/tmp/`** -- every section populated with real content
+3. **Confirm zero placeholder text** exists (no "Describe what needs to be done")
+4. **Confirm checkboxes are pre-filled correctly:**
+   - `[x]` = Agent has already completed this step
+   - `[ ]` = Requires human verification
+5. Use `cat /tmp/body.md` to review the full body before creation
+
+Use `--body-file` with all CLI creation commands to prevent shell interpolation of backticks.
+
+```bash
+# Correct: draft full body first via heredoc, review visually, then create
+cat > /tmp/issue-body.md << 'EOF'
+...
+EOF
+cat /tmp/issue-body.md  # Review before creation
+
+./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:..." "..."
+```
+
 ### Release Template Compliance Checklist
 
 Before creating or editing a release, verify it matches `.github/RELEASE_TEMPLATE.md` v3.0:
