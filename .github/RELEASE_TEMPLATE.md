@@ -17,15 +17,6 @@ version: 2.0
 #### Another Category
 - ✅ Description (#issue-number)
 
-### Installation
-
-```bash
-git clone https://github.com/xencon/aixcl.git
-cd aixcl
-./aixcl utils check-env
-./aixcl stack start --profile sys
-```
-
 ### Documentation
 - [Getting Started](README.md)
 - [Development Workflow](DEVELOPMENT.md)
