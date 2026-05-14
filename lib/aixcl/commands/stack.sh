@@ -1178,6 +1178,9 @@ function logs() {
 }
 
 function status() {
+    # Detect container runtime (Podman vs Docker) before any container invocations
+    set_compose_cmd
+    
     # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Get current profile from .env file
