@@ -4,6 +4,25 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.20] - 2026-05-14
+
+### Summary
+
+Release v1.1.20 -- follow-up to v1.1.19, includes the vault-status.sh hotfix that was merged to main and dev after v1.1.19 was tagged.
+
+### Fixed
+
+- [x] **Vault Status Unknown State**: Fixed `check_vault_health()` in `lib/aixcl/commands/vault-status.sh` to correctly parse `"sealed": false` from Vault health API. Same jq `//` false handling bug as #1229, but in a different file. Also fixed false "⚠ Vault needs initialization" warning caused by `check_credentials()` returning 1 when no generated credential files were present yet. (Fixes #1234, #1235)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
+
 ## [v1.1.19] - 2026-05-14
 
 ### Summary
