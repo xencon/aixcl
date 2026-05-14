@@ -1,11 +1,11 @@
 | field | value |
 |-------|-------|
 | file | AGENTS.md |
-| version | 1.5 |
+| version | 1.6 |
 | purpose | agent_bootstrap |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-04-21 |
+| last_updated | 2026-05-14 |
 
 # AGENTS.md
 
@@ -328,6 +328,68 @@ The human sees [ ] on verification items and ticks them during code review. The 
 - Use lists only for single-column data, step-by-step instructions, or narrative
 - Be concise but thorough; surface risks and assumptions explicitly
 - Suggest tests when making code changes
+
+## 11. House Keeping
+
+Session hygiene, metadata management, and clean-up verification.
+
+### Release Metadata Standardization
+
+When retroactively editing or creating GitHub releases:
+
+```bash
+# Prepare body files in /tmp (never repo tree)
+cat > /tmp/vX.Y.Z-body.md << 'EOF'
+## AIXCL vX.Y.Z
+...
+EOF
+
+# Edit release title and body
+gh release edit vX.Y.Z --title "AIXCL vX.Y.Z" --notes-file /tmp/vX.Y.Z-body.md
+
+# Batch many releases
+for tag in v1.1.10 v1.1.9 ...; do
+  gh release edit "$tag" --title "AIXCL ${tag}" --notes-file "/tmp/${tag}-body.md"
+done
+
+# Remove prerelease flag if needed
+gh release edit vX.Y.Z --prerelease=false
+```
+
+Caveat: `gh release edit` mutates GitHub metadata, not git history. The tag and commit remain immutable.
+
+### RC Release Naming Convention
+
+RC releases keep the `-rcN` suffix in both tag and title:
+- Tag: `v1.0.0-rc9`
+- Title: `AIXCL v1.0.0-rc9`
+
+Do not strip the `-rc` suffix from the title. Multiple RCs sharing the same display name causes confusion.
+
+### Release Template Compliance Checklist
+
+Before creating or editing a release, verify it matches `.github/RELEASE_TEMPLATE.md` v3.0:
+
+| Element | Required |
+|---------|----------|
+| Title prefix | `AIXCL ` |
+| Top heading | `## AIXCL vX.Y.Z` |
+| Sections | `Added`, `Changed`, `Fixed`, `Removed` |
+| Item prefix | `✅ ` |
+| Item suffix | `(#issue-number)` |
+| Docs section | Relative paths (e.g., `README.md`) |
+| No blocks | No `Installation`, no `Related Issues` |
+
+### Clean House Verification
+
+Before deleting branches or temp files, verify state:
+
+```bash
+gh pr view <number> --json state     # Ensure MERGED
+git branch -vv | grep issue-<n>      # Check if local exists
+git push origin --delete <branch>      # Only if remote exists
+rm -f /tmp/v1.*-body.md               # Remove temp release bodies
+```
 
 ## External References
 
