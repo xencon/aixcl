@@ -4,7 +4,40 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.16] - 2026-05-13
+## [v1.1.18] - 2026-05-14
+
+### Summary
+
+Release v1.1.18 -- stack status reporting fix, AGENTS.md housekeeping, and release template standardization.
+
+### Added
+
+- [x] **House Keeping Section**: Added Section 11 to AGENTS.md with release metadata standardization, RC naming conventions, release template compliance checklist, and clean house verification. (Fixes #1215)
+- [x] **Stack Status Services**: Expanded `stack status` to report all 19 services for `sys` profile, including Alertmanager and 6x Vault Agent sidecars. (Fixes #1219)
+
+### Changed
+
+- [x] **AGENTS.md Version**: Bumped from 1.5 to 1.6, last_updated to 2026-05-14. (Fixes #1215)
+
+### Fixed
+
+- [x] **Body Pre-population Rule**: Corrected AGENTS.md to accurately state that `create-issue.sh` does not support custom body files. Directs to `gh issue create --body-file` for pre-populated items. (Fixes #1217)
+- [x] **Stack Status Under-reporting**: Fixed `lib/aixcl/commands/stack.sh` to include missing Alertmanager and vault agent checks. (Fixes #1219)
+
+### Related Issues
+
+- [x] Fixes #1215 - Add House Keeping section to AGENTS.md
+- [x] Fixes #1217 - Correct Body Pre-population Rule in AGENTS.md
+- [x] Fixes #1219 - Stack status under-reports services and restart has dependency conflicts
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [x] All CI checks passing on main
+- [x] Release signed and published
+
+---
 
 ### Summary
 
