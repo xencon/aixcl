@@ -258,7 +258,19 @@ create_podman_config() {
   # Create containers.conf for rootless optimizations
   mkdir -p "${HOME}/.config/containers"
   
-  cat > "${HOME}/.config/containers/containers.conf" << 'EOF'
+  # Auto-detect OCI runtime: prefer crun for rootless, fall back to runc
+  local detected_runtime="runc"
+  if command -v crun >/dev/null 2>&1; then
+    detected_runtime="crun"
+    log_info "Detected crun runtime (preferred for rootless)"
+  elif command -v runc >/dev/null 2>&1; then
+    detected_runtime="runc"
+    log_info "Detected runc runtime (fallback)"
+  else
+    log_warn "No OCI runtime found (crun or runc). Podman may fail to start containers."
+  fi
+  
+  cat > "${HOME}/.config/containers/containers.conf" << EOF
 # AIXCL Podman Configuration
 # Rootless container optimizations for adversarial environments
 
@@ -270,11 +282,11 @@ cap_drop=["all"]
 # Security options
 seccomp_profile="/usr/share/containers/seccomp.json"
 # annotations for systemd integration
-annotations = {"run.oci.keep_original_groups"="false"}
+annotations = ["run.oci.keep_original_groups=false"]
 
 [engine]
-# Runtime configuration - crun recommended for rootless
-runtime="crun"
+# Runtime configuration - crun recommended for rootless, runc as fallback
+runtime="${detected_runtime}"
 # Enable cgroup management (requires delegation)
 cgroup_manager="systemd"
 # Events backend
