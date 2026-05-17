@@ -173,11 +173,11 @@ function init_stack() {
     local postgres_user="${AIXCL_ADMIN_USER}"
     local postgres_db="webui"
 
-    # Update .env with values
-    sed -i "s/^#\?AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
-    sed -i "s/^#\?AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
-    sed -i "s/^#\?PGADMIN_DEFAULT_EMAIL=.*/PGADMIN_DEFAULT_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
-    sed -i "s/^#\?OPENWEBUI_EMAIL=.*/OPENWEBUI_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    # Update .env with non-sensitive config only
+    # NOTE: Admin identity (AIXCL_ADMIN_USER, AIXCL_ADMIN_EMAIL) is stored
+    # securely in .aixcl.initialized and Vault KV only — never in .env.
+    # pgAdmin, Open WebUI, and Grafana read their credentials from
+    # Vault bootstrap agents that populate /run/secrets/ from KV.
     sed -i "s/^#\?POSTGRES_USER=.*/POSTGRES_USER=$postgres_user/" "$env_file"
     sed -i "s/^#\?POSTGRES_DATABASE=.*/POSTGRES_DATABASE=$postgres_db/" "$env_file"
 
