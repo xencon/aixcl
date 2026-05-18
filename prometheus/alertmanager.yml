@@ -44,7 +44,7 @@ receivers:
     # Email configuration (commented out - ready for future use)
     # email_configs:
     #   - to: 'alerts@example.com'
-    #     from: 'alertmanager@aixcl.local'
+    #     from: 'alertmanager@localhost'
     #     smarthost: 'smtp.example.com:587'
     #     auth_username: 'user'
     #     auth_password: 'password'
