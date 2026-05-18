@@ -529,6 +529,11 @@ function start() {
     # after vault-init.sh populates the KV store and recreates them below.
     local _vault_token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
     if [ -f "$_vault_token_file" ]; then
+        # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
+        if [ -z "${GPG_TTY:-}" ]; then
+            GPG_TTY=$(tty 2>/dev/null || true)
+            export GPG_TTY
+        fi
         local _vault_token
         _vault_token=$(gpg --quiet --decrypt "$_vault_token_file" 2>/dev/null) || true
         if [ -n "${_vault_token:-}" ]; then
@@ -650,6 +655,11 @@ function start() {
                 # and force-recreate the bootstrap containers with the real token.
                 local _vault_token_file_post="${SCRIPT_DIR}/.security/vault-root-token.gpg"
                 if [ -f "$_vault_token_file_post" ]; then
+                    # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
+                    if [ -z "${GPG_TTY:-}" ]; then
+                        GPG_TTY=$(tty 2>/dev/null || true)
+                        export GPG_TTY
+                    fi
                     local _vtoken
                     _vtoken=$(gpg --quiet --decrypt "$_vault_token_file_post" 2>/dev/null) || true
                     if [ -n "${_vtoken:-}" ]; then
