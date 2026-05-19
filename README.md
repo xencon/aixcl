@@ -204,7 +204,7 @@ curl http://localhost:11434/v1/chat/completions \
 | Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault passwords` |
 | Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
-| Loki | http://localhost:3100 | No auth (localhost only) |
+| Loki | http://localhost:3100 | API only — use Grafana for log browsing |
 | Alertmanager | http://localhost:9093 | No auth (localhost only) |
 | Ollama API | http://localhost:11434 | No auth (localhost only) |
 
