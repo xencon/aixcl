@@ -200,7 +200,7 @@ curl http://localhost:11434/v1/chat/completions \
 | Service | URL | Login |
 |---------|-----|-------|
 | Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault passwords` |
-| pgAdmin | http://localhost:5050 | Email: `pgadmin@admin.com`, Password: `./aixcl vault passwords` |
+| pgAdmin | http://localhost:5050 | Email: `admin@example.com`, Password: `./aixcl vault passwords` |
 | Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault passwords` |
 | Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
