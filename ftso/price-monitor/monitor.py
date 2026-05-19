@@ -130,8 +130,8 @@ BINANCE_SYMBOLS: Dict[str, Optional[str]] = {
     "ICP": "ICPUSDT", "SHIB": "SHIBUSDT", "USDS": "USDSUSDT",
     "BCH": "BCHUSDT", "NEAR": "NEARUSDT", "LEO": None,
     "UNI": "UNIUSDT", "ETC": "ETCUSDT", "WIF": "WIFUSDT",
-    "BONK": "BONKUSDT", "JUP": "JUPUSDT", "ETHFI": None   # Binance ETHFI thin liquidity, systematic lag,
-    "ENA": "ENAUSDT", "PYTH": "PYTHUSDT", "HNT": None   # Binance lists legacy migrated token, deviation -83%,
+    "BONK": "BONKUSDT", "JUP": "JUPUSDT", "ETHFI": None,  # Binance ETHFI thin liquidity, systematic lag
+    "ENA": "ENAUSDT", "PYTH": "PYTHUSDT", "HNT": None,  # Binance lists legacy migrated token, deviation -83%
     "SUI": "SUIUSDT", "PEPE": "PEPEUSDT", "QNT": "QNTUSDT",
     "AAVE": "AAVEUSDT", "S": "SUSDT", "ONDO": "ONDOUSDT",
     "TAO": "TAOUSDT", "FET": "FETUSDT", "RENDER": "RENDERUSDT",
@@ -269,6 +269,9 @@ async def poll_loop() -> None:
 
 
 def main() -> None:
+    # Initialize error counters so metric series exist even when no errors occur
+    c_ref_errors.labels(source="coingecko")
+    c_ref_errors.labels(source="binance")
     start_http_server(METRICS_PORT)
     logger.info("Metrics on :%d | provider=%s | interval=%ds | band=+/-%.2f%%",
                 METRICS_PORT, PROVIDER_URL, POLL_INTERVAL, PRIMARY_BAND_PCT)
