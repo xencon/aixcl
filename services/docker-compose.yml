@@ -560,6 +560,25 @@ services:
       timeout: 10s
       retries: 3
 
+  ftso-price-monitor:
+    image: localhost/ftso-price-monitor:latest
+    container_name: ftso-price-monitor
+    pull_policy: missing
+    build:
+      context: ../ftso/price-monitor
+    environment:
+      - PROVIDER_URL=http://localhost:3101
+      - POLL_INTERVAL=30
+      - METRICS_PORT=9102
+      - PRIMARY_BAND_PCT=0.25
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9102/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   aixcl-ollama-data:
     external: true
