@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # pgAdmin entrypoint wrapper
-# On first start: creates initial admin from Vault secrets
+# On first start: waits for Vault secret, then creates initial admin
 # On restart: skips all admin creation, preserves user changes
-# Never falls back to hardcoded defaults; fails fast if secrets missing
+# Never falls back to hardcoded defaults; waits up to 60s for Vault secret
 set -euo pipefail
 
 echo "=== pgAdmin Non-Root Entrypoint ==="
@@ -80,12 +80,19 @@ fi
 
 # Admin password: only from Vault (no env, no fallback)
 PGADMIN_DEFAULT_PASSWORD=""
-if [ -f /run/secrets/pgadmin-password ] && [ -s /run/secrets/pgadmin-password ]; then
-    PGADMIN_DEFAULT_PASSWORD="$(tr -d '\n' < /run/secrets/pgadmin-password)"
-    export PGADMIN_DEFAULT_PASSWORD
-    echo "[Vault] pgAdmin password loaded from /run/secrets/pgadmin-password"
-else
-    echo "[Vault] ERROR: /run/secrets/pgadmin-password not found or empty"
+for i in $(seq 1 60); do
+    if [ -f /run/secrets/pgadmin-password ] && [ -s /run/secrets/pgadmin-password ]; then
+        PGADMIN_DEFAULT_PASSWORD="$(tr -d '\n' < /run/secrets/pgadmin-password)"
+        export PGADMIN_DEFAULT_PASSWORD
+        echo "[Vault] pgAdmin password loaded from /run/secrets/pgadmin-password"
+        break
+    fi
+    echo "[Vault] Waiting for pgadmin-password secret... ($i/30)"
+    sleep 2
+done
+
+if [ -z "$PGADMIN_DEFAULT_PASSWORD" ]; then
+    echo "[Vault] ERROR: /run/secrets/pgadmin-password not found or empty after 60 seconds"
     echo "  Cannot create initial admin on first start without Vault-generated password."
     exit 1
 fi
