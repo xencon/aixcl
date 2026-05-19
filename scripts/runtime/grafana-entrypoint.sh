@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # grafana-entrypoint.sh — Grafana entrypoint wrapper
-# On first start: sets initial admin password from Vault
+# On first start: waits for Vault secret, then sets initial admin password
 # On restart: skips password reset, respecting user changes
-# Never falls back to hardcoded defaults; fails fast if Vault secret missing
+# Never falls back to hardcoded defaults; waits up to 60s for Vault secret
 set -euo pipefail
 
 echo "=== Grafana Vault-Secure Entrypoint ==="
@@ -23,12 +23,20 @@ if [ "$IS_FIRST_START" = false ]; then
     exec /run.sh
 fi
 
-# --- First-start: require Vault password ---
-if [ -f /run/secrets/grafana-password ] && [ -s /run/secrets/grafana-password ]; then
-    GRAFANA_ADMIN_PASSWORD="$(tr -d '\n' < /run/secrets/grafana-password)"
-    echo "[Vault] Grafana admin password loaded from /run/secrets/grafana-password"
-else
-    echo "[Vault] ERROR: /run/secrets/grafana-password not found or empty."
+# --- First-start: wait for Vault password ---
+GRAFANA_ADMIN_PASSWORD=""
+for i in $(seq 1 60); do
+    if [ -f /run/secrets/grafana-password ] && [ -s /run/secrets/grafana-password ]; then
+        GRAFANA_ADMIN_PASSWORD="$(tr -d '\n' < /run/secrets/grafana-password)"
+        echo "[Vault] Grafana admin password loaded from /run/secrets/grafana-password"
+        break
+    fi
+    echo "[Vault] Waiting for grafana-password secret... ($i/30)"
+    sleep 2
+done
+
+if [ -z "$GRAFANA_ADMIN_PASSWORD" ]; then
+    echo "[Vault] ERROR: /run/secrets/grafana-password not found or empty after 60 seconds."
     echo "  Cannot create initial admin on first start without Vault-generated password."
     echo "  Ensure Vault is initialized and bootstrap has run."
     exit 1

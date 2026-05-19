@@ -1,6 +1,6 @@
 #!/bin/sh
 # Vault Agent for pgAdmin bootstrap password (KV store)
-# Fetches static bootstrap password from Vault KV and writes to file
+# Fetches static bootstrap password and email from Vault KV and writes to file
 # shellcheck shell=sh
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
@@ -11,32 +11,41 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+# Extract a field value from a JSON string using basic shell (no jq)
+extract_field() {
+    _json="$1"
+    _field="$2"
+    echo "$_json" | grep -o '"'"$_field"'"[^,}]*' | head -1 | sed 's/"'"$_field"'"[[:space:]]*:[[:space:]]*"//;s/"$//'
+}
+
 fetch_bootstrap_password() {
     log "Fetching pgAdmin bootstrap password from Vault KV..."
-    
+
     # Use wget to read from KV store (curl not available in Vault image)
     response=$(wget -qO- "${VAULT_ADDR}/v1/kv/data/bootstrap/pgadmin" \
         --header="X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null)
     wget_exit=$?
-    
+
     if [ $wget_exit -ne 0 ] || [ -z "$response" ]; then
-        log "Failed to fetch bootstrap password from Vault KV"
+        log "Failed to fetch bootstrap data from Vault KV"
         return 1
     fi
-    
-    # Extract password using basic shell (no jq needed)
-    password=$(echo "$response" | grep -o '"password"[^,}]*' | head -1 | sed 's/"password"[[:space:]]*:[[:space:]]*"//;s/"$//')
-    
+
+    # Extract password and email from KV response
+    password=$(extract_field "$response" "password")
+    email=$(extract_field "$response" "email")
+
     if [ -z "$password" ]; then
         log "Failed to parse bootstrap password from response"
         return 1
     fi
-    
+
     # Write to shared volume
     mkdir -p /run/secrets || {
         log "ERROR: Cannot create /run/secrets directory"
         return 1
     }
+
     if ! echo "$password" > /run/secrets/pgadmin-password; then
         log "ERROR: Cannot write /run/secrets/pgadmin-password"
         return 1
@@ -45,7 +54,19 @@ fetch_bootstrap_password() {
         log "ERROR: Cannot chmod /run/secrets/pgadmin-password"
         return 1
     fi
-    
+
+    if [ -n "$email" ]; then
+        if ! echo "$email" > /run/secrets/pgadmin-email; then
+            log "ERROR: Cannot write /run/secrets/pgadmin-email"
+            return 1
+        fi
+        if ! chmod 644 /run/secrets/pgadmin-email; then
+            log "ERROR: Cannot chmod /run/secrets/pgadmin-email"
+            return 1
+        fi
+        log "Bootstrap email written to /run/secrets/pgadmin-email"
+    fi
+
     log "Bootstrap password written to /run/secrets/pgadmin-password"
 }
 

@@ -89,7 +89,7 @@ jobs:
           POSTGRES_DATABASE=webui
 
           # PGAdmin configuration
-          PGADMIN_EMAIL=admin@test.com
+          PGADMIN_EMAIL=admin@example.com
           PGADMIN_PASSWORD=test
 
           # Open WebUI configuration

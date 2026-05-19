@@ -349,7 +349,6 @@ services:
     pull_policy: missing
     network_mode: host
     environment:
-      PGADMIN_DEFAULT_EMAIL: $PGADMIN_DEFAULT_EMAIL
       PGADMIN_LISTEN_PORT: 5050
       PGADMIN_LISTEN_ADDRESS: 127.0.0.1
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
@@ -461,11 +460,12 @@ services:
     pull_policy: missing
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
     devices:
       - /dev/kmsg
     network_mode: host

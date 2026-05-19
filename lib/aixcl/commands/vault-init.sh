@@ -13,11 +13,23 @@ set -euo pipefail
 
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../.. && pwd)}"
 
-# Load .env file if available
+# Load .env file if available (for config like POSTGRES_USER, PROFILE)
 if [ -f "${SCRIPT_DIR}/.env" ]; then
     set -o allexport
     source "${SCRIPT_DIR}/.env"
     set +o allexport
+fi
+
+# Load admin identity from .aixcl.initialized if available
+# This file is created by `stack init` and stores admin identity securely.
+# It takes priority over .env to prevent credential leaks in config files.
+if [ -f "${SCRIPT_DIR}/.aixcl.initialized" ]; then
+    while IFS='=' read -r key value; do
+        case "$key" in
+            username) AIXCL_ADMIN_USER="${value:-${AIXCL_ADMIN_USER:-}}" ;;
+            email)    AIXCL_ADMIN_EMAIL="${value:-${AIXCL_ADMIN_EMAIL:-}}" ;;
+        esac
+    done < "${SCRIPT_DIR}/.aixcl.initialized"
 fi
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
@@ -687,12 +699,14 @@ main() {
     wait_for_vault || return 1
 
     # Configure secrets engines and roles (all idempotent)
-    # NOTE: init_bootstrap_passwords must run before configure_postgres_connection
+    # NOTE: KV engine and bootstrap passwords must be set up first
+    #       so that bootstrap agents can populate secrets before PostgreSQL
+    #       finishes starting (fixes circular dependency with Podman rootless).
     # NOTE: PostgreSQL must be ready before the database engine tries to connect.
-    wait_for_postgres || return 1
-    enable_database_engine || return 1
     enable_kv_engine || return 1
     init_bootstrap_passwords || return 1
+    wait_for_postgres || return 1
+    enable_database_engine || return 1
     configure_postgres_connection || return 1
     create_app_role || return 1
     create_admin_role || return 1

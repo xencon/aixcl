@@ -28,9 +28,9 @@ NC='\033[0m' # No Color
 SECRETS=(
   "postgres_user:postgres"
   "postgres_password:32"
-  "pgadmin_email:pgadmin@localhost"
+  "pgadmin_email:admin@example.com"
   "pgadmin_password:32"
-  "openwebui_email:admin@localhost"
+  "openwebui_email:admin@example.com"
   "openwebui_password:32"
   "grafana_admin_user:grafana"
   "grafana_admin_password:32"

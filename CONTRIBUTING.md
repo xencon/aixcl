@@ -14,24 +14,37 @@ Thank you for your interest in contributing to AIXCL! This document outlines the
    cd aixcl
    ```
 
-### 2. Set Up Development Environment
+### 2. Sync Your Fork with Upstream
 
-Follow the [README.md](README.md) Quick Start guide to install prerequisites (Podman, Git).
+Before creating any branch, ensure your fork is synchronized with the upstream repository. This prevents merge conflicts and ensures you are building on the latest code.
 
-**Note:** GPG signing is **not required** for contributors submitting via Pull Request. GPG-signed commits are only required for:
-- Direct pushes to `main` or `dev` branches (maintainers only)
-- Merges performed by CODEOWNERS
+```bash
+# Add upstream remote (one-time)
+git remote add upstream https://github.com/xencon/aixcl.git
+
+# Fetch upstream state
+git fetch upstream
+
+# Sync main
+git checkout main
+git reset --hard upstream/main
+git push origin main --force-with-lease
+
+# Sync dev
+git checkout -B dev upstream/dev
+git push -u origin dev
+```
+
+**Important:** Never commit directly to `main` or `dev` on your fork. Always create feature branches from `dev`.
 
 ### 3. Create a Branch
 
 ```bash
-# Ensure you're on dev branch
+# Ensure you're on the latest dev
 git checkout dev
+git pull upstream dev
 
-# Pull latest changes
-git pull origin dev
-
-# Create feature branch
+# Create feature branch from upstream dev
 git checkout -b issue-XXX/short-description
 ```
 
@@ -56,18 +69,55 @@ Fixes #XXX"
 git push -u origin issue-XXX/short-description
 ```
 
-### 6. Create Pull Request
+### 6. Keep Your Branch Updated
 
-1. Go to https://github.com/xencon/aixcl
-2. Click "New Pull Request"
-3. Select your fork and branch
-4. Target: `xencon/aixcl:dev`
-5. Fill in the PR template
-6. Submit for review
+If upstream `dev` moves while your PR is open, rebase your branch to keep it conflict-free:
+
+```bash
+# Fetch latest upstream dev
+git fetch upstream
+
+# Rebase your feature branch
+git checkout issue-XXX/short-description
+git rebase upstream/dev
+
+# Force-push to update PR (safe on feature branches)
+git push origin issue-XXX/short-description --force-with-lease
+```
+
+### 7. Create Pull Request
+
+```bash
+# Create PR targeting upstream dev branch
+gh pr create --repo xencon/aixcl \
+  --base dev \
+  --head YOUR-USERNAME:issue-XXX/short-description \
+  --title "description (#XXX)" \
+  --body "Fixes #XXX"
+```
+
+**Required:** All PRs must target `xencon/aixcl:dev`. Never open a feature PR directly to `main`.
 
 ## Workflow for Maintainers
 
 If you are a CODEOWNER (@sbadakhc):
+
+### Consuming Upstream Changes
+
+After a PR is merged to `xencon/dev`, pull those changes back into your fork:
+
+```bash
+# Fetch and merge upstream dev
+git fetch upstream
+git checkout dev
+git merge upstream/dev
+git push origin dev
+
+# Update main when upstream main advances
+git checkout main
+git reset --hard upstream/main
+git push origin main --force-with-lease
+```
 
 ### GPG Signing (Required)
 

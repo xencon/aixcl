@@ -14,6 +14,11 @@ generate_pgadmin_config() {
     local pg_pass="${POSTGRES_PASSWORD:-}"
     
     # Remove old file if it exists (may have wrong permissions from container)
+    # NOTE: If Podman previously created this as a directory mount point,
+    # rmdir the empty directory first, then rm the file.
+    if [ -d "${SCRIPT_DIR}/pgadmin-servers.json" ]; then
+        rmdir "${SCRIPT_DIR}/pgadmin-servers.json" 2>/dev/null || true
+    fi
     rm -f "${SCRIPT_DIR}/pgadmin-servers.json" 2>/dev/null || true
     
     # Create pgadmin-servers.json with populated environment values

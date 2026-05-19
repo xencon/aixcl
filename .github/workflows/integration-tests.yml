@@ -39,7 +39,7 @@ jobs:
           POSTGRES_USER=admin
           POSTGRES_PASSWORD=test
           POSTGRES_DATABASE=webui
-          PGADMIN_EMAIL=admin@test.com
+          PGADMIN_EMAIL=admin@example.com
           PGADMIN_PASSWORD=test
           GRAFANA_ADMIN_USER=admin
           GRAFANA_ADMIN_PASSWORD=test

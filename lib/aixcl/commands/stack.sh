@@ -173,11 +173,11 @@ function init_stack() {
     local postgres_user="${AIXCL_ADMIN_USER}"
     local postgres_db="webui"
 
-    # Update .env with values
-    sed -i "s/^#\?AIXCL_ADMIN_USER=.*/AIXCL_ADMIN_USER=$AIXCL_ADMIN_USER/" "$env_file"
-    sed -i "s/^#\?AIXCL_ADMIN_EMAIL=.*/AIXCL_ADMIN_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
-    sed -i "s/^#\?PGADMIN_DEFAULT_EMAIL=.*/PGADMIN_DEFAULT_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
-    sed -i "s/^#\?OPENWEBUI_EMAIL=.*/OPENWEBUI_EMAIL=$AIXCL_ADMIN_EMAIL/" "$env_file"
+    # Update .env with non-sensitive config only
+    # NOTE: Admin identity (AIXCL_ADMIN_USER, AIXCL_ADMIN_EMAIL) is stored
+    # securely in .aixcl.initialized and Vault KV only — never in .env.
+    # pgAdmin, Open WebUI, and Grafana read their credentials from
+    # Vault bootstrap agents that populate /run/secrets/ from KV.
     sed -i "s/^#\?POSTGRES_USER=.*/POSTGRES_USER=$postgres_user/" "$env_file"
     sed -i "s/^#\?POSTGRES_DATABASE=.*/POSTGRES_DATABASE=$postgres_db/" "$env_file"
 
@@ -529,6 +529,11 @@ function start() {
     # after vault-init.sh populates the KV store and recreates them below.
     local _vault_token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
     if [ -f "$_vault_token_file" ]; then
+        # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
+        if [ -z "${GPG_TTY:-}" ]; then
+            GPG_TTY=$(tty 2>/dev/null || true)
+            export GPG_TTY
+        fi
         local _vault_token
         _vault_token=$(gpg --quiet --decrypt "$_vault_token_file" 2>/dev/null) || true
         if [ -n "${_vault_token:-}" ]; then
@@ -650,6 +655,11 @@ function start() {
                 # and force-recreate the bootstrap containers with the real token.
                 local _vault_token_file_post="${SCRIPT_DIR}/.security/vault-root-token.gpg"
                 if [ -f "$_vault_token_file_post" ]; then
+                    # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
+                    if [ -z "${GPG_TTY:-}" ]; then
+                        GPG_TTY=$(tty 2>/dev/null || true)
+                        export GPG_TTY
+                    fi
                     local _vtoken
                     _vtoken=$(gpg --quiet --decrypt "$_vault_token_file_post" 2>/dev/null) || true
                     if [ -n "${_vtoken:-}" ]; then
@@ -1178,6 +1188,9 @@ function logs() {
 }
 
 function status() {
+    # Detect container runtime (Podman vs Docker) before any container invocations
+    set_compose_cmd
+    
     # Profile library is sourced at script startup (lib/cli/profile.sh)
     
     # Get current profile from .env file

@@ -4,6 +4,37 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.21] - 2026-05-19
+
+### Summary
+
+Release v1.1.21 -- Podman rootless compatibility, Vault credential isolation, service startup resilience, and fork workflow documentation.
+
+### Added
+
+- [x] **Fork Sync Workflow Documentation**: Added upstream remote setup, branch sync, and rebase instructions to CONTRIBUTING.md for external contributors. (Fixes #1246)
+
+### Changed
+
+- [x] **Email Defaults**: Reverted all service email defaults from localhost and test domains to `admin@example.com` for first-start compatibility. Affects init-secrets.sh, README.md, CI workflows. (Fixes #1243)
+- [x] **Localhost Refactor**: Replaced `aixcl.local` references with `localhost` across docs, tests, and config for consistency. (Fixes #1245)
+
+### Fixed
+
+- [x] **Podman Autodetect**: Added `set_compose_cmd()` call to `status()` in stack.sh, mirroring start/stop/restart behavior. Fixes Docker socket errors on Podman-only systems. (Fixes #1242)
+- [x] **Podman Rootless Compatibility**: Added rootless directory setup, GPG_TTY handling, and token decrypt fixes for Podman environments. (Fixes #1242)
+- [x] **Vault Credential Isolation**: Bootstrap agents now write both password and email secrets from Vault KV to `/run/secrets/`, removing sensitive identity from `.env`. Fixes rootless restart loops. (Fixes #1242)
+- [x] **Grafana/pgAdmin Startup Race**: Added 60-second wait-and-retry loops for Vault bootstrap secrets, preventing fail-fast exits on fresh deployments. (Fixes #1244)
+- [x] **POSIX Compliance**: Replaced `local` keyword with underscore-prefixed variables in bootstrap-password scripts to satisfy ShellCheck SC3043. (Fixes #1242)
+- [x] **Loki Documentation**: Clarified in README that Loki has no web UI and Grafana should be used for log browsing.
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
 ## [v1.1.20] - 2026-05-14
 
 ### Summary
