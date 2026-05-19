@@ -48,7 +48,7 @@ AIXCL requires rootless Podman. Run the setup script once per machine:
 
 | File | Purpose |
 |------|---------|
-| `~/.bashrc` | Adds `DOCKER_BIN=podman` and `DOCKER_HOST` exports |
+| `~/.bashrc` | Manually add `DOCKER_BIN=podman` and `DOCKER_HOST` (not automated by script) |
 | `/etc/subuid` | Configures subordinate UIDs for rootless containers (via sudo) |
 | `/etc/subgid` | Configures subordinate GIDs for rootless containers (via sudo) |
 | `~/.config/containers/containers.conf` | Podman network and security defaults |
