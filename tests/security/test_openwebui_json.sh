@@ -13,7 +13,7 @@ echo "Testing security of JSON generation fallback..."
 # Mock variables with special characters that would break simple string interpolation
 # or cause injection if not properly escaped.
 # shellcheck disable=SC2089
-OPENWEBUI_EMAIL='admin@example.com"}'
+OPENWEBUI_EMAIL='admin@localhost"}'
 # shellcheck disable=SC2089
 OPENWEBUI_PASSWORD='password" --payload "injection'
 # shellcheck disable=SC2090
@@ -41,11 +41,11 @@ else
 fi
 
 # Check if injection characters are escaped
-# The email 'admin@example.com"}' should be escaped as "admin@example.com\"}"
-if [[ "$PAYLOAD" == *"admin@example.com\\\"}"* ]] || [[ "$PAYLOAD" == *"admin@example.com\"}"* ]]; then
-    if echo "$PAYLOAD" | grep -q 'admin@example.com\\"}'; then
-       echo -e "${GREEN}PASS: Special characters escaped${NC}"
-    elif echo "$PAYLOAD" | grep -q 'admin@example.com"}'; then
+# The email 'admin@localhost"}' should be escaped as "admin@localhost\"}"
+if [[ "$PAYLOAD" == *"admin@localhost\"}"* ]] || [[ "$PAYLOAD" == *"admin@localhost\"}"* ]]; then
+    if echo "$PAYLOAD" | grep -q 'admin@localhost\"}'; then
+        echo -e "${GREEN}PASS: Special characters escaped${NC}"
+    elif echo "$PAYLOAD" | grep -q 'admin@localhost"}'; then
         echo -e "${GREEN}PASS: JSON is valid (implies escaping)${NC}"
     else
         echo -e "${RED}FAIL: Payload content mismatch${NC}"
