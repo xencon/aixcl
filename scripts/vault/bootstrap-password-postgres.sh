@@ -13,9 +13,9 @@ log() {
 
 # Extract a field value from a JSON string using basic shell (no jq)
 extract_field() {
-    local json="$1"
-    local field="$2"
-    echo "$json" | grep -o '"'"$field"'"[^,}]*' | head -1 | sed 's/"'"$field"'"[[:space:]]*:[[:space:]]*"//;s/"$//'
+    _json="$1"
+    _field="$2"
+    echo "$_json" | grep -o '"'"$_field"'"[^,}]*' | head -1 | sed 's/"'"$_field"'"[[:space:]]*:[[:space:]]*"//;s/"$//'
 }
 
 fetch_bootstrap_password() {
