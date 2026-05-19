@@ -135,6 +135,16 @@ Vault initializes automatically during stack startup. The process takes 2-3 minu
 ./aixcl vault passwords
 ```
 
+**Important:** Vault auto-seals whenever its container restarts (e.g. after `./aixcl stack stop` or host reboot). If services fail to start, unseal Vault first:
+
+```bash
+# Unseal Vault after every stack restart
+./aixcl vault unseal
+
+# Wait 30 seconds for bootstrap agents, then verify
+./aixcl stack status
+```
+
 ### Step 5: Test Inference (Hello World)
 
 **A. Via Open WebUI (Browser)**
