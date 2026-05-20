@@ -273,12 +273,27 @@
       ]
     },
     {
+      "id": 11,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 2
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**CG Dev%** \u2014 Deviation from CoinGecko (can lag in fast markets) &nbsp;&nbsp;|&nbsp;&nbsp; **Binance Dev%** \u2014 Deviation from Binance real-time price (primary signal) &nbsp;&nbsp;|&nbsp;&nbsp; **Band** \u2014 Within Flare FTSO \u00b10.25% primary scoring band &nbsp;&nbsp;|&nbsp;&nbsp; \ud83d\udfe2 \u00b10.25% &nbsp; \ud83d\udfe1 \u00b10.25\u20130.5% &nbsp; \ud83d\udd34 >0.5%"
+      }
+    },
+    {
       "id": 10,
       "type": "table",
       "title": "Live Accuracy \u2014 All Pairs",
       "gridPos": {
         "x": 0,
-        "y": 4,
+        "y": 6,
         "w": 24,
         "h": 14
       },
@@ -346,6 +361,10 @@
                   "type": "color-background",
                   "mode": "basic"
                 }
+              },
+              {
+                "id": "description",
+                "value": "Price deviation % from CoinGecko aggregated reference price. Green = within +/-0.25% primary band. Yellow = +/-0.25 to 0.5% warning zone. Red = beyond +/-0.5%, investigate feed sources."
               }
             ]
           },
@@ -397,6 +416,10 @@
                   "type": "color-background",
                   "mode": "basic"
                 }
+              },
+              {
+                "id": "description",
+                "value": "Price deviation % from Binance real-time reference price. Binance reflects live market prices faster than CoinGecko. Use this as the primary accuracy signal during volatile markets."
               }
             ]
           },
@@ -429,6 +452,10 @@
                 "value": {
                   "type": "colored-text"
                 }
+              },
+              {
+                "id": "description",
+                "value": "Whether the provider price falls within the Flare FTSO +/-0.25% primary scoring band vs CoinGecko. YES = scoring hit. NO = missed primary band."
               }
             ]
           },
@@ -461,6 +488,10 @@
                 "value": {
                   "type": "colored-text"
                 }
+              },
+              {
+                "id": "description",
+                "value": "Whether the provider price falls within the Flare FTSO +/-0.25% primary scoring band vs Binance. YES = scoring hit. NO = missed primary band."
               }
             ]
           }
@@ -528,7 +559,8 @@
           "format": "table",
           "refId": "binance_band"
         }
-      ]
+      ],
+      "description": "Live feed accuracy for all 64 pairs vs CoinGecko and Binance reference prices.\n\nCG Dev% \u2014 Deviation from CoinGecko aggregated price. CoinGecko can lag during fast markets; use Binance Dev% as the primary accuracy signal.\n\nBinance Dev% \u2014 Deviation from Binance real-time price. Most reliable indicator of true feed accuracy.\n\nCG Band / Binance Band \u2014 Whether the provider price is within the Flare FTSO +/-0.25% primary scoring band.\n\nColour coding: Green = within +/-0.25% (primary band). Yellow = +/-0.25 to 0.5% (warning). Red = beyond +/-0.5% (investigate feed sources)."
     },
     {
       "id": 20,
