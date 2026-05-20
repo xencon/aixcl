@@ -53,6 +53,10 @@ INTERACTIVE: bool = os.getenv("INTERACTIVE", "0") == "1"
 ALERTMANAGER_URL: str = os.getenv("ALERTMANAGER_URL", "http://localhost:9093")
 LOKI_URL: str = os.getenv("LOKI_URL", "http://localhost:3100")
 
+# In-memory persistence tracker — resets on container restart
+# key = alert id, value = consecutive poll count
+_consecutive_counts: dict[str, int] = {}
+
 
 # ── Report formatting ──────────────────────────────────────────────────────────
 
@@ -114,6 +118,42 @@ def _format_report(
 
 
 
+
+
+# ── Persistence tracking ───────────────────────────────────────────────────────
+
+def _update_alert_counts(alerts: list[dict]) -> None:
+    """
+    Update consecutive poll counts for each active alert.
+    Mutates alerts in place — adds 'consecutive_polls' and enriches 'context'.
+    Clears counts for pairs that are no longer alerting (resolved).
+    State is in-memory only: resets on container restart.
+
+    Tier thresholds:
+      poll 1        monitor — likely self-resolving
+      polls 2-4     recurring — investigate sources
+      polls 5+      persistent structural issue — act now
+    """
+    active_ids = {a["id"] for a in alerts}
+
+    for a in alerts:
+        _consecutive_counts[a["id"]] = _consecutive_counts.get(a["id"], 0) + 1
+        count = _consecutive_counts[a["id"]]
+        a["consecutive_polls"] = count
+
+        if count == 1:
+            tier = "poll 1 — monitor, likely self-resolving"
+        elif count < 5:
+            tier = f"poll {count} — recurring, investigate sources"
+        else:
+            tier = f"poll {count} — persistent structural issue, act now"
+
+        a["context"] = a["context"] + f" [{tier}]"
+
+    # Clear resolved pairs
+    for key in list(_consecutive_counts.keys()):
+        if key not in active_ids:
+            del _consecutive_counts[key]
 
 # ── Alertmanager integration ───────────────────────────────────────────────────
 
@@ -179,6 +219,7 @@ def _push_to_loki(snapshot: dict, alerts: list[dict], written: dict) -> None:
                 "pair": a["pair"],
                 "issue_type": a["issue_type"],
                 "severity": a["severity"],
+                "consecutive_polls": a.get("consecutive_polls", 1),
             }
             for a in alerts
         ],
@@ -221,6 +262,7 @@ def _poll_once(interactive: bool) -> None:
         return
 
     alerts = classifier.classify(snapshot)
+    _update_alert_counts(alerts)
 
     try:
         written = llm_writer.write_actions(alerts)
