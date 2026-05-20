@@ -2,8 +2,17 @@
 """
 FTSO Price Monitor
 
-Polls dd-ftso-v2-provider and compares prices against CoinGecko and Binance.
+Polls dd-ftso-v2-provider and compares prices against CoinGecko, Binance,
+and the Flare FTSOv2 on-chain anchor (the actual scoring reference).
 Exposes Prometheus metrics on METRICS_PORT for Grafana visualization.
+
+Anchor fallback design:
+  If FlareAnchorService fails to initialize at startup (RPC unreachable, bad
+  registry, etc.), the monitor logs an ERROR and continues without anchor data.
+  This is an explicitly designed fallback: CoinGecko/Binance monitoring remains
+  fully operational, and the anchor metrics simply return no data. If anchor
+  fetch fails during a poll cycle, the error is logged and counted in
+  ftso_reference_fetch_errors_total{source="anchor"}.
 """
 
 import asyncio
@@ -15,17 +24,29 @@ from typing import Dict, Optional
 import aiohttp
 from prometheus_client import Counter, Gauge, start_http_server
 
+from flare_anchor import FlareAnchorService
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("ftso-monitor")
 
+# --- Configuration ---
+
 PROVIDER_URL = os.getenv("PROVIDER_URL", "http://localhost:3101")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 METRICS_PORT = int(os.getenv("METRICS_PORT", "9102"))
 PRIMARY_BAND_PCT = float(os.getenv("PRIMARY_BAND_PCT", "0.25"))
 
+FLARE_RPC_URL = os.getenv(
+    "FLARE_RPC_URL", "https://flare-api.flare.network/ext/C/rpc"
+)
+FLARE_CONTRACT_REGISTRY = os.getenv(
+    "FLARE_CONTRACT_REGISTRY", "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+)
+
+# All 64 feeds from feeds.json (category 1)
 FEEDS = [
     {"category": 1, "name": "FLR/USD"},
     {"category": 1, "name": "SGB/USD"},
@@ -93,66 +114,184 @@ FEEDS = [
     {"category": 1, "name": "NIGHT/USD"},
 ]
 
+# CoinGecko API IDs. None = not tracked on CoinGecko (niche/Flare-specific tokens).
 COINGECKO_IDS: Dict[str, Optional[str]] = {
-    "FLR": "flare-networks", "SGB": "songbird", "BTC": "bitcoin",
-    "XRP": "ripple", "LTC": "litecoin", "XLM": "stellar",
-    "DOGE": "dogecoin", "ADA": "cardano", "ALGO": "algorand",
-    "ETH": "ethereum", "FIL": "filecoin", "ARB": "arbitrum",
-    "AVAX": "avalanche-2", "BNB": "binancecoin", "POL": "polygon-ecosystem-token",
-    "SOL": "solana", "USDC": "usd-coin", "USDT": "tether",
-    "XDC": "xdce-crowd-sale", "TRX": "tron", "LINK": "chainlink",
-    "ATOM": "cosmos", "DOT": "polkadot", "TON": "the-open-network",
-    "ICP": "internet-computer", "SHIB": "shiba-inu", "USDS": "usds",
-    "BCH": "bitcoin-cash", "NEAR": "near", "LEO": "leo-token",
-    "UNI": "uniswap", "ETC": "ethereum-classic", "WIF": "dogwifcoin",
-    "BONK": "bonk", "JUP": "jupiter-exchange-solana", "ETHFI": "ether-fi",
-    "ENA": "ethena", "PYTH": "pyth-network", "HNT": "helium",
-    "SUI": "sui", "PEPE": "pepe", "QNT": "quant-network",
-    "AAVE": "aave", "S": "sonic-3", "ONDO": "ondo-finance",
-    "TAO": "bittensor", "FET": "fetch-ai", "RENDER": "render-token",
-    "NOT": "notcoin", "RUNE": "thorchain", "TRUMP": "official-trump",
-    "USDX": None, "JOULE": None,
-    "HBAR": "hedera-hashgraph", "PENGU": "pudgy-penguins",
-    "HYPE": "hyperliquid", "APT": "aptos", "PAXG": "pax-gold",
-    "BERA": "berachain-bera", "OP": "optimism", "PUMP": "pump-fun",
-    "XPL": None, "MON": None, "NIGHT": None,
+    "FLR":    "flare-networks",
+    "SGB":    "songbird",
+    "BTC":    "bitcoin",
+    "XRP":    "ripple",
+    "LTC":    "litecoin",
+    "XLM":    "stellar",
+    "DOGE":   "dogecoin",
+    "ADA":    "cardano",
+    "ALGO":   "algorand",
+    "ETH":    "ethereum",
+    "FIL":    "filecoin",
+    "ARB":    "arbitrum",
+    "AVAX":   "avalanche-2",
+    "BNB":    "binancecoin",
+    "POL":    "polygon-ecosystem-token",
+    "SOL":    "solana",
+    "USDC":   "usd-coin",
+    "USDT":   "tether",
+    "XDC":    "xdce-crowd-sale",
+    "TRX":    "tron",
+    "LINK":   "chainlink",
+    "ATOM":   "cosmos",
+    "DOT":    "polkadot",
+    "TON":    "the-open-network",
+    "ICP":    "internet-computer",
+    "SHIB":   "shiba-inu",
+    "USDS":   "usds",
+    "BCH":    "bitcoin-cash",
+    "NEAR":   "near",
+    "LEO":    "leo-token",
+    "UNI":    "uniswap",
+    "ETC":    "ethereum-classic",
+    "WIF":    "dogwifcoin",
+    "BONK":   "bonk",
+    "JUP":    "jupiter-exchange-solana",
+    "ETHFI":  "ether-fi",
+    "ENA":    "ethena",
+    "PYTH":   "pyth-network",
+    "HNT":    "helium",
+    "SUI":    "sui",
+    "PEPE":   "pepe",
+    "QNT":    "quant-network",
+    "AAVE":   "aave",
+    "S":      "sonic-3",
+    "ONDO":   "ondo-finance",
+    "TAO":    "bittensor",
+    "FET":    "fetch-ai",
+    "RENDER": "render-token",
+    "NOT":    "notcoin",
+    "RUNE":   "thorchain",
+    "TRUMP":  "official-trump",
+    "USDX":   None,   # Flare ecosystem stablecoin
+    "JOULE":  None,   # Flare ecosystem token
+    "HBAR":   "hedera-hashgraph",
+    "PENGU":  "pudgy-penguins",
+    "HYPE":   "hyperliquid",
+    "APT":    "aptos",
+    "PAXG":   "pax-gold",
+    "BERA":   "berachain-bera",
+    "OP":     "optimism",
+    "PUMP":   "pump-fun",
+    "XPL":    None,   # Unclear CoinGecko listing
+    "MON":    None,   # Monad not yet on CoinGecko
+    "NIGHT":  None,   # Niche token
 }
 
+# Binance USDT spot symbols. None = not listed on Binance spot.
 BINANCE_SYMBOLS: Dict[str, Optional[str]] = {
-    "FLR": "FLRUSDT", "SGB": None, "BTC": "BTCUSDT",
-    "XRP": "XRPUSDT", "LTC": "LTCUSDT", "XLM": "XLMUSDT",
-    "DOGE": "DOGEUSDT", "ADA": "ADAUSDT", "ALGO": "ALGOUSDT",
-    "ETH": "ETHUSDT", "FIL": "FILUSDT", "ARB": "ARBUSDT",
-    "AVAX": "AVAXUSDT", "BNB": "BNBUSDT", "POL": "POLUSDT",
-    "SOL": "SOLUSDT", "USDC": "USDCUSDT", "USDT": None,
-    "XDC": None, "TRX": "TRXUSDT", "LINK": "LINKUSDT",
-    "ATOM": "ATOMUSDT", "DOT": "DOTUSDT", "TON": "TONUSDT",
-    "ICP": "ICPUSDT", "SHIB": "SHIBUSDT", "USDS": "USDSUSDT",
-    "BCH": "BCHUSDT", "NEAR": "NEARUSDT", "LEO": None,
-    "UNI": "UNIUSDT", "ETC": "ETCUSDT", "WIF": "WIFUSDT",
-    "BONK": "BONKUSDT", "JUP": "JUPUSDT", "ETHFI": None,  # Binance ETHFI thin liquidity, systematic lag
-    "ENA": "ENAUSDT", "PYTH": "PYTHUSDT", "HNT": None,  # Binance lists legacy migrated token, deviation -83%
-    "SUI": "SUIUSDT", "PEPE": "PEPEUSDT", "QNT": "QNTUSDT",
-    "AAVE": "AAVEUSDT", "S": "SUSDT", "ONDO": "ONDOUSDT",
-    "TAO": "TAOUSDT", "FET": "FETUSDT", "RENDER": "RENDERUSDT",
-    "NOT": "NOTUSDT", "RUNE": "RUNEUSDT", "TRUMP": "TRUMPUSDT",
-    "USDX": None, "JOULE": None, "HBAR": "HBARUSDT",
-    "PENGU": "PENGUUSDT", "HYPE": None, "APT": "APTUSDT",
-    "PAXG": "PAXGUSDT", "BERA": "BERAUSDT", "OP": "OPUSDT",
-    "PUMP": "PUMPUSDT", "XPL": "XPLUSDT", "MON": "MONUSDT",
-    "NIGHT": None,
+    "FLR":    "FLRUSDT",
+    "SGB":    None,
+    "BTC":    "BTCUSDT",
+    "XRP":    "XRPUSDT",
+    "LTC":    "LTCUSDT",
+    "XLM":    "XLMUSDT",
+    "DOGE":   "DOGEUSDT",
+    "ADA":    "ADAUSDT",
+    "ALGO":   "ALGOUSDT",
+    "ETH":    "ETHUSDT",
+    "FIL":    "FILUSDT",
+    "ARB":    "ARBUSDT",
+    "AVAX":   "AVAXUSDT",
+    "BNB":    "BNBUSDT",
+    "POL":    "POLUSDT",
+    "SOL":    "SOLUSDT",
+    "USDC":   "USDCUSDT",
+    "USDT":   None,   # No USDT/USDT pair
+    "XDC":    None,   # Not on Binance spot
+    "TRX":    "TRXUSDT",
+    "LINK":   "LINKUSDT",
+    "ATOM":   "ATOMUSDT",
+    "DOT":    "DOTUSDT",
+    "TON":    "TONUSDT",
+    "ICP":    "ICPUSDT",
+    "SHIB":   "SHIBUSDT",
+    "USDS":   "USDSUSDT",
+    "BCH":    "BCHUSDT",
+    "NEAR":   "NEARUSDT",
+    "LEO":    None,
+    "UNI":    "UNIUSDT",
+    "ETC":    "ETCUSDT",
+    "WIF":    "WIFUSDT",
+    "BONK":   "BONKUSDT",
+    "JUP":    "JUPUSDT",
+    "ETHFI":  None,   # Binance ETHFI liquidity too thin, systematic lag vs CoinGecko
+    "ENA":    "ENAUSDT",
+    "PYTH":   "PYTHUSDT",
+    "HNT":    None,   # Binance lists legacy/migrated token, price is -83% vs spot
+    "SUI":    "SUIUSDT",
+    "PEPE":   "PEPEUSDT",
+    "QNT":    "QNTUSDT",
+    "AAVE":   "AAVEUSDT",
+    "S":      "SUSDT",
+    "ONDO":   "ONDOUSDT",
+    "TAO":    "TAOUSDT",
+    "FET":    "FETUSDT",
+    "RENDER": "RENDERUSDT",
+    "NOT":    "NOTUSDT",
+    "RUNE":   "RUNEUSDT",
+    "TRUMP":  "TRUMPUSDT",
+    "USDX":   None,
+    "JOULE":  None,
+    "HBAR":   "HBARUSDT",
+    "PENGU":  "PENGUUSDT",
+    "HYPE":   None,   # Hyperliquid native — not on Binance spot
+    "APT":    "APTUSDT",
+    "PAXG":   "PAXGUSDT",
+    "BERA":   "BERAUSDT",
+    "OP":     "OPUSDT",
+    "PUMP":   "PUMPUSDT",
+    "XPL":    "XPLUSDT",
+    "MON":    "MONUSDT",
+    "NIGHT":  None,
 }
 
-g_provider_price = Gauge("ftso_provider_price", "Current price from the FTSO provider", ["pair"])
-g_reference_price = Gauge("ftso_reference_price", "Reference price from an external source", ["pair", "source"])
-g_deviation_pct = Gauge("ftso_price_deviation_pct", "Price deviation from reference in percent", ["pair", "source"])
-g_in_band = Gauge("ftso_within_primary_band", "1 if within primary band else 0", ["pair", "source"])
-g_band_pct = Gauge("ftso_pairs_within_primary_band_pct", "Percentage of pairs within primary band", ["source"])
-g_provider_count = Gauge("ftso_provider_prices_total", "Number of pairs returned by provider")
-g_reference_count = Gauge("ftso_reference_prices_total", "Number of pairs with reference data", ["source"])
-c_poll = Counter("ftso_poll_total", "Poll cycle count", ["status"])
-c_ref_errors = Counter("ftso_reference_fetch_errors_total", "Reference source fetch failures", ["source"])
+# --- Prometheus metrics ---
 
+g_provider_price = Gauge(
+    "ftso_provider_price",
+    "Current price from the FTSO provider",
+    ["pair"],
+)
+g_reference_price = Gauge(
+    "ftso_reference_price",
+    "Reference price from an external source",
+    ["pair", "source"],
+)
+g_deviation_pct = Gauge(
+    "ftso_price_deviation_pct",
+    "Price deviation from reference in percent ((provider-ref)/ref*100)",
+    ["pair", "source"],
+)
+g_in_band = Gauge(
+    "ftso_within_primary_band",
+    f"1 if deviation is within ±{PRIMARY_BAND_PCT}% of reference, else 0",
+    ["pair", "source"],
+)
+g_band_pct = Gauge(
+    "ftso_pairs_within_primary_band_pct",
+    "Percentage of pairs with reference data that are within the primary band",
+    ["source"],
+)
+g_provider_count = Gauge("ftso_provider_prices_total", "Number of pairs returned by provider")
+g_reference_count = Gauge(
+    "ftso_reference_prices_total",
+    "Number of pairs with reference data",
+    ["source"],
+)
+c_poll = Counter("ftso_poll_total", "Poll cycle count", ["status"])
+c_ref_errors = Counter(
+    "ftso_reference_fetch_errors_total",
+    "Reference source fetch failures",
+    ["source"],
+)
+
+
+# --- Data fetchers ---
 
 async def fetch_provider(session: aiohttp.ClientSession) -> Dict[str, float]:
     try:
@@ -212,70 +351,144 @@ async def fetch_binance(session: aiohttp.ClientSession) -> Dict[str, float]:
         return {}
 
 
+async def fetch_anchor(
+    anchor_service: FlareAnchorService,
+    loop: asyncio.AbstractEventLoop,
+) -> Dict[str, float]:
+    """
+    Fetch anchor prices from Flare FTSOv2 on-chain contract.
+
+    Runs the synchronous web3 call in a thread executor to avoid blocking
+    the async event loop. Errors are logged and counted; returns {} on failure.
+    """
+    try:
+        return await loop.run_in_executor(None, anchor_service.fetch_prices)
+    except Exception as exc:
+        logger.error("Anchor fetch failed: %s", exc)
+        c_ref_errors.labels(source="anchor").inc()
+        return {}
+
+
+# --- Metrics update ---
+
 def update_metrics(
     provider: Dict[str, float],
     coingecko: Dict[str, float],
     binance: Dict[str, float],
+    anchor: Dict[str, float],
 ) -> None:
-    sources = {"coingecko": coingecko, "binance": binance}
+    sources = {"coingecko": coingecko, "binance": binance, "anchor": anchor}
     in_band: Dict[str, Dict[str, int]] = {s: {"in": 0, "total": 0} for s in sources}
+
     g_provider_count.set(len(provider))
+
     for feed in FEEDS:
         pair = feed["name"]
         token = pair.split("/")[0]
+
         if pair not in provider:
             continue
+
         our_price = provider[pair]
         g_provider_price.labels(pair=pair).set(our_price)
+
         for src, prices in sources.items():
             if token not in prices:
                 continue
             ref = prices[token]
             if ref <= 0:
                 continue
+
             g_reference_price.labels(pair=pair, source=src).set(ref)
+
             dev = ((our_price - ref) / ref) * 100
             g_deviation_pct.labels(pair=pair, source=src).set(dev)
+
             band = 1 if abs(dev) <= PRIMARY_BAND_PCT else 0
             g_in_band.labels(pair=pair, source=src).set(band)
+
             in_band[src]["total"] += 1
             in_band[src]["in"] += band
+
     for src, counts in in_band.items():
         g_reference_count.labels(source=src).set(counts["total"])
         if counts["total"] > 0:
             g_band_pct.labels(source=src).set(counts["in"] / counts["total"] * 100)
 
 
-async def poll_loop() -> None:
+# --- Main loop ---
+
+async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
+    loop = asyncio.get_event_loop()
     connector = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
     async with aiohttp.ClientSession(connector=connector) as session:
         while True:
             t0 = time.monotonic()
             try:
-                provider, coingecko, binance = await asyncio.gather(
+                # Build coroutines — anchor fetch only if service is available
+                coros = [
                     fetch_provider(session),
                     fetch_coingecko(session),
                     fetch_binance(session),
-                )
-                update_metrics(provider, coingecko, binance)
+                ]
+                if anchor_service is not None:
+                    coros.append(fetch_anchor(anchor_service, loop))
+
+                results = await asyncio.gather(*coros)
+                provider, coingecko, binance = results[0], results[1], results[2]
+                anchor = results[3] if anchor_service is not None else {}
+
+                update_metrics(provider, coingecko, binance, anchor)
                 c_poll.labels(status="success").inc()
-                logger.info("Poll ok — provider=%d CoinGecko=%d Binance=%d",
-                            len(provider), len(coingecko), len(binance))
+                logger.info(
+                    "Poll ok — provider=%d CoinGecko=%d Binance=%d Anchor=%d",
+                    len(provider), len(coingecko), len(binance), len(anchor),
+                )
             except Exception as exc:
                 logger.error("Poll cycle error: %s", exc)
                 c_poll.labels(status="error").inc()
+
             elapsed = time.monotonic() - t0
             await asyncio.sleep(max(0.0, POLL_INTERVAL - elapsed))
 
 
 def main() -> None:
-    # Initialize error counters so metric series exist even when no errors occur
+    # Initialize error counters so metric series exist from startup,
+    # even before any errors occur. All three sources must be present.
     c_ref_errors.labels(source="coingecko")
     c_ref_errors.labels(source="binance")
+    c_ref_errors.labels(source="anchor")
+
+    # Construct FlareAnchorService explicitly.
+    # Explicitly designed fallback: if the Flare RPC is unreachable at startup,
+    # the monitor continues without anchor data. CoinGecko/Binance monitoring is
+    # unaffected. The ERROR log and missing anchor metrics make the degraded state
+    # visible — this is not silent failure.
+    anchor_service: Optional[FlareAnchorService] = None
+    feed_names = [f["name"] for f in FEEDS]
+    try:
+        anchor_service = FlareAnchorService(
+            rpc_url=FLARE_RPC_URL,
+            registry_address=FLARE_CONTRACT_REGISTRY,
+            feed_names=feed_names,
+        )
+        logger.info("Flare anchor service initialized (%d feeds)", len(feed_names))
+    except Exception as exc:
+        logger.error(
+            "Flare anchor service failed to initialize — anchor metrics will be absent: %s",
+            exc,
+        )
+
     start_http_server(METRICS_PORT)
-    logger.info("Metrics on :%d | provider=%s | interval=%ds | band=+/-%.2f%%",
-                METRICS_PORT, PROVIDER_URL, POLL_INTERVAL, PRIMARY_BAND_PCT)
-    asyncio.run(poll_loop())
+    logger.info(
+        "Metrics on :%d | provider=%s | interval=%ds | band=±%.2f%% | anchor=%s",
+        METRICS_PORT,
+        PROVIDER_URL,
+        POLL_INTERVAL,
+        PRIMARY_BAND_PCT,
+        "enabled" if anchor_service is not None else "DISABLED (init failed)",
+    )
+    asyncio.run(poll_loop(anchor_service))
 
 
 if __name__ == "__main__":

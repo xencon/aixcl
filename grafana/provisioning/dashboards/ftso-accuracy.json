@@ -4,43 +4,28 @@
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",
-  "time": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "tags": [
-    "ftso",
-    "flare",
-    "oracle"
-  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "tags": ["ftso", "flare", "oracle"],
   "templating": {
     "list": [
       {
         "name": "pair",
         "label": "Pair",
         "type": "query",
-        "datasource": {
-          "type": "prometheus"
-        },
+        "datasource": { "type": "prometheus" },
         "query": "label_values(ftso_provider_price, pair)",
         "multi": false,
         "includeAll": false,
-        "current": {
-          "text": "BTC/USD",
-          "value": "BTC/USD"
-        }
+        "current": { "text": "BTC/USD", "value": "BTC/USD" }
       },
       {
         "name": "source",
         "label": "Reference",
         "type": "custom",
-        "query": "coingecko,binance",
+        "query": "anchor,coingecko,binance",
         "multi": false,
         "includeAll": false,
-        "current": {
-          "text": "coingecko",
-          "value": "coingecko"
-        }
+        "current": { "text": "anchor", "value": "anchor" }
       }
     ]
   },
@@ -48,20 +33,13 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "% Pairs in Primary Band \u2014 CoinGecko",
-      "gridPos": {
-        "x": 0,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
+      "title": "% Pairs in Band — CoinGecko",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background"
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto",
+        "colorMode": "background",
+        "orientation": "auto"
       },
       "fieldConfig": {
         "defaults": {
@@ -70,18 +48,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "green",
-                "value": 75
-              }
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 75 }
             ]
           }
         }
@@ -96,19 +65,11 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "% Pairs in Primary Band \u2014 Binance",
-      "gridPos": {
-        "x": 6,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
+      "title": "% Pairs in Band — Binance",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto",
         "colorMode": "background"
       },
       "fieldConfig": {
@@ -118,18 +79,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "green",
-                "value": 75
-              }
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 75 }
             ]
           }
         }
@@ -142,21 +94,45 @@
       ]
     },
     {
+      "id": 6,
+      "type": "stat",
+      "title": "% Pairs in Band — Anchor",
+      "description": "On-chain FTSOv2 anchor = actual scoring reference. This is the metric that directly reflects your score.",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 75 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "ftso_pairs_within_primary_band_pct{source=\"anchor\"}",
+          "legendFormat": "Anchor"
+        }
+      ]
+    },
+    {
       "id": 3,
       "type": "stat",
       "title": "Provider Pairs Active",
-      "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto",
         "colorMode": "background"
       },
       "fieldConfig": {
@@ -165,45 +141,25 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "green",
-                "value": 60
-              }
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 60 }
             ]
           }
         }
       },
       "targets": [
-        {
-          "expr": "ftso_provider_prices_total",
-          "legendFormat": "Pairs"
-        }
+        { "expr": "ftso_provider_prices_total", "legendFormat": "Pairs" }
       ]
     },
     {
       "id": 4,
       "type": "stat",
       "title": "Poll Success Rate",
-      "gridPos": {
-        "x": 16,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto",
         "colorMode": "background"
       },
       "fieldConfig": {
@@ -213,18 +169,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.9
-              },
-              {
-                "color": "green",
-                "value": 0.99
-              }
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.9 },
+              { "color": "green", "value": 0.99 }
             ]
           }
         }
@@ -239,29 +186,22 @@
     {
       "id": 5,
       "type": "stat",
-      "title": "Reference Source Coverage",
-      "gridPos": {
-        "x": 20,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
+      "title": "Reference Coverage",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"] },
         "textMode": "value_and_name",
         "colorMode": "none",
         "orientation": "vertical"
       },
       "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        }
+        "defaults": { "unit": "short" }
       },
       "targets": [
+        {
+          "expr": "ftso_reference_prices_total{source=\"anchor\"}",
+          "legendFormat": "Anchor"
+        },
         {
           "expr": "ftso_reference_prices_total{source=\"coingecko\"}",
           "legendFormat": "CoinGecko"
@@ -273,248 +213,91 @@
       ]
     },
     {
-      "id": 11,
-      "type": "text",
-      "title": "",
-      "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 24,
-        "h": 2
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "**CG Dev%** \u2014 Deviation from CoinGecko (can lag in fast markets) &nbsp;&nbsp;|&nbsp;&nbsp; **Binance Dev%** \u2014 Deviation from Binance real-time price (primary signal) &nbsp;&nbsp;|&nbsp;&nbsp; **Band** \u2014 Within Flare FTSO \u00b10.25% primary scoring band &nbsp;&nbsp;|&nbsp;&nbsp; \ud83d\udfe2 \u00b10.25% &nbsp; \ud83d\udfe1 \u00b10.25\u20130.5% &nbsp; \ud83d\udd34 >0.5%"
-      }
-    },
-    {
       "id": 10,
       "type": "table",
-      "title": "Live Accuracy \u2014 All Pairs",
-      "gridPos": {
-        "x": 0,
-        "y": 6,
-        "w": 24,
-        "h": 14
-      },
+      "title": "Live Accuracy — All Pairs",
+      "description": "Anchor Dev% = deviation from the on-chain FTSOv2 median (your actual scoring reference). CG Dev% and Binance Dev% are external sanity checks. Green = within ±0.25%, Red = outside.",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 14 },
       "options": {
-        "sortBy": [
-          {
-            "displayName": "CG Dev%",
-            "desc": true
-          }
-        ],
-        "footer": {
-          "show": false
-        }
+        "sortBy": [{ "displayName": "Anchor Dev%", "desc": true }],
+        "footer": { "show": false }
       },
       "fieldConfig": {
-        "defaults": {
-          "decimals": 3
-        },
+        "defaults": { "decimals": 3 },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "CG Dev%"
-            },
+            "matcher": { "id": "byName", "options": "Anchor Dev%" },
             "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "decimals",
-                "value": 3
-              },
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 3 },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": -0.5
-                    },
-                    {
-                      "color": "green",
-                      "value": -0.25
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 0.25
-                    },
-                    {
-                      "color": "red",
-                      "value": 0.5
-                    }
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": -0.25 },
+                    { "color": "red", "value": 0.25 }
                   ]
                 }
               },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "color-background",
-                  "mode": "basic"
-                }
-              },
-              {
-                "id": "description",
-                "value": "Price deviation % from CoinGecko aggregated reference price. Green = within +/-0.25% primary band. Yellow = +/-0.25 to 0.5% warning zone. Red = beyond +/-0.5%, investigate feed sources."
-              }
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "Binance Dev%"
-            },
+            "matcher": { "id": "byName", "options": "CG Dev%" },
             "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "decimals",
-                "value": 3
-              },
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 3 },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": -0.5
-                    },
-                    {
-                      "color": "green",
-                      "value": -0.25
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 0.25
-                    },
-                    {
-                      "color": "red",
-                      "value": 0.5
-                    }
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": -0.25 },
+                    { "color": "red", "value": 0.25 }
                   ]
                 }
               },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "color-background",
-                  "mode": "basic"
-                }
-              },
-              {
-                "id": "description",
-                "value": "Price deviation % from Binance real-time reference price. Binance reflects live market prices faster than CoinGecko. Use this as the primary accuracy signal during volatile markets."
-              }
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "CG Band"
-            },
+            "matcher": { "id": "byName", "options": "Binance Dev%" },
             "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 3 },
               {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "1": {
-                        "text": "YES",
-                        "color": "green"
-                      },
-                      "0": {
-                        "text": "NO",
-                        "color": "red"
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "custom.cellOptions",
+                "id": "thresholds",
                 "value": {
-                  "type": "colored-text"
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": -0.25 },
+                    { "color": "red", "value": 0.25 }
+                  ]
                 }
               },
-              {
-                "id": "description",
-                "value": "Whether the provider price falls within the Flare FTSO +/-0.25% primary scoring band vs CoinGecko. YES = scoring hit. NO = missed primary band."
-              }
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "Binance Band"
-            },
+            "matcher": { "id": "byName", "options": "Provider Price" },
             "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "1": {
-                        "text": "YES",
-                        "color": "green"
-                      },
-                      "0": {
-                        "text": "NO",
-                        "color": "red"
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "colored-text"
-                }
-              },
-              {
-                "id": "description",
-                "value": "Whether the provider price falls within the Flare FTSO +/-0.25% primary scoring band vs Binance. YES = scoring hit. NO = missed primary band."
-              }
+              { "id": "unit", "value": "currencyUSD" },
+              { "id": "decimals", "value": 6 }
             ]
           }
         ]
       },
       "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "pair"
-          }
-        },
+        { "id": "joinByField", "options": { "byField": "pair" } },
         {
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "names": [
-                "pair",
-                "Value #cg_dev",
-                "Value #binance_dev",
-                "Value #cg_band",
-                "Value #binance_band"
-              ]
+              "pattern": "^(pair|Value #anchor_dev|Value #cg_dev|Value #binance_dev|Value #provider)$"
             }
           }
         },
@@ -522,71 +305,48 @@
           "id": "organize",
           "options": {
             "renameByName": {
+              "Value #anchor_dev": "Anchor Dev%",
               "Value #cg_dev": "CG Dev%",
               "Value #binance_dev": "Binance Dev%",
-              "Value #cg_band": "CG Band",
-              "Value #binance_band": "Binance Band"
+              "Value #provider": "Provider Price"
+            },
+            "indexByName": {
+              "pair": 0,
+              "Value #anchor_dev": 1,
+              "Value #cg_dev": 2,
+              "Value #binance_dev": 3,
+              "Value #provider": 4
             }
           }
         }
       ],
       "targets": [
-        {
-          "expr": "ftso_price_deviation_pct{source=\"coingecko\"}",
-          "legendFormat": "{{pair}}",
-          "instant": true,
-          "format": "table",
-          "refId": "cg_dev"
-        },
-        {
-          "expr": "ftso_price_deviation_pct{source=\"binance\"}",
-          "legendFormat": "{{pair}}",
-          "instant": true,
-          "format": "table",
-          "refId": "binance_dev"
-        },
-        {
-          "expr": "ftso_within_primary_band{source=\"coingecko\"}",
-          "legendFormat": "{{pair}}",
-          "instant": true,
-          "format": "table",
-          "refId": "cg_band"
-        },
-        {
-          "expr": "ftso_within_primary_band{source=\"binance\"}",
-          "legendFormat": "{{pair}}",
-          "instant": true,
-          "format": "table",
-          "refId": "binance_band"
-        }
-      ],
-      "description": "Live feed accuracy for all 64 pairs vs CoinGecko and Binance reference prices.\n\nCG Dev% \u2014 Deviation from CoinGecko aggregated price. CoinGecko can lag during fast markets; use Binance Dev% as the primary accuracy signal.\n\nBinance Dev% \u2014 Deviation from Binance real-time price. Most reliable indicator of true feed accuracy.\n\nCG Band / Binance Band \u2014 Whether the provider price is within the Flare FTSO +/-0.25% primary scoring band.\n\nColour coding: Green = within +/-0.25% (primary band). Yellow = +/-0.25 to 0.5% (warning). Red = beyond +/-0.5% (investigate feed sources)."
+        { "expr": "ftso_price_deviation_pct{source=\"anchor\"}", "instant": true, "format": "table", "refId": "anchor_dev" },
+        { "expr": "ftso_price_deviation_pct{source=\"coingecko\"}", "instant": true, "format": "table", "refId": "cg_dev" },
+        { "expr": "ftso_price_deviation_pct{source=\"binance\"}", "instant": true, "format": "table", "refId": "binance_dev" },
+        { "expr": "ftso_provider_price", "instant": true, "format": "table", "refId": "provider" }
+      ]
     },
     {
       "id": 20,
       "type": "timeseries",
-      "title": "Deviation History \u2014 $pair ($source reference)",
-      "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 16,
-        "h": 8
-      },
+      "title": "Deviation History — $pair (vs $source)",
+      "gridPos": { "x": 0, "y": 18, "w": 16, "h": 8 },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "decimals": 3,
-          "custom": {
-            "lineWidth": 2
+          "custom": { "lineWidth": 2 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": -0.25 },
+              { "color": "red", "value": 0.25 }
+            ]
           }
         }
       },
@@ -600,35 +360,27 @@
     {
       "id": 21,
       "type": "timeseries",
-      "title": "Price Comparison \u2014 $pair",
-      "gridPos": {
-        "x": 16,
-        "y": 4,
-        "w": 8,
-        "h": 8
-      },
+      "title": "Price History — $pair",
+      "gridPos": { "x": 16, "y": 18, "w": 8, "h": 8 },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "currencyUSD",
           "decimals": 6,
-          "custom": {
-            "lineWidth": 2
-          }
+          "custom": { "lineWidth": 2 }
         }
       },
       "targets": [
         {
           "expr": "ftso_provider_price{pair=\"$pair\"}",
           "legendFormat": "Provider"
+        },
+        {
+          "expr": "ftso_reference_price{pair=\"$pair\", source=\"anchor\"}",
+          "legendFormat": "Anchor (on-chain)"
         },
         {
           "expr": "ftso_reference_price{pair=\"$pair\", source=\"coingecko\"}",
@@ -643,50 +395,33 @@
     {
       "id": 30,
       "type": "timeseries",
-      "title": "% Pairs Within Primary Band Over Time",
-      "gridPos": {
-        "x": 0,
-        "y": 12,
-        "w": 12,
-        "h": 7
-      },
+      "title": "% Pairs Within ±0.25% Primary Band",
+      "gridPos": { "x": 0, "y": 26, "w": 12, "h": 7 },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "custom": {
-            "lineWidth": 2
-          },
+          "custom": { "lineWidth": 2 },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "green",
-                "value": 75
-              }
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 75 }
             ]
           }
         }
       },
       "targets": [
+        {
+          "expr": "ftso_pairs_within_primary_band_pct{source=\"anchor\"}",
+          "legendFormat": "Anchor (on-chain)"
+        },
         {
           "expr": "ftso_pairs_within_primary_band_pct{source=\"coingecko\"}",
           "legendFormat": "CoinGecko"
@@ -701,30 +436,20 @@
       "id": 31,
       "type": "timeseries",
       "title": "Reference Fetch Errors / 5m",
-      "gridPos": {
-        "x": 12,
-        "y": 12,
-        "w": 12,
-        "h": 7
-      },
+      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 7 },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom" }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "custom": {
-            "lineWidth": 2
-          }
+          "custom": { "lineWidth": 2 }
         }
       },
       "targets": [
         {
           "expr": "increase(ftso_reference_fetch_errors_total[5m])",
-          "legendFormat": "{{source}} errors"
+          "legendFormat": "{{source}} errors / 5m"
         }
       ]
     }
