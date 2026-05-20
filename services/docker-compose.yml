@@ -388,6 +388,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=5GB'
       - '--web.enable-lifecycle'
     network_mode: host
     restart: unless-stopped
@@ -559,6 +561,90 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  ftso-price-monitor:
+    image: localhost/ftso-price-monitor:latest
+    container_name: ftso-price-monitor
+    pull_policy: missing
+    build:
+      context: ../ftso/price-monitor
+    environment:
+      - PROVIDER_URL=http://localhost:3101
+      - POLL_INTERVAL=30
+      - METRICS_PORT=9102
+      - PRIMARY_BAND_PCT=0.25
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9102/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ftso-monitor-agent:
+    image: localhost/ftso-monitor-agent:latest
+    container_name: ftso-monitor-agent
+    pull_policy: missing
+    build:
+      context: ./ftso-monitor-agent
+    environment:
+      - METRICS_URL=http://localhost:9102/metrics
+      - PROMETHEUS_URL=http://localhost:9090
+      - OLLAMA_URL=http://localhost:11434
+      - OLLAMA_MODEL=phi3:latest
+      - POLL_INTERVAL=60
+      - BAND_THRESHOLD=0.25
+      - APPROACH_FRACTION=0.60
+      - INTERACTIVE=0
+      - LOG_LEVEL=INFO
+      - ALERTMANAGER_URL=http://localhost:9093
+      - LOKI_URL=http://localhost:3100
+    network_mode: host
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+
+  ollama-exporter:
+    image: python:3.11-slim
+    container_name: ollama-exporter
+    pull_policy: missing
+    volumes:
+      - ../scripts/exporters/ollama-exporter-enhanced.py:/exporter.py:ro
+    command: ["python3", "/exporter.py"]
+    network_mode: host
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:11435/metrics', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  openwebui-exporter:
+    image: python:3.11-slim
+    container_name: openwebui-exporter
+    pull_policy: missing
+    volumes:
+      - ../scripts/exporters/openwebui-exporter.py:/exporter.py:ro
+    command: ["python3", "/exporter.py"]
+    network_mode: host
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:11436/metrics', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 
 volumes:
   aixcl-ollama-data:

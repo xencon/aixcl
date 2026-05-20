@@ -99,3 +99,10 @@ scrape_configs:
         labels:
           service: 'open-webui'
 
+
+  # FTSO Price Monitor - Oracle price accuracy vs CoinGecko/Binance references
+  - job_name: 'ftso-price-monitor'
+    static_configs:
+      - targets: ['localhost:9102']
+        labels:
+          service: 'ftso-price-monitor'
