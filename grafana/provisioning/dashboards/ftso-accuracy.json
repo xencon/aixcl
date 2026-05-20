@@ -273,6 +273,264 @@
       ]
     },
     {
+      "id": 10,
+      "type": "table",
+      "title": "Live Accuracy \u2014 All Pairs",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 14
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "CG Dev%",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 3
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CG Dev%"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": -0.5
+                    },
+                    {
+                      "color": "green",
+                      "value": -0.25
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0.25
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Binance Dev%"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": -0.5
+                    },
+                    {
+                      "color": "green",
+                      "value": -0.25
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0.25
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CG Band"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "YES",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "NO",
+                        "color": "red"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "colored-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Binance Band"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "YES",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "NO",
+                        "color": "red"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "colored-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "pair"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "pair",
+                "Value #cg_dev",
+                "Value #binance_dev",
+                "Value #cg_band",
+                "Value #binance_band"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value #cg_dev": "CG Dev%",
+              "Value #binance_dev": "Binance Dev%",
+              "Value #cg_band": "CG Band",
+              "Value #binance_band": "Binance Band"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "ftso_price_deviation_pct{source=\"coingecko\"}",
+          "legendFormat": "{{pair}}",
+          "instant": true,
+          "format": "table",
+          "refId": "cg_dev"
+        },
+        {
+          "expr": "ftso_price_deviation_pct{source=\"binance\"}",
+          "legendFormat": "{{pair}}",
+          "instant": true,
+          "format": "table",
+          "refId": "binance_dev"
+        },
+        {
+          "expr": "ftso_within_primary_band{source=\"coingecko\"}",
+          "legendFormat": "{{pair}}",
+          "instant": true,
+          "format": "table",
+          "refId": "cg_band"
+        },
+        {
+          "expr": "ftso_within_primary_band{source=\"binance\"}",
+          "legendFormat": "{{pair}}",
+          "instant": true,
+          "format": "table",
+          "refId": "binance_band"
+        }
+      ]
+    },
+    {
       "id": 20,
       "type": "timeseries",
       "title": "Deviation History \u2014 $pair ($source reference)",
