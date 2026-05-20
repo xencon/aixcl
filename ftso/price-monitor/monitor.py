@@ -302,7 +302,20 @@ async def fetch_provider(session: aiohttp.ClientSession) -> Dict[str, float]:
         ) as resp:
             resp.raise_for_status()
             data = await resp.json()
-            return {item["feed"]["name"]: item["value"] for item in data["data"]}
+            prices: dict[str, float] = {}
+            missing: list[str] = []
+            for item in data["data"]:
+                if "value" in item:
+                    prices[item["feed"]["name"]] = item["value"]
+                else:
+                    missing.append(item["feed"]["name"])
+            if missing:
+                logger.warning(
+                    "Provider warmup: %d feed(s) missing value — skipped: %s",
+                    len(missing),
+                    missing[:5],
+                )
+            return prices
     except Exception as exc:
         logger.error("Provider fetch failed: %s", exc)
         return {}
