@@ -48,6 +48,8 @@ logger = logging.getLogger("ftso-monitor-agent")
 POLL_INTERVAL: int = int(os.getenv("POLL_INTERVAL", "60"))
 METRICS_URL: str = os.getenv("METRICS_URL", "http://localhost:9102/metrics")
 INTERACTIVE: bool = os.getenv("INTERACTIVE", "0") == "1"
+ALERTMANAGER_URL: str = os.getenv("ALERTMANAGER_URL", "http://localhost:9093")
+LOKI_URL: str = os.getenv("LOKI_URL", "http://localhost:3100")
 
 
 # ── Report formatting ──────────────────────────────────────────────────────────
@@ -109,6 +111,95 @@ def _format_report(
     return "\n".join(lines)
 
 
+
+
+# ── Alertmanager integration ───────────────────────────────────────────────────
+
+def _post_to_alertmanager(alerts: list[dict]) -> None:
+    """
+    POST critical alerts to Alertmanager /api/v2/alerts.
+    Only critical severity is forwarded — warnings are informational.
+    Failures are logged and swallowed — monitoring must never break monitoring.
+    """
+    critical = [a for a in alerts if a["severity"] == "critical"]
+    if not critical:
+        return
+
+    now = datetime.now(timezone.utc).isoformat()
+    payload = [
+        {
+            "labels": {
+                "alertname": "FTSOPriceBandViolation",
+                "pair": a["pair"],
+                "issue_type": a["issue_type"],
+                "severity": a["severity"],
+                "job": "ftso-monitor-agent",
+            },
+            "annotations": {
+                "summary": f"{a['pair']} — {a['issue_type'].replace('_', ' ')}",
+                "description": a["context"],
+            },
+            "startsAt": now,
+        }
+        for a in critical
+    ]
+    try:
+        resp = requests.post(
+            f"{ALERTMANAGER_URL}/api/v2/alerts",
+            json=payload,
+            timeout=5,
+        )
+        resp.raise_for_status()
+        logger.info("Alertmanager: posted %d critical alert(s).", len(payload))
+    except Exception as exc:
+        logger.warning("Alertmanager POST failed (alerts NOT delivered): %s", exc)
+
+
+# ── Loki direct push ───────────────────────────────────────────────────────────
+
+def _push_to_loki(snapshot: dict, alerts: list[dict], written: dict) -> None:
+    """
+    Push one structured JSON log entry per poll to Loki /loki/api/v1/push.
+    Every poll is recorded regardless of alert status — this is the audit trail.
+    Failures are logged and swallowed.
+    """
+    ts_ns = str(int(snapshot["timestamp"] * 1_000_000_000))
+    overall = snapshot.get("overall", {})
+
+    entry = json.dumps({
+        "anchor_band_pct": overall.get("anchor_band_pct"),
+        "provider_feed_count": overall.get("provider_feed_count"),
+        "alert_count": len(alerts),
+        "critical_count": sum(1 for a in alerts if a["severity"] == "critical"),
+        "warning_count": sum(1 for a in alerts if a["severity"] == "warning"),
+        "alerts": [
+            {
+                "pair": a["pair"],
+                "issue_type": a["issue_type"],
+                "severity": a["severity"],
+            }
+            for a in alerts
+        ],
+        "summary": written.get("summary", ""),
+        "llm_latency_s": written.get("latency_s", 0.0),
+    })
+
+    payload = {
+        "streams": [{
+            "stream": {"job": "ftso-monitor-agent"},
+            "values": [[ts_ns, entry]],
+        }]
+    }
+    try:
+        resp = requests.post(
+            f"{LOKI_URL}/loki/api/v1/push",
+            json=payload,
+            timeout=5,
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        logger.warning("Loki push failed (poll NOT recorded): %s", exc)
+
 # ── Poll cycle ─────────────────────────────────────────────────────────────────
 
 def _poll_once(interactive: bool) -> None:
@@ -137,6 +228,9 @@ def _poll_once(interactive: bool) -> None:
         }
 
     print(_format_report(snapshot, alerts, written), flush=True)
+
+    _post_to_alertmanager(alerts)
+    _push_to_loki(snapshot, alerts, written)
 
     if interactive and any(a["severity"] == "critical" for a in alerts):
         try:
