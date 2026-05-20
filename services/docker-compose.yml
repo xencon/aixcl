@@ -579,6 +579,30 @@ services:
       timeout: 10s
       retries: 3
 
+  ftso-monitor-agent:
+    image: localhost/ftso-monitor-agent:latest
+    container_name: ftso-monitor-agent
+    pull_policy: missing
+    build:
+      context: ./ftso-monitor-agent
+    environment:
+      - METRICS_URL=http://localhost:9102/metrics
+      - PROMETHEUS_URL=http://localhost:9090
+      - OLLAMA_URL=http://localhost:11434
+      - OLLAMA_MODEL=phi3:latest
+      - POLL_INTERVAL=60
+      - BAND_THRESHOLD=0.25
+      - APPROACH_FRACTION=0.60
+      - INTERACTIVE=0
+      - LOG_LEVEL=INFO
+    network_mode: host
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+
 volumes:
   aixcl-ollama-data:
     external: true
