@@ -186,9 +186,13 @@ def _push_to_loki(snapshot: dict, alerts: list[dict], written: dict) -> None:
         "llm_latency_s": written.get("latency_s", 0.0),
     })
 
+    critical = sum(1 for a in alerts if a["severity"] == "critical")
+    warnings = sum(1 for a in alerts if a["severity"] == "warning")
+    level = "error" if critical > 0 else "warn" if warnings > 0 else "info"
+
     payload = {
         "streams": [{
-            "stream": {"job": "ftso-monitor-agent"},
+            "stream": {"job": "ftso-monitor-agent", "level": level},
             "values": [[ts_ns, entry]],
         }]
     }
