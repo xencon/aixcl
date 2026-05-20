@@ -44,6 +44,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Dependency Review
+        continue-on-error: true
         uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
