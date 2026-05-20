@@ -607,6 +607,45 @@ services:
       - no-new-privileges:true
 
 
+  ollama-exporter:
+    image: python:3.11-slim
+    container_name: ollama-exporter
+    pull_policy: missing
+    volumes:
+      - ../scripts/exporters/ollama-exporter-enhanced.py:/exporter.py:ro
+    command: ["python3", "/exporter.py"]
+    network_mode: host
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:11435/metrics', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  openwebui-exporter:
+    image: python:3.11-slim
+    container_name: openwebui-exporter
+    pull_policy: missing
+    volumes:
+      - ../scripts/exporters/openwebui-exporter.py:/exporter.py:ro
+    command: ["python3", "/exporter.py"]
+    network_mode: host
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:11436/metrics', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+
 volumes:
   aixcl-ollama-data:
     external: true
