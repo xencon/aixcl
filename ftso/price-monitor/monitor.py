@@ -45,6 +45,8 @@ FLARE_RPC_URL = os.getenv(
 FLARE_CONTRACT_REGISTRY = os.getenv(
     "FLARE_CONTRACT_REGISTRY", "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
 )
+ANCHOR_INIT_RETRIES = int(os.getenv("ANCHOR_INIT_RETRIES", "3"))
+ANCHOR_INIT_RETRY_WAIT = int(os.getenv("ANCHOR_INIT_RETRY_WAIT", "20"))
 
 # All 64 feeds from feeds.json (category 1)
 FEEDS = [
@@ -479,18 +481,27 @@ def main() -> None:
     # visible — this is not silent failure.
     anchor_service: Optional[FlareAnchorService] = None
     feed_names = [f["name"] for f in FEEDS]
-    try:
-        anchor_service = FlareAnchorService(
-            rpc_url=FLARE_RPC_URL,
-            registry_address=FLARE_CONTRACT_REGISTRY,
-            feed_names=feed_names,
-        )
-        logger.info("Flare anchor service initialized (%d feeds)", len(feed_names))
-    except Exception as exc:
-        logger.error(
-            "Flare anchor service failed to initialize — anchor metrics will be absent: %s",
-            exc,
-        )
+    for _attempt in range(1, ANCHOR_INIT_RETRIES + 1):
+        try:
+            anchor_service = FlareAnchorService(
+                rpc_url=FLARE_RPC_URL,
+                registry_address=FLARE_CONTRACT_REGISTRY,
+                feed_names=feed_names,
+            )
+            logger.info("Flare anchor service initialized (%d feeds)", len(feed_names))
+            break
+        except Exception as exc:
+            if _attempt < ANCHOR_INIT_RETRIES:
+                logger.warning(
+                    "Flare anchor init attempt %d/%d failed: %s — retrying in %ds",
+                    _attempt, ANCHOR_INIT_RETRIES, exc, ANCHOR_INIT_RETRY_WAIT,
+                )
+                time.sleep(ANCHOR_INIT_RETRY_WAIT)
+            else:
+                logger.error(
+                    "Flare anchor service failed to initialize — anchor metrics will be absent: %s",
+                    exc,
+                )
 
     start_http_server(METRICS_PORT)
     logger.info(
