@@ -599,12 +599,15 @@ services:
       - LOG_LEVEL=INFO
       - ALERTMANAGER_URL=http://localhost:9093
       - LOKI_URL=http://localhost:3100
+      - PROPOSALS_DIR=/proposals
     network_mode: host
     restart: unless-stopped
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
+    volumes:
+      - /home/sbadakhc/ftso-proposals:/proposals
 
 
   ollama-exporter:

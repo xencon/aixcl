@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY scraper.py classifier.py llm_writer.py agent.py ./
+COPY scraper.py classifier.py llm_writer.py agent.py proposer.py ./
 
 USER ftsoagent
 

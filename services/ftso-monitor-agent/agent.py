@@ -39,6 +39,7 @@ import requests
 
 import classifier
 import llm_writer
+import proposer
 import scraper
 
 logger = logging.getLogger("ftso-monitor-agent")
@@ -48,6 +49,7 @@ METRICS_URL: str = os.getenv("METRICS_URL", "http://localhost:9102/metrics")
 INTERACTIVE: bool = os.getenv("INTERACTIVE", "0") == "1"
 ALERTMANAGER_URL: str = os.getenv("ALERTMANAGER_URL", "http://localhost:9093")
 LOKI_URL: str = os.getenv("LOKI_URL", "http://localhost:3100")
+PROPOSALS_DIR: str | None = os.getenv("PROPOSALS_DIR")  # None = proposer disabled
 
 _SEV_TAGS: dict[str, str] = {"critical": "[CRITICAL]", "warning": "[WARNING ]"}
 
@@ -257,6 +259,22 @@ def _poll_once(interactive: bool, counts: dict[str, int]) -> None:
         approach_threshold=scraper.APPROACH_THRESHOLD,
     )
     _update_alert_counts(alerts, counts)
+
+    if PROPOSALS_DIR:
+        for a in alerts:
+            if a.get("consecutive_polls", 0) >= 5:
+                try:
+                    prop = proposer.propose(a, snapshot, PROPOSALS_DIR)
+                    if prop:
+                        logger.info(
+                            "Proposer: %s for %s (poll %d) — %s",
+                            prop["recommendation"], prop["pair"],
+                            prop["consecutive_polls"], prop["id"],
+                        )
+                except (RuntimeError, ValueError) as exc:
+                    logger.warning(
+                        "Proposer failed for %s: %s", a.get("pair"), exc
+                    )
 
     try:
         written = llm_writer.write_actions(alerts)

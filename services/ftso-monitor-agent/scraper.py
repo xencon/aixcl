@@ -171,15 +171,24 @@ def scrape(metrics_url: str | None = None) -> dict[str, Any]:
         metrics.get("ftso_within_primary_band", []), source_filter=ANCHOR_SOURCE
     )
 
+    # Per-source deviation index for outlier analysis (excludes anchor source)
+    src_devs_by_pair: dict[str, dict[str, float]] = {}
+    for e in metrics.get("ftso_price_deviation_pct", []):
+        src = e["labels"].get("source", "")
+        p = e["labels"].get("pair", "")
+        if src and src != ANCHOR_SOURCE and p:
+            src_devs_by_pair.setdefault(p, {})[src] = round(e["value"], 4)
+
     for pair, dev in deviation.items():
         abs_dev = abs(dev)
+        src_devs = src_devs_by_pair.get(pair, {})
         if in_band.get(pair, 1.0) == 0.0:
             snapshot["out_of_band"].append(
-                {"pair": pair, "deviation_pct": round(dev, 4)}
+                {"pair": pair, "deviation_pct": round(dev, 4), "source_deviations": src_devs}
             )
         elif abs_dev > APPROACH_THRESHOLD:
             snapshot["approaching"].append(
-                {"pair": pair, "deviation_pct": round(dev, 4)}
+                {"pair": pair, "deviation_pct": round(dev, 4), "source_deviations": src_devs}
             )
 
     # ── No-data: expected pairs absent from provider price gauge ─────────────
