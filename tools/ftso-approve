@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Wrapper: runs ftso-approve.py inside its pinned virtual environment.
+# No activation required — call as: ftso-approve list / show / approve / reject
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/.venv/bin/python3" "$SCRIPT_DIR/ftso-approve.py" "$@"
