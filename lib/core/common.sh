@@ -82,6 +82,16 @@ ALL_SERVICES=(
     "vault-agent-openwebui-bootstrap"
     "vault-agent-pgadmin-bootstrap"
     "vault-agent-grafana-bootstrap"
+    "dd-ftso-v2-provider"
+    "ftso-price-monitor"
+    "ftso-monitor-agent"
+)
+
+# Application services with sequential startup lifecycle (not profile-managed)
+APPLICATION_SERVICES=(
+    "dd-ftso-v2-provider"
+    "ftso-price-monitor"
+    "ftso-monitor-agent"
 )
 
 # Function to validate service name

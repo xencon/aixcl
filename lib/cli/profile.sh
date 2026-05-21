@@ -170,8 +170,15 @@ print_profile_info() {
     echo ""
 }
 
+# Get application services (FTSO tier — sequential lifecycle, not profile-managed)
+# Requires APPLICATION_SERVICES array from lib/core/common.sh
+get_profile_application_services() {
+    printf '%s\n' "${APPLICATION_SERVICES[@]}"
+}
+
 # Export functions for use in other modules
 export -f is_valid_profile get_profile_description get_profile_services
 export -f get_profile_db_storage_enabled list_profiles print_profile_info
 export -f get_profile_services_for_profile get_runtime_core_services
+export -f get_profile_application_services
 

@@ -45,6 +45,10 @@ function main() {
             shift
             cmd_vault "$@"
             ;;
+        ftso)
+            shift
+            ftso_cmd "$@"
+            ;;
         restart)
             shift
             restart "$@"

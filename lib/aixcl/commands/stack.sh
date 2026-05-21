@@ -33,6 +33,11 @@ _print_stopped_status() {
         echo "  ❌ $service"
     done
     echo ""
+    echo "Application Services"
+    for service in "${APPLICATION_SERVICES[@]}"; do
+        echo "  ❌ $service"
+    done
+    echo ""
     echo "All services have been stopped."
 }
 
@@ -714,6 +719,10 @@ function start() {
         done
         echo ""
 
+        # Start FTSO application services after main stack is healthy
+        start_ftso_services \
+            || echo "⚠️  FTSO services did not start — run './aixcl ftso start' to retry"
+
         status
         return 0
     else
@@ -746,6 +755,8 @@ function stop() {
     fi
     
     echo "Stopping services gracefully..."
+    # Stop FTSO application services first (reverse dependency order)
+    stop_ftso_services || true
     # Allow down to fail (containers may not exist) - we check status after
     run_compose down --remove-orphans || true
     
@@ -1463,6 +1474,9 @@ function status() {
     check_operational_service "Vault Agent Bootstrap (Open WebUI)" "vault-agent-openwebui-bootstrap" "vault-agent-openwebui-bootstrap" "" ""
     check_operational_service "Vault Agent Bootstrap (pgAdmin)" "vault-agent-pgadmin-bootstrap" "vault-agent-pgadmin-bootstrap" "" ""
     check_operational_service "Vault Agent Bootstrap (Grafana)" "vault-agent-grafana-bootstrap" "vault-agent-grafana-bootstrap" "" ""
+
+    # Application Services (FTSO) — sequential lifecycle, not profile-managed
+    print_ftso_status
 
     # Health Summary section
     echo ""

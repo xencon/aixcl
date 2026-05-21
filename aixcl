@@ -66,6 +66,10 @@ source "${SCRIPT_DIR}/lib/aixcl/commands/stack.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/commands/vault.sh"
 
+# FTSO application services module
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/aixcl/commands/ftso.sh"
+
 # Dispatcher (must be last - contains main function)
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/dispatcher.sh"

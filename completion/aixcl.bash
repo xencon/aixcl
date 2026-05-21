@@ -41,7 +41,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
-    local commands="stack service models engine utils vault help restart"
+    local commands="stack service models engine utils vault ftso help restart"
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -53,10 +53,13 @@ _aixcl_complete() {
     # - Observability: prometheus, grafana, loki, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
     # - UI: open-webui
     local operational_services="open-webui postgres pgadmin prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki"
+
+    # Application Services (FTSO tier — sequential lifecycle)
+    local application_services="dd-ftso-v2-provider ftso-price-monitor ftso-monitor-agent"
     
     # Combined list of all services (for backward compatibility and general completion)
     # Includes 'engine' alias for convenience
-    local services="$runtime_core_services $operational_services engine"
+    local services="$runtime_core_services $operational_services $application_services engine"
     
     # Valid profiles (must match VALID_PROFILES in lib/cli/profile.sh)
     local profiles="bld sys"
@@ -161,6 +164,11 @@ _aixcl_complete() {
         'vault')
             local vault_actions="start stop restart init unseal status credentials passwords rotate logs"
             mapfile -t COMPREPLY < <(compgen -W "$vault_actions" -- "$cur")
+            return 0
+            ;;
+        'ftso')
+            local ftso_actions="start stop restart status logs heal"
+            mapfile -t COMPREPLY < <(compgen -W "$ftso_actions" -- "$cur")
             return 0
             ;;
 
