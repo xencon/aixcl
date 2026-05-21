@@ -1,0 +1,5 @@
+[submodule "provider/dd-ftso-v2-provider"]
+	path = provider/dd-ftso-v2-provider
+	url = git@github.com:sbadakhc/dd-ftso-v2-provider.git
+	branch = main
+	shallow = true
