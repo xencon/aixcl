@@ -40,21 +40,17 @@ else
     exit 1
 fi
 
-# Check if injection characters are escaped
-# The email 'admin@localhost"}' should be escaped as "admin@localhost\"}"
-if [[ "$PAYLOAD" == *"admin@localhost\"}"* ]] || [[ "$PAYLOAD" == *"admin@localhost\"}"* ]]; then
-    if echo "$PAYLOAD" | grep -q 'admin@localhost\"}'; then
-        echo -e "${GREEN}PASS: Special characters escaped${NC}"
-    elif echo "$PAYLOAD" | grep -q 'admin@localhost"}'; then
-        echo -e "${GREEN}PASS: JSON is valid (implies escaping)${NC}"
-    else
-        echo -e "${RED}FAIL: Payload content mismatch${NC}"
-        exit 1
-    fi
+# Check if injection characters are properly escaped in JSON
+# The Python json.dumps() should escape quotes as \"
+# We verify that the payload contains the properly escaped sequence
+if echo "$PAYLOAD" | grep -q 'admin@localhost\\"'; then
+    echo -e "${GREEN}PASS: Special characters properly escaped${NC}"
+elif echo "$PAYLOAD" | python3 -c "import json, sys; obj = json.load(sys.stdin); exit(0 if 'admin@localhost\"}' in obj['email'] else 1)" 2>/dev/null; then
+    echo -e "${GREEN}PASS: JSON is valid and contains expected data${NC}"
 else
-     echo -e "${RED}FAIL: Special characters not properly handled${NC}"
-     echo "Payload: $PAYLOAD"
-     exit 1
+    echo -e "${RED}FAIL: Special characters not properly handled${NC}"
+    echo "Payload: $PAYLOAD"
+    exit 1
 fi
 
 echo "Testing empty variables behavior (Issue: null vs empty string)..."
