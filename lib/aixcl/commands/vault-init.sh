@@ -162,7 +162,7 @@ wait_for_postgres() {
         return 0
     fi
 
-    local retries=30
+    local retries=60
     while [ $retries -gt 0 ]; do
         if $docker_bin exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
             log_info "PostgreSQL is ready"
@@ -171,7 +171,7 @@ wait_for_postgres() {
         sleep 2
         retries=$((retries - 1))
     done
-    log_error "PostgreSQL is not ready after 60 seconds"
+    log_error "PostgreSQL is not ready after 120 seconds"
     return 1
 }
 

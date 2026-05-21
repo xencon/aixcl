@@ -666,6 +666,9 @@ function start() {
                         export VAULT_TOKEN="$_vtoken"
                         echo ""
                         echo "Refreshing bootstrap agents with vault token..."
+                        # Stop non-bootstrap agents first — Podman blocks removal of a
+                        # container while others depend on it via --requires.
+                        run_compose stop vault-agent-postgres vault-agent-openwebui 2>/dev/null || true
                         run_compose up -d --force-recreate --no-deps \
                             vault-agent-postgres-bootstrap \
                             vault-agent-openwebui-bootstrap \
