@@ -41,12 +41,31 @@ else
 fi
 
 # Check if injection characters are properly escaped in JSON
-# The Python json.dumps() should escape quotes as \"
-# We verify that the payload contains the properly escaped sequence
-if echo "$PAYLOAD" | grep -q 'admin@localhost\\"'; then
-    echo -e "${GREEN}PASS: Special characters properly escaped${NC}"
-elif echo "$PAYLOAD" | python3 -c "import json, sys; obj = json.load(sys.stdin); exit(0 if 'admin@localhost\"}' in obj['email'] else 1)" 2>/dev/null; then
-    echo -e "${GREEN}PASS: JSON is valid and contains expected data${NC}"
+# Parse the JSON and verify the values are correctly preserved
+if python3 << 'PYEOF'
+import json
+import sys
+import os
+
+payload_str = os.environ.get('PAYLOAD')
+try:
+    obj = json.loads(payload_str)
+    email = obj.get('email', '')
+    password = obj.get('password', '')
+    
+    # Verify the original values were preserved correctly
+    if email == 'admin@localhost"}' and password == 'password" --payload "injection':
+        print("PASS: Special characters properly handled")
+        sys.exit(0)
+    else:
+        print(f"FAIL: Values not preserved - email={email}, password={password}")
+        sys.exit(1)
+except Exception as e:
+    print(f"FAIL: JSON parsing error - {e}")
+    sys.exit(1)
+PYEOF
+then
+    echo -e "${GREEN}PASS: Special characters properly handled${NC}"
 else
     echo -e "${RED}FAIL: Special characters not properly handled${NC}"
     echo "Payload: $PAYLOAD"
