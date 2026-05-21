@@ -13,22 +13,27 @@ Alert schema:
   context       str   short human-readable description for LLM prompt
 
 Design constraints:
-  - Pure function: classify(snapshot) -> list[dict]
+  - Pure function: classify(snapshot, band_threshold, approach_threshold) -> list[dict]
   - No external calls, no I/O, no LLM
-  - Raises ValueError on clearly malformed input
+  - Returns empty list for malformed or failed-scrape input (no raise)
 """
 from __future__ import annotations
 
 from typing import Any
 
-BAND_THRESHOLD: float = 0.25   # ±% primary band boundary
-APPROACH_THRESHOLD: float = 0.15  # % from anchor that triggers "approaching"
 
-
-def classify(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
+def classify(
+    snapshot: dict[str, Any],
+    band_threshold: float = 0.25,
+    approach_threshold: float = 0.15,
+) -> list[dict[str, Any]]:
     """
     Convert scraper snapshot to a list of Alert dicts.
-    Returns empty list if scrape_ok is False.
+
+    Thresholds are passed explicitly so context strings remain consistent
+    with the values used during scraping (e.g. when BAND_THRESHOLD env
+    override is active).  Returns empty list if scrape_ok is False or
+    snapshot is malformed.
     """
     if not snapshot.get("scrape_ok"):
         return []
@@ -41,7 +46,7 @@ def classify(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
         dev = item["deviation_pct"]
         abs_dev = abs(dev)
         direction = "above" if dev > 0 else "below"
-        margin = round(abs_dev - BAND_THRESHOLD, 4)
+        margin = round(abs_dev - band_threshold, 4)
 
         alerts.append({
             "id": f"{pair}::out_of_band",
@@ -51,7 +56,7 @@ def classify(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
             "deviation_pct": dev,
             "context": (
                 f"{pair} is {abs_dev:.4f}% {direction} anchor — "
-                f"outside the ±{BAND_THRESHOLD}% primary band by {margin:.4f}%."
+                f"outside the \u00b1{band_threshold}% primary band by {margin:.4f}%."
             ),
         })
 
@@ -60,7 +65,7 @@ def classify(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
         pair = item["pair"]
         dev = item["deviation_pct"]
         abs_dev = abs(dev)
-        remaining = round(BAND_THRESHOLD - abs_dev, 4)
+        remaining = round(band_threshold - abs_dev, 4)
         direction = "above" if dev > 0 else "below"
 
         alerts.append({
@@ -71,7 +76,7 @@ def classify(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
             "deviation_pct": dev,
             "context": (
                 f"{pair} is {abs_dev:.4f}% {direction} anchor — "
-                f"{remaining:.4f}% from the ±{BAND_THRESHOLD}% boundary."
+                f"{remaining:.4f}% from the \u00b1{band_threshold}% boundary."
             ),
         })
 

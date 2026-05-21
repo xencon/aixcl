@@ -59,6 +59,7 @@ EXPECTED_PAIRS: tuple[str, ...] = (
 # ── HTTP / parse helpers ───────────────────────────────────────────────────────
 
 def _fetch(url: str, timeout: int = FETCH_TIMEOUT) -> str:
+    """GET the URL; raises on network error or non-2xx status."""
     resp = requests.get(url, timeout=timeout)
     resp.raise_for_status()
     return resp.text

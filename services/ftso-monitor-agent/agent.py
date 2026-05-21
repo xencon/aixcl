@@ -23,28 +23,24 @@ Usage:
 Design constraints:
   - No exec, no eval, no runtime file rewriting
   - Failures logged with full context; loop continues unless KeyboardInterrupt
-  - No implicit global state
+  - No implicit global state — consecutive_counts lifetime is owned by main()
 """
 from __future__ import annotations
 
 import argparse
 import json
-import requests
 import logging
 import os
 import sys
 import time
 from datetime import datetime, timezone
 
+import requests
+
 import classifier
 import llm_writer
 import scraper
 
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    stream=sys.stdout,
-)
 logger = logging.getLogger("ftso-monitor-agent")
 
 POLL_INTERVAL: int = int(os.getenv("POLL_INTERVAL", "60"))
@@ -53,15 +49,10 @@ INTERACTIVE: bool = os.getenv("INTERACTIVE", "0") == "1"
 ALERTMANAGER_URL: str = os.getenv("ALERTMANAGER_URL", "http://localhost:9093")
 LOKI_URL: str = os.getenv("LOKI_URL", "http://localhost:3100")
 
-# In-memory persistence tracker — resets on container restart
-# key = alert id, value = consecutive poll count
-_consecutive_counts: dict[str, int] = {}
+_SEV_TAGS: dict[str, str] = {"critical": "[CRITICAL]", "warning": "[WARNING ]"}
 
 
 # ── Report formatting ──────────────────────────────────────────────────────────
-
-_SEV_TAGS = {"critical": "[CRITICAL]", "warning": "[WARNING ]"}
-
 
 def _format_report(
     snapshot: dict,
@@ -106,7 +97,7 @@ def _format_report(
             action = written.get("actions", {}).get(a["id"], "Investigate manually.")
             lines.append(f"    {tag} {a['pair']} | {a['issue_type']}")
             lines.append(f"      {a['context']}")
-            lines.append(f"      → {action}")
+            lines.append(f"      \u2192 {action}")
             lines.append("")
 
     lat = written.get("latency_s", 0.0)
@@ -117,17 +108,14 @@ def _format_report(
     return "\n".join(lines)
 
 
-
-
-
 # ── Persistence tracking ───────────────────────────────────────────────────────
 
-def _update_alert_counts(alerts: list[dict]) -> None:
+def _update_alert_counts(alerts: list[dict], counts: dict[str, int]) -> None:
     """
     Update consecutive poll counts for each active alert.
     Mutates alerts in place — adds 'consecutive_polls' and enriches 'context'.
     Clears counts for pairs that are no longer alerting (resolved).
-    State is in-memory only: resets on container restart.
+    State is passed in explicitly — lifetime owned by the caller (main loop).
 
     Tier thresholds:
       poll 1        monitor — likely self-resolving
@@ -137,23 +125,24 @@ def _update_alert_counts(alerts: list[dict]) -> None:
     active_ids = {a["id"] for a in alerts}
 
     for a in alerts:
-        _consecutive_counts[a["id"]] = _consecutive_counts.get(a["id"], 0) + 1
-        count = _consecutive_counts[a["id"]]
+        counts[a["id"]] = counts.get(a["id"], 0) + 1
+        count = counts[a["id"]]
         a["consecutive_polls"] = count
 
         if count == 1:
-            tier = "poll 1 — monitor, likely self-resolving"
+            tier = "poll 1 \u2014 monitor, likely self-resolving"
         elif count < 5:
-            tier = f"poll {count} — recurring, investigate sources"
+            tier = f"poll {count} \u2014 recurring, investigate sources"
         else:
-            tier = f"poll {count} — persistent structural issue, act now"
+            tier = f"poll {count} \u2014 persistent structural issue, act now"
 
         a["context"] = a["context"] + f" [{tier}]"
 
     # Clear resolved pairs
-    for key in list(_consecutive_counts.keys()):
+    for key in list(counts.keys()):
         if key not in active_ids:
-            del _consecutive_counts[key]
+            del counts[key]
+
 
 # ── Alertmanager integration ───────────────────────────────────────────────────
 
@@ -178,7 +167,7 @@ def _post_to_alertmanager(alerts: list[dict]) -> None:
                 "job": "ftso-monitor-agent",
             },
             "annotations": {
-                "summary": f"{a['pair']} — {a['issue_type'].replace('_', ' ')}",
+                "summary": f"{a['pair']} \u2014 {a['issue_type'].replace('_', ' ')}",
                 "description": a["context"],
             },
             "startsAt": now,
@@ -247,9 +236,10 @@ def _push_to_loki(snapshot: dict, alerts: list[dict], written: dict) -> None:
     except Exception as exc:
         logger.warning("Loki push failed (poll NOT recorded): %s", exc)
 
+
 # ── Poll cycle ─────────────────────────────────────────────────────────────────
 
-def _poll_once(interactive: bool) -> None:
+def _poll_once(interactive: bool, counts: dict[str, int]) -> None:
     """Run one full poll cycle. Logs all errors; never raises."""
     try:
         snapshot = scraper.scrape(metrics_url=METRICS_URL)
@@ -261,16 +251,20 @@ def _poll_once(interactive: bool) -> None:
         logger.warning("Scrape failed: %s", snapshot.get("error"))
         return
 
-    alerts = classifier.classify(snapshot)
-    _update_alert_counts(alerts)
+    alerts = classifier.classify(
+        snapshot,
+        band_threshold=scraper.BAND_THRESHOLD,
+        approach_threshold=scraper.APPROACH_THRESHOLD,
+    )
+    _update_alert_counts(alerts, counts)
 
     try:
         written = llm_writer.write_actions(alerts)
     except RuntimeError as exc:
-        logger.warning("LLM writer failed (%s) — using fallback actions.", exc)
+        logger.warning("LLM writer failed (%s) \u2014 using fallback actions.", exc)
         written = {
             "actions": {a["id"]: "Investigate manually." for a in alerts},
-            "summary": "LLM unavailable — manual review required.",
+            "summary": "LLM unavailable \u2014 manual review required.",
             "latency_s": 0.0,
             "model": "fallback",
         }
@@ -291,6 +285,12 @@ def _poll_once(interactive: bool) -> None:
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    logging.basicConfig(
+        level=os.getenv("LOG_LEVEL", "INFO"),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        stream=sys.stdout,
+    )
+
     parser = argparse.ArgumentParser(description="FTSO Monitor Agent")
     parser.add_argument(
         "--once", action="store_true",
@@ -308,12 +308,16 @@ def main() -> None:
         POLL_INTERVAL, interactive, METRICS_URL,
     )
 
+    # Consecutive-alert persistence — lifetime is this process, not the module.
+    # Resets on container restart (expected — each run is a fresh baseline).
+    counts: dict[str, int] = {}
+
     if args.once:
-        _poll_once(interactive)
+        _poll_once(interactive, counts)
         return
 
     while True:
-        _poll_once(interactive)
+        _poll_once(interactive, counts)
         time.sleep(POLL_INTERVAL)
 
 
