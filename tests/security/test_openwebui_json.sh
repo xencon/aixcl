@@ -30,6 +30,7 @@ generate_json_python() {
 }
 
 PAYLOAD=$(generate_json_python)
+export PAYLOAD
 echo "Generated Payload (Escaping Test): $PAYLOAD"
 
 # Validate using python's json.loads ensure it's valid JSON
