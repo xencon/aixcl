@@ -42,8 +42,8 @@ else
 fi
 
 # Check if injection characters are properly escaped in JSON
-# Parse the JSON and verify the values are correctly preserved
-if python3 << 'PYEOF'
+# Use Python to parse and verify the values are correctly preserved
+VERIFY_RESULT=$(python3 << 'PYEOF'
 import json
 import sys
 import os
@@ -55,20 +55,29 @@ try:
     password = obj.get('password', '')
     
     # Verify the original values were preserved correctly
-    if email == 'admin@localhost"}' and password == 'password" --payload "injection':
-        print("PASS: Special characters properly handled")
+    expected_email = 'admin@localhost"}'
+    expected_password = 'password" --payload "injection'
+    
+    if email == expected_email and password == expected_password:
+        print("0")
         sys.exit(0)
     else:
-        print(f"FAIL: Values not preserved - email={email}, password={password}")
+        print(f"Email mismatch: got '{email}', expected '{expected_email}'")
+        print(f"Password mismatch: got '{password}', expected '{expected_password}'")
         sys.exit(1)
 except Exception as e:
-    print(f"FAIL: JSON parsing error - {e}")
+    print(f"JSON parsing error: {e}")
     sys.exit(1)
 PYEOF
-then
-    echo -e "${GREEN}PASS: Special characters properly handled${NC}"
+)
+
+VERIFY_EXIT=$?
+
+if [ $VERIFY_EXIT -eq 0 ]; then
+    echo -e "${GREEN}PASS: Special characters properly escaped${NC}"
 else
     echo -e "${RED}FAIL: Special characters not properly handled${NC}"
+    echo "Debug output: $VERIFY_RESULT"
     echo "Payload: $PAYLOAD"
     exit 1
 fi
