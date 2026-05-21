@@ -562,6 +562,37 @@ services:
       timeout: 10s
       retries: 3
 
+  dd-ftso-v2-provider:
+    image: localhost/dd-ftso-v2-provider:latest
+    container_name: dd-ftso-v2-provider
+    pull_policy: missing
+    build:
+      context: ../provider/dd-ftso-v2-provider
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_OPTIONS=--max-old-space-size=2048
+      - VALUE_PROVIDER_CLIENT_PORT=${VALUE_PROVIDER_CLIENT_PORT:-3101}
+      - VALUE_PROVIDER_CLIENT_BASE_PATH=${VALUE_PROVIDER_CLIENT_BASE_PATH:-}
+      - VALUE_PROVIDER_IMPL=${VALUE_PROVIDER_IMPL:-}
+      - LOG_LEVEL=${LOG_LEVEL:-log}
+    network_mode: host
+    restart: unless-stopped
+    cpus: '1.0'
+    mem_limit: 4096m
+    mem_reservation: 2048m
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3101/api-doc',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   ftso-price-monitor:
     image: localhost/ftso-price-monitor:latest
     container_name: ftso-price-monitor
@@ -575,6 +606,9 @@ services:
       - PRIMARY_BAND_PCT=0.25
     network_mode: host
     restart: unless-stopped
+    depends_on:
+      dd-ftso-v2-provider:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9102/metrics"]
       interval: 30s
@@ -602,6 +636,9 @@ services:
       - PROPOSALS_DIR=/proposals
     network_mode: host
     restart: unless-stopped
+    depends_on:
+      ftso-price-monitor:
+        condition: service_healthy
     cap_drop:
       - ALL
     security_opt:
