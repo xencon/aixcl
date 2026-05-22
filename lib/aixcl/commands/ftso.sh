@@ -10,6 +10,7 @@ readonly FTSO_PRICE_MONITOR_HEALTH_URL="http://127.0.0.1:9102/metrics"
 readonly FTSO_MAX_PROVIDER_WAIT=18    # 18 × 10 s = 3 min
 readonly FTSO_MAX_MARKET_RETRIES=3
 readonly FTSO_MARKET_RETRY_WAIT=30    # seconds to wait after CCXT-induced restart
+readonly FTSO_PROPOSALS_DIR="${HOME}/ftso-proposals"
 
 # ── Private helpers ───────────────────────────────────────────────────────────
 
@@ -97,6 +98,8 @@ start_ftso_services() {
     echo "  [x] ftso-price-monitor healthy"
 
     # 3 — Monitor agent (no HTTP endpoint; running is sufficient)
+    # Ensure proposals directory exists with correct permissions before agent starts
+    mkdir -p "${FTSO_PROPOSALS_DIR}" && chmod 755 "${FTSO_PROPOSALS_DIR}" 2>/dev/null || true
     echo "  Starting ftso-monitor-agent..."
     run_compose up -d --no-deps ftso-monitor-agent \
         || { echo "[ ] Failed to start ftso-monitor-agent" >&2; return 1; }

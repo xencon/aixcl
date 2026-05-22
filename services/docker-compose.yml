@@ -576,6 +576,7 @@ services:
       - VALUE_PROVIDER_CLIENT_BASE_PATH=${VALUE_PROVIDER_CLIENT_BASE_PATH:-}
       - VALUE_PROVIDER_IMPL=${VALUE_PROVIDER_IMPL:-}
       - LOG_LEVEL=${LOG_LEVEL:-log}
+      - VOLUME_WEIGHTING=linear
     network_mode: host
     restart: unless-stopped
     cpus: '1.0'
