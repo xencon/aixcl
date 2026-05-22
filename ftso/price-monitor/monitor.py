@@ -438,6 +438,25 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
     connector = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
     async with aiohttp.ClientSession(connector=connector) as session:
         while True:
+            # Lazy anchor re-init: retry once per cycle if startup init failed
+            if anchor_service is None:
+                try:
+                    _feed_names = [f["name"] for f in FEEDS]
+                    anchor_service = await loop.run_in_executor(
+                        None,
+                        lambda: FlareAnchorService(
+                            rpc_url=FLARE_RPC_URL,
+                            registry_address=FLARE_CONTRACT_REGISTRY,
+                            feed_names=_feed_names,
+                        ),
+                    )
+                    logger.info(
+                        "Flare anchor service initialized (lazy retry, %d feeds)",
+                        len(_feed_names),
+                    )
+                except Exception as exc:
+                    logger.debug("Anchor lazy init retry failed: %s", exc)
+
             t0 = time.monotonic()
             try:
                 # Build coroutines — anchor fetch only if service is available
