@@ -214,7 +214,7 @@ curl http://localhost:11434/v1/chat/completions \
 | Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault passwords` |
 | Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
-| Loki | http://localhost:3100 | No auth (localhost only) |
+| Loki | http://localhost:3100 | API only -- use Grafana for log browsing |
 | Alertmanager | http://localhost:9093 | No auth (localhost only) |
 | Ollama API | http://localhost:11434 | No auth (localhost only) |
 
@@ -265,11 +265,11 @@ git log --show-signature -1
 
 The following are **not optional** and cannot be disabled:
 
-- ✅ **Podman rootless** - No privileged containers
-- ✅ **GPG-signed commits** - All commits to main must be signed (CODEOWNERS only)
-- ✅ **HashiCorp Vault** - Dynamic secrets with automatic rotation
-- ✅ **PostgreSQL SSL** - Encrypted database connections
-- ✅ **Host firewall** - Network isolation at host level
+- - [x] **Podman rootless** - No privileged containers
+- - [x] **GPG-signed commits** - All commits to main must be signed (CODEOWNERS only)
+- - [x] **HashiCorp Vault** - Dynamic secrets with automatic rotation
+- - [x] **PostgreSQL SSL** - Encrypted database connections
+- - [x] **Host firewall** - Network isolation at host level
 
 See [SECURITY.md](SECURITY.md) for architecture details.
 
