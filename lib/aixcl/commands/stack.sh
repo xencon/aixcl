@@ -1202,10 +1202,13 @@ function status() {
     
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
+    # Cache container list once to avoid repeated docker/podman invocations
+    local _cached_containers
+    _cached_containers=$("${DOCKER_BIN:-docker}" ps --format "{{.Names}}" 2>/dev/null || true)
     # Join ALL_SERVICES with | for grep
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
-    if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
+    if echo "$_cached_containers" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         overall_status="Running"
     fi
     
@@ -1229,6 +1232,26 @@ function status() {
     operational_enabled_count=0
     for s in $profile_operational_list; do ((operational_enabled_count++)) || true; done
     
+    # Helper: retry a curl health check up to N attempts with 1s sleep
+    _curl_retry() {
+        local url="$1"
+        local max_attempts="${2:-3}"
+        local attempt=1
+        local result=""
+        while [ "$attempt" -le "$max_attempts" ]; do
+            result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$url" 2>/dev/null || echo "000")
+            if [ "$result" = "200" ] || [ "$result" = "302" ] || [ "$result" = "307" ]; then
+                echo "$result"
+                return 0
+            fi
+            if [ "$attempt" -lt "$max_attempts" ]; then
+                sleep 1
+            fi
+            attempt=$((attempt + 1))
+        done
+        echo "$result"
+    }
+
     # Helper: return 0 if service name is in current profile's operational services
     is_operational_in_profile() {
         local service_name="$1"
@@ -1249,9 +1272,9 @@ function status() {
         local health_check_arg="$4"
 
         
-        # Check container status
+        # Check container status (using cached container list)
         local container_running=false
-        if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+        if echo "$_cached_containers" | grep -q "^${container_name}$"; then
             container_running=true
         fi
         
@@ -1261,7 +1284,7 @@ function status() {
         if [ "$container_running" = "true" ] && [ -n "$health_check_type" ]; then
             case "$health_check_type" in
                 curl)
-                    health_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$health_check_arg" 2>/dev/null || echo "000")
+                    health_result=$(_curl_retry "$health_check_arg")
                     if [ "$health_result" = "404" ] || [ "$health_result" = "000" ]; then
                         local base_url="${health_check_arg%/health}"
                         base_url="${base_url%/}"
@@ -1395,7 +1418,7 @@ function status() {
     
     # Security
     # shellcheck disable=SC2034
-    VAULT_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8200/v1/sys/health 2>/dev/null || echo "000")
+    VAULT_STATUS=$(_curl_retry "http://127.0.0.1:8200/v1/sys/health")
     check_operational_service "Vault" "vault" "vault" "status_var" "VAULT_STATUS"
     
     # UI
@@ -1411,34 +1434,34 @@ function status() {
     check_operational_service "PostgreSQL" "postgres" "postgres" "pg_isready" "$postgres_user"
 
     # shellcheck disable=SC2034
-    PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5050 2>/dev/null || echo "000")
+    PGADMIN_STATUS=$(_curl_retry "http://127.0.0.1:5050")
     check_operational_service "pgAdmin" "pgadmin" "pgadmin" "status_var" "PGADMIN_STATUS"
 
     # Observability
     # shellcheck disable=SC2034
-    PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "000")
+    PROMETHEUS_STATUS=$(_curl_retry "http://127.0.0.1:9090/-/healthy")
     check_operational_service "Prometheus" "prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS"
 
     # shellcheck disable=SC2034
-    GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || echo "000")
+    GRAFANA_STATUS=$(_curl_retry "http://127.0.0.1:3000/api/health")
     check_operational_service "Grafana" "grafana" "grafana" "status_var" "GRAFANA_STATUS"
 
     # shellcheck disable=SC2034
-    CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8081/metrics 2>/dev/null || echo "000")
+    CADVISOR_STATUS=$(_curl_retry "http://127.0.0.1:8081/metrics")
     check_operational_service "cAdvisor" "cadvisor" "cadvisor" "status_var" "CADVISOR_STATUS"
 
     # shellcheck disable=SC2034
-    NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9100/metrics 2>/dev/null || echo "000")
+    NODE_EXPORTER_STATUS=$(_curl_retry "http://127.0.0.1:9100/metrics")
     check_operational_service "Node Exporter" "node-exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS"
 
     # shellcheck disable=SC2034
-    POSTSRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9187/metrics 2>/dev/null || echo "000")
+    POSTSRES_EXPORTER_STATUS=$(_curl_retry "http://127.0.0.1:9187/metrics")
     check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTSRES_EXPORTER_STATUS"
 
     if is_operational_in_profile "nvidia-gpu-exporter"; then
-        if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
+        if echo "$_cached_containers" | grep -q "^nvidia-gpu-exporter$"; then
             # shellcheck disable=SC2034
-            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9445/metrics 2>/dev/null || echo "000")
+            NVIDIA_GPU_EXPORTER_STATUS=$(_curl_retry "http://127.0.0.1:9445/metrics")
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS"
         else
             echo "  ${ICON_ERROR:-❌} NVIDIA GPU Exporter"
@@ -1448,12 +1471,12 @@ function status() {
 
     # Loki
     # shellcheck disable=SC2034
-    LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
+    LOKI_STATUS=$(_curl_retry "http://127.0.0.1:3100/ready")
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
     # Alertmanager
     # shellcheck disable=SC2034
-    ALERTMANAGER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9093/-/healthy 2>/dev/null || echo "000")
+    ALERTMANAGER_STATUS=$(_curl_retry "http://127.0.0.1:9093/-/healthy")
     check_operational_service "Alertmanager" "alertmanager" "alertmanager" "status_var" "ALERTMANAGER_STATUS"
 
     # Vault Agents (sidecars -- no HTTP endpoints, check container running only)
