@@ -28,6 +28,7 @@ POSTGRES_EMAIL="${POSTGRES_EMAIL:-admin@localhost}"
 PGADMIN_EMAIL="${PGADMIN_EMAIL:-admin@localhost}"
 POSTGRES_USER="${POSTGRES_USER:-admin}"
 POSTGRES_DATABASE="${POSTGRES_DATABASE:-webui}"
+export POSTGRES_USER POSTGRES_DATABASE
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -76,10 +77,10 @@ $DC up -d vault
 
 log "Waiting for Vault API (up to 60s)..."
 for i in $(seq 1 30); do
-    curl -sf "${VAULT_ADDR}/v1/sys/health" > /dev/null 2>&1 && break || true
+    curl -sf "${VAULT_ADDR}/v1/sys/seal-status" > /dev/null 2>&1 && break || true
     sleep 2
 done
-curl -sf "${VAULT_ADDR}/v1/sys/health" > /dev/null 2>&1 || die "Vault not reachable after 60s"
+curl -sf "${VAULT_ADDR}/v1/sys/seal-status" > /dev/null 2>&1 || die "Vault not reachable after 60s"
 log "Vault is reachable"
 
 # ── 2. Initialize ──────────────────────────────────────────────────────────────
