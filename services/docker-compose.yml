@@ -621,6 +621,15 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  ftso-proposals-init:
+    image: busybox:latest
+    container_name: ftso-proposals-init
+    user: root
+    command: ["sh", "-c", "mkdir -p /proposals && chown -R 10001:10001 /proposals"]
+    volumes:
+      - /home/sbadakhc/ftso-proposals:/proposals
+    restart: "no"
+
   ftso-monitor-agent:
     image: localhost/ftso-monitor-agent:latest
     container_name: ftso-monitor-agent
@@ -645,6 +654,8 @@ services:
     depends_on:
       ftso-price-monitor:
         condition: service_healthy
+      ftso-proposals-init:
+        condition: service_completed_successfully
     cap_drop:
       - ALL
     security_opt:
