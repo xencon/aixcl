@@ -1,8 +1,8 @@
 # AIXCL
 
-**A self-hosted, local-first AI development platform with enterprise security.**
+**Agentic software development**
 
-Run Large Language Models locally with HashiCorp Vault, GPG-signed commits, and rootless Podman.
+Issue first workflow. Who, Why, What, When and Where.
 
 ---
 
@@ -84,7 +84,7 @@ podman info | grep "rootless"
 The quickest way to get started -- add this alias to your shell:
 
 ```bash
-alias aixcl-setup='./aixcl utils check-env && ./aixcl stack init && ./aixcl stack start --profile sys'
+alias aixcl-setup='./aixcl utils check-env && ./aixcl stack init && ./aixcl vault init && ./aixcl stack start --profile sys'
 ```
 
 Then run:
@@ -97,10 +97,11 @@ Or run each step manually:
 
 ```bash
 ./aixcl utils check-env          # Verify environment prerequisites
-./aixcl stack init               # Generate .env, opencode.json, credentials and Vault secrets (one-time)
+./aixcl stack init               # Initialize volumes, generate credentials and bootstrap secrets
+./aixcl vault init               # Complete Vault setup: database engine, roles, policies (first deployment only)
 ./aixcl stack start --profile sys  # Start the full stack
 
-# Wait for healthy status (about 2-3 minutes for full stabilization)
+# Wait for healthy status (about 3-5 minutes for full stabilization)
 ./aixcl stack status
 ```
 
@@ -123,25 +124,23 @@ Services started (12 in sys profile):
 | **Secrets** | Vault | 8200 |
 | **UI** | Open WebUI | 8080 |
 
-### Step 4: Verify Vault (Auto-Initialized)
+### Step 4: Initialize Vault (First Deployment Only)
 
-Vault initializes automatically during stack startup. The process takes 2-3 minutes:
+Vault requires explicit initialization on first deployment to set up the database engine, roles, and secrets:
 
 ```bash
-# Check Vault status
-./aixcl vault status
+./aixcl vault init    # database engine, roles, policies, AppRole -- run once after stack init
 
-# View generated bootstrap passwords
+# Verify
+./aixcl vault status
 ./aixcl vault passwords
 ```
 
-**Important:** Vault auto-seals whenever its container restarts (e.g. after `./aixcl stack stop` or host reboot). If services fail to start, unseal Vault first:
+**Subsequent restarts:** Vault auto-unseals when the stack starts -- no manual step needed.
+If services fail to start after a restart, unseal manually:
 
 ```bash
-# Unseal Vault after every stack restart
 ./aixcl vault unseal
-
-# Wait 30 seconds for bootstrap agents, then verify
 ./aixcl stack status
 ```
 
