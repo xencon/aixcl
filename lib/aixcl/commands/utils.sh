@@ -108,6 +108,10 @@ function prune_all() {
     rm -f .aixcl.initialized .env pgadmin-servers.json .env.podman
     echo ""
 
+    echo "Removing Vault key files..."
+    rm -f "${HOME}/.aixcl-vault-init.json" "${HOME}/.aixcl-vault-token"
+    echo ""
+
     echo "Removing project directories..."
     rm -rf logs .security .audit
     echo ""
@@ -142,14 +146,16 @@ function prune_all() {
     fi
     echo ""
 
-    echo "Purge complete. All AIXCL resources removed."
+    echo "Purge complete. Proceeding with fresh initialization..."
     echo ""
-    echo "NOTE: The following standard system config was intentionally preserved:"
-    echo "  /etc/subuid, /etc/subgid   -- required for rootless containers system-wide"
-    echo "  ~/.local/share/containers/ -- Podman storage (may contain non-AIXCL data)"
-    echo "  podman.socket              -- standard Podman systemd service"
-    echo ""
-    echo "To also reset Podman storage: podman system reset --force"
+
+    local init_script="${SCRIPT_DIR}/scripts/vault/init-vault.sh"
+    if [ -f "$init_script" ]; then
+        bash "$init_script"
+    else
+        echo "Warning: init-vault.sh not found at ${init_script}"
+        echo "Run './scripts/vault/init-vault.sh' manually to complete initialization."
+    fi
 }
 
 function utils_cmd() {
@@ -160,7 +166,7 @@ function utils_cmd() {
         echo "  $0 utils check-env         - Verify environment setup"
         echo "  $0 utils bash-completion   - Install bash completion"
         echo "  $0 utils prune             - Remove volumes and state, keep images"
-        echo "  $0 utils prune --all       - Remove everything including images"
+        echo "  $0 utils prune --all       - Full scorched start: wipe everything and reinitialize"
         return 1
     fi
 
@@ -188,7 +194,7 @@ function utils_cmd() {
             echo "  $0 utils check-env         - Verify environment setup"
             echo "  $0 utils bash-completion   - Install bash completion"
             echo "  $0 utils prune             - Remove volumes and state, keep images"
-            echo "  $0 utils prune --all       - Remove everything including images"
+            echo "  $0 utils prune --all       - Full scorched start: wipe everything and reinitialize"
             return 1
             ;;
     esac
