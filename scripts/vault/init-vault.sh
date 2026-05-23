@@ -44,6 +44,33 @@ gen_pass() { openssl rand -hex 20; }
 DC="docker compose -f ${COMPOSE_FILE}"
 
 # ── 1. Start Vault ─────────────────────────────────────────────────────────────
+# ── 0. Create external volumes ────────────────────────────────────────────────
+log "Creating external Docker volumes..."
+VOLUMES=(
+    aixcl-ollama-data
+    aixcl-hf-cache
+    aixcl-vllm-data
+    aixcl-llamacpp-data
+    aixcl-open-webui-main
+    aixcl-open-webui-data
+    aixcl-pgdata
+    aixcl-prometheus
+    aixcl-grafana
+    aixcl-loki
+    aixcl-alertmanager-data
+    aixcl-pgadmin-storage
+    aixcl-pgadmin-main
+    aixcl-pgadmin-config
+    aixcl-vault-data
+    aixcl-vault-logs
+    aixcl-vault-secrets
+)
+for vol in "${VOLUMES[@]}"; do
+    docker volume create "$vol" > /dev/null 2>&1 \
+        && log "  Created $vol" \
+        || log "  $vol already exists — skipping"
+done
+
 log "Starting Vault container..."
 $DC up -d vault
 
