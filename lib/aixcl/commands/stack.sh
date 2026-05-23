@@ -260,14 +260,19 @@ function refresh_vault_bootstrap_agents() {
 
     # Stop in dependency order to avoid Podman --requires deadlock.
     echo "  Stopping dependents..."
+    run_compose stop grafana 2>/dev/null || true
     run_compose stop open-webui pgadmin postgres-exporter 2>/dev/null || true
     run_compose stop postgres 2>/dev/null || true
     run_compose stop vault-agent-postgres vault-agent-openwebui 2>/dev/null || true
 
-    # Remove bootstrap containers explicitly - --force-recreate fails under Podman
-    # when --requires relationships exist between containers.
-    echo "  Removing bootstrap containers..."
+    # Remove ALL containers in the dependency chain.
+    # Podman --requires blocks bootstrap container removal while dependents
+    # exist — even when stopped. rm -f the full chain before recreating.
+    echo "  Removing containers (full chain)..."
     podman rm -f \
+        grafana \
+        open-webui pgadmin postgres-exporter postgres \
+        vault-agent-postgres vault-agent-openwebui \
         vault-agent-postgres-bootstrap \
         vault-agent-openwebui-bootstrap \
         vault-agent-pgadmin-bootstrap \
@@ -290,6 +295,7 @@ function refresh_vault_bootstrap_agents() {
     echo "  Restarting postgres and dependents..."
     run_compose up -d --no-deps postgres 2>/dev/null || true
     run_compose up -d --no-deps open-webui pgadmin postgres-exporter 2>/dev/null || true
+    run_compose up -d --no-deps grafana 2>/dev/null || true
 
     echo "  Bootstrap refresh complete."
     echo ""
