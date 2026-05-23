@@ -69,9 +69,9 @@ services:
     volumes:
       - ../vault/agent-config:/etc/vault:ro
       - ../scripts/vault/vault-agent.sh:/usr/local/bin/vault-agent.sh:ro
+      - ~/.aixcl-vault-token:/vault/token:ro
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/vault-agent.sh postgres
     network_mode: host
     depends_on:
@@ -91,9 +91,9 @@ services:
     volumes:
       - ../vault/agent-config:/etc/vault:ro
       - ../scripts/vault/vault-agent-openwebui.sh:/usr/local/bin/vault-agent-openwebui.sh:ro
+      - ~/.aixcl-vault-token:/vault/token:ro
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/vault-agent-openwebui.sh
     network_mode: host
     depends_on:
@@ -113,10 +113,10 @@ services:
       - DAC_OVERRIDE
     volumes:
       - ../scripts/vault/bootstrap-password-postgres.sh:/usr/local/bin/bootstrap-password-postgres.sh:ro
+      - ~/.aixcl-vault-token:/vault/token:ro
       - aixcl-vault-secrets:/run/secrets
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/bootstrap-password-postgres.sh
     network_mode: host
     depends_on:
@@ -136,10 +136,10 @@ services:
       - DAC_OVERRIDE
     volumes:
       - ../scripts/vault/bootstrap-password-openwebui.sh:/usr/local/bin/bootstrap-password-openwebui.sh:ro
+      - ~/.aixcl-vault-token:/vault/token:ro
       - aixcl-vault-secrets:/run/secrets
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/bootstrap-password-openwebui.sh
     network_mode: host
     depends_on:
@@ -159,10 +159,10 @@ services:
       - DAC_OVERRIDE
     volumes:
       - ../scripts/vault/bootstrap-password-pgadmin.sh:/usr/local/bin/bootstrap-password-pgadmin.sh:ro
+      - ~/.aixcl-vault-token:/vault/token:ro
       - aixcl-vault-secrets:/run/secrets
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/bootstrap-password-pgadmin.sh
     network_mode: host
     depends_on:
@@ -182,10 +182,10 @@ services:
       - DAC_OVERRIDE
     volumes:
       - ../scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro
+      - ~/.aixcl-vault-token:/vault/token:ro
       - aixcl-vault-secrets:/run/secrets
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
     command: /usr/local/bin/bootstrap-password-grafana.sh
     network_mode: host
     depends_on:

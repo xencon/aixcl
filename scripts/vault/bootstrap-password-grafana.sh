@@ -4,7 +4,7 @@
 # shellcheck shell=sh
 
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_DEV_TOKEN:-}}"
+VAULT_TOKEN="${VAULT_TOKEN:-${VAULT_DEV_TOKEN:-$(cat /vault/token 2>/dev/null)}}"
 export VAULT_ADDR VAULT_TOKEN
 
 log() {
