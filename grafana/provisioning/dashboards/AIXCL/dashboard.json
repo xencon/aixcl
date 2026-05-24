@@ -319,7 +319,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "ollama_up",
+          "expr": "probe_success{instance=\"http://localhost:11434\"}",
           "refId": "A"
         }
       ],
@@ -386,7 +386,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "openwebui_up",
+          "expr": "probe_success{instance=\"http://localhost:8080\"}",
           "refId": "A"
         }
       ],
@@ -732,7 +732,7 @@
       "type": "row"
     },
     {
-      "datasource": "Prometheus",
+      "datasource": "Loki",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -743,12 +743,20 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 8
+              },
+              {
+                "color": "red",
+                "value": 15
               }
             ]
           },
-          "unit": "short"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -777,11 +785,14 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "ollama_models_loaded_total",
+          "datasource": "Loki",
+          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | json | unwrap llm_latency_s [5m])",
+          "instant": true,
+          "queryType": "instant",
           "refId": "A"
         }
       ],
-      "title": "Models Loaded",
+      "title": "LLM Latency (s)",
       "type": "stat"
     },
     {
@@ -838,7 +849,7 @@
       "targets": [
         {
           "datasource": "Loki",
-          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | regexp \"Feeds: (?P<feeds>\\d+)\" | unwrap feeds [5m])",
+          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | json | unwrap provider_feed_count [5m])",
           "instant": true,
           "queryType": "instant",
           "refId": "A"
@@ -862,12 +873,8 @@
                 "value": null
               },
               {
-                "color": "yellow",
-                "value": 1
-              },
-              {
                 "color": "red",
-                "value": 10
+                "value": 1
               }
             ]
           },
@@ -901,13 +908,13 @@
       "targets": [
         {
           "datasource": "Loki",
-          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | regexp \"coingecko=(?P<errors>\\d+)\" | unwrap errors [5m])",
+          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | json | unwrap critical_count [5m])",
           "instant": true,
           "queryType": "instant",
           "refId": "A"
         }
       ],
-      "title": "CoinGecko Src Errors",
+      "title": "Critical Alerts",
       "type": "stat"
     },
     {
@@ -930,7 +937,7 @@
               },
               {
                 "color": "red",
-                "value": 10
+                "value": 5
               }
             ]
           },
@@ -964,13 +971,13 @@
       "targets": [
         {
           "datasource": "Loki",
-          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | regexp \"binance=(?P<errors>\\d+)\" | unwrap errors [5m])",
+          "expr": "last_over_time({service_name=\"ftso-monitor-agent\"} | json | unwrap warning_count [5m])",
           "instant": true,
           "queryType": "instant",
           "refId": "A"
         }
       ],
-      "title": "Binance Src Errors",
+      "title": "Warning Alerts",
       "type": "stat"
     },
     {
