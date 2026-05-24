@@ -33,7 +33,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "phi3:latest")
+OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "gemma4:latest")
 OLLAMA_TIMEOUT: int = int(os.getenv("OLLAMA_TIMEOUT", "60"))
 
 _SYSTEM_PROMPT = """\

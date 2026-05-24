@@ -640,7 +640,7 @@ services:
       - METRICS_URL=http://localhost:9102/metrics
       - PROMETHEUS_URL=http://localhost:9090
       - OLLAMA_URL=http://localhost:11434
-      - OLLAMA_MODEL=phi3:latest
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:latest}
       - POLL_INTERVAL=60
       - BAND_THRESHOLD=0.25
       - APPROACH_FRACTION=0.60
