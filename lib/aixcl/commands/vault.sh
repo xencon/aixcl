@@ -96,7 +96,13 @@ function cmd_vault_init() {
     # Run the idempotent initialization
     local init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
     if [ -f "$init_script" ]; then
-        "$init_script" "$@"
+        "$init_script" "$@" || true
+        # Refresh bootstrap agents with the new vault root token
+        if declare -f refresh_vault_bootstrap_agents > /dev/null 2>&1; then
+            refresh_vault_bootstrap_agents
+        else
+            echo "Note: run ./aixcl stack start to refresh bootstrap agents"
+        fi
     else
         echo "Error: vault-init.sh not found at $init_script"
         return 1

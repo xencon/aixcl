@@ -1,235 +1,263 @@
-#!/bin/sh
-# shellcheck shell=sh
+#!/usr/bin/env bash
+# init-vault.sh - Full Vault bootstrap for scorched-earth deployment
 #
-# Initialize HashiCorp Vault for AIXCL (container-side script)
-# This script runs inside the Vault container (hashicorp/vault:1.18) which
-# uses busybox /bin/sh and does NOT have /bin/bash or jq.
+# Sequence:
+#   1. Start Vault container
+#   2. vault operator init  -> ~/.aixcl-vault-init.json  (chmod 600)
+#   3. vault operator unseal
+#   4. Write root token     -> ~/.aixcl-vault-token      (chmod 600)
+#   5. Enable KV v2, write bootstrap passwords
+#   6. Start bootstrap containers (populate vault-secrets volume)
+#   7. Start PostgreSQL, wait until healthy
+#   8. Configure Vault database engine + create aixcl-app role
+#   9. Start all remaining services
 #
-# Usage in docker-compose:
-#   command: /usr/local/bin/init-vault.sh
+# Usage (from repo root):
+#   ./scripts/vault/init-vault.sh [--postgres-email EMAIL] [--pgadmin-email EMAIL]
 
-set -eu
+set -euo pipefail
 
-VAULT_ADDR="${1:-http://127.0.0.1:8200}"
-VAULT_TOKEN="${2:-${VAULT_DEV_TOKEN:-aixcl-dev-token}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+COMPOSE_FILE="${REPO_ROOT}/services/docker-compose.yml"
 
-log_info() { echo "[INFO] $1"; }
-log_warn() { echo "[WARN] $1"; }
-log_error() { echo "[ERROR] $1"; }
+VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
+VAULT_INIT_FILE="${HOME}/.aixcl-vault-init.json"
+VAULT_TOKEN_FILE="${HOME}/.aixcl-vault-token"
+POSTGRES_EMAIL="${POSTGRES_EMAIL:-admin@localhost}"
+PGADMIN_EMAIL="${PGADMIN_EMAIL:-admin@localhost}"
+POSTGRES_USER="${POSTGRES_USER:-admin}"
+POSTGRES_DATABASE="${POSTGRES_DATABASE:-webui}"
+export POSTGRES_USER POSTGRES_DATABASE
 
-export VAULT_ADDR
-export VAULT_TOKEN
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --postgres-email) POSTGRES_EMAIL="$2"; shift 2;;
+        --pgadmin-email)  PGADMIN_EMAIL="$2";  shift 2;;
+        *) echo "Unknown option: $1"; exit 1;;
+    esac
+done
 
-# Wait for Vault to be ready
-wait_for_vault() {
-  log_info "Waiting for Vault to be ready..."
-  retries=60
-  while [ $retries -gt 0 ]; do
-    output=$(vault status 2>&1 || true)
-    if echo "$output" | grep -q "Sealed.*false"; then
-      log_info "Vault is ready (unsealed)"
-      return 0
-    fi
-    if echo "$output" | grep -q "Dev.*mode"; then
-      log_info "Vault is ready (dev mode)"
-      return 0
-    fi
+log()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] INIT | $*"; }
+die()  { log "ERROR: $*"; exit 1; }
+gen_pass() { openssl rand -hex 20; }
+
+DC="docker compose -f ${COMPOSE_FILE}"
+
+# ── 1. Start Vault ─────────────────────────────────────────────────────────────
+# ── 0. Create external volumes ────────────────────────────────────────────────
+log "Creating external Docker volumes..."
+VOLUMES=(
+    aixcl-ollama-data
+    aixcl-hf-cache
+    aixcl-vllm-data
+    aixcl-llamacpp-data
+    aixcl-open-webui-main
+    aixcl-open-webui-data
+    aixcl-pgdata
+    aixcl-prometheus
+    aixcl-grafana
+    aixcl-loki
+    aixcl-alertmanager-data
+    aixcl-pgadmin-storage
+    aixcl-pgadmin-main
+    aixcl-pgadmin-config
+    aixcl-vault-data
+    aixcl-vault-logs
+    aixcl-vault-secrets
+)
+for vol in "${VOLUMES[@]}"; do
+    docker volume create "$vol" > /dev/null 2>&1 \
+        && log "  Created $vol" \
+        || log "  $vol already exists — skipping"
+done
+
+log "Starting Vault container..."
+$DC up -d vault
+
+log "Waiting for Vault API (up to 60s)..."
+for i in $(seq 1 30); do
+    curl -sf "${VAULT_ADDR}/v1/sys/seal-status" > /dev/null 2>&1 && break || true
     sleep 2
-    retries=$((retries - 1))
-  done
-  log_error "Vault failed to start"
-  return 1
-}
+done
+curl -sf "${VAULT_ADDR}/v1/sys/seal-status" > /dev/null 2>&1 || die "Vault not reachable after 60s"
+log "Vault is reachable"
 
-# Enable database secrets engine
-enable_database_engine() {
-  log_info "Enabling database secrets engine..."
-  vault secrets enable database || log_warn "Database engine already enabled"
-}
+# ── 2. Initialize ──────────────────────────────────────────────────────────────
+INIT_STATUS=$(curl -sf "${VAULT_ADDR}/v1/sys/init" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['initialized'])")
 
-# Read PostgreSQL bootstrap password from Vault KV with retry
-get_postgres_password() {
-  password=""
-  retries=60
-  log_info "Waiting for bootstrap password in Vault KV..."
-  while [ $retries -gt 0 ]; do
-    password=$(vault kv get -field=password kv/bootstrap/postgres 2>/dev/null || true)
-    if [ -n "$password" ]; then
-      echo "$password"
-      return 0
-    fi
-    log_warn "KV not ready yet, retrying... ($retries left)"
+if [ "$INIT_STATUS" = "False" ]; then
+    log "Initializing Vault (1 key share)..."
+    docker exec vault vault operator init \
+        -key-shares=1 -key-threshold=1 -format=json > "$VAULT_INIT_FILE"
+    chmod 600 "$VAULT_INIT_FILE"
+    log "Vault initialized. Keys -> ${VAULT_INIT_FILE}"
+else
+    log "Vault already initialized"
+    [ -f "$VAULT_INIT_FILE" ] || die "${VAULT_INIT_FILE} missing. Manual intervention required."
+fi
+
+UNSEAL_KEY=$(python3 -c "import json; d=json.load(open('${VAULT_INIT_FILE}')); print(d['unseal_keys_b64'][0])")
+ROOT_TOKEN=$(python3 -c "import json; d=json.load(open('${VAULT_INIT_FILE}')); print(d['root_token'])")
+
+# ── 3. Unseal ──────────────────────────────────────────────────────────────────
+SEALED=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['sealed'])")
+if [ "$SEALED" = "True" ]; then
+    log "Unsealing Vault..."
+    docker exec -e VAULT_ADDR="$VAULT_ADDR" vault vault operator unseal "$UNSEAL_KEY" > /dev/null
     sleep 2
-    retries=$((retries - 1))
-  done
-  log_error "Could not read bootstrap password from Vault KV after 60 seconds"
-  log_error "Ensure bootstrap agents have written to kv/bootstrap/postgres"
-  return 1
-}
+fi
+log "Vault unsealed"
 
-# Configure PostgreSQL connection
-configure_postgres_connection() {
-  log_info "Configuring PostgreSQL connection..."
+# ── 4. Token file ──────────────────────────────────────────────────────────────
+# Write root token to secure file — mounted read-only into all vault agent containers.
+# Root token never expires. Treat this file with the same care as the init JSON.
+log "Writing Vault token -> ${VAULT_TOKEN_FILE}"
+echo "$ROOT_TOKEN" > "$VAULT_TOKEN_FILE"
+chmod 600 "$VAULT_TOKEN_FILE"
+VAULT_TOKEN="$ROOT_TOKEN"
 
-  postgres_password=""
-  if ! postgres_password=$(get_postgres_password); then
-    log_error "Could not read bootstrap password from Vault KV"
-    log_error "Ensure bootstrap agents have written to kv/bootstrap/postgres"
-    log_error "Failing fast — no hardcoded fallback available"
-    return 1
-  fi
+# ── 5. KV v2 + bootstrap passwords ────────────────────────────────────────────
+log "Enabling KV v2 secrets engine..."
+curl -sf -X POST "${VAULT_ADDR}/v1/sys/mounts/kv" \
+    -H "X-Vault-Token: ${VAULT_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{"type":"kv","options":{"version":"2"}}' > /dev/null \
+    || log "KV engine already enabled — continuing"
 
-  vault write database/config/postgresql \
-    plugin_name=postgresql-database-plugin \
-    allowed_roles="aixcl-app,aixcl-admin" \
-    connection_url="postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable" \
-    username="admin" \
-    password="$postgres_password"
-}
+log "Generating bootstrap passwords..."
+PG_PASS=$(gen_pass)
+OW_PASS=$(gen_pass)
+PA_PASS=$(gen_pass)
+GF_PASS=$(gen_pass)
 
-# Create dynamic role for application
-create_app_role() {
-  log_info "Creating application role (short-lived credentials)..."
+log "Writing bootstrap secrets to Vault KV..."
+python3 -c "
+import json, urllib.request, sys
 
-  vault write database/roles/aixcl-app \
-    db_name=postgresql \
-    creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; \
-      GRANT USAGE, CREATE ON SCHEMA public TO \"{{name}}\"; \
-      GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
-    default_ttl="1h" \
-    max_ttl="24h"
-}
+addr  = '${VAULT_ADDR}'
+token = '${VAULT_TOKEN}'
 
-# Create admin role for maintenance
-create_admin_role() {
-  log_info "Creating admin role (maintenance credentials)..."
+def kv_write(path, data):
+    payload = json.dumps({'data': data}).encode()
+    req = urllib.request.Request(
+        addr + '/v1/kv/data/' + path,
+        data=payload,
+        headers={'X-Vault-Token': token, 'Content-Type': 'application/json'},
+        method='POST'
+    )
+    with urllib.request.urlopen(req) as r:
+        if r.status not in (200, 204):
+            print('KV write failed for ' + path + ': ' + str(r.status))
+            sys.exit(1)
 
-  vault write database/roles/aixcl-admin \
-    db_name=postgresql \
-    creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; \
-      GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; \
-      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";" \
-    default_ttl="15m" \
-    max_ttl="1h"
-}
+kv_write('bootstrap/postgres',  {'password': '${PG_PASS}',  'email': '${POSTGRES_EMAIL}', 'username': '${POSTGRES_USER}'})
+kv_write('bootstrap/openwebui', {'password': '${OW_PASS}'})
+kv_write('bootstrap/pgadmin',   {'password': '${PA_PASS}',  'email': '${PGADMIN_EMAIL}'})
+kv_write('bootstrap/grafana',   {'password': '${GF_PASS}'})
+print('All bootstrap secrets written')
+"
 
-# Create policies
-create_policies() {
-  log_info "Creating Vault policies..."
+# ── 6. Start bootstrap containers ─────────────────────────────────────────────
+log "Starting Vault bootstrap containers..."
+$DC up -d \
+    vault-agent-postgres-bootstrap \
+    vault-agent-openwebui-bootstrap \
+    vault-agent-pgadmin-bootstrap \
+    vault-agent-grafana-bootstrap
 
-  # App policy - can read own credentials
-  vault policy write aixcl-app - << EOF
-path "database/creds/aixcl-app" {
-  capabilities = ["read"]
-}
+log "Waiting for postgres-password to appear in vault-secrets volume (up to 120s)..."
+for i in $(seq 1 60); do
+    PW=$(docker run --rm -v aixcl-vault-secrets:/s busybox \
+        cat /s/postgres-password 2>/dev/null || true)
+    [ -n "$PW" ] && { log "Bootstrap secrets are ready"; break; }
+    [ "$i" -eq 60 ] && die "Timed out waiting for vault-secrets volume"
+    sleep 2
+done
 
-path "database/creds/aixcl-admin" {
-  capabilities = ["deny"]
-}
-EOF
+# ── 7. Start PostgreSQL ────────────────────────────────────────────────────────
+log "Starting PostgreSQL..."
+$DC up -d postgres
 
-  # Admin policy - can create and manage
-  vault policy write aixcl-admin - << EOF
-path "database/creds/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
+log "Waiting for PostgreSQL to become healthy (up to 120s)..."
+for i in $(seq 1 60); do
+    docker exec postgres pg_isready -U "$POSTGRES_USER" -h 127.0.0.1 > /dev/null 2>&1 \
+        && { log "PostgreSQL is ready"; break; }
+    [ "$i" -eq 60 ] && die "PostgreSQL not ready after 120s"
+    sleep 2
+done
 
-path "database/roles/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
+# ── 8. Configure Vault database engine ────────────────────────────────────────
+log "Configuring Vault database secrets engine..."
+python3 -c "
+import json, urllib.request, sys
 
-path "database/config/*" {
-  capabilities = ["read"]
-}
-EOF
-}
+addr    = '${VAULT_ADDR}'
+token   = '${VAULT_TOKEN}'
+pg_user = '${POSTGRES_USER}'
+pg_pass = '${PG_PASS}'
+pg_db   = '${POSTGRES_DATABASE}'
 
-# Enable AppRole auth for services
-enable_approle_auth() {
-  log_info "Enabling AppRole authentication..."
-  vault auth enable approle || log_warn "AppRole already enabled"
+def vault_post(path, data):
+    payload = json.dumps(data).encode()
+    req = urllib.request.Request(
+        addr + '/v1/' + path,
+        data=payload,
+        headers={'X-Vault-Token': token, 'Content-Type': 'application/json'},
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        if e.code in (400, 204):
+            return e.code
+        raise
 
-  # Create AppRoles for services
-  vault write auth/approle/role/aixcl-open-webui \
-    token_policies="aixcl-app" \
-    token_ttl="1h" \
-    token_max_ttl="24h"
+vault_post('sys/mounts/database', {'type': 'database'})
 
-  vault write auth/approle/role/aixcl-postgres-exporter \
-    token_policies="aixcl-app" \
-    token_ttl="1h" \
-    token_max_ttl="24h"
-}
+vault_post('database/config/postgresql', {
+    'plugin_name': 'postgresql-database-plugin',
+    'allowed_roles': 'aixcl-app',
+    'connection_url': 'postgresql://{{username}}:{{password}}@127.0.0.1:5432/' + pg_db + '?sslmode=disable',
+    'username': pg_user,
+    'password': pg_pass
+})
 
-# Generate credentials to test
-test_credentials() {
-  log_info "Testing credential generation..."
+creation_sql = (
+    'CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD' + \"'\" + '{{password}}' + \"'\" +
+    ' VALID UNTIL ' + \"'\" + '{{expiration}}' + \"'\" + '; '
+    'GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO \"{{name}}\"; '
+    'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";'
+)
+vault_post('database/roles/aixcl-app', {
+    'db_name': 'postgresql',
+    'creation_statements': [creation_sql],
+    'default_ttl': '1h',
+    'max_ttl': '24h'
+})
+print('Database engine configured successfully')
+"
 
-  output=""
-  output=$(vault read -format=json database/creds/aixcl-app 2>/dev/null || true)
+log "Testing Vault credential generation..."
+docker exec \
+    -e VAULT_TOKEN="$VAULT_TOKEN" \
+    -e VAULT_ADDR="$VAULT_ADDR" \
+    vault vault read database/creds/aixcl-app > /dev/null \
+    && log "Credential generation: PASSED" \
+    || log "WARNING: Credential test failed — check vault and postgres logs"
 
-  if [ -z "$output" ]; then
-    log_warn "Failed to generate credentials (PostgreSQL may not be ready yet)"
-    return 1
-  fi
+# ── 9. Start full stack ────────────────────────────────────────────────────────
+log "Starting all remaining services..."
+$DC up -d
 
-  username=""
-  password=""
-  # Parse JSON without jq (busybox compatible)
-  username=$(echo "$output" | grep '"username"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
-  password=$(echo "$output" | grep '"password"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
-
-  log_info "Generated credentials:"
-  log_info "  Username: $username"
-  log_info "  Password: [REDACTED]"
-  log_info "  TTL: 1 hour (auto-expires)"
-
-  # Revoke test credentials
-  lease_id=""
-  lease_id=$(echo "$output" | grep '"lease_id"' | sed 's/.*: "\(.*\)".*/\1/' | tr -d '[:space:],"')
-  if [ -n "$lease_id" ]; then
-    vault lease revoke "$lease_id" >/dev/null 2>&1 || true
-  fi
-}
-
-# Enable audit logging
-enable_audit_logging() {
-  log_info "Enabling audit logging..."
-
-  vault audit enable file file_path=/vault/logs/audit.log || log_warn "Audit already enabled"
-  log_info "Audit logs: /vault/logs/audit.log"
-}
-
-# Main
-case "${1:-}" in
-  --test)
-    # Just test connection
-    wait_for_vault
-    vault status
-    ;;
-  --creds)
-    # Generate and show credentials
-    wait_for_vault
-    vault read database/creds/aixcl-app
-    ;;
-  *)
-    wait_for_vault
-    enable_database_engine
-    configure_postgres_connection
-    create_app_role
-    create_admin_role
-    create_policies
-    enable_approle_auth
-    enable_audit_logging
-    test_credentials || true
-
-    log_info ""
-    log_info "=== Vault Initialization Complete ==="
-    log_info ""
-    log_info "Dynamic credentials are now available:"
-    log_info "  vault read database/creds/aixcl-app"
-    log_info ""
-    log_info "Credentials auto-expire after TTL (no manual cleanup)"
-    log_info "Audit logging enabled for compliance"
-    ;;
-esac
+log ""
+log "=========================================================="
+log "  Scorched start complete. All services coming up."
+log ""
+log "  KEEP THESE FILES SAFE — never commit to git:"
+log "    ${VAULT_INIT_FILE}"
+log "    ${VAULT_TOKEN_FILE}"
+log "=========================================================="

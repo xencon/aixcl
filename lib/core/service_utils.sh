@@ -73,7 +73,7 @@ container_start() {
             return 1
         fi
     else
-        if run_compose up -d "$actual_service"; then
+        if run_compose up -d --no-deps "$actual_service"; then
             log_success "Successfully started service: $service"
         else
             log_error "Failed to start service: $service"

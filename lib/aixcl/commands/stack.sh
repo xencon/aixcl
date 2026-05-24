@@ -194,8 +194,20 @@ function init_stack() {
     echo "email=$AIXCL_ADMIN_EMAIL" >> "${SCRIPT_DIR}/.aixcl.initialized"
     echo "created=$(date -Iseconds)" >> "${SCRIPT_DIR}/.aixcl.initialized"
 
-    echo "Credentials will be generated on first start."
-    echo "Run './aixcl stack start --profile sys' to begin."
+    echo ""
+    echo "Running full stack bootstrap..."
+    echo ""
+
+    export POSTGRES_USER="$postgres_user"
+    export POSTGRES_DATABASE="$postgres_db"
+
+    local init_script="${SCRIPT_DIR}/scripts/vault/init-vault.sh"
+    if [ ! -f "$init_script" ]; then
+        echo "Error: Bootstrap script not found: $init_script"
+        return 1
+    fi
+
+    bash "$init_script"
 }
 
 function ensure_nvidia_cdi() {
@@ -221,6 +233,84 @@ function ensure_nvidia_cdi() {
             echo "   Run manually: sudo mkdir -p /etc/cdi && sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
         fi
     fi
+}
+
+
+# Refresh vault bootstrap agents after vault init or on scorched-start.
+# Uses explicit stop+rm+up because Podman --requires tracking blocks
+# --force-recreate when containers have dependency relationships.
+function refresh_vault_bootstrap_agents() {
+    local _gpg_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
+
+    if [ -z "${GPG_TTY:-}" ]; then
+        GPG_TTY=$(tty 2>/dev/null || true)
+        export GPG_TTY
+    fi
+
+    if [ -z "${COMPOSE_CMD[*]:-}" ]; then
+        set_compose_cmd
+    fi
+
+    local _vtoken
+    if ! _vtoken=$(gpg --quiet --decrypt "$_gpg_file"); then
+        echo ""
+        echo "WARNING: GPG decrypt failed for vault root token."
+        echo "  Ensure your GPG key is unlocked and GPG_TTY is exported."
+        echo "  Bootstrap agents NOT refreshed."
+        echo ""
+        return 1
+    fi
+
+    if [ -z "${_vtoken:-}" ]; then
+        echo "WARNING: Vault root token is empty - bootstrap NOT refreshed."
+        return 1
+    fi
+
+    export VAULT_TOKEN="$_vtoken"
+    echo ""
+    echo "Refreshing vault bootstrap agents..."
+
+    # Stop in dependency order to avoid Podman --requires deadlock.
+    echo "  Stopping dependents..."
+    run_compose stop grafana 2>/dev/null || true
+    run_compose stop open-webui pgadmin postgres-exporter 2>/dev/null || true
+    run_compose stop postgres 2>/dev/null || true
+    run_compose stop vault-agent-postgres vault-agent-openwebui 2>/dev/null || true
+
+    # Remove ALL containers in the dependency chain.
+    # Podman --requires blocks bootstrap container removal while dependents
+    # exist — even when stopped. rm -f the full chain before recreating.
+    echo "  Removing containers (full chain)..."
+    podman rm -f \
+        grafana \
+        open-webui pgadmin postgres-exporter postgres \
+        vault-agent-postgres vault-agent-openwebui \
+        vault-agent-postgres-bootstrap \
+        vault-agent-openwebui-bootstrap \
+        vault-agent-pgadmin-bootstrap \
+        vault-agent-grafana-bootstrap 2>/dev/null || true
+
+    echo "  Starting bootstrap agents..."
+    run_compose up -d --no-deps \
+        vault-agent-postgres-bootstrap \
+        vault-agent-openwebui-bootstrap \
+        vault-agent-pgadmin-bootstrap \
+        vault-agent-grafana-bootstrap
+
+    sleep 3
+
+    echo "  Starting vault agents..."
+    run_compose up -d --no-deps \
+        vault-agent-postgres \
+        vault-agent-openwebui
+
+    echo "  Restarting postgres and dependents..."
+    run_compose up -d --no-deps postgres 2>/dev/null || true
+    run_compose up -d --no-deps open-webui pgadmin postgres-exporter 2>/dev/null || true
+    run_compose up -d --no-deps grafana 2>/dev/null || true
+
+    echo "  Bootstrap refresh complete."
+    echo ""
 }
 
 function start() {
@@ -653,31 +743,7 @@ function start() {
                 # On the very first init, VAULT_TOKEN was unknown at compose-up time;
                 # now that vault-init.sh has encrypted it to .security/, we reload it
                 # and force-recreate the bootstrap containers with the real token.
-                local _vault_token_file_post="${SCRIPT_DIR}/.security/vault-root-token.gpg"
-                if [ -f "$_vault_token_file_post" ]; then
-                    # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
-                    if [ -z "${GPG_TTY:-}" ]; then
-                        GPG_TTY=$(tty 2>/dev/null || true)
-                        export GPG_TTY
-                    fi
-                    local _vtoken
-                    _vtoken=$(gpg --quiet --decrypt "$_vault_token_file_post" 2>/dev/null) || true
-                    if [ -n "${_vtoken:-}" ]; then
-                        export VAULT_TOKEN="$_vtoken"
-                        echo ""
-                        echo "Refreshing bootstrap agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
-                            vault-agent-postgres-bootstrap \
-                            vault-agent-openwebui-bootstrap \
-                            vault-agent-pgadmin-bootstrap \
-                            vault-agent-grafana-bootstrap 2>/dev/null || true
-                        echo ""
-                        echo "Refreshing non-bootstrap vault agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
-                            vault-agent-postgres \
-                            vault-agent-openwebui 2>/dev/null || true
-                    fi
-                fi
+                refresh_vault_bootstrap_agents || true
 
                 # Show current passwords
                 echo ""

@@ -162,7 +162,7 @@ wait_for_postgres() {
         return 0
     fi
 
-    local retries=30
+    local retries=60
     while [ $retries -gt 0 ]; do
         if $docker_bin exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
             log_info "PostgreSQL is ready"
@@ -171,7 +171,7 @@ wait_for_postgres() {
         sleep 2
         retries=$((retries - 1))
     done
-    log_error "PostgreSQL is not ready after 60 seconds"
+    log_error "PostgreSQL is not ready after 120 seconds"
     return 1
 }
 
@@ -495,6 +495,12 @@ configure_postgres_connection() {
     log_info "PostgreSQL connection configured"
 }
 
+role_exists() {
+    local role_name="$1"
+    curl -sf "${VAULT_ADDR}/v1/database/roles/${role_name}" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" >/dev/null 2>&1
+}
+
 create_app_role() {
     role_exists "aixcl-app" && { log_info "Application role already exists (skipping)"; return 0; }
     log_info "Creating application role..."
@@ -669,6 +675,53 @@ show_summary() {
     log_info ""
 }
 
+# Refresh bootstrap agents so postgres can receive its Vault-derived password.
+# On scorched-start, bootstrap containers start without VAULT_TOKEN (vault not
+# yet initialised). After vault-init stores passwords in KV, this function
+# restarts the bootstrap containers with the real token so postgres can proceed.
+# No-op on warm-start (postgres already accepting connections).
+refresh_bootstrap_for_postgres() {
+    local docker_bin=""
+    if command -v podman >/dev/null 2>&1; then docker_bin="podman"
+    elif command -v docker >/dev/null 2>&1; then docker_bin="docker"
+    else return 0; fi
+
+    if $docker_bin exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+        return 0  # postgres already ready — no-op on warm-start
+    fi
+
+    log_info "Postgres not ready — refreshing bootstrap agents (scorched-start cycle break)..."
+
+    local compose_cmd=""
+    if command -v podman-compose >/dev/null 2>&1; then compose_cmd="podman-compose"
+    elif command -v docker-compose >/dev/null 2>&1; then compose_cmd="docker-compose"
+    else log_warn "No compose command found — skipping bootstrap refresh"; return 0; fi
+
+    local compose_file="${SCRIPT_DIR}/services/docker-compose.yml"
+    [ -f "$compose_file" ] || { log_warn "Compose file not found: $compose_file"; return 0; }
+
+    # Stop full chain in dependency order
+    $compose_cmd -f "$compose_file" stop open-webui pgadmin postgres-exporter 2>/dev/null || true
+    $compose_cmd -f "$compose_file" stop postgres 2>/dev/null || true
+    $compose_cmd -f "$compose_file" stop vault-agent-postgres vault-agent-openwebui 2>/dev/null || true
+    $compose_cmd -f "$compose_file" stop vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap 2>/dev/null || true
+
+    # rm -f full chain — stopped containers still block --requires removal
+    $docker_bin rm -f         open-webui pgadmin postgres-exporter postgres         vault-agent-postgres vault-agent-openwebui         vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap         vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap 2>/dev/null || true
+
+    # Restart bootstrap agents (VAULT_TOKEN is exported by this point)
+    $compose_cmd -f "$compose_file" up -d --no-deps         vault-agent-postgres-bootstrap vault-agent-openwebui-bootstrap         vault-agent-pgadmin-bootstrap vault-agent-grafana-bootstrap
+    sleep 3
+
+    $compose_cmd -f "$compose_file" up -d --no-deps         vault-agent-postgres vault-agent-openwebui
+    sleep 2
+
+    # Start postgres — it will now receive its password from the refreshed agents
+    $compose_cmd -f "$compose_file" up -d --no-deps postgres
+    log_info "Bootstrap refresh done — postgres will receive its password now"
+}
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -705,6 +758,7 @@ main() {
     # NOTE: PostgreSQL must be ready before the database engine tries to connect.
     enable_kv_engine || return 1
     init_bootstrap_passwords || return 1
+    refresh_bootstrap_for_postgres  # break scorched-start circular dependency
     wait_for_postgres || return 1
     enable_database_engine || return 1
     configure_postgres_connection || return 1
