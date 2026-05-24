@@ -194,8 +194,20 @@ function init_stack() {
     echo "email=$AIXCL_ADMIN_EMAIL" >> "${SCRIPT_DIR}/.aixcl.initialized"
     echo "created=$(date -Iseconds)" >> "${SCRIPT_DIR}/.aixcl.initialized"
 
-    echo "Credentials will be generated on first start."
-    echo "Run './aixcl stack start --profile sys' to begin."
+    echo ""
+    echo "Running full stack bootstrap..."
+    echo ""
+
+    export POSTGRES_USER="$postgres_user"
+    export POSTGRES_DATABASE="$postgres_db"
+
+    local init_script="${SCRIPT_DIR}/scripts/vault/init-vault.sh"
+    if [ ! -f "$init_script" ]; then
+        echo "Error: Bootstrap script not found: $init_script"
+        return 1
+    fi
+
+    bash "$init_script"
 }
 
 function ensure_nvidia_cdi() {

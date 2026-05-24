@@ -146,16 +146,10 @@ function prune_all() {
     fi
     echo ""
 
-    echo "Purge complete. Proceeding with fresh initialization..."
+    echo "Purge complete. All AIXCL resources removed."
     echo ""
-
-    local init_script="${SCRIPT_DIR}/scripts/vault/init-vault.sh"
-    if [ -f "$init_script" ]; then
-        bash "$init_script"
-    else
-        echo "Warning: init-vault.sh not found at ${init_script}"
-        echo "Run './scripts/vault/init-vault.sh' manually to complete initialization."
-    fi
+    echo "To bring the stack back up from scratch run:"
+    echo "  ./aixcl stack init"
 }
 
 function utils_cmd() {
