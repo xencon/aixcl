@@ -49,13 +49,12 @@ scrape_configs:
           service: 'postgres'
           database: 'aixcl'
 
-  # Ollama - LLM Engine
-  # Native Prometheus metrics at /metrics on main port 11434
-  - job_name: 'ollama'
-    static_configs:
-      - targets: ['localhost:11434']
-        labels:
-          service: 'ollama'
+  # Ollama - no native Prometheus metrics endpoint
+  # Container-level metrics available via cAdvisor
+  # Dashboard health indicator uses cAdvisor container_last_seen
+  # - job_name: 'ollama'
+  #   static_configs:
+  #     - targets: ['localhost:11434']
 
   # NVIDIA GPU Exporter - GPU metrics (utilization, memory, temperature, power)
   # Uses custom exporter (nvidia-smi) on port 9445 in rootless mode
