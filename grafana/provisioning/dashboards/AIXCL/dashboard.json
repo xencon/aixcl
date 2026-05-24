@@ -319,7 +319,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "ollama_up",
+          "expr": "probe_success{instance=\"http://localhost:11434\"}",
           "refId": "A"
         }
       ],
@@ -386,7 +386,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "openwebui_up",
+          "expr": "probe_success{instance=\"http://localhost:8080\"}",
           "refId": "A"
         }
       ],

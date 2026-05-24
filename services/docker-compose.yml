@@ -474,6 +474,18 @@ services:
       - '--port=8081'
       - '--docker_only=true'
 
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: blackbox-exporter
+    pull_policy: missing
+    network_mode: host
+    volumes:
+      - ../blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+
   node-exporter:
     image: docker.io/prom/node-exporter:v1.11.1
     container_name: node-exporter
