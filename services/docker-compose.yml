@@ -355,6 +355,8 @@ services:
       PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
       PGADMIN_USER_ID: "5050"
       PGADMIN_GROUP_ID: "5050"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     volumes:
       - aixcl-pgadmin-storage:/var/lib/pgadmin/storage
       - aixcl-pgadmin-main:/var/lib/pgadmin
