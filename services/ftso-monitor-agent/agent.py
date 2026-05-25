@@ -31,6 +31,7 @@ import argparse
 import json
 import logging
 import os
+import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -333,6 +334,12 @@ def main() -> None:
     if args.once:
         _poll_once(interactive, counts)
         return
+
+    def _on_sigterm(signum, frame):
+        logger.info("Received SIGTERM - shutting down.")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, _on_sigterm)
 
     while True:
         _poll_once(interactive, counts)

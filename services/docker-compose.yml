@@ -665,6 +665,7 @@ services:
       - PROPOSALS_DIR=/proposals
     network_mode: host
     restart: unless-stopped
+    stop_grace_period: 35s
     depends_on:
       ftso-price-monitor:
         condition: service_healthy
