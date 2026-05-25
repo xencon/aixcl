@@ -249,6 +249,20 @@ check_agent_validation() {
     fi
 }
 
+# Check for ShellCheck (required for pre-commit linting)
+check_shellcheck() {
+    info "Checking ShellCheck..."
+    
+    if command -v shellcheck &> /dev/null; then
+        local version
+        version=$(shellcheck --version 2>/dev/null | head -2 | tail -1 || echo "installed")
+        pass "ShellCheck installed ($version)"
+    else
+        error "ShellCheck is required but not installed"
+        info "Install: ./scripts/utils/setup-shellcheck.sh"
+    fi
+}
+
 # Check for Docker (optional)
 check_docker() {
     info "Checking Docker (optional)..."
@@ -299,6 +313,7 @@ main() {
     echo ""
     
     # Optional checks
+    check_shellcheck
     check_docker
     
     echo ""

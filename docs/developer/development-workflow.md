@@ -364,6 +364,29 @@ Follow the development workflow documented in this document:
 13. Follow Human in the Loop policy: Agent fills [x] for agent-completed items, Human fills [x] for verification items
 ```
 
+## Pre-Commit Shell Script Validation
+
+Before committing shell script changes, run the same check that CI uses:
+
+```bash
+# Run ShellCheck manually (same flags as CI)
+SHELLCHECK_OPTS="--severity=warning --exclude=SC1091" shellcheck lib/aixcl/commands/stack.sh
+
+# Or run the pre-commit hook directly
+./scripts/hooks/pre-commit
+```
+
+Install ShellCheck and the pre-commit hook for automatic validation:
+
+```bash
+./scripts/utils/setup-hooks.sh
+```
+
+This enables:
+- **Automatic linting** on every `git commit` for staged `.sh` files
+- **Same flags as CI** (`--severity=warning --exclude=SC1091`)
+- **Cross-platform ShellCheck installation** (apt, dnf, brew, apk)
+
 ## Quick Reference Commands
 
 ```bash
@@ -382,6 +405,9 @@ git add .
 git commit -m "type: Description
 
 Fixes #<number>"
+
+# Run pre-commit checks before pushing
+./scripts/hooks/pre-commit
 
 # Push and create PR
 git push -u origin issue-<number>/<description>

@@ -7,6 +7,7 @@ Get up and running with the AIXCL Issue-First development workflow in minutes.
 - [Git](https://git-scm.com/) installed
 - [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated
 - [OpenCode](https://opencode.ai/) installed
+- ShellCheck (optional but recommended for local linting)
 
 ## 1. Validate Your Environment
 
@@ -21,6 +22,13 @@ This checks:
 - GitHub CLI authentication
 - OpenCode configuration
 - Required permissions
+- ShellCheck availability
+
+Then install the pre-commit hook to catch linting errors before they reach CI:
+
+```bash
+./scripts/utils/setup-hooks.sh
+```
 
 ## 2. Start OpenCode
 

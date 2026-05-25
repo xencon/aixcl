@@ -88,6 +88,7 @@ ALL_SERVICES=(
 )
 
 # Application services with sequential startup lifecycle (not profile-managed)
+# shellcheck disable=SC2034
 APPLICATION_SERVICES=(
     "dd-ftso-v2-provider"
     "ftso-price-monitor"

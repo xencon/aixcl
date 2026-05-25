@@ -25,6 +25,21 @@ Read the following documents before beginning work:
 
 **VALIDATION REQUIRED:** If any documents in #3 or #4 are absent → **HALT** and create [TASK] issue: "Missing governance documentation". Await human clarification before proceeding.
 
+### Local Pre-Commit Validation
+
+Install ShellCheck and git hooks to catch linting errors **before** pushing to CI:
+
+```bash
+# One-time setup
+./scripts/utils/setup-hooks.sh
+```
+
+This installs:
+- A `pre-commit` hook that runs `shellcheck --severity=warning --exclude=SC1091` on staged `.sh` files (same flags as CI `security.yml`).
+- ShellCheck itself if not already present.
+
+After setup, every `git commit` will block if ShellCheck finds warnings.
+
 ---
 
 ## 2. Issue-first development

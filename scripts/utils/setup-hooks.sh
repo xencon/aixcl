@@ -27,6 +27,14 @@ mkdir -p "$SCRIPTS_DIR"
 
 echo "Installing git hooks..."
 install_hook pre-commit
-echo ""
 echo "Done. Hooks installed to $HOOKS_DIR"
+
+# Ensure ShellCheck is available
+if [ -f "$REPO_ROOT/scripts/utils/setup-shellcheck.sh" ]; then
+    echo ""
+    echo "Checking ShellCheck..."
+    bash "$REPO_ROOT/scripts/utils/setup-shellcheck.sh"
+fi
+
+echo ""
 echo "Run 'git commit' as normal — shellcheck will run automatically."
