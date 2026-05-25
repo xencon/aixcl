@@ -40,21 +40,21 @@ else
     exit 1
 fi
 
-# Check if injection characters are escaped
-# The email 'admin@localhost"}' should be escaped as "admin@localhost\"}"
-if [[ "$PAYLOAD" == *"admin@localhost\"}"* ]] || [[ "$PAYLOAD" == *"admin@localhost\"}"* ]]; then
-    if echo "$PAYLOAD" | grep -q 'admin@localhost\"}'; then
-        echo -e "${GREEN}PASS: Special characters escaped${NC}"
-    elif echo "$PAYLOAD" | grep -q 'admin@localhost"}'; then
-        echo -e "${GREEN}PASS: JSON is valid (implies escaping)${NC}"
-    else
-        echo -e "${RED}FAIL: Payload content mismatch${NC}"
-        exit 1
-    fi
+# Check if special characters survive JSON round-trip
+# This is the correct security test: can malicious payloads be serialized to JSON
+# and deserialized back to their exact original values?
+parsed_email=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])['email'])" "$PAYLOAD")
+parsed_password=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])['password'])" "$PAYLOAD")
+
+if [ "$parsed_email" = "admin@localhost\"}" ] && [ "$parsed_password" = 'password" --payload "injection' ]; then
+    echo -e "${GREEN}PASS: Special characters preserved through JSON round-trip${NC}"
 else
-     echo -e "${RED}FAIL: Special characters not properly handled${NC}"
-     echo "Payload: $PAYLOAD"
-     exit 1
+    echo -e "${RED}FAIL: Values corrupted during JSON generation${NC}"
+    echo "  Expected email:    admin@localhost\"}"
+    echo "  Got email:         $parsed_email"
+    echo "  Expected password: password\" --payload \"injection"
+    echo "  Got password:      $parsed_password"
+    exit 1
 fi
 
 echo "Testing empty variables behavior (Issue: null vs empty string)..."
