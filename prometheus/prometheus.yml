@@ -50,11 +50,11 @@ scrape_configs:
           database: 'aixcl'
 
   # Ollama - LLM Engine
-  # Uses custom exporter on port 11435 that polls Ollama API
-  # Provides model info, version, and availability metrics
+  # Native Prometheus metrics at /metrics on main port 11434
+  # (requires OLLAMA_METRICS=1 in docker-compose.yml)
   - job_name: 'ollama'
     static_configs:
-      - targets: ['localhost:11435']
+      - targets: ['localhost:11434']
         labels:
           service: 'ollama'
 
@@ -91,13 +91,13 @@ scrape_configs:
         labels:
           service: 'alertmanager'
 
-  # Open WebUI - User interface metrics
-  # Uses custom exporter on port 11436
-  - job_name: 'open-webui'
-    static_configs:
-      - targets: ['localhost:11436']
-        labels:
-          service: 'open-webui'
+  # Open WebUI - no native Prometheus metrics endpoint
+  # Container-level metrics available via cAdvisor
+  # - job_name: 'open-webui'
+  #   static_configs:
+  #     - targets: ['localhost:8080']
+  #       labels:
+  #         service: 'open-webui'
 
   # Blackbox HTTP probes - UP/DOWN for services without native /metrics
   - job_name: 'blackbox-http'
