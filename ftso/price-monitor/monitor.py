@@ -47,6 +47,7 @@ FLARE_CONTRACT_REGISTRY = os.getenv(
 )
 ANCHOR_INIT_RETRIES = int(os.getenv("ANCHOR_INIT_RETRIES", "3"))
 ANCHOR_INIT_RETRY_WAIT = int(os.getenv("ANCHOR_INIT_RETRY_WAIT", "20"))
+COMMIT_LATENCY_MS = int(os.getenv("COMMIT_LATENCY_MS", "200"))
 
 # All 64 feeds from feeds.json (category 1)
 FEEDS = [
@@ -291,6 +292,10 @@ c_ref_errors = Counter(
     "Reference source fetch failures",
     ["source"],
 )
+c_commit_latency = Counter(
+    "ftso_commit_latency_total",
+    "Simulated commit latency in milliseconds",
+)
 
 
 # --- Data fetchers ---
@@ -472,6 +477,15 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
                 provider, coingecko, binance = results[0], results[1], results[2]
                 anchor = results[3] if anchor_service is not None else {}
 
+                # --- Simulate commit/reveal latency ---
+                if COMMIT_LATENCY_MS > 0:
+                    logger.debug(
+                        "Simulating commit latency %d ms before metrics update",
+                        COMMIT_LATENCY_MS,
+                    )
+                    await asyncio.sleep(COMMIT_LATENCY_MS / 1000.0)
+                    c_commit_latency.inc(COMMIT_LATENCY_MS)
+
                 update_metrics(provider, coingecko, binance, anchor)
                 c_poll.labels(status="success").inc()
                 logger.info(
@@ -524,12 +538,13 @@ def main() -> None:
 
     start_http_server(METRICS_PORT)
     logger.info(
-        "Metrics on :%d | provider=%s | interval=%ds | band=±%.2f%% | anchor=%s",
+        "Metrics on :%d | provider=%s | interval=%ds | band=±%.2f%% | anchor=%s | commit_latency_ms=%d",
         METRICS_PORT,
         PROVIDER_URL,
         POLL_INTERVAL,
         PRIMARY_BAND_PCT,
         "enabled" if anchor_service is not None else "DISABLED (init failed)",
+        COMMIT_LATENCY_MS,
     )
     asyncio.run(poll_loop(anchor_service))
 
