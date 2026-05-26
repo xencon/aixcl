@@ -2,7 +2,7 @@
   "title": "AIXCL - FTSO Feed Monitor",
   "uid": "ftso-accuracy",
   "schemaVersion": 38,
-  "version": 1003,
+  "version": 1004,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -792,7 +792,7 @@
     {
       "id": 41,
       "type": "text",
-      "title": "External Verifiers",
+      "title": "External Verification & Known Limitations",
       "description": "",
       "gridPos": {
         "x": 8,
@@ -802,7 +802,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Verify This Provider On-Chain\n\n**Catenalytica Performance Dashboard**\n[Digital Dynamix (1h window)](https://catenalytica.com/dashboard/ftso-performance/overview/0x16C0619b2C427AaEb5931426eB0a898b6E3Cd885?timeWindow=1h&scoreType=primary&providers=Digital+Dynamix&sort=name)\n\n**Flare Systems Explorer**\n[FTSO Price Feeds](https://flare-systems-explorer.flare.network/price-feeds/ftso)\n\n*Use these links to cross-check the deviation and round data shown above.*"
+        "content": "## External Verification\n\n**Catenalytica Performance Dashboard**\n[Digital Dynamix (1h window)](https://catenalytica.com/dashboard/ftso-performance/overview/0x16C0619b2C427AaEb5931426eB0a898b6E3Cd885?timeWindow=1h&scoreType=primary&providers=Digital+Dynamix&sort=name)\n\n**Flare Systems Explorer**\n[FTSO Price Feeds](https://flare-systems-explorer.flare.network/price-feeds/ftso)\n\n## Known Limitations (Test Platform)\n\n| Limitation | Impact | What we show instead |\n|:---|:---|:---|\n| No direct mainnet access | Anchor may lag by 1-2 epochs | On-chain anchor contract call via Flare RPC |\n| Test provider instance | Not the production submission | Same codebase, same feeds, same calculation |\n| JOULE/USD missing | Only 63/64 feeds active | Bitrue source unresponsive -- documented in logs |\n| Binance spot gaps | 12 feeds not on Binance spot | CoinGecko + Anchor as primary refs |\n\n**What we do:** Every 30s we call getFeedsById() on Flare mainnet, compare against our local provider, and log the deviation. This dashboard reflects that live comparison."
       },
       "targets": []
     },
