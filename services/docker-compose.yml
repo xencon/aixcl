@@ -619,6 +619,17 @@ services:
       - POLL_INTERVAL=30
       - METRICS_PORT=9102
       - PRIMARY_BAND_PCT=0.25
+      # PostgreSQL historical storage (optional — activated when PGHOST is set)
+      - PGHOST=localhost
+      - PGPORT=5432
+      - PGUSER=${POSTGRES_USER:-admin}
+      # FTSO_DATABASE defaults to 'ftso' in db.py; override only if needed
+      # - FTSO_DATABASE=webui
+      # Password fetched from Docker secret at runtime (Vault injects into /run/secrets/)
+    secrets:
+      - postgres_password
+    volumes:
+      - aixcl-vault-secrets:/run/secrets:ro
     network_mode: host
     restart: unless-stopped
     depends_on:

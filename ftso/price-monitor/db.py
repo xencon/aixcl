@@ -1,10 +1,11 @@
 """
 Optional asynchronous PostgreSQL storage for FTSO monitor price snapshots.
 
-If PGHOST is set (either via env or AIXCL defaults), every poll cycle writes
-provider + reference prices to `ftso_prices`. Otherwise the store is a no-op.
+Creates a dedicated `ftso` database automatically on startup, then writes
+every poll cycle to `ftso_prices`. Degrades gracefully to no-op if
+PostgreSQL is unreachable or misconfigured.
 
-Schema (run once):
+Schema (auto-created):
     CREATE TABLE IF NOT EXISTS ftso_prices (
         ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         pair TEXT NOT NULL,
@@ -32,8 +33,19 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 PGHOST = os.getenv("PGHOST", os.getenv("POSTGRES_HOST", ""))
 PGUSER = os.getenv("PGUSER", os.getenv("POSTGRES_USER", "admin"))
 PGPASSWORD = os.getenv("PGPASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
-PGDATABASE = os.getenv("PGDATABASE", os.getenv("POSTGRES_DATABASE", "webui"))
 PGPORT = int(os.getenv("PGPORT", os.getenv("POSTGRES_PORT", "5432")))
+# Dedicated FTSO database name (default 'ftso').
+# If you want to share the 'webui' database instead, set FTSO_DATABASE=webui.
+FTSO_DATABASE = os.getenv("FTSO_DATABASE", "ftso")
+
+# If PGPASSWORD is not in env, read from Docker secret mounted by compose
+if not PGPASSWORD:
+    _secret_path = os.getenv("PGPASSWORD_FILE", "/run/secrets/postgres_password")
+    try:
+        with open(_secret_path, "r") as f:
+            PGPASSWORD = f.read().strip()
+    except Exception:
+        pass
 
 # Lazy singleton pool
 try:
@@ -46,30 +58,76 @@ except ImportError:
     _HAS_ASYNC = False
 
 
-def _make_dsn() -> str:
+def _make_dsn(database: str) -> str:
     if DATABASE_URL:
         return DATABASE_URL
-    return f"postgresql://{PGUSER}:{PGPASSWORD}@{PGHOST}:{PGPORT}/{PGDATABASE}"
+    return f"postgresql://{PGUSER}:{PGPASSWORD}@{PGHOST}:{PGPORT}/{database}"
 
 
-async def _get_pool():
+def _safe_log_dsn(dsn: str) -> str:
+    """Return DSN with password redacted for logging."""
+    return dsn.replace(PGPASSWORD, "***") if PGPASSWORD else dsn
+
+
+async def _get_pool(database: str = FTSO_DATABASE):
     global _POOL
     if _POOL is not None:
         return _POOL
-    dsn = _make_dsn()
-    # Avoid leaking password into logs
-    safe_dsn = dsn.replace(PGPASSWORD, "***") if PGPASSWORD else dsn
-    logger.info("Connecting to PostgreSQL at %s", safe_dsn.split("@")[-1])
+    dsn = _make_dsn(database)
+    logger.info("Connecting to PostgreSQL at %s", _safe_log_dsn(dsn).split("@")[-1])
     _POOL = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=2)
     return _POOL
 
 
-async def ensure_schema() -> bool:
-    """Create tables. Returns True if DB is usable."""
+async def _ensure_database() -> bool:
+    """Create the dedicated FTSO database if it does not exist.
+
+    Connects to the 'postgres' maintenance database using bootstrap credentials,
+    checks for existence, and creates it. This is safe to run repeatedly.
+    """
     if not _HAS_ASYNC or not PGHOST:
         return False
+    if not PGUSER or not PGPASSWORD:
+        logger.warning("Missing PostgreSQL credentials — cannot create database")
+        return False
+
     try:
-        pool = await _get_pool()
+        dsn = _make_dsn("postgres")
+        conn = await asyncpg.connect(dsn=dsn)
+        try:
+            # Check if database already exists
+            row = await conn.fetchrow(
+                "SELECT 1 FROM pg_database WHERE datname = $1", FTSO_DATABASE
+            )
+            if row:
+                logger.debug("Database '%s' already exists", FTSO_DATABASE)
+                return True
+
+            logger.info("Creating dedicated FTSO database '%s'", FTSO_DATABASE)
+            # asyncpg's connection.execute does not support CREATE DATABASE
+            # because it's a transaction-bound statement. Use a raw connection.
+            await conn.execute(f"CREATE DATABASE \"{FTSO_DATABASE}\"")
+            logger.info("Database '%s' created", FTSO_DATABASE)
+            return True
+        finally:
+            await conn.close()
+    except Exception as exc:
+        logger.error("Failed to create database '%s': %s", FTSO_DATABASE, exc)
+        return False
+
+
+async def ensure_schema() -> bool:
+    """Create tables in the dedicated FTSO database. Returns True if usable."""
+    if not _HAS_ASYNC or not PGHOST:
+        return False
+
+    # Step 1: ensure the database itself exists
+    if not await _ensure_database():
+        return False
+
+    # Step 2: connect to the dedicated database and create schema
+    try:
+        pool = await _get_pool(FTSO_DATABASE)
         async with pool.acquire() as conn:  # type: ignore
             await conn.execute(
                 """
@@ -86,7 +144,7 @@ async def ensure_schema() -> bool:
                 CREATE INDEX IF NOT EXISTS idx_ftso_prices_pair ON ftso_prices(pair, ts DESC);
                 """
             )
-        logger.info("PostgreSQL schema ensured")
+        logger.info("PostgreSQL schema ensured in database '%s'", FTSO_DATABASE)
         return True
     except Exception as exc:
         logger.warning("PostgreSQL schema init failed: %s", exc)
@@ -103,7 +161,7 @@ async def store_snapshot(
     if not _HAS_ASYNC or not PGHOST:
         return
     try:
-        pool = await _get_pool()
+        pool = await _get_pool(FTSO_DATABASE)
         rows = []
         for pair in provider:
             rows.append((pair, "provider", float(provider[pair]), None, None))
