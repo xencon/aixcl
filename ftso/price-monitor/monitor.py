@@ -19,12 +19,13 @@ import asyncio
 import logging
 import os
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import aiohttp
 from prometheus_client import Counter, Gauge, start_http_server
 
 from flare_anchor import FlareAnchorService
+from db import ensure_schema, store_snapshot, close as db_close
 
 logging.basicConfig(
     level=logging.INFO,
@@ -396,9 +397,13 @@ def update_metrics(
     coingecko: Dict[str, float],
     binance: Dict[str, float],
     anchor: Dict[str, float],
-) -> None:
+) -> Tuple[Dict[str, Dict[str, float]], Dict[str, Dict[str, bool]]]:
+    """Update Prometheus metrics and return raw deviation data for downstream storage."""
     sources = {"coingecko": coingecko, "binance": binance, "anchor": anchor}
     in_band: Dict[str, Dict[str, int]] = {s: {"in": 0, "total": 0} for s in sources}
+
+    deviations: Dict[str, Dict[str, float]] = {}
+    band_map: Dict[str, Dict[str, bool]] = {}
 
     g_provider_count.set(len(provider))
 
@@ -424,16 +429,21 @@ def update_metrics(
             dev = ((our_price - ref) / ref) * 100
             g_deviation_pct.labels(pair=pair, source=src).set(dev)
 
-            band = 1 if abs(dev) <= PRIMARY_BAND_PCT else 0
-            g_in_band.labels(pair=pair, source=src).set(band)
+            band = abs(dev) <= PRIMARY_BAND_PCT
+            g_in_band.labels(pair=pair, source=src).set(1 if band else 0)
+
+            deviations.setdefault(pair, {})[src] = dev
+            band_map.setdefault(pair, {})[src] = band
 
             in_band[src]["total"] += 1
-            in_band[src]["in"] += band
+            in_band[src]["in"] += (1 if band else 0)
 
     for src, counts in in_band.items():
         g_reference_count.labels(source=src).set(counts["total"])
         if counts["total"] > 0:
             g_band_pct.labels(source=src).set(counts["in"] / counts["total"] * 100)
+
+    return deviations, band_map
 
 
 # --- Main loop ---
@@ -442,62 +452,75 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
     loop = asyncio.get_event_loop()
     connector = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
     async with aiohttp.ClientSession(connector=connector) as session:
-        while True:
-            # Lazy anchor re-init: retry once per cycle if startup init failed
-            if anchor_service is None:
+        try:
+            while True:
+                # Lazy anchor re-init: retry once per cycle if startup init failed
+                if anchor_service is None:
+                    try:
+                        _feed_names = [f["name"] for f in FEEDS]
+                        anchor_service = await loop.run_in_executor(
+                            None,
+                            lambda: FlareAnchorService(
+                                rpc_url=FLARE_RPC_URL,
+                                registry_address=FLARE_CONTRACT_REGISTRY,
+                                feed_names=_feed_names,
+                            ),
+                        )
+                        logger.info(
+                            "Flare anchor service initialized (lazy retry, %d feeds)",
+                            len(_feed_names),
+                        )
+                    except Exception as exc:
+                        logger.debug("Anchor lazy init retry failed: %s", exc)
+
+                t0 = time.monotonic()
                 try:
-                    _feed_names = [f["name"] for f in FEEDS]
-                    anchor_service = await loop.run_in_executor(
-                        None,
-                        lambda: FlareAnchorService(
-                            rpc_url=FLARE_RPC_URL,
-                            registry_address=FLARE_CONTRACT_REGISTRY,
-                            feed_names=_feed_names,
-                        ),
+                    # Build coroutines — anchor fetch only if service is available
+                    coros = [
+                        fetch_provider(session),
+                        fetch_coingecko(session),
+                        fetch_binance(session),
+                    ]
+                    if anchor_service is not None:
+                        coros.append(fetch_anchor(anchor_service, loop))
+
+                    results = await asyncio.gather(*coros)
+                    provider, coingecko, binance = results[0], results[1], results[2]
+                    anchor = results[3] if anchor_service is not None else {}
+
+                    # --- Simulate commit/reveal latency ---
+                    if COMMIT_LATENCY_MS > 0:
+                        logger.debug(
+                            "Simulating commit latency %d ms before metrics update",
+                            COMMIT_LATENCY_MS,
+                        )
+                        await asyncio.sleep(COMMIT_LATENCY_MS / 1000.0)
+                        c_commit_latency.inc(COMMIT_LATENCY_MS)
+
+                    deviations, band_map = update_metrics(provider, coingecko, binance, anchor)
+                    await store_snapshot(
+                        provider,
+                        {
+                            "coingecko": coingecko,
+                            "binance": binance,
+                            "anchor": anchor,
+                        },
+                        deviations,
+                        band_map,
                     )
+                    c_poll.labels(status="success").inc()
                     logger.info(
-                        "Flare anchor service initialized (lazy retry, %d feeds)",
-                        len(_feed_names),
+                        "Poll ok — provider=%d CoinGecko=%d Binance=%d Anchor=%d",
+                        len(provider), len(coingecko), len(binance), len(anchor),
                     )
                 except Exception as exc:
-                    logger.debug("Anchor lazy init retry failed: %s", exc)
+                    logger.error("Poll cycle error: %s", exc)
+                    c_poll.labels(status="error").inc()
 
-            t0 = time.monotonic()
-            try:
-                # Build coroutines — anchor fetch only if service is available
-                coros = [
-                    fetch_provider(session),
-                    fetch_coingecko(session),
-                    fetch_binance(session),
-                ]
-                if anchor_service is not None:
-                    coros.append(fetch_anchor(anchor_service, loop))
-
-                results = await asyncio.gather(*coros)
-                provider, coingecko, binance = results[0], results[1], results[2]
-                anchor = results[3] if anchor_service is not None else {}
-
-                # --- Simulate commit/reveal latency ---
-                if COMMIT_LATENCY_MS > 0:
-                    logger.debug(
-                        "Simulating commit latency %d ms before metrics update",
-                        COMMIT_LATENCY_MS,
-                    )
-                    await asyncio.sleep(COMMIT_LATENCY_MS / 1000.0)
-                    c_commit_latency.inc(COMMIT_LATENCY_MS)
-
-                update_metrics(provider, coingecko, binance, anchor)
-                c_poll.labels(status="success").inc()
-                logger.info(
-                    "Poll ok — provider=%d CoinGecko=%d Binance=%d Anchor=%d",
-                    len(provider), len(coingecko), len(binance), len(anchor),
-                )
-            except Exception as exc:
-                logger.error("Poll cycle error: %s", exc)
-                c_poll.labels(status="error").inc()
-
-            elapsed = time.monotonic() - t0
-            await asyncio.sleep(max(0.0, POLL_INTERVAL - elapsed))
+                elapsed = time.monotonic() - t0
+                await asyncio.sleep(max(0.0, POLL_INTERVAL - elapsed))
+        finally:
+            await db_close()
 
 
 def main() -> None:
@@ -535,6 +558,14 @@ def main() -> None:
                     "Flare anchor service failed to initialize — anchor metrics will be absent: %s",
                     exc,
                 )
+
+    # Ensure PostgreSQL schema if configured
+    pg_ready = False
+    try:
+        _loop = asyncio.new_event_loop()
+        pg_ready = _loop.run_until_complete(ensure_schema())
+    finally:
+        _loop.close()
 
     start_http_server(METRICS_PORT)
     logger.info(
