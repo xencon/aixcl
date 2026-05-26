@@ -13,7 +13,7 @@ echo "Testing security of JSON generation fallback..."
 # Mock variables with special characters that would break simple string interpolation
 # or cause injection if not properly escaped.
 # shellcheck disable=SC2089
-OPENWEBUI_EMAIL='admin@localhost"}'
+OPENWEBUI_EMAIL='admin@example.com"}'
 # shellcheck disable=SC2089
 OPENWEBUI_PASSWORD='password" --payload "injection'
 # shellcheck disable=SC2090
@@ -46,11 +46,11 @@ fi
 parsed_email=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])['email'])" "$PAYLOAD")
 parsed_password=$(python3 -c "import json, sys; print(json.loads(sys.argv[1])['password'])" "$PAYLOAD")
 
-if [ "$parsed_email" = "admin@localhost\"}" ] && [ "$parsed_password" = 'password" --payload "injection' ]; then
+if [ "$parsed_email" = "admin@example.com\"}" ] && [ "$parsed_password" = 'password" --payload "injection' ]; then
     echo -e "${GREEN}PASS: Special characters preserved through JSON round-trip${NC}"
 else
     echo -e "${RED}FAIL: Values corrupted during JSON generation${NC}"
-    echo "  Expected email:    admin@localhost\"}"
+    echo "  Expected email:    admin@example.com\"}"
     echo "  Got email:         $parsed_email"
     echo "  Expected password: password\" --payload \"injection"
     echo "  Got password:      $parsed_password"

@@ -1398,7 +1398,7 @@ function status() {
                 display_status="${ICON_SUCCESS:-✅}"
                 is_healthy=true
             else
-                if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "307" ] || [ "$health_result" = "healthy" ]; then
+                if [ "$health_result" = "200" ] || [ "$health_result" = "302" ] || [ "$health_result" = "307" ] || [ "$health_result" = "401" ] || [ "$health_result" = "healthy" ]; then
                     display_status="${ICON_SUCCESS:-✅}"
                     is_healthy=true
                 elif [ "$health_result" = "503" ] || [ "$health_result" = "starting" ] || [ "$health_result" = "000" ]; then

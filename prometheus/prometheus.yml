@@ -49,12 +49,14 @@ scrape_configs:
           service: 'postgres'
           database: 'aixcl'
 
-  # Ollama - no native Prometheus metrics endpoint
-  # Container-level metrics available via cAdvisor
-  # Dashboard health indicator uses cAdvisor container_last_seen
-  # - job_name: 'ollama'
-  #   static_configs:
-  #     - targets: ['localhost:11434']
+  # Ollama - LLM Engine
+  # Native Prometheus metrics at /metrics on main port 11434
+  # (requires OLLAMA_METRICS=1 in docker-compose.yml)
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['localhost:11434']
+        labels:
+          service: 'ollama'
 
   # NVIDIA GPU Exporter - GPU metrics (utilization, memory, temperature, power)
   # Uses custom exporter (nvidia-smi) on port 9445 in rootless mode
@@ -94,7 +96,8 @@ scrape_configs:
   # - job_name: 'open-webui'
   #   static_configs:
   #     - targets: ['localhost:8080']
-
+  #       labels:
+  #         service: 'open-webui'
 
   # FTSO Price Monitor - Oracle price accuracy vs CoinGecko/Binance references
   - job_name: 'ftso-price-monitor'
