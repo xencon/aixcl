@@ -2,7 +2,7 @@
   "title": "AIXCL - FTSO Feed Monitor",
   "uid": "ftso-accuracy",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 999,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
