@@ -644,15 +644,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  ftso-proposals-init:
-    image: busybox:latest
-    container_name: ftso-proposals-init
-    user: root
-    command: ["sh", "-c", "mkdir -p /proposals && chown -R 10001:10001 /proposals"]
-    volumes:
-      - /home/sbadakhc/ftso-proposals:/proposals
-    restart: "no"
-
   ftso-monitor-agent:
     image: localhost/ftso-monitor-agent:latest
     container_name: ftso-monitor-agent
@@ -678,20 +669,17 @@ services:
     depends_on:
       ftso-price-monitor:
         condition: service_healthy
-      ftso-proposals-init:
-        condition: service_completed_successfully
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
     volumes:
-      - /home/sbadakhc/ftso-proposals:/proposals
+      - aixcl-ftso-proposals:/proposals
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
 
   ollama-exporter:
     image: python:3.11-slim
@@ -767,3 +755,5 @@ volumes:
     external: true
   aixcl-vault-secrets:
     external: true
+  aixcl-ftso-proposals:
+    driver: local
