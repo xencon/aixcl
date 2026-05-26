@@ -317,6 +317,11 @@ g_source_weight = Gauge(
     "Normalized weight of each individual source",
     ["pair", "exchange"],
 )
+g_source_raw_price = Gauge(
+    "ftso_provider_source_raw_price",
+    "Raw price from each individual source before median aggregation",
+    ["pair", "exchange"],
+)
 c_poll = Counter("ftso_poll_total", "Poll cycle count", ["status"])
 c_ref_errors = Counter(
     "ftso_reference_fetch_errors_total",
@@ -540,6 +545,7 @@ def update_transparency_metrics(
             ex = src.get("exchange", "unknown")
             g_source_staleness.labels(pair=pair, exchange=ex).set(src.get("stalenessMs", 0))
             g_source_weight.labels(pair=pair, exchange=ex).set(src.get("weight", 0))
+            g_source_raw_price.labels(pair=pair, exchange=ex).set(src.get("rawPrice", 0))
 
 
 # --- Main loop ---
