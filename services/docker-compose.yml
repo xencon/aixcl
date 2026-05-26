@@ -625,9 +625,7 @@ services:
       - PGUSER=${POSTGRES_USER:-admin}
       # FTSO_DATABASE defaults to 'ftso' in db.py; override only if needed
       # - FTSO_DATABASE=webui
-      # Password fetched from Docker secret at runtime (Vault injects into /run/secrets/)
-    secrets:
-      - postgres_password
+      # Password read from /run/secrets/postgres_password (Vault injects via volume mount)
     volumes:
       - aixcl-vault-secrets:/run/secrets:ro
     network_mode: host
