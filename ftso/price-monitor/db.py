@@ -168,6 +168,7 @@ async def ensure_schema() -> bool:
                 CREATE INDEX IF NOT EXISTS idx_ftso_prices_pair ON ftso_prices(pair, ts DESC);
 
                 CREATE TABLE IF NOT EXISTS ftso_sources (
+                    id BIGSERIAL PRIMARY KEY,
                     ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     pair TEXT NOT NULL,
                     exchange TEXT NOT NULL,
@@ -175,8 +176,7 @@ async def ensure_schema() -> bool:
                     raw_price DOUBLE PRECISION,
                     weight DOUBLE PRECISION,
                     staleness_ms DOUBLE PRECISION,
-                    voting_round BIGINT,
-                    PRIMARY KEY (ts, pair, exchange)
+                    voting_round BIGINT
                 );
                 CREATE INDEX IF NOT EXISTS idx_ftso_sources_ts ON ftso_sources(ts);
                 CREATE INDEX IF NOT EXISTS idx_ftso_sources_pair ON ftso_sources(pair, ts DESC);
@@ -201,20 +201,25 @@ async def store_snapshot(
     try:
         pool = await _get_pool(FTSO_DATABASE)
         rows = []
-        for pair in provider:
-            rows.append((pair, "provider", float(provider[pair]), None, None))
+        for pair, price in provider.items():
+            if price is None:
+                continue
+            rows.append((pair, "provider", float(price), None, None))
             for src, prices in references.items():
                 token = pair.split("/")[0]
-                if token in prices:
-                    dev = deviations.get(pair, {}).get(src)
-                    band = in_band.get(pair, {}).get(src)
-                    rows.append((
-                        pair,
-                        src,
-                        float(prices[token]),
-                        float(dev) if dev is not None else None,
-                        bool(band) if band is not None else None,
-                    ))
+                if token not in prices or prices[token] is None:
+                    continue
+                dev = deviations.get(pair, {}).get(src)
+                band = in_band.get(pair, {}).get(src)
+                rows.append((
+                    pair,
+                    src,
+                    float(prices[token]),
+                    float(dev) if dev is not None else None,
+                    bool(band) if band is not None else None,
+                ))
+        if not rows:
+            return
         async with pool.acquire() as conn:  # type: ignore
             await conn.copy_records_to_table(
                 "ftso_prices",
@@ -241,10 +246,10 @@ async def store_source_details(
                     pair,
                     src.get("exchange", ""),
                     src.get("symbol", ""),
-                    float(src["rawPrice"]) if "rawPrice" in src else None,
-                    float(src["weight"]) if "weight" in src else None,
-                    float(src["stalenessMs"]) if "stalenessMs" in src else None,
-                    int(voting_round) if voting_round else None,
+                    float(src["rawPrice"]) if src.get("rawPrice") is not None else None,
+                    float(src["weight"]) if src.get("weight") is not None else None,
+                    float(src["stalenessMs"]) if src.get("stalenessMs") is not None else None,
+                    int(voting_round) if voting_round is not None else None,
                 ))
         if not rows:
             return

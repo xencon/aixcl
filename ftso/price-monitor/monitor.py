@@ -495,7 +495,7 @@ def update_metrics(
         g_provider_price.labels(pair=pair).set(our_price)
 
         for src, prices in sources.items():
-            if token not in prices:
+            if token not in prices or prices[token] is None:
                 continue
             ref = prices[token]
             if ref <= 0:
@@ -543,9 +543,9 @@ def update_transparency_metrics(
         g_source_count.labels(pair=pair).set(len(sources))
         for src in sources:
             ex = src.get("exchange", "unknown")
-            g_source_staleness.labels(pair=pair, exchange=ex).set(src.get("stalenessMs", 0))
-            g_source_weight.labels(pair=pair, exchange=ex).set(src.get("weight", 0))
-            g_source_raw_price.labels(pair=pair, exchange=ex).set(src.get("rawPrice", 0))
+            g_source_staleness.labels(pair=pair, exchange=ex).set(src.get("stalenessMs", 0) or 0)
+            g_source_weight.labels(pair=pair, exchange=ex).set(src.get("weight", 0) or 0)
+            g_source_raw_price.labels(pair=pair, exchange=ex).set(src.get("rawPrice", 0) or 0)
 
 
 # --- Main loop ---
