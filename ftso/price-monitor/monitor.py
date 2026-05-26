@@ -452,6 +452,12 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
     loop = asyncio.get_event_loop()
     connector = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
     async with aiohttp.ClientSession(connector=connector) as session:
+        # Ensure PostgreSQL schema on the same event loop that will use it
+        try:
+            pg_ready = await ensure_schema()
+        except Exception as exc:
+            logger.warning("PostgreSQL schema init skipped: %s", exc)
+            pg_ready = False
         try:
             while True:
                 # Lazy anchor re-init: retry once per cycle if startup init failed
@@ -498,16 +504,17 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
                         c_commit_latency.inc(COMMIT_LATENCY_MS)
 
                     deviations, band_map = update_metrics(provider, coingecko, binance, anchor)
-                    await store_snapshot(
-                        provider,
-                        {
-                            "coingecko": coingecko,
-                            "binance": binance,
-                            "anchor": anchor,
-                        },
-                        deviations,
-                        band_map,
-                    )
+                    if pg_ready:
+                        await store_snapshot(
+                            provider,
+                            {
+                                "coingecko": coingecko,
+                                "binance": binance,
+                                "anchor": anchor,
+                            },
+                            deviations,
+                            band_map,
+                        )
                     c_poll.labels(status="success").inc()
                     logger.info(
                         "Poll ok — provider=%d CoinGecko=%d Binance=%d Anchor=%d",
@@ -558,14 +565,6 @@ def main() -> None:
                     "Flare anchor service failed to initialize — anchor metrics will be absent: %s",
                     exc,
                 )
-
-    # Ensure PostgreSQL schema if configured
-    pg_ready = False
-    try:
-        _loop = asyncio.new_event_loop()
-        pg_ready = _loop.run_until_complete(ensure_schema())
-    finally:
-        _loop.close()
 
     start_http_server(METRICS_PORT)
     logger.info(

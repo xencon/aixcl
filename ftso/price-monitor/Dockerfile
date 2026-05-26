@@ -24,6 +24,7 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY monitor.py .
 COPY flare_anchor.py .
+COPY db.py .
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD wget -qO- http://localhost:9102/metrics | grep -q ftso_poll_total || exit 1

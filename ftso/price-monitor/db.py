@@ -38,14 +38,24 @@ PGPORT = int(os.getenv("PGPORT", os.getenv("POSTGRES_PORT", "5432")))
 # If you want to share the 'webui' database instead, set FTSO_DATABASE=webui.
 FTSO_DATABASE = os.getenv("FTSO_DATABASE", "ftso")
 
-# If PGPASSWORD is not in env, read from Docker secret mounted by compose
+# If PGPASSWORD is not in env, read from Docker secret mounted by compose.
+# AIXCL Vault mounts as 'postgres-password' (dash); try dash first, then underscore fallback.
 if not PGPASSWORD:
-    _secret_path = os.getenv("PGPASSWORD_FILE", "/run/secrets/postgres_password")
-    try:
-        with open(_secret_path, "r") as f:
-            PGPASSWORD = f.read().strip()
-    except Exception:
-        pass
+    for _secret_path in (
+        os.getenv("PGPASSWORD_FILE", ""),
+        "/run/secrets/postgres-password",
+        "/run/secrets/postgres_password",
+    ):
+        if not _secret_path:
+            continue
+        try:
+            with open(_secret_path, "r") as f:
+                PGPASSWORD = f.read().strip()
+            if PGPASSWORD:
+                logger.debug("Read PostgreSQL password from %s", _secret_path)
+                break
+        except Exception:
+            continue
 
 # Lazy singleton pool
 try:
