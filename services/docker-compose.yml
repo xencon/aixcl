@@ -466,6 +466,7 @@ services:
       - /:/rootfs:ro
       - /sys:/sys:ro
       - /dev/disk/:/dev/disk:ro
+      - /run/user/1000/podman/podman.sock:/var/run/podman/podman.sock:ro
     cap_add:
       - SYS_PTRACE
     security_opt:
