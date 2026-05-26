@@ -2,7 +2,7 @@
   "title": "AIXCL - FTSO Feed Monitor",
   "uid": "ftso-accuracy",
   "schemaVersion": 38,
-  "version": 1002,
+  "version": 1003,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -785,7 +785,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## What is the Anchor?\n\nThe **Anchor** is the on-chain median price from the Flare FTSOv2 smart contract. It is the **actual scoring reference** used to calculate your reward band.\n\n- Updated once per voting epoch (~90 seconds)\n- Derived from all provider submissions\n- If your deviation from Anchor is within \u00b10.25%, you score\n\n**This dashboard shows your live deviation from Anchor in real time.**"
+        "content": "## Anchor Data Source\n\nThis dashboard compares our provider prices against the **Flare FTSOv2 on-chain anchor** -- the median of all provider submissions updated every ~90 seconds.\n\n**Data source:** FtsoV2 smart contract via getFeedsById() on Flare mainnet\n**Contract:** Resolved via ContractRegistry at 0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019\n**RPC endpoint:** https://flare-api.flare.network/ext/C/rpc\n**Anchor deviation %** is the metric used for on-chain scoring."
       },
       "targets": []
     },
