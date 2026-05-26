@@ -18,13 +18,27 @@ Schema (auto-created):
     CREATE INDEX idx_ftso_prices_ts ON ftso_prices(ts);
     CREATE INDEX idx_ftso_prices_pair ON ftso_prices(pair, ts DESC);
 
+    CREATE TABLE IF NOT EXISTS ftso_sources (
+        ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        pair TEXT NOT NULL,
+        exchange TEXT NOT NULL,
+        symbol TEXT,
+        raw_price DOUBLE PRECISION,
+        weight DOUBLE PRECISION,
+        staleness_ms DOUBLE PRECISION,
+        voting_round BIGINT,
+        PRIMARY KEY (ts, pair, exchange)
+    );
+    CREATE INDEX idx_ftso_sources_ts ON ftso_sources(ts);
+    CREATE INDEX idx_ftso_sources_pair ON ftso_sources(pair, ts DESC);
+
 Connection: uses asyncpg + DATABASE_URL or individual PG* vars.
 """
 
 import asyncio
 import logging
 import os
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 logger = logging.getLogger("ftso-monitor.db")
 
@@ -98,7 +112,7 @@ async def _ensure_database() -> bool:
     if not _HAS_ASYNC or not PGHOST:
         return False
     if not PGUSER or not PGPASSWORD:
-        logger.warning("Missing PostgreSQL credentials — cannot create database")
+        logger.warning("Missing PostgreSQL credentials -- cannot create database")
         return False
 
     try:
@@ -116,7 +130,7 @@ async def _ensure_database() -> bool:
             logger.info("Creating dedicated FTSO database '%s'", FTSO_DATABASE)
             # asyncpg's connection.execute does not support CREATE DATABASE
             # because it's a transaction-bound statement. Use a raw connection.
-            await conn.execute(f"CREATE DATABASE \"{FTSO_DATABASE}\"")
+            await conn.execute(f'CREATE DATABASE "{FTSO_DATABASE}"')
             logger.info("Database '%s' created", FTSO_DATABASE)
             return True
         finally:
@@ -152,6 +166,20 @@ async def ensure_schema() -> bool:
                 );
                 CREATE INDEX IF NOT EXISTS idx_ftso_prices_ts ON ftso_prices(ts);
                 CREATE INDEX IF NOT EXISTS idx_ftso_prices_pair ON ftso_prices(pair, ts DESC);
+
+                CREATE TABLE IF NOT EXISTS ftso_sources (
+                    ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    pair TEXT NOT NULL,
+                    exchange TEXT NOT NULL,
+                    symbol TEXT,
+                    raw_price DOUBLE PRECISION,
+                    weight DOUBLE PRECISION,
+                    staleness_ms DOUBLE PRECISION,
+                    voting_round BIGINT,
+                    PRIMARY KEY (ts, pair, exchange)
+                );
+                CREATE INDEX IF NOT EXISTS idx_ftso_sources_ts ON ftso_sources(ts);
+                CREATE INDEX IF NOT EXISTS idx_ftso_sources_pair ON ftso_sources(pair, ts DESC);
                 """
             )
         logger.info("PostgreSQL schema ensured in database '%s'", FTSO_DATABASE)
@@ -195,6 +223,39 @@ async def store_snapshot(
             )
     except Exception as exc:
         logger.warning("PostgreSQL store_snapshot failed: %s", exc)
+
+
+async def store_source_details(
+    details: Dict[str, List[Dict]],
+    voting_round: int,
+) -> None:
+    """Write per-source transparency data to ftso_sources."""
+    if not _HAS_ASYNC or not PGHOST:
+        return
+    try:
+        pool = await _get_pool(FTSO_DATABASE)
+        rows = []
+        for pair, sources in details.items():
+            for src in sources:
+                rows.append((
+                    pair,
+                    src.get("exchange", ""),
+                    src.get("symbol", ""),
+                    float(src["rawPrice"]) if "rawPrice" in src else None,
+                    float(src["weight"]) if "weight" in src else None,
+                    float(src["stalenessMs"]) if "stalenessMs" in src else None,
+                    int(voting_round) if voting_round else None,
+                ))
+        if not rows:
+            return
+        async with pool.acquire() as conn:  # type: ignore
+            await conn.copy_records_to_table(
+                "ftso_sources",
+                records=rows,
+                columns=["pair", "exchange", "symbol", "raw_price", "weight", "staleness_ms", "voting_round"],
+            )
+    except Exception as exc:
+        logger.warning("PostgreSQL store_source_details failed: %s", exc)
 
 
 async def close() -> None:

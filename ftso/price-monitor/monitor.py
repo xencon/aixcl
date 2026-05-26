@@ -6,6 +6,12 @@ Polls dd-ftso-v2-provider and compares prices against CoinGecko, Binance,
 and the Flare FTSOv2 on-chain anchor (the actual scoring reference).
 Exposes Prometheus metrics on METRICS_PORT for Grafana visualization.
 
+Transparency additions:
+- Calls /feed-details to expose per-source weights, raw prices, staleness
+- Calls /last-round to expose the last voting round the provider committed to
+- Stores source breakdown in ftso_sources (PostgreSQL)
+- New Prometheus metrics: source_count, source_staleness, last_voting_round
+
 Anchor fallback design:
   If FlareAnchorService fails to initialize at startup (RPC unreachable, bad
   registry, etc.), the monitor logs an ERROR and continues without anchor data.
@@ -16,16 +22,17 @@ Anchor fallback design:
 """
 
 import asyncio
+import json
 import logging
 import os
 import time
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import aiohttp
 from prometheus_client import Counter, Gauge, start_http_server
 
 from flare_anchor import FlareAnchorService
-from db import ensure_schema, store_snapshot, close as db_close
+from db import ensure_schema, store_snapshot, store_source_details, close as db_close
 
 logging.basicConfig(
     level=logging.INFO,
@@ -287,6 +294,29 @@ g_reference_count = Gauge(
     "Number of pairs with reference data",
     ["source"],
 )
+g_last_voting_round = Gauge(
+    "ftso_provider_last_voting_round",
+    "Last voting round ID the provider committed to",
+)
+g_voting_round_ts = Gauge(
+    "ftso_provider_voting_round_timestamp",
+    "Unix timestamp of the last known voting round",
+)
+g_source_count = Gauge(
+    "ftso_provider_source_count",
+    "Number of active sources used for a given feed",
+    ["pair"],
+)
+g_source_staleness = Gauge(
+    "ftso_provider_source_staleness_ms",
+    "Staleness of each individual source in ms",
+    ["pair", "exchange"],
+)
+g_source_weight = Gauge(
+    "ftso_provider_source_weight",
+    "Normalized weight of each individual source",
+    ["pair", "exchange"],
+)
 c_poll = Counter("ftso_poll_total", "Poll cycle count", ["status"])
 c_ref_errors = Counter(
     "ftso_reference_fetch_errors_total",
@@ -319,7 +349,7 @@ async def fetch_provider(session: aiohttp.ClientSession) -> Dict[str, float]:
                     missing.append(item["feed"]["name"])
             if missing:
                 logger.warning(
-                    "Provider warmup: %d feed(s) missing value — skipped: %s",
+                    "Provider warmup: %d feed(s) missing value -- skipped: %s",
                     len(missing),
                     missing[:5],
                 )
@@ -327,6 +357,48 @@ async def fetch_provider(session: aiohttp.ClientSession) -> Dict[str, float]:
     except Exception as exc:
         logger.error("Provider fetch failed: %s", exc)
         return {}
+
+
+async def fetch_provider_details(session: aiohttp.ClientSession) -> Tuple[Dict[str, List[Dict]], int, str]:
+    """
+    Call /feed-details for transparency.
+    Returns (details_by_pair, last_voting_round, round_timestamp).
+    """
+    details_by_pair: Dict[str, List[Dict]] = {}
+    last_round = 0
+    round_ts = ""
+    try:
+        # Fetch feed details in batches of 20 to keep payload reasonable
+        batch_size = 20
+        for i in range(0, len(FEEDS), batch_size):
+            batch = FEEDS[i:i + batch_size]
+            async with session.post(
+                f"{PROVIDER_URL}/feed-details",
+                json={"feeds": batch},
+                timeout=aiohttp.ClientTimeout(total=15),
+            ) as resp:
+                resp.raise_for_status()
+                body = await resp.json()
+                for item in body.get("data", []):
+                    pair = item["feed"]["name"]
+                    details_by_pair[pair] = item.get("sources", [])
+    except Exception as exc:
+        logger.error("Provider details fetch failed: %s", exc)
+
+    try:
+        async with session.get(
+            f"{PROVIDER_URL}/last-round",
+            timeout=aiohttp.ClientTimeout(total=5),
+        ) as resp:
+            resp.raise_for_status()
+            body = await resp.json()
+            rid = body.get("lastVotingRoundId")
+            last_round = int(rid) if rid is not None else 0
+            round_ts = body.get("timestamp", "")
+    except Exception as exc:
+        logger.error("Provider last-round fetch failed: %s", exc)
+
+    return details_by_pair, last_round, round_ts
 
 
 async def fetch_coingecko(session: aiohttp.ClientSession) -> Dict[str, float]:
@@ -446,6 +518,30 @@ def update_metrics(
     return deviations, band_map
 
 
+def update_transparency_metrics(
+    details: Dict[str, List[Dict]],
+    last_round: int,
+    round_ts: str,
+) -> None:
+    """Update Prometheus metrics for source transparency."""
+    if last_round > 0:
+        g_last_voting_round.set(last_round)
+    if round_ts:
+        try:
+            from datetime import datetime, timezone
+            ts = datetime.fromisoformat(round_ts.replace("Z", "+00:00"))
+            g_voting_round_ts.set(ts.timestamp())
+        except Exception:
+            pass
+
+    for pair, sources in details.items():
+        g_source_count.labels(pair=pair).set(len(sources))
+        for src in sources:
+            ex = src.get("exchange", "unknown")
+            g_source_staleness.labels(pair=pair, exchange=ex).set(src.get("stalenessMs", 0))
+            g_source_weight.labels(pair=pair, exchange=ex).set(src.get("weight", 0))
+
+
 # --- Main loop ---
 
 async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
@@ -481,9 +577,10 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
 
                 t0 = time.monotonic()
                 try:
-                    # Build coroutines — anchor fetch only if service is available
+                    # Build coroutines -- anchor fetch only if service is available
                     coros = [
                         fetch_provider(session),
+                        fetch_provider_details(session),
                         fetch_coingecko(session),
                         fetch_binance(session),
                     ]
@@ -491,8 +588,13 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
                         coros.append(fetch_anchor(anchor_service, loop))
 
                     results = await asyncio.gather(*coros)
-                    provider, coingecko, binance = results[0], results[1], results[2]
-                    anchor = results[3] if anchor_service is not None else {}
+                    provider, (details, last_round, round_ts), coingecko, binance = (
+                        results[0],
+                        results[1],
+                        results[2],
+                        results[3],
+                    )
+                    anchor = results[4] if anchor_service is not None else {}
 
                     # --- Simulate commit/reveal latency ---
                     if COMMIT_LATENCY_MS > 0:
@@ -504,6 +606,8 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
                         c_commit_latency.inc(COMMIT_LATENCY_MS)
 
                     deviations, band_map = update_metrics(provider, coingecko, binance, anchor)
+                    update_transparency_metrics(details, last_round, round_ts)
+
                     if pg_ready:
                         await store_snapshot(
                             provider,
@@ -515,10 +619,27 @@ async def poll_loop(anchor_service: Optional[FlareAnchorService]) -> None:
                             deviations,
                             band_map,
                         )
+                        await store_source_details(details, last_round)
+
+                    # Log a concise transparency line for every pair (first 3)
+                    for pair in list(details)[:3]:
+                        srcs = details.get(pair, [])
+                        src_list = ", ".join(
+                            f"{s['exchange']}={s['rawPrice']:.4f}(w{s['weight']:.2f})"
+                            for s in srcs[:3]
+                        )
+                        logger.info(
+                            "Transparency %s | round=%s | sources=%d | top: %s",
+                            pair,
+                            last_round,
+                            len(srcs),
+                            src_list,
+                        )
+
                     c_poll.labels(status="success").inc()
                     logger.info(
-                        "Poll ok — provider=%d CoinGecko=%d Binance=%d Anchor=%d",
-                        len(provider), len(coingecko), len(binance), len(anchor),
+                        "Poll ok -- provider=%d CoinGecko=%d Binance=%d Anchor=%d round=%s",
+                        len(provider), len(coingecko), len(binance), len(anchor), last_round,
                     )
                 except Exception as exc:
                     logger.error("Poll cycle error: %s", exc)
@@ -541,7 +662,7 @@ def main() -> None:
     # Explicitly designed fallback: if the Flare RPC is unreachable at startup,
     # the monitor continues without anchor data. CoinGecko/Binance monitoring is
     # unaffected. The ERROR log and missing anchor metrics make the degraded state
-    # visible — this is not silent failure.
+    # visible -- this is not silent failure.
     anchor_service: Optional[FlareAnchorService] = None
     feed_names = [f["name"] for f in FEEDS]
     for _attempt in range(1, ANCHOR_INIT_RETRIES + 1):
@@ -556,13 +677,13 @@ def main() -> None:
         except Exception as exc:
             if _attempt < ANCHOR_INIT_RETRIES:
                 logger.warning(
-                    "Flare anchor init attempt %d/%d failed: %s — retrying in %ds",
+                    "Flare anchor init attempt %d/%d failed: %s -- retrying in %ds",
                     _attempt, ANCHOR_INIT_RETRIES, exc, ANCHOR_INIT_RETRY_WAIT,
                 )
                 time.sleep(ANCHOR_INIT_RETRY_WAIT)
             else:
                 logger.error(
-                    "Flare anchor service failed to initialize — anchor metrics will be absent: %s",
+                    "Flare anchor service failed to initialize -- anchor metrics will be absent: %s",
                     exc,
                 )
 
