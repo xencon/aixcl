@@ -775,7 +775,7 @@
     {
       "id": 40,
       "type": "text",
-      "title": "About the Anchor",
+      "title": "Anchor Data Source: FtsoV2 Smart Contract",
       "description": "",
       "gridPos": {
         "x": 0,
