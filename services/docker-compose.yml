@@ -243,7 +243,7 @@ services:
   vllm:
     image: docker.io/vllm/vllm-openai:v0.19.0
     container_name: vllm
-    pull_policy: missing
+    pull_policy: never
     tty: true
     network_mode: host
     restart: unless-stopped
@@ -277,7 +277,7 @@ services:
   llamacpp:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda-b8334
     container_name: llamacpp
-    pull_policy: missing
+    pull_policy: never
     user: "1000:1000"
     volumes:
       - aixcl-llamacpp-data:/models
