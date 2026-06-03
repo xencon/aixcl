@@ -114,7 +114,6 @@ function init_stack() {
     echo "AIXCL Stack Initialisation"
     echo "=========================="
     echo ""
-
     local env_file="${SCRIPT_DIR}/.env"
     local env_example="${SCRIPT_DIR}/config/.env.example"
 
@@ -124,18 +123,60 @@ function init_stack() {
         return 1
     fi
 
-    # Create .env from example if not exists
+    # --- Step 1: Container engine setup ---
+    echo "Checking container engine..."
+    local setup_script="${SCRIPT_DIR}/scripts/utils/setup-podman-rootless.sh"
+    if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+        echo "Podman detected. Configuring rootless Podman..."
+        if [ -f "$setup_script" ]; then
+            bash "$setup_script" || {
+                echo "Warning: Podman setup encountered issues. Check output above."
+            }
+        fi
+        # Add alias and DOCKER_HOST to ~/.bashrc if not already present
+        local bashrc="${HOME}/.bashrc"
+        if ! grep -q "alias docker=podman" "$bashrc" 2>/dev/null; then
+            echo "alias docker=podman" >> "$bashrc"
+            echo "Added docker=podman alias to $bashrc"
+        fi
+        local podman_sock
+        podman_sock="unix:///run/user/$(id -u)/podman/podman.sock"
+        if ! grep -q "DOCKER_HOST" "$bashrc" 2>/dev/null; then
+            echo "export DOCKER_HOST=${podman_sock}" >> "$bashrc"
+            echo "Added DOCKER_HOST to $bashrc"
+        fi
+        # Ensure GPG_TTY is set for Vault unseal in current and future sessions
+        if ! grep -q "GPG_TTY" "$bashrc" 2>/dev/null; then
+            # shellcheck disable=SC2016
+            echo "export GPG_TTY=\$(tty)" >> "$bashrc"
+            echo "Added GPG_TTY to $bashrc"
+        fi
+        # Export for current session
+        export DOCKER_HOST="${podman_sock}"
+        echo "Container engine: Podman (rootless)"
+    elif command -v docker >/dev/null 2>&1; then
+        echo "Docker detected. Using Docker as container engine."
+        echo "Container engine: Docker"
+    else
+        echo "Error: No container engine found. Install Podman or Docker first."
+        echo "  Ubuntu/Debian: sudo apt-get install -y podman"
+        echo "  Fedora/RHEL:   sudo dnf install -y podman"
+        return 1
+    fi
+    echo ""
+
+    # --- Step 2: Create .env from example ---
     if [ ! -f "$env_file" ]; then
         if [ -f "$env_example" ]; then
             cp "$env_example" "$env_file"
-            echo "Created .env from .env.example"
+            echo "Created .env from config/.env.example"
         else
-            echo "Error: .env.example not found"
+            echo "Error: config/.env.example not found"
             return 1
         fi
     fi
 
-    # Create opencode.json from example if not exists
+    # --- Step 3: Create opencode.json from example ---
     local opencode_file="${SCRIPT_DIR}/opencode.json"
     local opencode_example="${SCRIPT_DIR}/config/opencode.json.example"
     if [ ! -f "$opencode_file" ]; then
@@ -147,11 +188,16 @@ function init_stack() {
         fi
     fi
 
-    # Load current values
-    load_env_file "$env_file"
-
-    # Prompt for username (no default)
+    # --- Step 4: Initialise external volumes ---
+    local vol_script="${SCRIPT_DIR}/scripts/utils/init-volumes.sh"
+    if [ -f "$vol_script" ]; then
+        echo "Initialising external volumes..."
+        bash "$vol_script" 2>&1 | grep -E "(Created:|Existing:|Error:|Summary)" || true
+    fi
     echo ""
+
+    # --- Step 5: Admin credentials ---
+    load_env_file "$env_file"
     while true; do
         read -r -p "Enter admin username: " AIXCL_ADMIN_USER
         if [ -n "$AIXCL_ADMIN_USER" ]; then
@@ -159,8 +205,6 @@ function init_stack() {
         fi
         echo "Username is required."
     done
-
-    # Prompt for email (no default)
     echo ""
     while true; do
         read -r -p "Enter admin email: " AIXCL_ADMIN_EMAIL
@@ -169,33 +213,40 @@ function init_stack() {
         fi
         echo "A valid email address is required."
     done
+
     # Set PostgreSQL defaults based on admin username
     local postgres_user="${AIXCL_ADMIN_USER}"
     local postgres_db="webui"
-
     # Update .env with non-sensitive config only
-    # NOTE: Admin identity (AIXCL_ADMIN_USER, AIXCL_ADMIN_EMAIL) is stored
-    # securely in .aixcl.initialized and Vault KV only — never in .env.
-    # pgAdmin, Open WebUI, and Grafana read their credentials from
-    # Vault bootstrap agents that populate /run/secrets/ from KV.
+    # NOTE: Admin identity is stored in .aixcl.initialized and Vault KV only -- never in .env.
     sed -i "s/^#\?POSTGRES_USER=.*/POSTGRES_USER=$postgres_user/" "$env_file"
     sed -i "s/^#\?POSTGRES_DATABASE=.*/POSTGRES_DATABASE=$postgres_db/" "$env_file"
-
-    echo ""
-    echo "Initialisation complete:"
-    echo "  Username: $AIXCL_ADMIN_USER"
-    echo "  Email: $AIXCL_ADMIN_EMAIL"
-    echo "  PostgreSQL user: $postgres_user"
-    echo "  PostgreSQL database: $postgres_db"
-    echo ""
 
     # Create initialized marker
     echo "username=$AIXCL_ADMIN_USER" > "${SCRIPT_DIR}/.aixcl.initialized"
     echo "email=$AIXCL_ADMIN_EMAIL" >> "${SCRIPT_DIR}/.aixcl.initialized"
     echo "created=$(date -Iseconds)" >> "${SCRIPT_DIR}/.aixcl.initialized"
 
+    echo ""
+    echo "Initialisation complete:"
+    echo "  Username: $AIXCL_ADMIN_USER"
+    echo "  Email:    $AIXCL_ADMIN_EMAIL"
+    echo "  PostgreSQL user:     $postgres_user"
+    echo "  PostgreSQL database: $postgres_db"
+    echo ""
+
+    # --- Step 6: Post-init notices ---
+    if ! gpg --list-secret-keys --keyid-format LONG 2>/dev/null | grep -q "^sec"; then
+        echo "Notice: No GPG key found. GPG signing is required for commits to main/dev."
+        echo "  Run: ./scripts/utils/setup-gpg.sh"
+        echo ""
+    fi
+
     echo "Credentials will be generated on first start."
-    echo "Run './aixcl stack start --profile sys' to begin."
+    echo "Next steps:"
+    echo "  source ~/.bashrc                        # Reload shell config"
+    echo "  ./aixcl stack start --profile sys       # Start the full stack"
+    echo "  ./aixcl utils bash-completion           # Install tab completion (optional)"
 }
 
 function ensure_nvidia_cdi() {

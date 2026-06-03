@@ -19,197 +19,109 @@ Run Large Language Models locally with HashiCorp Vault, GPG-signed commits, and 
 
 ---
 
-## Quick Start (5 minutes)
+## Quick Start
 
 ### Step 1: Install Prerequisites
 
+**Container Engine (choose one):**
+
 ```bash
-# Ubuntu/Debian
+# Podman (recommended -- primary engine)
 sudo apt-get update
-sudo apt-get install -y podman gnupg2 git
+sudo apt-get install -y podman podman-compose
 
-# Fedora/RHEL
-sudo dnf install -y podman gnupg2 git
-
-# Verify installations
-podman --version  # Should show 4.9+
-gpg --version     # Should show 2.2+
+# Docker (fallback -- optional)
+sudo apt-get install -y docker.io docker-compose-v2
 ```
 
-### Install ShellCheck (Development Only)
-
-ShellCheck is required for local CI parity. The Ubuntu apt package (0.9.0) is too old -- install from GitHub releases:
+**Required tools:**
 
 ```bash
-# Download and install ShellCheck 0.11.0
+sudo apt-get install -y git gnupg2 gh
+```
+
+**Verify:**
+
+```bash
+podman --version    # Should show 4.9+
+gpg --version       # Should show 2.2+
+gh --version        # Should show 2.x+
+```
+
+**Contributors only -- CI tools:**
+
+```bash
+# yamllint (available via apt)
+sudo apt-get install -y yamllint
+
+# ShellCheck 0.11.0+ (apt package 0.9.0 is too old -- use GitHub releases)
 curl -sSL https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz | tar -xJ -C /tmp
 sudo cp /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
-sudo chmod +x /usr/local/bin/shellcheck
-
-# Verify
-shellcheck --version  # Should show 0.11.0
 ```
 
-> **Note:** Only required for contributors running CI checks locally. Not needed to run the AIXCL stack.
+> **VM users (QEMU/SLIRP networking):** If image pulls fail mid-download, add the following to `/etc/docker/daemon.json` to work around MTU limitations:
+> ```json
+> {"dns": ["8.8.8.8", "8.8.4.4"], "mtu": 1400, "max-concurrent-downloads": 1}
+> ```
+> Then restart Docker: `sudo systemctl restart docker`
 
-### Step 2: Configure Podman Rootless
-
-AIXCL requires rootless Podman. Run the setup script once per machine:
+### Step 2: Clone and Initialise
 
 ```bash
-./scripts/utils/setup-podman-rootless.sh
+git clone https://github.com/xencon/aixcl.git
+cd aixcl
+./aixcl stack init
 ```
 
-**What this modifies on your local machine:**
+`stack init` automatically:
+- Detects and configures Podman (rootless) or Docker
+- Adds `docker=podman` alias and `DOCKER_HOST` to `~/.bashrc`
+- Creates `.env` from `config/.env.example`
+- Creates `opencode.json` from `config/opencode.json.example`
+- Initialises all external Docker/Podman volumes
+- Prompts for admin username and email
 
-| File | Purpose |
-|------|---------|
-| `~/.bashrc` | Manually add `DOCKER_BIN=podman` and `DOCKER_HOST` (not automated by script) |
-| `/etc/subuid` | Configures subordinate UIDs for rootless containers (via sudo) |
-| `/etc/subgid` | Configures subordinate GIDs for rootless containers (via sudo) |
-| `~/.config/containers/containers.conf` | Podman network and security defaults |
-| `~/.config/containers/registries.conf` | Docker Hub search registry |
-| `~/.config/containers/storage.conf` | Rootless storage driver settings |
-| `.env.podman` (repo root) | Project-specific `DOCKER_HOST` override |
-
-**After setup, reload your shell and install bash completion:**
+After init, reload your shell:
 
 ```bash
 source ~/.bashrc
-./aixcl utils bash-completion
-source ~/.local/share/bash-completion/completions/aixcl
 ```
 
-The last line activates tab completion in your current shell. New shell sessions pick it up automatically.
-
-> **NVIDIA GPU users:** NVIDIA CDI configuration is handled automatically by `stack start` -- no additional GPU setup step is required.
-
-**Verify rootless mode:**
-
-The environment check now automatically verifies rootless status. When you run `./aixcl utils check-env`, you will see the Podman rootless status displayed in the output.
-
-You can also verify manually:
+### Step 3: Start the Stack
 
 ```bash
-podman info | grep "rootless"
-# Should show: "rootless: true"
+./aixcl stack start --profile sys
 ```
 
-### Step 3: Check, Initialize and Start
+This pulls images, starts all services, initialises Vault, and generates bootstrap credentials. Allow 3-5 minutes for full startup on first run.
 
-The quickest way to get started -- add this alias to your shell:
-
-```bash
-alias aixcl-setup='./aixcl utils check-env && ./aixcl stack init && ./aixcl stack start --profile sys'
-```
-
-Then run:
+Check status:
 
 ```bash
-aixcl-setup
-```
-
-Or run each step manually:
-
-```bash
-./aixcl utils check-env          # Verify environment prerequisites
-./aixcl stack init               # Generate .env, opencode.json, credentials and Vault secrets (one-time)
-./aixcl stack start --profile sys  # Start the full stack
-
-# Wait for healthy status (about 2-3 minutes for full stabilization)
 ./aixcl stack status
 ```
 
-Services started (12 in sys profile):
+All 18 services should show healthy.
 
-| Category | Service | Port |
-|----------|---------|------|
-| **Runtime** | Ollama (inference) | 11434 |
-| | OpenCode (agent) | Plugin |
-| **Persistence** | PostgreSQL | 5432 |
-| | pgAdmin | 5050 |
-| **Observability** | Prometheus | 9090 |
-| | Grafana | 3000 |
-| | Loki (logs) | 3100 |
-| | cAdvisor (containers) | - |
-| | node-exporter (host) | 9100 |
-| | postgres-exporter (DB) | 9187 |
-| | alertmanager | 9093 |
-| | nvidia-gpu-exporter | 9445 |
-| **Secrets** | Vault | 8200 |
-| **UI** | Open WebUI | 8080 |
-
-### Step 4: Verify Vault (Auto-Initialized)
-
-Vault initializes automatically during stack startup. The process takes 2-3 minutes:
+### Step 4: View Credentials
 
 ```bash
-# Check Vault status
-./aixcl vault status
-
-# View generated bootstrap passwords
 ./aixcl vault passwords
 ```
 
-### Step 5: Test Inference (Hello World)
-
-**A. Via Open WebUI (Browser)**
+### Step 5: Add a Model and Test Inference
 
 ```bash
-# Add a small test model first
 ./aixcl models add qwen2.5-coder:0.5b
 ```
 
-1. Open http://localhost:8080 in your browser
-2. Log in with username `admin` and the password from `./aixcl vault passwords`
-3. Configure the AIXCL endpoint via the admin setting `http://localhost:11434/`
-4. Click "New Chat" in the top left
-5. Select "qwen2.5-coder:0.5b" from the model dropdown
-6. Type: "Hello! Can you confirm you're working?"
-7. **Expected:** The model responds with a greeting
-
-**B. Via OpenCode CLI**
-
-`opencode.json` is created from `config/opencode.json.example` by `stack init`. It pre-configures
-the `aixcl-local` provider pointing at the Ollama endpoint (`http://localhost:11434/v1`). Models
-are registered into it automatically when you run `./aixcl models add`.
+Test via API:
 
 ```bash
-# Add the model (registers it in opencode.json and pulls it via Ollama)
-./aixcl models add qwen2.5-coder:0.5b
-
-# Start OpenCode
-opencode
-
-# At the prompt, connect to your preferred provider
-/connect
-
-# Then type:
-# > Hello! Can you help me write a Python function?
-
-# Expected: The AI responds with code suggestions
-```
-
-**C. Via API (curl)**
-
-```bash
-# Add the model
-./aixcl models add qwen2.5-coder:0.5b
-
-# Test via API
 curl http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "qwen2.5-coder:0.5b",
-    "messages": [{"role": "user", "content": "Hello, are you working?"}]
-  }'
-
-# Expected output: JSON response with the model's reply
+  -d '{"model": "qwen2.5-coder:0.5b", "messages": [{"role": "user", "content": "Hello, are you working?"}]}'
 ```
-
-**All three methods should show the model responding to your hello!**
-
----
 
 ## Access Points
 
