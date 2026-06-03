@@ -36,6 +36,22 @@ podman --version  # Should show 4.9+
 gpg --version     # Should show 2.2+
 ```
 
+### Install ShellCheck (Development Only)
+
+ShellCheck is required for local CI parity. The Ubuntu apt package (0.9.0) is too old -- install from GitHub releases:
+
+```bash
+# Download and install ShellCheck 0.11.0
+curl -sSL https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz | tar -xJ -C /tmp
+sudo cp /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
+sudo chmod +x /usr/local/bin/shellcheck
+
+# Verify
+shellcheck --version  # Should show 0.11.0
+```
+
+> **Note:** Only required for contributors running CI checks locally. Not needed to run the AIXCL stack.
+
 ### Step 2: Configure Podman Rootless
 
 AIXCL requires rootless Podman. Run the setup script once per machine:
