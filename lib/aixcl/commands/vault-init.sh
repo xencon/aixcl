@@ -85,13 +85,17 @@ load_vault_token() {
 # ---------------------------------------------------------------------------
 
 is_vault_running() {
-    if command -v podman >/dev/null 2>&1; then
-        podman ps --format "{{.Names}}" | grep -q "^vault$"
-    elif command -v docker >/dev/null 2>&1; then
-        docker ps --format "{{.Names}}" | grep -q "^vault$"
-    else
-        return 1
+    local bin="${DOCKER_BIN:-}"
+    if [ -z "$bin" ]; then
+        if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+            bin="podman"
+        elif command -v docker >/dev/null 2>&1; then
+            bin="docker"
+        else
+            return 1
+        fi
     fi
+    "$bin" ps --format "{{.Names}}" | grep -q "^vault$"
 }
 
 # Returns true if the Vault HTTP API is responding (even when sealed/uninitialized)
