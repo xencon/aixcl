@@ -608,8 +608,32 @@ function start() {
         fi
     fi
     
+    # Vault bootstrap agents need the root token which only exists after vault-init
+    # runs. On first boot the token file does not exist yet, so we exclude bootstrap
+    # agents from the initial bring-up and start them explicitly after vault-init
+    # has run and written the token. This eliminates the token-refresh cascade.
+    local VAULT_BOOTSTRAP_AGENTS=(
+        vault-agent-postgres-bootstrap
+        vault-agent-openwebui-bootstrap
+        vault-agent-pgadmin-bootstrap
+        vault-agent-grafana-bootstrap
+    )
+    local non_bootstrap_services=()
+    for _svc in "${profile_services[@]}"; do
+        local _is_bootstrap=false
+        for _ba in "${VAULT_BOOTSTRAP_AGENTS[@]}"; do
+            if [ "$_svc" = "$_ba" ]; then
+                _is_bootstrap=true
+                break
+            fi
+        done
+        if [ "$_is_bootstrap" = false ]; then
+            non_bootstrap_services+=("$_svc")
+        fi
+    done
+
     echo "Starting services for profile: $profile..."
-    run_compose up -d "${profile_services[@]}"
+    run_compose up -d "${non_bootstrap_services[@]}"
     
     echo "Waiting for runtime core services to be ready..."
     local max_attempts
@@ -700,35 +724,37 @@ function start() {
                     echo "  ./aixcl vault init"
                 fi
                 
-                # Recreate bootstrap agents so they start with the correct token.
-                # On the very first init, VAULT_TOKEN was unknown at compose-up time;
-                # now that vault-init.sh has encrypted it to .security/, we reload it
-                # and force-recreate the bootstrap containers with the real token.
-                local _vault_token_file_post="${SCRIPT_DIR}/.security/vault-root-token.gpg"
-                if [ -f "$_vault_token_file_post" ]; then
-                    # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
-                    if [ -z "${GPG_TTY:-}" ]; then
-                        GPG_TTY=$(tty 2>/dev/null || true)
-                        export GPG_TTY
+                # Start bootstrap agents now that vault-init has run and the token
+                # file exists. The VAULT_TOKEN env var is already exported above.
+                # Bootstrap agents will read the token from /vault/token (mounted
+                # read-only from ~/.aixcl-vault-token or the GPG-decrypted value)
+                # and immediately write secrets to the shared volume so postgres
+                # and other dependents can start cleanly.
+                echo ""
+                echo "Starting Vault bootstrap agents with real token..."
+                run_compose up -d --no-deps \
+                    vault-agent-postgres-bootstrap \
+                    vault-agent-openwebui-bootstrap \
+                    vault-agent-pgadmin-bootstrap \
+                    vault-agent-grafana-bootstrap \
+                    vault-agent-postgres \
+                    vault-agent-openwebui 2>/dev/null || true
+
+                # Wait for bootstrap secrets before starting dependents
+                echo "Waiting for bootstrap secrets..."
+                local _docker_bin="${DOCKER_BIN:-docker}"
+                for _i in $(seq 1 30); do
+                    if "$_docker_bin" exec vault-agent-postgres-bootstrap \
+                        cat /run/secrets/postgres-password >/dev/null 2>&1; then
+                        echo "Bootstrap secrets ready."
+                        break
                     fi
-                    local _vtoken
-                    _vtoken=$(gpg --quiet --decrypt "$_vault_token_file_post" 2>/dev/null) || true
-                    if [ -n "${_vtoken:-}" ]; then
-                        export VAULT_TOKEN="$_vtoken"
-                        echo ""
-                        echo "Refreshing bootstrap agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
-                            vault-agent-postgres-bootstrap \
-                            vault-agent-openwebui-bootstrap \
-                            vault-agent-pgadmin-bootstrap \
-                            vault-agent-grafana-bootstrap 2>/dev/null || true
-                        echo ""
-                        echo "Refreshing non-bootstrap vault agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
-                            vault-agent-postgres \
-                            vault-agent-openwebui 2>/dev/null || true
-                    fi
-                fi
+                    sleep 2
+                done
+
+                # Start dependent services now that secrets are available
+                run_compose up -d --no-deps \
+                    postgres open-webui postgres-exporter grafana pgadmin 2>/dev/null || true
 
                 # Show current passwords
                 echo ""
