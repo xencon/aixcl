@@ -269,6 +269,37 @@ check_docker() {
     fi
 }
 
+# Check ShellCheck version
+check_shellcheck() {
+    info "Checking ShellCheck..."
+
+    local min_version="0.10.0"
+
+    if ! command -v shellcheck &>/dev/null; then
+        warn "shellcheck not installed (required for CI parity)"
+        info "Install v${min_version}+ from: https://github.com/koalaman/shellcheck/releases"
+        info "Ubuntu apt package is outdated -- use GitHub releases"
+        return
+    fi
+
+    local installed_version
+    installed_version=$(shellcheck --version | grep "^version:" | awk '{print $2}')
+
+    # Compare versions using sort -V
+    local min_ok
+    min_ok=$(printf '%s\n%s\n' "$min_version" "$installed_version" | sort -V | head -1)
+
+    if [ "$min_ok" = "$min_version" ]; then
+        pass "shellcheck $installed_version installed (>= $min_version required)"
+    else
+        warn "shellcheck $installed_version is below minimum $min_version"
+        info "CI uses shellcheck 0.11.0 -- older versions may miss warnings"
+        info "Install from: https://github.com/koalaman/shellcheck/releases"
+        info "Ubuntu apt package (0.9.0) is too old -- use GitHub releases"
+    fi
+}
+
+
 # Main execution
 main() {
     echo "═══════════════════════════════════════════════════════════════"
@@ -300,6 +331,7 @@ main() {
     
     # Optional checks
     check_docker
+    check_shellcheck
     
     echo ""
     echo "═══════════════════════════════════════════════════════════════"
