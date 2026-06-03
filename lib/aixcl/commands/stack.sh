@@ -543,7 +543,7 @@ function start() {
     fi
 
     echo "Pulling latest images..."
-    run_compose pull
+    run_compose pull "${profile_services[@]}"
     
     # Initialize external volumes if they don't exist
     # This ensures volumes are created before services try to use them
