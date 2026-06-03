@@ -32,6 +32,16 @@ function prune() {
     rm -f .aixcl.initialized .env pgadmin-servers.json
     echo ""
 
+    # Remove all containers before volumes — Podman will not release a volume
+    # while any container (even stopped) still references it. stack stop removes
+    # running containers but stopped/exited ones may linger with volume mounts.
+    echo "Removing all containers..."
+    local all_containers
+    all_containers=$($docker_cmd ps -aq 2>/dev/null || true)
+    if [ -n "$all_containers" ]; then
+        echo "$all_containers" | xargs -r "$docker_cmd" rm -f 2>/dev/null || true
+    fi
+    echo ""
     echo "Removing volumes..."
     local all_volumes
     all_volumes=$($docker_cmd volume ls -q 2>/dev/null || true)
