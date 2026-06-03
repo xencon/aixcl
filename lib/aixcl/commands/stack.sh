@@ -717,16 +717,42 @@ function start() {
                         export VAULT_TOKEN="$_vtoken"
                         echo ""
                         echo "Refreshing bootstrap agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
+                        # Use podman directly with --replace to handle Podman dependency chain.
+                        # run_compose --force-recreate fails when containers have dependents.
+                        local _docker_bin="${DOCKER_BIN:-docker}"
+                        for _agent in \
                             vault-agent-postgres-bootstrap \
                             vault-agent-openwebui-bootstrap \
                             vault-agent-pgadmin-bootstrap \
-                            vault-agent-grafana-bootstrap 2>/dev/null || true
-                        echo ""
-                        echo "Refreshing non-bootstrap vault agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
+                            vault-agent-grafana-bootstrap \
+                            vault-agent-postgres \
+                            vault-agent-openwebui; do
+                            # Stop dependent containers first, then use --replace
+                            $_docker_bin stop "$_agent" 2>/dev/null || true
+                            # Remove dependents so --replace can work
+                            _deps=$($_docker_bin ps -aq --filter "label=io.podman.compose.service" 2>/dev/null || true)
+                            if [ -n "$_deps" ]; then
+                                for _dep in $_deps; do
+                                    _requires=$($_docker_bin inspect "$_dep" --format "{{.HostConfig.Requires}}" 2>/dev/null || echo "")
+                                    if echo "$_requires" | grep -q "$_agent"; then
+                                        $_docker_bin stop "$_dep" 2>/dev/null || true
+                                        $_docker_bin rm -f "$_dep" 2>/dev/null || true
+                                    fi
+                                done
+                            fi
+                            $_docker_bin rm -f "$_agent" 2>/dev/null || true
+                        done
+                        # Recreate all vault agents with the new token
+                        run_compose up -d --no-deps \
+                            vault-agent-postgres-bootstrap \
+                            vault-agent-openwebui-bootstrap \
+                            vault-agent-pgadmin-bootstrap \
+                            vault-agent-grafana-bootstrap \
                             vault-agent-postgres \
                             vault-agent-openwebui 2>/dev/null || true
+                        # Restart dependent services that were stopped
+                        run_compose up -d --no-deps \
+                            postgres open-webui postgres-exporter grafana 2>/dev/null || true
                     fi
                 fi
 
