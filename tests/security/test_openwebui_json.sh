@@ -13,7 +13,7 @@ echo "Testing security of JSON generation fallback..."
 # Mock variables with special characters that would break simple string interpolation
 # or cause injection if not properly escaped.
 # shellcheck disable=SC2089
-OPENWEBUI_EMAIL='admin@localhost"}'
+OPENWEBUI_EMAIL='admin@example.com"}'
 # shellcheck disable=SC2089
 OPENWEBUI_PASSWORD='password" --payload "injection'
 # shellcheck disable=SC2090
@@ -55,7 +55,7 @@ try:
     password = obj.get('password', '')
     
     # Verify the original values were preserved correctly
-    expected_email = 'admin@localhost"}'
+    expected_email = 'admin@example.com"}'
     expected_password = 'password" --payload "injection'
     
     if email == expected_email and password == expected_password:
