@@ -695,8 +695,12 @@ main() {
         vault_operator_init || return 1
     else
         log_info "Vault is already initialized — loading token and checking seal state..."
-        load_vault_token || return 1
-        vault_unseal_if_needed || return 1
+        if ! load_vault_token; then
+            log_info "No token found in .security/ — re-running operator init to recover keys..."
+            vault_operator_init || return 1
+        else
+            vault_unseal_if_needed || return 1
+        fi
     fi
 
     # Confirm unsealed before proceeding
