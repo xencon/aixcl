@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "edit": "ask",
+    "bash": {
+      "allowed": [
+        "git status*",
+        "git diff*",
+        "git log*",
+        "ls*",
+        "cat*",
+        "grep*",
+        "gh repo*",
+        "gh issue*",
+        "./scripts/checks/check-agents.sh*"
+      ],
+      "ask": [
+        "git add*",
+        "git commit*",
+        "git push*",
+        "gh pr create*"
+      ],
+      "denied": [
+        "rm -rf*",
+        "git push --force*"
+      ]
+    },
+    "webfetch": "ask"
+  }
+}
