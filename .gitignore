@@ -125,7 +125,11 @@ context/
 .dev/
 
 # Claude Code worktrees and session data
-.claude/
+# NOTE: .claude/ directory is used for project configuration (rules, skills, commands, settings)
+# Only local/personal overrides are ignored; tracked files include:
+#   .claude/CLAUDE.md, .claude/rules/*.md, .claude/skills/**/SKILL.md,
+#   .claude/commands/*.md, .claude/agents/*.md, .claude/settings.json
+.claude/settings.local.json
 
 # Database files
 *.db
