@@ -45,6 +45,10 @@ function main() {
             shift
             cmd_vault "$@"
             ;;
+        app)
+            shift
+            app_cmd "$@"
+            ;;
         restart)
             shift
             restart "$@"

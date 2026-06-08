@@ -1,0 +1,23 @@
+# AIXCL Application Compose File
+# Place this file in apps/<name>/docker-compose.yml alongside app.yaml.
+# Services defined here are automatically included when the app is started.
+#
+# Requirements:
+#   - All services must use network_mode: host (AIXCL invariant)
+#   - Service names must match entries in app.yaml services[]
+#   - Labels for Prometheus scraping: com.aixcl.app=<app_name>
+
+version: "3.8"
+
+services:
+  example-service:
+    image: "example-app:latest"
+    network_mode: host
+    container_name: "example-app-service"
+    labels:
+      com.aixcl.app: "example-app"
+      com.aixcl.service: "example-service"
+    ports:
+      - "9000:9000"
+    environment:
+      - "EXAMPLE_VAR=default"
