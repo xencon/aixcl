@@ -32,6 +32,17 @@ COMMANDS
         stop <service>                                  Stop a service
         restart <service>                               Restart a service
 
+    app <action> [<name>]
+        list                                            List installed applications
+        start <app>                                     Start an application
+        stop <app>                                      Stop an application
+        restart <app>                                   Restart an application
+        status <app>                                    Show application status
+        build <app>                                     Build an application image
+        scaffold <name>                                 Create a new application scaffold
+        install <url>                                   Install an application from a URL
+        help                                            Show app command help
+
     utils <action>
         check-env                                       Verify environment
         bash-completion                                 Install bash completion
