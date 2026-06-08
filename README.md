@@ -101,7 +101,17 @@ Check status:
 ./aixcl stack status
 ```
 
-All 18 services should show healthy.
+**Important:** Vault auto-seals whenever its container restarts (e.g. after `./aixcl stack stop` or host reboot). If services fail to start, unseal Vault first:
+
+```bash
+# Unseal Vault after every stack restart
+./aixcl vault unseal
+
+# Wait 30 seconds for bootstrap agents, then verify
+./aixcl stack status
+```
+
+### Step 5: Test Inference (Hello World)
 
 ### Step 4: View Credentials
 

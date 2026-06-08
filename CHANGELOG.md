@@ -4,6 +4,29 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.22] - 2026-05-22
+
+### Summary
+
+Release v1.1.22 -- Vault unseal documentation and CI dependency update.
+
+### Changed
+
+- [x] **Vault Unseal Documentation**: Documented Vault unseal requirement after stack restart in README.md and QUICKSTART.md. (Fixes #1248)
+
+### Fixed
+
+- [x] **CI Release Action**: Bumped `softprops/action-gh-release` from 2 to 3 in release workflow, upgrading action runtime from Node 20 to Node 24. (Fixes #1254)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
+
 ## [v1.1.21] - 2026-05-19
 
 ### Summary
