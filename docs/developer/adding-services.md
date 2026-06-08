@@ -49,17 +49,11 @@ get_profile_services_for_profile() {
     local engine="${INFERENCE_ENGINE:-ollama}"
     
     case "$profile" in
-        usr)
-            echo "$engine postgres"
-            ;;
-        dev)
-            echo "$engine open-webui postgres pgadmin"
-            ;;
         bld)
-            echo "$engine postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+            echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
             ;;
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
             ;;
     esac
 }
@@ -69,10 +63,8 @@ get_profile_services_for_profile() {
 
 | Profile | Purpose | Include Service If... |
 |---------|---------|----------------------|
-| **usr** | Minimal footprint | Required for basic runtime (e.g., postgres for persistence) |
-| **dev** | Developer workstation | Developer/admin tool (e.g., pgadmin, Open WebUI) |
-| **bld** | Observability | Monitoring/logging service (e.g., prometheus, grafana, cadvisor) |
-| **sys** | Complete stack | All services except excluded (privileged or incompatible) |
+| **bld** | Builder-focused (observability) | Monitoring/logging service (e.g., prometheus, grafana, cadvisor) |
+| **sys** | System-oriented (complete stack) | All services including UI and admin tools |
 
 ## Verification Checklist
 
