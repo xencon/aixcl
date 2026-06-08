@@ -4,11 +4,44 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.22] - 2026-05-22
+## [v1.1.24] - 2026-06-08
 
 ### Summary
 
-Release v1.1.22 -- Vault unseal documentation and CI dependency update.
+Release v1.1.24 -- Vault bootstrap reliability, multi-agent CLI support, and agent governance consolidation.
+
+### Added
+
+- [x] **Multi-Agent CLI Support**: Created `.claude/` directory with Claude Code compatibility files (`CLAUDE.md`, rules, skills, commands, settings). Documented multi-agent CLI support (OpenCode + Claude Code) in docs/README.md. (Fixes #1291, #1299)
+
+### Changed
+
+- [x] **AGENTS.md Consolidation**: Refactored `AGENTS.md` from ~350 lines to ~207 lines, removing redundant content and consolidating the canonical agent operating contract. (Fixes #1300)
+
+### Fixed
+
+- [x] **Vault Bootstrap Reliability**: Fixed Vault init and stack start reliability issues, resolving race conditions between Vault initialization, bootstrap agents, and PostgreSQL startup. (Fixes #1289, #1290)
+- [x] **Deprecated Profile References**: Removed stale references to deprecated `usr` and `dev` profiles from `docs/developer/adding-services.md`. (Fixes #1298)
+- [x] **Workflow Guard Skill**: Corrected dead references to `workflow-governance.md` in `.opencode/skills/workflow-guard/SKILL.md`. (Fixes #1297)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
+
+## [v1.1.23] - 2026-06-08
+
+### Summary
+
+Release v1.1.23 -- Vault bootstrap reliability improvements, Podman auto-configuration, Vault agent token refresh, and CI/test fixes.
+
+### Added
+
+- [x] **Podman Auto-Configuration**: `stack init` now auto-configures Podman, alias, `DOCKER_HOST`, and volumes. Improves out-of-the-box experience for Podman users. (Fixes #1277)
 
 ### Changed
 
@@ -16,7 +49,14 @@ Release v1.1.22 -- Vault unseal documentation and CI dependency update.
 
 ### Fixed
 
-- [x] **CI Release Action**: Bumped `softprops/action-gh-release` from 2 to 3 in release workflow, upgrading action runtime from Node 20 to Node 24. (Fixes #1254)
+- [x] **Vault Bootstrap Reliability**: Fixed Vault init and stack start reliability issues, resolving race conditions between Vault initialization, bootstrap agents, and PostgreSQL startup. (Fixes #1289, #1290)
+- [x] **Vault Agent Anonymous Volumes**: Fixed anonymous volumes from Vault agent containers and token refresh. (Fixes #1276, #1288)
+- [x] **Engine Detection**: `is_vault_running()` now uses `DOCKER_BIN` or active engine detection for container engine portability. (Fixes #1275)
+- [x] **Compose Pull Optimization**: `run_compose pull` now passes profile services to avoid pulling all images. (Fixes #1274)
+- [x] **Email Defaults**: Corrected `admin@localhost` to `admin@example.com` in security test for first-start compatibility. (Fixes #1278)
+- [x] **CI Compliance Rules**: Added CI compliance rules for agents and contributors. (Fixes #1278)
+- [x] **ShellCheck**: Added ShellCheck version check and installation instructions. (Fixes #1281)
+- [x] **JSON Escaping Test**: Fixed JSON escaping validation in security test using subprocess capture and Python verification. (Fixes #1278)
 
 ### Verification
 
