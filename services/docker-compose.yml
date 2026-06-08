@@ -69,6 +69,9 @@ services:
     volumes:
       - ../vault/agent-config:/etc/vault:ro
       - ../scripts/vault/vault-agent.sh:/usr/local/bin/vault-agent.sh:ro
+    tmpfs:
+      - /vault/file:noexec,nosuid,size=1m
+      - /vault/logs:noexec,nosuid,size=1m
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-}
@@ -91,6 +94,9 @@ services:
     volumes:
       - ../vault/agent-config:/etc/vault:ro
       - ../scripts/vault/vault-agent-openwebui.sh:/usr/local/bin/vault-agent-openwebui.sh:ro
+    tmpfs:
+      - /vault/file:noexec,nosuid,size=1m
+      - /vault/logs:noexec,nosuid,size=1m
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-}
@@ -114,6 +120,9 @@ services:
     volumes:
       - ../scripts/vault/bootstrap-password-postgres.sh:/usr/local/bin/bootstrap-password-postgres.sh:ro
       - aixcl-vault-secrets:/run/secrets
+    tmpfs:
+      - /vault/file:noexec,nosuid,size=1m
+      - /vault/logs:noexec,nosuid,size=1m
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-}
@@ -137,6 +146,9 @@ services:
     volumes:
       - ../scripts/vault/bootstrap-password-openwebui.sh:/usr/local/bin/bootstrap-password-openwebui.sh:ro
       - aixcl-vault-secrets:/run/secrets
+    tmpfs:
+      - /vault/file:noexec,nosuid,size=1m
+      - /vault/logs:noexec,nosuid,size=1m
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-}
@@ -160,6 +172,9 @@ services:
     volumes:
       - ../scripts/vault/bootstrap-password-pgadmin.sh:/usr/local/bin/bootstrap-password-pgadmin.sh:ro
       - aixcl-vault-secrets:/run/secrets
+    tmpfs:
+      - /vault/file:noexec,nosuid,size=1m
+      - /vault/logs:noexec,nosuid,size=1m
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-}
@@ -183,6 +198,9 @@ services:
     volumes:
       - ../scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro
       - aixcl-vault-secrets:/run/secrets
+    tmpfs:
+      - /vault/file:noexec,nosuid,size=1m
+      - /vault/logs:noexec,nosuid,size=1m
     environment:
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-}

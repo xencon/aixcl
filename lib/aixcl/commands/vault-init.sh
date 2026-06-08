@@ -48,15 +48,104 @@ log_verbose() { [ "$AIXCL_VERBOSE" -eq 1 ] && echo "[DEBUG] $1" || true; }
 export VAULT_ADDR
 
 # ---------------------------------------------------------------------------
+# Artefact verification helpers
+# ---------------------------------------------------------------------------
+
+# Verify a file exists, is non-empty, and has the expected octal permissions.
+check_artefact_file() {
+    local label="$1"
+    local path="$2"
+    local expected_perms="$3"
+
+    if [ ! -f "$path" ]; then
+        log_error "Artefact missing: ${label}"
+        log_error "  Expected at: ${path}"
+        return 1
+    fi
+    if [ ! -s "$path" ]; then
+        log_error "Artefact empty: ${label}"
+        log_error "  File exists but has no content: ${path}"
+        return 1
+    fi
+    local actual_perms
+    actual_perms=$(stat -c "%a" "$path" 2>/dev/null || stat -f "%OLp" "$path" 2>/dev/null || true)
+    if [ -n "$expected_perms" ] && [ "$actual_perms" != "$expected_perms" ]; then
+        log_error "Artefact has wrong permissions: ${label}"
+        log_error "  Expected ${expected_perms}, got ${actual_perms}: ${path}"
+        return 1
+    fi
+    log_info "  [ok] ${label} (${path})"
+}
+
+# Verify a directory exists and has the expected octal permissions.
+check_artefact_dir() {
+    local label="$1"
+    local path="$2"
+    local expected_perms="$3"
+
+    if [ ! -d "$path" ]; then
+        log_error "Artefact directory missing: ${label}"
+        log_error "  Expected at: ${path}"
+        return 1
+    fi
+    local actual_perms
+    actual_perms=$(stat -c "%a" "$path" 2>/dev/null || stat -f "%OLp" "$path" 2>/dev/null || true)
+    if [ -n "$expected_perms" ] && [ "$actual_perms" != "$expected_perms" ]; then
+        log_error "Artefact directory has wrong permissions: ${label}"
+        log_error "  Expected ${expected_perms}, got ${actual_perms}: ${path}"
+        return 1
+    fi
+    log_info "  [ok] ${label} (${path})"
+}
+
+# Verify a Vault KV path contains a non-empty value for a given field.
+check_artefact_kv() {
+    local label="$1"
+    local kv_path="$2"
+    local field="$3"
+
+    local value
+    value=$(curl -sf "${VAULT_ADDR}/v1/kv/data/${kv_path}" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null \
+        | jq -r ".data.data.${field} // empty" 2>/dev/null || true)
+
+    if [ -z "$value" ]; then
+        log_error "Vault KV artefact missing or empty: ${label}"
+        log_error "  Path: kv/data/${kv_path}  Field: ${field}"
+        return 1
+    fi
+    log_info "  [ok] Vault KV ${label}"
+}
+
+# Verify the active VAULT_TOKEN authenticates against Vault.
+check_artefact_token() {
+    # Vault may take a few seconds to accept requests after unsealing.
+    # Retry up to 10 times (20 seconds) before declaring the token invalid.
+    local check
+    local retries=10
+    while [ $retries -gt 0 ]; do
+        check=$(curl -sf "${VAULT_ADDR}/v1/auth/token/lookup-self" \
+            -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null \
+            | jq -r '.data.id // empty' 2>/dev/null || true)
+        if [ -n "$check" ]; then
+            log_info "  [ok] Vault token authenticates (id: ${check})"
+            return 0
+        fi
+        log_verbose "Vault token check failed — retrying... ($retries left)"
+        sleep 2
+        retries=$((retries - 1))
+    done
+    log_error "Vault token artefact is invalid or not accepted by Vault"
+    log_error "  Token may be expired, revoked, or the wrong token for this instance"
+    return 1
+}
+
+# ---------------------------------------------------------------------------
 # Token helpers
 # ---------------------------------------------------------------------------
 
 # Load and decrypt the root token from .security/
 load_vault_token() {
-    if [ -n "${VAULT_TOKEN:-}" ]; then
-        log_verbose "Using VAULT_TOKEN from environment"
-        return 0
-    fi
     if [ ! -f "$VAULT_TOKEN_FILE" ]; then
         return 1
     fi
@@ -85,13 +174,17 @@ load_vault_token() {
 # ---------------------------------------------------------------------------
 
 is_vault_running() {
-    if command -v podman >/dev/null 2>&1; then
-        podman ps --format "{{.Names}}" | grep -q "^vault$"
-    elif command -v docker >/dev/null 2>&1; then
-        docker ps --format "{{.Names}}" | grep -q "^vault$"
-    else
-        return 1
+    local bin="${DOCKER_BIN:-}"
+    if [ -z "$bin" ]; then
+        if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+            bin="podman"
+        elif command -v docker >/dev/null 2>&1; then
+            bin="docker"
+        else
+            return 1
+        fi
     fi
+    "$bin" ps --format "{{.Names}}" | grep -q "^vault$"
 }
 
 # Returns true if the Vault HTTP API is responding (even when sealed/uninitialized)
@@ -119,17 +212,31 @@ is_vault_sealed() {
 
 # Wait for the Vault API to respond (allows sealed/uninitialized)
 wait_for_vault_api() {
-    log_info "Waiting for Vault API to respond..."
-    local retries=60
+    log_info "Waiting for Vault API to respond and stabilise..."
+    # Vault file storage does 2 internal restart cycles on first boot before settling.
+    # Wait for the API to respond consistently for 3 consecutive checks (6 seconds)
+    # to ensure Vault has finished its startup cycle before we attempt operator init.
+    local retries=90
+    local consecutive=0
+    local required=3
     while [ $retries -gt 0 ]; do
         if is_vault_api_ready; then
-            log_verbose "Vault API is ready"
-            return 0
+            consecutive=$((consecutive + 1))
+            log_verbose "Vault API ready (${consecutive}/${required} consecutive checks)"
+            if [ $consecutive -ge $required ]; then
+                log_info "Vault API is stable"
+                return 0
+            fi
+        else
+            if [ $consecutive -gt 0 ]; then
+                log_verbose "Vault API not ready — resetting stability counter (was ${consecutive})"
+            fi
+            consecutive=0
         fi
         sleep 2
         retries=$((retries - 1))
     done
-    log_error "Vault API did not respond within 120 seconds"
+    log_error "Vault API did not stabilise within 180 seconds"
     return 1
 }
 
@@ -162,7 +269,7 @@ wait_for_postgres() {
         return 0
     fi
 
-    local retries=30
+    local retries=60
     while [ $retries -gt 0 ]; do
         if $docker_bin exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
             log_info "PostgreSQL is ready"
@@ -171,7 +278,7 @@ wait_for_postgres() {
         sleep 2
         retries=$((retries - 1))
     done
-    log_error "PostgreSQL is not ready after 60 seconds"
+    log_error "PostgreSQL is not ready after 120 seconds"
     return 1
 }
 
@@ -217,6 +324,14 @@ vault_operator_init() {
         return 1
     fi
 
+    # Verify we also have the key shares before writing anything
+    local key_count
+    key_count=$(echo "$init_output" | jq '.keys_base64 | length' 2>/dev/null || echo "0")
+    if [ "$key_count" -lt 3 ]; then
+        log_error "operator init response contained fewer than 3 key shares (got ${key_count})"
+        return 1
+    fi
+
     # Encrypt and persist unseal key shares
     echo "$init_output" | jq '{unseal_keys_b64: .keys_base64, unseal_threshold: 3}' \
         | gpg --quiet --encrypt --recipient "$gpg_id" --armor \
@@ -234,6 +349,12 @@ vault_operator_init() {
         return 1
     }
     chmod 600 "$VAULT_TOKEN_FILE"
+
+    # Verify .security/ artefacts are present and correct before proceeding
+    log_info "Verifying .security/ artefacts..."
+    check_artefact_dir  ".security directory"   "$SECURITY_DIR"    "700" || return 1
+    check_artefact_file "vault-keys.gpg"        "$VAULT_KEYS_FILE" "600" || return 1
+    check_artefact_file "vault-root-token.gpg"  "$VAULT_TOKEN_FILE" "600" || return 1
 
     log_info "Unseal keys saved to:  ${VAULT_KEYS_FILE}"
     log_info "Root token saved to:   ${VAULT_TOKEN_FILE}"
@@ -326,6 +447,12 @@ enable_kv_engine() {
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         -H "Content-Type: application/json" \
         -d '{"type": "kv", "options": {"version": "2"}}' >/dev/null 2>&1 || true
+
+    # Verify KV engine is actually present before continuing
+    if ! is_kv_enabled; then
+        log_error "KV secrets engine not present after enable attempt"
+        return 1
+    fi
     log_info "KV secrets engine v2 enabled"
 }
 
@@ -378,21 +505,30 @@ init_bootstrap_passwords() {
     fi
     log_info "Admin identity: ${admin_user} / ${admin_email}"
 
-    # PostgreSQL: sync from container if it already has a password
+    # PostgreSQL: on warm start, prefer the existing password from Vault KV to avoid
+    # overwriting the password that PostgreSQL was initialised with on first boot.
     local postgres_password=""
-    if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
-        postgres_password=$(cat /run/secrets/postgres-password | tr -d '\n')
-        log_info "Read existing PostgreSQL password from shared volume"
+    postgres_password=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null \
+        | jq -r '.data.data.password // empty' 2>/dev/null || true)
+    if [ -n "$postgres_password" ]; then
+        log_info "Using existing PostgreSQL password from Vault KV (warm start)"
+    else
+        # First boot: try to read from shared volume or container, then generate
+        if [ -f /run/secrets/postgres-password ] && [ -s /run/secrets/postgres-password ]; then
+            postgres_password=$(cat /run/secrets/postgres-password | tr -d '\n')
+            log_info "Read existing PostgreSQL password from shared volume"
+        fi
+        if [ -z "$postgres_password" ] && command -v podman >/dev/null 2>&1; then
+            postgres_password=$(podman exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+            [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
+        fi
+        if [ -z "$postgres_password" ] && command -v docker >/dev/null 2>&1; then
+            postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+            [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
+        fi
+        [ -z "$postgres_password" ] && postgres_password=$(generate_password 32)
     fi
-    if [ -z "$postgres_password" ] && command -v podman >/dev/null 2>&1; then
-        postgres_password=$(podman exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
-        [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
-    fi
-    if [ -z "$postgres_password" ] && command -v docker >/dev/null 2>&1; then
-        postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
-        [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
-    fi
-    [ -z "$postgres_password" ] && postgres_password=$(generate_password 32)
     store_bootstrap_password "postgres" "$postgres_password" "PostgreSQL admin/bootstrap password" "$admin_email" "$admin_user"
 
     for service in openwebui pgadmin grafana; do
@@ -411,6 +547,17 @@ init_bootstrap_passwords() {
             log_info "${service} bootstrap password already exists (skipping)"
         fi
     done
+
+    # Verify all four bootstrap passwords are readable in Vault KV before continuing
+    log_info "Verifying bootstrap password artefacts in Vault KV..."
+    check_artefact_kv "postgres password"  "bootstrap/postgres"  "password" || return 1
+    check_artefact_kv "postgres email"     "bootstrap/postgres"  "email"    || return 1
+    check_artefact_kv "postgres username"  "bootstrap/postgres"  "username" || return 1
+    check_artefact_kv "openwebui password" "bootstrap/openwebui" "password" || return 1
+    check_artefact_kv "pgadmin password"   "bootstrap/pgadmin"   "password" || return 1
+    check_artefact_kv "pgadmin email"      "bootstrap/pgadmin"   "email"    || return 1
+    check_artefact_kv "grafana password"   "bootstrap/grafana"   "password" || return 1
+
     log_info "Bootstrap passwords initialized"
 }
 
@@ -434,6 +581,12 @@ enable_database_engine() {
         log_error "Failed to enable database secrets engine"
         return 1
     }
+
+    # Verify database engine is actually present
+    if ! is_database_enabled; then
+        log_error "Database secrets engine not present after enable attempt"
+        return 1
+    fi
     log_info "Database secrets engine enabled"
 }
 
@@ -472,8 +625,9 @@ configure_postgres_connection() {
         postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
     fi
     if [ -z "$postgres_password" ]; then
-        log_warn "Could not retrieve PostgreSQL password; connection config may fail"
-        postgres_password="admin"
+        log_error "Could not retrieve PostgreSQL password from Vault KV or container"
+        log_error "  Bootstrap passwords must be written to Vault KV before configuring the DB engine"
+        return 1
     fi
 
     # Always (re)configure — idempotent POST updates credentials if already present.
@@ -492,7 +646,19 @@ configure_postgres_connection() {
         log_error "Failed to configure PostgreSQL connection"
         return 1
     }
+
+    # Verify the config was written and contains a connection_url
+    if ! is_postgres_configured; then
+        log_error "PostgreSQL database config not present in Vault after configuration attempt"
+        return 1
+    fi
     log_info "PostgreSQL connection configured"
+}
+
+role_exists() {
+    local role_name="$1"
+    curl -sf "${VAULT_ADDR}/v1/database/roles/${role_name}" \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" >/dev/null 2>&1
 }
 
 create_app_role() {
@@ -508,6 +674,8 @@ create_app_role() {
             "default_ttl": "1h",
             "max_ttl": "24h"
         }' >/dev/null 2>&1 || true
+
+    role_exists "aixcl-app" || { log_error "aixcl-app role not present after creation attempt"; return 1; }
 }
 
 create_admin_role() {
@@ -626,30 +794,6 @@ enable_audit_logging() {
         -d '{"type": "file", "options": {"file_path": "/vault/logs/audit.log"}}' >/dev/null 2>&1 || log_warn "Audit may already be enabled"
     log_info "Audit logs: /vault/logs/audit.log"
 }
-
-test_credentials() {
-    log_info "Testing credential generation..."
-    local creds
-    creds=$(curl -sf "${VAULT_ADDR}/v1/database/creds/aixcl-app" \
-        -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null || true)
-    if [ -z "$creds" ] || ! echo "$creds" | jq -e '.data' >/dev/null 2>&1; then
-        log_warn "Failed to generate test credentials (PostgreSQL may not be ready yet)"
-        return 0
-    fi
-    local username
-    username=$(echo "$creds" | jq -r '.data.username')
-    log_info "Generated test credentials successfully (username: ${username})"
-    # Revoke test credentials immediately
-    local lease_id
-    lease_id=$(echo "$creds" | jq -r '.lease_id // empty')
-    if [ -n "$lease_id" ]; then
-        curl -sf -X PUT "${VAULT_ADDR}/v1/sys/leases/revoke" \
-            -H "X-Vault-Token: ${VAULT_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"lease_id\": \"$lease_id\"}" >/dev/null 2>&1 || true
-    fi
-}
-
 show_summary() {
     log_info ""
     log_info "=========================================="
@@ -668,6 +812,11 @@ show_summary() {
     log_info "Unseal after restart: ./aixcl vault unseal  (done automatically by stack start)"
     log_info ""
 }
+
+# Refresh bootstrap agents so postgres can receive its Vault-derived password.
+# On scorched-start, bootstrap containers start without VAULT_TOKEN (vault not
+# yet initialised). After vault-init stores passwords in KV, this function
+# restarts the bootstrap containers with the real token so postgres can proceed.
 
 # ---------------------------------------------------------------------------
 # Main
@@ -690,13 +839,34 @@ main() {
         # First-time init: generate unseal keys and root token
         vault_operator_init || return 1
     else
-        log_info "Vault is already initialized — loading token and checking seal state..."
+        log_info "Vault is already initialized — verifying artefacts and checking seal state..."
+
+        # Verify .security/ artefacts exist before attempting to load the token
+        log_info "Checking .security/ artefacts..."
+        check_artefact_dir  ".security directory"  "$SECURITY_DIR"     "700" || {
+            log_error "  Run: ./aixcl vault init  to re-initialize"
+            return 1
+        }
+        check_artefact_file "vault-keys.gpg"       "$VAULT_KEYS_FILE"  "600" || {
+            log_error "  Unseal keys missing — Vault cannot be unsealed automatically"
+            log_error "  Run: ./aixcl vault init  to recover"
+            return 1
+        }
+        check_artefact_file "vault-root-token.gpg" "$VAULT_TOKEN_FILE" "600" || {
+            log_error "  Root token missing — attempting operator init to recover keys..."
+            vault_operator_init || return 1
+        }
+
         load_vault_token || return 1
         vault_unseal_if_needed || return 1
     fi
 
     # Confirm unsealed before proceeding
     wait_for_vault || return 1
+
+    # Verify the token we have actually authenticates against this Vault instance
+    log_info "Verifying Vault token..."
+    check_artefact_token || return 1
 
     # Configure secrets engines and roles (all idempotent)
     # NOTE: KV engine and bootstrap passwords must be set up first
@@ -705,16 +875,6 @@ main() {
     # NOTE: PostgreSQL must be ready before the database engine tries to connect.
     enable_kv_engine || return 1
     init_bootstrap_passwords || return 1
-    wait_for_postgres || return 1
-    enable_database_engine || return 1
-    configure_postgres_connection || return 1
-    create_app_role || return 1
-    create_admin_role || return 1
-    create_readonly_role || return 1
-    create_policies || return 1
-    enable_approle_auth || return 1
-    enable_audit_logging || return 1
-    test_credentials
 
     show_summary
     return 0

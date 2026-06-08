@@ -150,7 +150,7 @@ This skill is automatically invoked by:
 | Clean issue body | workflow-guard skill | Reject garbled body (backtick injection) |
 | Branch from dev | AGENTS.md | Reject branches from main |
 | Component labels required | DEVELOPMENT.md | Reject unlabeled PRs |
-| Assignee required         | DEVELOPMENT.md | Reject unassigned PRs |
+| Assignee required | DEVELOPMENT.md | Reject unassigned PRs |
 
 ## Self-Verification
 

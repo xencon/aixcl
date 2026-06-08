@@ -20,3 +20,6 @@ These files are canonical and loaded by all agents:
 - `CONTRIBUTING.md` -- External contributor guide
 - `SECURITY.md` -- Security policy
 
+## Multi-Agent CLI Support
+
+This repository supports both OpenCode and Claude Code agentic CLIs. Tool-specific configuration lives in `.opencode/` and `.claude/` respectively. Both tools share the same governance rules (Issue-First workflow, platform invariants) defined in `AGENTS.md` and `DEVELOPMENT.md`.

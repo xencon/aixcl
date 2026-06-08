@@ -39,39 +39,38 @@ _print_stopped_status() {
 function ensure_databases() {
     # Ensure required databases exist (webui)
     # This function is idempotent - it won't fail if databases already exist
-    # 
+    #
     # NOTE: PostgreSQL init scripts in scripts/db/init/ now create the database
     # on first container startup. This function serves as a fallback for:
     # - Edge cases where init scripts didn't run (e.g., volume already had data)
     # - Database recreation scenarios
     # - Manual database provisioning if needed
-    
+
     # Load environment variables if not already loaded
     if [ -z "${POSTGRES_USER:-}" ]; then
         if [ -f "${SCRIPT_DIR}/.env" ]; then
             load_env_file "${SCRIPT_DIR}/.env"
         fi
     fi
-    
+
     # Set defaults
     local pg_user
     pg_user="${POSTGRES_USER:-admin}"
     local webui_db
     webui_db="${POSTGRES_DATABASE:-webui}"
-    
+
     # Validate database names to prevent SQL injection
     if ! validate_db_name "$webui_db" "webui"; then
         echo "   Invalid webui database name, skipping database creation"
         return 1
     fi
-    
-    
+
     # Check if postgres container is running
     if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^postgres$"; then
         echo "   PostgreSQL container is not running, skipping database creation"
         return 0
     fi
-    
+
     # Wait for PostgreSQL to be ready
     local pg_ready
     pg_ready=false
@@ -97,8 +96,7 @@ function ensure_databases() {
         echo "Creating webui database: $webui_db"
         "${DOCKER_BIN:-docker}" exec -e PGPASSWORD="${POSTGRES_PASSWORD:-}" postgres psql -U "$pg_user" -d postgres -c "CREATE DATABASE \"$webui_db\";" >/dev/null 2>&1 || true
     fi
-    
-    
+
     # Remove unwanted "admin" database if it exists and is not the intended database
     # PostgreSQL may create an "admin" database when POSTGRES_USER=admin but POSTGRES_DATABASE is not set
     if [ "$webui_db" != "admin" ]; then
@@ -114,7 +112,6 @@ function init_stack() {
     echo "AIXCL Stack Initialisation"
     echo "=========================="
     echo ""
-
     local env_file="${SCRIPT_DIR}/.env"
     local env_example="${SCRIPT_DIR}/config/.env.example"
 
@@ -124,18 +121,60 @@ function init_stack() {
         return 1
     fi
 
-    # Create .env from example if not exists
+    # --- Step 1: Container engine setup ---
+    echo "Checking container engine..."
+    local setup_script="${SCRIPT_DIR}/scripts/utils/setup-podman-rootless.sh"
+    if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+        echo "Podman detected. Configuring rootless Podman..."
+        if [ -f "$setup_script" ]; then
+            bash "$setup_script" || {
+                echo "Warning: Podman setup encountered issues. Check output above."
+            }
+        fi
+        # Add alias and DOCKER_HOST to ~/.bashrc if not already present
+        local bashrc="${HOME}/.bashrc"
+        if ! grep -q "alias docker=podman" "$bashrc" 2>/dev/null; then
+            echo "alias docker=podman" >> "$bashrc"
+            echo "Added docker=podman alias to $bashrc"
+        fi
+        local podman_sock
+        podman_sock="unix:///run/user/$(id -u)/podman/podman.sock"
+        if ! grep -q "DOCKER_HOST" "$bashrc" 2>/dev/null; then
+            echo "export DOCKER_HOST=${podman_sock}" >> "$bashrc"
+            echo "Added DOCKER_HOST to $bashrc"
+        fi
+        # Ensure GPG_TTY is set for Vault unseal in current and future sessions
+        if ! grep -q "GPG_TTY" "$bashrc" 2>/dev/null; then
+            # shellcheck disable=SC2016
+            echo "export GPG_TTY=\$(tty)" >> "$bashrc"
+            echo "Added GPG_TTY to $bashrc"
+        fi
+        # Export for current session
+        export DOCKER_HOST="${podman_sock}"
+        echo "Container engine: Podman (rootless)"
+    elif command -v docker >/dev/null 2>&1; then
+        echo "Docker detected. Using Docker as container engine."
+        echo "Container engine: Docker"
+    else
+        echo "Error: No container engine found. Install Podman or Docker first."
+        echo "  Ubuntu/Debian: sudo apt-get install -y podman"
+        echo "  Fedora/RHEL:   sudo dnf install -y podman"
+        return 1
+    fi
+    echo ""
+
+    # --- Step 2: Create .env from example ---
     if [ ! -f "$env_file" ]; then
         if [ -f "$env_example" ]; then
             cp "$env_example" "$env_file"
-            echo "Created .env from .env.example"
+            echo "Created .env from config/.env.example"
         else
-            echo "Error: .env.example not found"
+            echo "Error: config/.env.example not found"
             return 1
         fi
     fi
 
-    # Create opencode.json from example if not exists
+    # --- Step 3: Create opencode.json from example ---
     local opencode_file="${SCRIPT_DIR}/opencode.json"
     local opencode_example="${SCRIPT_DIR}/config/opencode.json.example"
     if [ ! -f "$opencode_file" ]; then
@@ -147,11 +186,16 @@ function init_stack() {
         fi
     fi
 
-    # Load current values
-    load_env_file "$env_file"
-
-    # Prompt for username (no default)
+    # --- Step 4: Initialise external volumes ---
+    local vol_script="${SCRIPT_DIR}/scripts/utils/init-volumes.sh"
+    if [ -f "$vol_script" ]; then
+        echo "Initialising external volumes..."
+        bash "$vol_script" 2>&1 | grep -E "(Created:|Existing:|Error:|Summary)" || true
+    fi
     echo ""
+
+    # --- Step 5: Admin credentials ---
+    load_env_file "$env_file"
     while true; do
         read -r -p "Enter admin username: " AIXCL_ADMIN_USER
         if [ -n "$AIXCL_ADMIN_USER" ]; then
@@ -159,8 +203,6 @@ function init_stack() {
         fi
         echo "Username is required."
     done
-
-    # Prompt for email (no default)
     echo ""
     while true; do
         read -r -p "Enter admin email: " AIXCL_ADMIN_EMAIL
@@ -169,33 +211,40 @@ function init_stack() {
         fi
         echo "A valid email address is required."
     done
+
     # Set PostgreSQL defaults based on admin username
     local postgres_user="${AIXCL_ADMIN_USER}"
     local postgres_db="webui"
-
     # Update .env with non-sensitive config only
-    # NOTE: Admin identity (AIXCL_ADMIN_USER, AIXCL_ADMIN_EMAIL) is stored
-    # securely in .aixcl.initialized and Vault KV only — never in .env.
-    # pgAdmin, Open WebUI, and Grafana read their credentials from
-    # Vault bootstrap agents that populate /run/secrets/ from KV.
+    # NOTE: Admin identity is stored in .aixcl.initialized and Vault KV only -- never in .env.
     sed -i "s/^#\?POSTGRES_USER=.*/POSTGRES_USER=$postgres_user/" "$env_file"
     sed -i "s/^#\?POSTGRES_DATABASE=.*/POSTGRES_DATABASE=$postgres_db/" "$env_file"
-
-    echo ""
-    echo "Initialisation complete:"
-    echo "  Username: $AIXCL_ADMIN_USER"
-    echo "  Email: $AIXCL_ADMIN_EMAIL"
-    echo "  PostgreSQL user: $postgres_user"
-    echo "  PostgreSQL database: $postgres_db"
-    echo ""
 
     # Create initialized marker
     echo "username=$AIXCL_ADMIN_USER" > "${SCRIPT_DIR}/.aixcl.initialized"
     echo "email=$AIXCL_ADMIN_EMAIL" >> "${SCRIPT_DIR}/.aixcl.initialized"
     echo "created=$(date -Iseconds)" >> "${SCRIPT_DIR}/.aixcl.initialized"
 
+    echo ""
+    echo "Initialisation complete:"
+    echo "  Username: $AIXCL_ADMIN_USER"
+    echo "  Email:    $AIXCL_ADMIN_EMAIL"
+    echo "  PostgreSQL user:     $postgres_user"
+    echo "  PostgreSQL database: $postgres_db"
+    echo ""
+
+    # --- Step 6: Post-init notices ---
+    if ! gpg --list-secret-keys --keyid-format LONG 2>/dev/null | grep -q "^sec"; then
+        echo "Notice: No GPG key found. GPG signing is required for commits to main/dev."
+        echo "  Run: ./scripts/utils/setup-gpg.sh"
+        echo ""
+    fi
+
     echo "Credentials will be generated on first start."
-    echo "Run './aixcl stack start --profile sys' to begin."
+    echo "Next steps:"
+    echo "  source ~/.bashrc                        # Reload shell config"
+    echo "  ./aixcl stack start --profile sys       # Start the full stack"
+    echo "  ./aixcl utils bash-completion           # Install tab completion (optional)"
 }
 
 function ensure_nvidia_cdi() {
@@ -223,14 +272,50 @@ function ensure_nvidia_cdi() {
     fi
 }
 
+# ---------------------------------------------------------------------------
+# Decrypt the Vault root token from .security/ and export it.
+# Returns 1 and prints an error if the file is missing or decryption fails.
+# Must be called after vault-init.sh has run on the first boot.
+# ---------------------------------------------------------------------------
+_load_vault_token_for_stack() {
+    local token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
+
+    if [ ! -f "$token_file" ]; then
+        echo "[ ] Error: Vault token file not found: ${token_file}"
+        echo "   Vault may not have been initialised yet."
+        echo "   Run: ./aixcl vault init"
+        return 1
+    fi
+
+    # Ensure GPG_TTY is set so passphrase prompts work in non-interactive sessions
+    if [ -z "${GPG_TTY:-}" ]; then
+        GPG_TTY=$(tty 2>/dev/null || true)
+        export GPG_TTY
+    fi
+
+    local token
+    token=$(gpg --quiet --decrypt "$token_file" 2>/dev/null)
+    local gpg_exit=$?
+
+    if [ $gpg_exit -ne 0 ] || [ -z "$token" ]; then
+        echo "[ ] Error: Failed to decrypt Vault root token from ${token_file}"
+        echo "   Is your GPG key available?  Check: gpg --list-secret-keys"
+        echo "   Try: export GPG_TTY=\$(tty)"
+        return 1
+    fi
+
+    export VAULT_TOKEN="$token"
+    echo "Vault root token loaded from .security/"
+}
+
 function start() {
     local profile
     profile=""
     local profile_specified
     profile_specified=false
-    
+
     # Profile library is sourced at script startup (lib/cli/profile.sh)
-    
+
     # Parse arguments for profile
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -252,23 +337,23 @@ function start() {
                 ;;
         esac
     done
-    
+
     # If no profile specified via command line, try to get from .env file
     if [ "$profile_specified" = false ]; then
         local env_file="${SCRIPT_DIR}/.env"
-        
+
         # Load .env file to check for PROFILE variable
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
             local env_profile
             env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-            
+
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
                 echo "   Using profile from .env file: $profile"
             fi
         fi
-        
+
         # If still no profile, show available profiles and prompt
         if [ -z "$profile" ]; then
             # Ensure VALID_PROFILES is defined
@@ -277,7 +362,7 @@ function start() {
                 echo "   Expected profile library at: ${SCRIPT_DIR}/lib/cli/profile.sh" >&2
                 exit 1
             fi
-            
+
             echo "Available profiles:"
             echo "==================="
             echo ""
@@ -301,7 +386,7 @@ function start() {
             exit 0
         fi
     fi
-    
+
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "[ ] Error: Invalid profile: $profile" >&2
@@ -310,7 +395,7 @@ function start() {
         list_profiles
         exit 1
     fi
-    
+
     # Save profile to .env file if it was specified via command line (and differs from .env)
     if [ "$profile_specified" = true ]; then
         local env_file="${SCRIPT_DIR}/.env"
@@ -334,16 +419,16 @@ function start() {
             fi
         fi
     fi
-    
+
     echo "Starting services with profile: $profile"
     print_profile_info "$profile"
-    
+
     # Check for .env file and restore from backup or create from .env.example if missing
     # Use SCRIPT_DIR to ensure we're looking in the correct location
     local env_file="${SCRIPT_DIR}/.env"
     local env_example="${SCRIPT_DIR}/config/.env.example"
     local env_backup_volume="aixcl-env-backup"
-    
+
     # NEVER overwrite existing .env file (preserves user configuration)
     if [ -f "$env_file" ]; then
         echo "[x] Using existing .env file (preserving user configuration)"
@@ -387,14 +472,14 @@ function start() {
                 echo "   Backup volume exists but .env not found in backup, creating from .env.example..."
             fi
         fi
-        
+
         # If still no .env file, create from .env.example
         if [ ! -f "$env_file" ]; then
             if [ -f "$env_example" ]; then
                 echo "   .env file not found. Copying from .env.example..."
                 cp "$env_example" "$env_file"
                 echo "[x] Created .env file from .env.example"
-                
+
                 # If profile was specified via CLI, update .env to match
                 if [ "$profile_specified" = true ] && [ -n "$profile" ]; then
                     if grep -qE "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null; then
@@ -414,7 +499,7 @@ function start() {
                     fi
                     echo "   Updated PROFILE in .env to match CLI: $profile"
                 fi
-                
+
                 # Reload environment variables after creating .env file
                 load_env_file "$env_file"
             else
@@ -425,13 +510,13 @@ function start() {
             fi
         fi
     fi
-    
+
     # Check if llamacpp engine is selected and verify model exists
     # This prevents container restart loops when no model is configured
     if [ "${INFERENCE_ENGINE:-ollama}" = "llamacpp" ]; then
         echo "Checking llamacpp model configuration..."
         local llama_model="${INFERENCE_MODEL:-}"
-        
+
         if [ -z "$llama_model" ]; then
             echo "[ ] Error: No model configured for llamacpp engine"
             echo "   INFERENCE_MODEL is not set in .env file"
@@ -444,11 +529,11 @@ function start() {
             echo ""
             exit 1
         fi
-        
+
         # Check if model file exists in the llamacpp-data volume
         local model_basename
         model_basename=$(basename "$llama_model")
-        
+
         # Check if llamacpp-data volume exists (Docker named volume)
         if "${DOCKER_BIN:-docker}" volume ls --format "{{.Name}}" | grep -q "^services_llamacpp-data$"; then
             # Check if model exists in the Docker volume
@@ -463,10 +548,10 @@ function start() {
                 exit 1
             fi
         fi
-        
+
         echo "[x] Llamacpp model verified: ${model_basename}"
     fi
-    
+
     # Pre-create logs directory with correct ownership to prevent root-owned directories
     # Docker creates host directories for bind mounts using the container's user (root)
     # which causes permission issues. By pre-creating with current user, we avoid this.
@@ -479,11 +564,11 @@ function start() {
         chmod 755 "$logs_dir"
         echo "   Created logs directory"
     fi
-    
+
     # Get services for this profile
     local profile_services
     read -r -a profile_services <<< "$(get_profile_services "$profile")"
-    
+
     # Generate pgAdmin configuration if pgadmin is in the profile
     local has_pgadmin=false
     for service in "${profile_services[@]}"; do
@@ -492,11 +577,11 @@ function start() {
             break
         fi
     done
-    
+
     if [ "$has_pgadmin" = true ]; then
         generate_pgadmin_config
     fi
-    
+
     # Auto-configure NVIDIA CDI if GPU is present but CDI has no devices registered
     ensure_nvidia_cdi
 
@@ -511,12 +596,12 @@ function start() {
             break
         fi
     done
-    
+
     if [ "$core_running" = true ]; then
         echo "   Some services are already running. Use 'stop' first if you want to restart."
         exit 1
     fi
-    
+
     # Set profile-specific environment variables (per contract) BEFORE any docker-compose commands
     # All profiles use database storage (ENABLE_DB_STORAGE=true) for persistence
     # Export early to ensure it's available to all docker-compose commands (pull, build, up)
@@ -524,27 +609,23 @@ function start() {
     export ENABLE_DB_STORAGE
     echo "Setting ENABLE_DB_STORAGE=${ENABLE_DB_STORAGE} for profile: $profile"
 
-    # Inject Vault root token for bootstrap agents if a previous init has run.
-    # On first run the file won't exist; bootstrap agents will retry every 30s
-    # after vault-init.sh populates the KV store and recreates them below.
+    # On warm start (token file already exists from a previous init), pre-load the
+    # Vault token so bootstrap agents start with it from the first compose up.
+    # On first boot the file won't exist yet; bootstrap agents are excluded from the
+    # initial bring-up and started explicitly after vault-init runs below.
     local _vault_token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
     if [ -f "$_vault_token_file" ]; then
-        # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
-        if [ -z "${GPG_TTY:-}" ]; then
-            GPG_TTY=$(tty 2>/dev/null || true)
-            export GPG_TTY
-        fi
-        local _vault_token
-        _vault_token=$(gpg --quiet --decrypt "$_vault_token_file" 2>/dev/null) || true
-        if [ -n "${_vault_token:-}" ]; then
-            export VAULT_TOKEN="$_vault_token"
-            echo "Vault root token loaded from .security/ for bootstrap agents"
+        if _load_vault_token_for_stack; then
+            echo "Vault root token pre-loaded for warm start"
+        else
+            echo "Warning: Vault token could not be pre-loaded — bootstrap agents will start without token"
+            echo "  Run: ./aixcl vault unseal  if services fail to start"
         fi
     fi
 
     echo "Pulling latest images..."
-    run_compose pull
-    
+    run_compose pull "${profile_services[@]}"
+
     # Initialize external volumes if they don't exist
     # This ensures volumes are created before services try to use them
     if [ -f "${SCRIPT_DIR}/scripts/utils/init-volumes.sh" ]; then
@@ -556,10 +637,43 @@ function start() {
             echo "[x] All external volumes ready"
         fi
     fi
-    
+
+    # Vault bootstrap agents need the root token which only exists after vault-init
+    # runs. On first boot the token file does not exist yet, so we exclude bootstrap
+    # agents from the initial bring-up and start them explicitly after vault-init
+    # has run and the token is available. This eliminates the token-refresh cascade.
+    # All vault-dependent services are excluded from the initial bring-up.
+    # They are started explicitly after vault-init runs with the correct token.
+    local VAULT_BOOTSTRAP_AGENTS=(
+        vault-agent-postgres-bootstrap
+        vault-agent-openwebui-bootstrap
+        vault-agent-pgadmin-bootstrap
+        vault-agent-grafana-bootstrap
+        vault-agent-postgres
+        vault-agent-openwebui
+        postgres
+        open-webui
+        pgadmin
+        postgres-exporter
+        grafana
+    )
+    local non_bootstrap_services=()
+    for _svc in "${profile_services[@]}"; do
+        local _is_bootstrap=false
+        for _ba in "${VAULT_BOOTSTRAP_AGENTS[@]}"; do
+            if [ "$_svc" = "$_ba" ]; then
+                _is_bootstrap=true
+                break
+            fi
+        done
+        if [ "$_is_bootstrap" = false ]; then
+            non_bootstrap_services+=("$_svc")
+        fi
+    done
+
     echo "Starting services for profile: $profile..."
-    run_compose up -d "${profile_services[@]}"
-    
+    run_compose up -d "${non_bootstrap_services[@]}"
+
     echo "Waiting for runtime core services to be ready..."
     local max_attempts
     max_attempts=300  # 10 minutes
@@ -567,62 +681,31 @@ function start() {
     attempt=1
     local all_ready
     all_ready=false
-    
+
     while [ $attempt -le $max_attempts ]; do
         local engine_ready
         engine_ready=false
-        
+
         # Check Inference Engine (Ollama or OpenAI compatible API)
         if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/api/version 2>/dev/null | grep -q "200" || \
            curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:11434/v1/models 2>/dev/null | grep -q "200"; then
             engine_ready=true
         fi
-        
+
         if [ "$engine_ready" = true ]; then
             all_ready=true
             break
         fi
-        
+
         echo "Waiting for runtime core services to become available... ($attempt/$max_attempts)"
         sleep 2
         attempt=$((attempt + 1))
     done
-    
+
     if [ "$all_ready" = true ]; then
         echo "Runtime core services are up and running!"
-        
-        # For profiles that include postgres, wait for it too
-        local has_postgres=false
-        for service in "${profile_services[@]}"; do
-            if [ "$service" = "postgres" ]; then
-                has_postgres=true
-                break
-            fi
-        done
-        
-        if [ "$has_postgres" = true ]; then
-            echo "Waiting for PostgreSQL to be ready..."
-            local pg_attempt=1
-            local pg_ready=false
-            while [ $pg_attempt -le 60 ]; do  # 120 seconds
-                if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
-                    echo "PostgreSQL is ready!"
-                    pg_ready=true
-                    break
-                fi
-                echo "Waiting for PostgreSQL... ($pg_attempt/60)"
-                sleep 2
-                pg_attempt=$((pg_attempt + 1))
-            done
-            
-            # Ensure required databases exist
-            if [ "$pg_ready" = true ]; then
-                echo "Ensuring required databases exist..."
-                ensure_databases
-            fi
-        fi
-        
-        # Check if Vault is in the profile and prompt user to initialize
+
+        # Check if Vault is in the profile
         local has_vault=false
         for service in "${profile_services[@]}"; do
             if [ "$service" = "vault" ]; then
@@ -630,71 +713,228 @@ function start() {
                 break
             fi
         done
-        
+
         if [ "$has_vault" = true ]; then
             echo ""
             echo "Vault is running. Auto-initializing..."
             echo ""
-            
+
             local vault_init_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-init.sh"
             if [ -f "$vault_init_script" ]; then
-                # Run vault init directly — vault-init.sh waits for Vault internally
-                # and generates all bootstrap passwords itself. No pre-poll needed.
-                if bash "$vault_init_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]"; then
+                # Run vault-init.sh and capture output + exit code correctly.
+                # NOTE: do NOT pipe vault-init.sh through grep here — a pipe runs
+                # the script in a subshell, losing its exit code and any exports.
+                # Instead, tee to a temp file and grep the file for display.
+                local _vault_init_log
+                _vault_init_log=$(mktemp)
+                local _vault_init_exit=0
+
+                bash "$vault_init_script" > "$_vault_init_log" 2>&1 || _vault_init_exit=$?
+
+                # Display filtered output (INFO/WARN/ERROR lines)
+                grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" "$_vault_init_log" || true
+                rm -f "$_vault_init_log"
+
+                if [ "$_vault_init_exit" -ne 0 ]; then
                     echo ""
-                    echo "Vault initialization complete."
-                else
+                    echo "[ ] Error: Vault initialization failed (exit code ${_vault_init_exit})."
+                    echo "   Run manually for full output: ./aixcl vault init"
                     echo ""
-                    echo "Vault initialization encountered issues. Run manually:"
-                    echo "  ./aixcl vault init"
+                    # Do not proceed — bootstrap agents will have no token
+                    exit 1
                 fi
-                
-                # Recreate bootstrap agents so they start with the correct token.
-                # On the very first init, VAULT_TOKEN was unknown at compose-up time;
-                # now that vault-init.sh has encrypted it to .security/, we reload it
-                # and force-recreate the bootstrap containers with the real token.
-                local _vault_token_file_post="${SCRIPT_DIR}/.security/vault-root-token.gpg"
-                if [ -f "$_vault_token_file_post" ]; then
-                    # Ensure GPG_TTY is set so passphrase prompts work in SSH sessions
-                    if [ -z "${GPG_TTY:-}" ]; then
-                        GPG_TTY=$(tty 2>/dev/null || true)
-                        export GPG_TTY
+
+                echo ""
+                echo "Vault initialization complete."
+
+                # Decrypt the token vault-init just wrote.
+                # This is the authoritative token delivery path for bootstrap agents.
+                # _load_vault_token_for_stack exports VAULT_TOKEN into this process,
+                # which run_compose then passes into containers via VAULT_TOKEN: ${VAULT_TOKEN:-}
+                # in docker-compose.yml.
+                if ! _load_vault_token_for_stack; then
+                    echo "[ ] Error: Could not load Vault token after init — bootstrap agents cannot start."
+                    echo "   Run: ./aixcl vault init"
+                    exit 1
+                fi
+
+                # Start bootstrap agents with the real token now exported
+                echo ""
+                echo "Starting Vault bootstrap agents..."
+                local _vtoken="${VAULT_TOKEN}"
+                local _bin="${DOCKER_BIN:-podman}"
+                # Force-recreate bootstrap agents with explicit VAULT_TOKEN.
+                # podman-compose 1.0.6 does not interpolate exported shell variables
+                # into compose environment blocks — pass the token directly via podman run.
+                "$_bin" run -d --replace --name vault-agent-postgres-bootstrap --restart unless-stopped \
+                    --network host \
+                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
+                    --tmpfs /vault/file:noexec,nosuid,size=1m \
+                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
+                    --env VAULT_ADDR=http://127.0.0.1:8200 \
+                    --env "VAULT_TOKEN=${_vtoken}" \
+                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-postgres.sh:/usr/local/bin/bootstrap-password-postgres.sh:ro" \
+                    -v aixcl-vault-secrets:/run/secrets \
+                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-postgres.sh
+                "$_bin" run -d --replace --name vault-agent-openwebui-bootstrap --restart unless-stopped \
+                    --network host \
+                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
+                    --tmpfs /vault/file:noexec,nosuid,size=1m \
+                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
+                    --env VAULT_ADDR=http://127.0.0.1:8200 \
+                    --env "VAULT_TOKEN=${_vtoken}" \
+                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-openwebui.sh:/usr/local/bin/bootstrap-password-openwebui.sh:ro" \
+                    -v aixcl-vault-secrets:/run/secrets \
+                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-openwebui.sh
+                "$_bin" run -d --replace --name vault-agent-pgadmin-bootstrap --restart unless-stopped \
+                    --network host \
+                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
+                    --tmpfs /vault/file:noexec,nosuid,size=1m \
+                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
+                    --env VAULT_ADDR=http://127.0.0.1:8200 \
+                    --env "VAULT_TOKEN=${_vtoken}" \
+                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-pgadmin.sh:/usr/local/bin/bootstrap-password-pgadmin.sh:ro" \
+                    -v aixcl-vault-secrets:/run/secrets \
+                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-pgadmin.sh
+                "$_bin" run -d --replace --name vault-agent-grafana-bootstrap --restart unless-stopped \
+                    --network host \
+                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
+                    --tmpfs /vault/file:noexec,nosuid,size=1m \
+                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
+                    --env VAULT_ADDR=http://127.0.0.1:8200 \
+                    --env "VAULT_TOKEN=${_vtoken}" \
+                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro" \
+                    -v aixcl-vault-secrets:/run/secrets \
+                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-grafana.sh
+                # Start non-bootstrap vault agents via compose
+                run_compose up -d --no-deps \
+                    vault-agent-postgres \
+                    vault-agent-openwebui 2>/dev/null || true
+
+                # Wait for postgres-password to appear in the shared secrets volume
+                echo "Waiting for bootstrap secrets to be written..."
+                local _docker_bin="${DOCKER_BIN:-docker}"
+                local _bs_ready=false
+                for _i in $(seq 1 60); do
+                    local _pw
+                    _pw=$("$_docker_bin" run --rm \
+                        -v aixcl-vault-secrets:/s \
+                        docker.io/hashicorp/vault:1.18 \
+                        sh -c "cat /s/postgres-password 2>/dev/null" 2>/dev/null || true)
+                    if [ -n "$_pw" ]; then
+                        echo "Bootstrap secrets ready."
+                        _bs_ready=true
+                        break
                     fi
-                    local _vtoken
-                    _vtoken=$(gpg --quiet --decrypt "$_vault_token_file_post" 2>/dev/null) || true
-                    if [ -n "${_vtoken:-}" ]; then
-                        export VAULT_TOKEN="$_vtoken"
+                    echo "Waiting for bootstrap secrets... ($_i/60)"
+                    sleep 2
+                done
+
+                if [ "$_bs_ready" = false ]; then
+                    echo "[ ] Error: Bootstrap secrets not written after 120 seconds."
+                    echo "   Check bootstrap agent logs:"
+                    echo "     ${_docker_bin} logs vault-agent-postgres-bootstrap"
+                    exit 1
+                fi
+
+                # Start postgres and remaining dependent services now that secrets exist
+                echo "Starting dependent services (postgres, open-webui, etc)..."
+                run_compose up -d --no-deps \
+                    postgres 2>/dev/null || true
+
+                # Wait for PostgreSQL to be ready before starting its dependents
+                local has_postgres=false
+                for service in "${profile_services[@]}"; do
+                    if [ "$service" = "postgres" ]; then
+                        has_postgres=true
+                        break
+                    fi
+                done
+
+                if [ "$has_postgres" = true ]; then
+                    echo "Waiting for PostgreSQL to be ready..."
+                    local pg_attempt=1
+                    local pg_ready=false
+                    while [ $pg_attempt -le 60 ]; do  # 120 seconds
+                        if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+                            echo "PostgreSQL is ready!"
+                            pg_ready=true
+                            break
+                        fi
+                        echo "Waiting for PostgreSQL... ($pg_attempt/60)"
+                        sleep 2
+                        pg_attempt=$((pg_attempt + 1))
+                    done
+
+                    if [ "$pg_ready" = true ]; then
+                        echo "Ensuring required databases exist..."
+                        ensure_databases
                         echo ""
-                        echo "Refreshing bootstrap agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
-                            vault-agent-postgres-bootstrap \
-                            vault-agent-openwebui-bootstrap \
-                            vault-agent-pgadmin-bootstrap \
-                            vault-agent-grafana-bootstrap 2>/dev/null || true
-                        echo ""
-                        echo "Refreshing non-bootstrap vault agents with vault token..."
-                        run_compose up -d --force-recreate --no-deps \
-                            vault-agent-postgres \
-                            vault-agent-openwebui 2>/dev/null || true
+                        echo "Configuring Vault database engine (phase 2)..."
+                        bash "$vault_init_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" || true
                     fi
                 fi
 
+                # Unseal Vault after phase 2 — file storage backend restarts once
+                # more after operator init completes, leaving Vault sealed again.
+                # vault-unseal.sh is idempotent: no-op if already unsealed.
+                local vault_unseal_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-unseal.sh"
+                if [ -f "$vault_unseal_script" ]; then
+                    echo ""
+                    echo "Unsealing Vault after init cycle..."
+                    bash "$vault_unseal_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" || true
+                fi
+
+                # Start remaining dependent services
+                run_compose up -d --no-deps \
+                    open-webui postgres-exporter grafana pgadmin 2>/dev/null || true
                 # Show current passwords
                 echo ""
                 echo "Retrieving bootstrap passwords..."
                 echo ""
                 bash "${SCRIPT_DIR}/scripts/vault/vault-commands.sh" passwords 2>/dev/null || echo "  Run './aixcl vault passwords' to view"
+
             else
                 echo ""
                 echo "Vault initialization script not found. Run manually:"
                 echo "  ./aixcl vault init"
                 echo ""
             fi
-            
+
             echo ""
             echo "Check status with:"
             echo "  ./aixcl vault status"
             echo ""
+        else
+            # No vault in profile — start postgres and dependents normally
+            local has_postgres=false
+            for service in "${profile_services[@]}"; do
+                if [ "$service" = "postgres" ]; then
+                    has_postgres=true
+                    break
+                fi
+            done
+
+            if [ "$has_postgres" = true ]; then
+                echo "Waiting for PostgreSQL to be ready..."
+                local pg_attempt=1
+                local pg_ready=false
+                while [ $pg_attempt -le 60 ]; do
+                    if timeout 2 "${DOCKER_BIN:-docker}" exec postgres pg_isready -U "${POSTGRES_USER:-admin}" >/dev/null 2>&1; then
+                        echo "PostgreSQL is ready!"
+                        pg_ready=true
+                        break
+                    fi
+                    echo "Waiting for PostgreSQL... ($pg_attempt/60)"
+                    sleep 2
+                    pg_attempt=$((pg_attempt + 1))
+                done
+
+                if [ "$pg_ready" = true ]; then
+                    echo "Ensuring required databases exist..."
+                    ensure_databases
+                fi
+            fi
         fi
 
         # Wait for all services to pass their health checks before printing final status.
@@ -713,19 +953,39 @@ function start() {
             hw_attempt=$((hw_attempt + 1))
         done
         echo ""
-
+        echo "Stack start complete. Waiting for all services to settle..."
+        echo ""
+        # Wait for Vault to finish its file storage startup cycle and unseal
+        local vault_settle=0
+        local vault_settle_max=60
+        while [ $vault_settle -lt $vault_settle_max ]; do
+            local vault_sealed
+            vault_sealed=$(curl -s http://127.0.0.1:8200/v1/sys/seal-status 2>/dev/null | grep -c '"sealed":true' || true)
+            if [ "${vault_sealed:-1}" -eq 0 ]; then
+                break
+            fi
+            # Vault still sealed — attempt unseal
+            local vault_unseal_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-unseal.sh"
+            if [ -f "$vault_unseal_script" ]; then
+                bash "$vault_unseal_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" || true
+            fi
+            printf "  Waiting for Vault to settle... (%ds/%ds)\r" "$((vault_settle * 5))" "$((vault_settle_max * 5))"
+            sleep 5
+            vault_settle=$((vault_settle + 1))
+        done
+        echo ""
         status
         return 0
     else
         echo "[ ] Error: Runtime core services did not start properly within timeout period"
-        status
+        echo "Check logs: ./aixcl stack logs"
         exit 1
     fi
 }
 
 function stop() {
     [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Stopping Docker Compose deployment..."
-    
+
     # Get current profile from .env file
     local profile=""
     local env_file="${SCRIPT_DIR}/.env"
@@ -733,10 +993,10 @@ function stop() {
         profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
     [ -z "$profile" ] && profile="sys"
-    
+
     # Set up compose command with GPU detection
     set_compose_cmd
-    
+
     # Join ALL_SERVICES with | for grep
     local all_services_pattern
     all_services_pattern=$(IFS="|"; echo "${ALL_SERVICES[*]}")
@@ -744,11 +1004,11 @@ function stop() {
         _print_stopped_status "$profile"
         return 0
     fi
-    
+
     echo "Stopping services gracefully..."
     # Allow down to fail (containers may not exist) - we check status after
     run_compose down --remove-orphans || true
-    
+
     echo "Waiting for containers to stop..."
     for i in {1..30}; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
@@ -758,11 +1018,11 @@ function stop() {
         echo "Waiting for services to stop... ($i/15)"
         sleep 2
     done
-    
+
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
     run_compose down --remove-orphans -v
     "${DOCKER_BIN:-docker}" ps -q | xargs -r "${DOCKER_BIN:-docker}" stop
-    
+
     _print_stopped_status "$profile"
 
     # Clean up pgAdmin configuration file for security
@@ -777,9 +1037,9 @@ function restart() {
     profile=""
     local profile_specified
     profile_specified=false
-    
+
     # Profile library is sourced at script startup (lib/cli/profile.sh)
-    
+
     # Parse arguments for profile and service names
     local service_names=()
     while [[ $# -gt 0 ]]; do
@@ -802,14 +1062,14 @@ function restart() {
                 ;;
         esac
     done
-    
+
     # Check if remaining args are service names (not profile flags)
     # If they are valid service names, treat them as services to restart
     if [ ${#service_names[@]} -gt 0 ]; then
         # Source common library for service validation
         # shellcheck disable=SC1091
         source "${SCRIPT_DIR}/lib/core/common.sh"
-        
+
         # Check if any remaining args are valid service names
         for arg in "${service_names[@]}"; do
             # Resolve 'engine' alias to active INFERENCE_ENGINE
@@ -824,7 +1084,7 @@ function restart() {
                 echo "   Warning: '$arg' is not a valid service name, ignoring" >&2
             fi
         done
-        
+
         # If we found valid service names, restart only those services
         if [ ${#service_names[@]} -gt 0 ]; then
             echo "Restarting specific services: ${service_names[*]}"
@@ -839,24 +1099,24 @@ function restart() {
             return 0
         fi
     fi
-    
+
     # If no profile specified via command line, try to get from .env file
     if [ "$profile_specified" = false ]; then
         local env_file
         env_file="${SCRIPT_DIR}/.env"
-        
+
         # Load .env file to check for PROFILE variable
         if [ -f "$env_file" ]; then
             # Read PROFILE from .env file
             local env_profile
             env_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-            
+
             if [ -n "$env_profile" ]; then
                 profile="$env_profile"
                 echo "   Using profile from .env file: $profile"
             fi
         fi
-        
+
         # If still no profile, show error
         if [ -z "$profile" ]; then
             echo "[ ] Error: Profile is required for restart command" >&2
@@ -888,7 +1148,7 @@ function restart() {
             exit 1
         fi
     fi
-    
+
     # Validate profile
     if ! is_valid_profile "$profile"; then
         echo "[ ] Error: Invalid profile: $profile" >&2
@@ -897,7 +1157,7 @@ function restart() {
         list_profiles
         exit 1
     fi
-    
+
     # Save profile to .env file if it was specified via command line (and differs from .env)
     if [ "$profile_specified" = true ]; then
         local env_file="${SCRIPT_DIR}/.env"
@@ -921,7 +1181,7 @@ function restart() {
             fi
         fi
     fi
-    
+
     echo "Restarting services with profile: $profile..."
     stop
     sleep 5
@@ -943,10 +1203,10 @@ function start_service() {
         log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
-    
+
     local service="$1"
     local force_recreate="${2:-false}"
-    
+
     # Validate service name
     if ! is_valid_service "$service"; then
         echo "[ ] Error: Unknown service '$service'"
@@ -957,7 +1217,7 @@ function start_service() {
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
-    
+
     # Delegate to shared utility
     container_start "$service" "$force_recreate"
 }
@@ -973,9 +1233,9 @@ function stop_service() {
         log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
-    
+
     local service="$1"
-    
+
     # Validate service name
     if ! is_valid_service "$service"; then
         echo "[ ] Error: Unknown service '$service'"
@@ -986,7 +1246,7 @@ function stop_service() {
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
-    
+
     # Delegate to shared utility
     container_stop "$service"
 }
@@ -1003,18 +1263,18 @@ function service() {
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
-    
+
     local action="$1"
     local service="$2"
     shift 2
-    
+
     # Check for extra arguments
     if [ $# -gt 0 ]; then
         echo "Error: Unknown argument '$1'"
         echo "Usage: $0 service {start|stop|restart} <service-name>"
         return 1
     fi
-    
+
     case "$action" in
         start)
             start_service "$service"
@@ -1024,17 +1284,17 @@ function service() {
             ;;
         restart)
             echo "Restarting service: $service..."
-            
+
             # Set up compose command early
             set_compose_cmd
-            
+
             # Check if service needs rebuild
             if needs_rebuild "$service"; then
                 echo "   Source code changes detected. Rebuilding $service..."
-                
+
                 # Stop and remove the service completely to avoid ContainerConfig errors
                 stop_service "$service" 2>/dev/null || true
-                
+
                 # Force remove any existing containers (including hash-prefixed ones)
                 echo "Removing existing containers for clean rebuild..."
                 local container_name
@@ -1042,7 +1302,7 @@ function service() {
                 "${DOCKER_BIN:-docker}" rm -f "$container_name" 2>/dev/null || true
                 # Remove any hash-prefixed containers
                 "${DOCKER_BIN:-docker}" ps -a --format "{{.ID}} {{.Names}}" 2>/dev/null | grep -E "_${container_name}$|^[0-9a-f]+_${container_name}$" | awk '{print $1}' | xargs -r "${DOCKER_BIN:-docker}" rm -f 2>/dev/null || true
-                
+
                 # Rebuild the service
                 echo "Building $service..."
                 if run_compose build "$service"; then
@@ -1051,7 +1311,7 @@ function service() {
                     echo "[ ] Failed to rebuild $service"
                     return 1
                 fi
-                
+
                 # Start with force recreate after rebuild
                 start_service "$service" "true"
             else
@@ -1190,16 +1450,16 @@ function logs() {
 function status() {
     # Detect container runtime (Podman vs Docker) before any container invocations
     set_compose_cmd
-    
+
     # Profile library is sourced at script startup (lib/cli/profile.sh)
-    
+
     # Get current profile from .env file
     local current_profile=""
     local env_file="${SCRIPT_DIR}/.env"
     if [ -f "$env_file" ]; then
         current_profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
-    
+
     # Determine overall status (Running/Stopped)
     local overall_status="Stopped"
     # Join ALL_SERVICES with | for grep
@@ -1208,11 +1468,11 @@ function status() {
     if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
         overall_status="Running"
     fi
-    
+
     # Health counters
     total_services=0
     healthy_services=0
-    
+
     # Build list of operational service names for current profile (exclude runtime core)
     local profile_operational_list=""
     if [ -n "$current_profile" ] && is_valid_profile "$current_profile" 2>/dev/null; then
@@ -1228,7 +1488,7 @@ function status() {
     fi
     operational_enabled_count=0
     for s in $profile_operational_list; do ((operational_enabled_count++)) || true; done
-    
+
     # Helper: return 0 if service name is in current profile's operational services
     is_operational_in_profile() {
         local service_name="$1"
@@ -1238,7 +1498,7 @@ function status() {
             *) return 1 ;;
         esac
     }
-    
+
     # Helper function to check both container status and health
     # Returns: 0=healthy, 1=unhealthy, 2=stopped
     # health_check_type can be: "curl" (with URL), "pg_isready" (with username), "status_var" (with variable name), or empty (no health check)
@@ -1248,13 +1508,12 @@ function status() {
         local health_check_type="$3"
         local health_check_arg="$4"
 
-        
         # Check container status
         local container_running=false
         if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
             container_running=true
         fi
-        
+
         # Check health (only if container is running)
         local health_status=""
         local health_result=""
@@ -1317,10 +1576,10 @@ function status() {
         if [ "$is_healthy" = "true" ]; then
             ((healthy_services++)) || true
         fi
-        
+
         echo "  ${display_status} ${service_name}${health_status}"
     }
-    
+
     # Helper: check operational service only if in current profile; otherwise show SKIP (per 03_stack_status.md)
     check_operational_service() {
         local display_name="$1"
@@ -1333,12 +1592,12 @@ function status() {
         fi
         check_service_status "$display_name" "$container_name" "$health_check_type" "$health_check_arg"
     }
-    
+
     # Header section
     echo "AIXCL Stack Status"
     echo "=================="
     echo ""
-    
+
     if [ -n "$current_profile" ] && is_valid_profile "$current_profile" 2>/dev/null; then
         echo "Profile: $current_profile"
     else
@@ -1346,7 +1605,7 @@ function status() {
     fi
     echo "Status: $overall_status"
     echo ""
-    
+
     # Services section
     echo "Services"
     echo "--------------------------------------------------"
@@ -1356,7 +1615,7 @@ function status() {
     echo "Runtime Core"
     local active_engine
     active_engine="${INFERENCE_ENGINE:-ollama}"
-    
+
     # Define engines and their health check URLs
     local engines=("ollama" "vllm" "llamacpp")
     local names=("Ollama" "vLLM" "llama.cpp")
@@ -1369,35 +1628,35 @@ function status() {
     for i in "${!engines[@]}"; do
         local engine
         engine="${engines[$i]}"
-        
+
         # Only show the active engine (the one that SHOULD be running in the current profile)
         if [ "$engine" != "$active_engine" ]; then
             continue
         fi
-        
+
         local name
         name="${names[$i]}"
         local url
         url="${urls[$i]}"
         local suffix=""
-        
+
         if [ "$engine" = "$active_engine" ]; then
             suffix=" (Active Engine)"
         fi
-        
+
         check_service_status "$name$suffix" "$engine" "curl" "$url"
     done
-    
+
     echo ""
 
     # Operational Services
     echo "Operational Services"
-    
+
     # Security
     # shellcheck disable=SC2034
     VAULT_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8200/v1/sys/health 2>/dev/null || echo "000")
     check_operational_service "Vault" "vault" "vault" "status_var" "VAULT_STATUS"
-    
+
     # UI
     check_operational_service "Open WebUI" "open-webui" "open-webui" "curl" "http://127.0.0.1:8080/health"
 
