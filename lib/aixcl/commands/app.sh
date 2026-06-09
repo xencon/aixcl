@@ -937,16 +937,17 @@ EOF
     echo "  [x] Generated Prometheus targets for ${app_name}"
 }
 
-# Symlink or copy Grafana dashboards into platform provisioning
+# Copy Grafana dashboards from app into platform provisioning
 _app_wire_grafana() {
     local app_name="${1:-}"
     local app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
 
     if [ -d "${app_dir}/grafana/dashboards" ]; then
-        # Create a symlink for provisioning discovery
-        # Dashboards under this path are auto-discovered by Grafana's file provider
-        ln -sf "${app_dir}/grafana/dashboards" "$platform_dash"
+        # Copy dashboard JSON files so Grafana sees them inside the container
+        # (symlinks break across bind mounts with absolute paths)
+        mkdir -p "$platform_dash"
+        cp -f "${app_dir}"/grafana/dashboards/*.json "$platform_dash/" 2>/dev/null || true
     fi
 }
 
