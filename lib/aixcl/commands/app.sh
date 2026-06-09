@@ -70,7 +70,7 @@ _app_compose_cmd() {
     local compose_file="${app_dir}/docker-compose.yml"
 
     if [ ! -f "$compose_file" ]; then
-        echo "[ ] Missing ${compose_file}" >&2
+        echo "❌ Missing ${compose_file}" >&2
         return 1
     fi
 
@@ -83,7 +83,7 @@ _app_compose_cmd() {
     elif command -v podman-compose >/dev/null 2>&1; then
         cmd=(podman-compose -f "$compose_file" -p "aixcl-${app_name}")
     else
-        echo "[ ] No compose tool found" >&2
+        echo "❌ No compose tool found" >&2
         return 1
     fi
 
@@ -238,7 +238,7 @@ app_cmd_start() {
     _app_ensure_compose
 
     if ! _app_load_manifest "$app_name"; then
-        echo "[ ] Failed to load manifest for app: ${app_name}" >&2
+        echo "❌ Failed to load manifest for app: ${app_name}" >&2
         return 1
     fi
 
@@ -254,7 +254,7 @@ app_cmd_start() {
     local svc_count
     svc_count="$(_app_service_count)"
     if [ "$svc_count" -eq 0 ]; then
-        echo "  [ ] No services defined in manifest." >&2
+        echo "  ❌ No services defined in manifest." >&2
         return 1
     fi
 
@@ -264,7 +264,7 @@ app_cmd_start() {
         svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
         svc_container="$(_app_service_container_name $i)"
         if [ -z "$svc_name" ] || [ -z "$svc_container" ]; then
-            echo "  [ ] Service ${i} has no name or container_name" >&2
+            echo "  ❌ Service ${i} has no name or container_name" >&2
             continue
         fi
 
@@ -281,12 +281,12 @@ app_cmd_start() {
                     local df
                     df="$(_app_service_build_dockerfile "$i")"
                     if "${DOCKER_BIN:-docker}" build -f "${abs_ctx}/${df}" -t "localhost/${svc_container}:latest" "$abs_ctx" >/dev/null 2>&1; then
-                        echo "    [x] ${svc_name} built"
+                        echo "    ✅ ${svc_name} built"
                     else
-                        echo "    [ ] ${svc_name} build failed (non-fatal; compose up may pull instead)" >&2
+                        echo "    ❌ ${svc_name} build failed (non-fatal; compose up may pull instead)" >&2
                     fi
                 else
-                    echo "  [ ] Build context not found: ${abs_ctx}" >&2
+                    echo "  ❌ Build context not found: ${abs_ctx}" >&2
                 fi
             fi
         fi
@@ -294,7 +294,7 @@ app_cmd_start() {
         # Start the service
         echo "  Starting ${svc_name}..."
         _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" 2>/dev/null || {
-            echo "  [ ] Failed to start ${svc_name}" >&2
+            echo "  ❌ Failed to start ${svc_name}" >&2
             return 1
         }
 
@@ -322,17 +322,17 @@ app_cmd_start() {
                 printf " ."
             done
             if [ "$wait_ok" = true ]; then
-                echo " ${ICON_SUCCESS:-OK}"
+                echo " ${ICON_SUCCESS:-✅}"
             else
-                echo " ${ICON_ERROR:-ERR} (timed out after ${timeout}s)"
+                echo " ${ICON_ERROR:-❌} (timed out after ${timeout}s)"
             fi
         else
             # No health URL — just check if container is running
             sleep 2
             if _app_container_running "$svc_container"; then
-                echo "  ${ICON_SUCCESS:-OK} ${svc_name} running"
+                echo "  ${ICON_SUCCESS:-✅} ${svc_name} running"
             else
-                echo "  ${ICON_ERROR:-ERR} ${svc_container} not running" >&2
+                echo "  ${ICON_ERROR:-❌} ${svc_container} not running" >&2
                 # Allow manual retry; warn only
             fi
         fi
@@ -350,7 +350,7 @@ app_cmd_start() {
     fi
 
     echo ""
-    echo "[x] Started ${started} service(s) for app: ${app_name}"
+    echo "✅ Started ${started} service(s) for app: ${app_name}"
 }
 
 # Usage: app_cmd stop <name>
@@ -396,7 +396,7 @@ app_cmd_stop() {
         rm -f "$prom_file"
     fi
 
-    echo "  [x] Stopped ${stopped} service(s)."
+    echo "  ✅ Stopped ${stopped} service(s)."
 }
 
 # Usage: app_cmd restart <name>
@@ -406,7 +406,6 @@ app_cmd_restart() {
 }
 
 # Usage: app_cmd status <name>
-# Optional: support `./aixcl app status` (no arg) to show all apps later
 app_cmd_status() {
     local app_name="${1:-}"
     if [ -z "$app_name" ]; then
@@ -419,36 +418,70 @@ app_cmd_status() {
         return 1
     fi
 
+    local overall_status="Running"
+    local total_services=0
+    local healthy_services=0
+
     echo ""
-    echo "Application: ${app_name}"
-    echo "  Version: ${APP_VERSION:-unknown}"
-    echo "  Services:"
+    echo "${app_name^^} Application Status"
+    echo "=============================="
+    echo ""
+    echo "App: ${app_name}"
+    echo "Status: ${overall_status}"
+    echo ""
+    echo "Services"
+    echo "--------------------------------------------------"
+    echo ""
 
     local svc_count
     svc_count="$(_app_service_count)"
     for i in $(seq 0 "$((svc_count - 1))"); do
-        local svc_container status_icon note
+        local svc_name svc_container htype hurl display_status health_status is_healthy
+        svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
         svc_container="$(_app_service_container_name "$i")"
+        [ -z "$svc_container" ] && continue
+
+        display_status="${ICON_ERROR:-❌}"
+        is_healthy=false
+
         if _app_container_running "$svc_container"; then
-            local htype hurl
             htype="$(_app_service_healthcheck_type "$i")"
             hurl="$(_app_service_healthcheck_url "$i")"
             if [ -n "$htype" ] && [ "$htype" != "container_running" ] && [ -n "$hurl" ]; then
                 if _app_http_ok "$hurl"; then
-                    status_icon="${ICON_SUCCESS:-OK}"
+                    display_status="${ICON_SUCCESS:-✅}"
+                    is_healthy=true
                 else
-                    status_icon="${ICON_WARNING:-WARN}"
-                    note=" (starting)"
+                    display_status="${ICON_WARNING:-⚠️}"
+                    health_status=" (starting up)"
                 fi
             else
-                status_icon="${ICON_SUCCESS:-OK}"
+                display_status="${ICON_SUCCESS:-✅}"
+                is_healthy=true
             fi
         else
-            status_icon="${ICON_ERROR:-ERR}"
-            note=" (stopped)"
+            health_status=" (stopped)"
         fi
-        echo "    ${status_icon} ${svc_container}${note:-}"
+
+        total_services=$((total_services + 1))
+        if [ "$is_healthy" = "true" ]; then
+            healthy_services=$((healthy_services + 1))
+        fi
+
+        echo "  ${display_status} ${svc_name}${health_status}"
     done
+
+    echo ""
+    if [ "$total_services" -gt 0 ]; then
+        echo "Services: ${healthy_services}/${total_services} healthy"
+        if [ "$healthy_services" -eq "$total_services" ]; then
+            echo "Overall:  ${ICON_SUCCESS:-✅} All services healthy"
+        else
+            echo "Overall:  ${ICON_ERROR:-❌} Some services unhealthy"
+        fi
+    else
+        echo "Overall:  ${ICON_WARNING:-⚠️} No services running"
+    fi
     echo ""
 }
 
@@ -486,20 +519,20 @@ app_cmd_build() {
                     if "${DOCKER_BIN:-docker}" build -f "${abs_ctx}/${df}" \
                           -t "localhost/${svc_container}:latest" \
                           "$abs_ctx"; then
-                        echo "    [x] Built ${svc_name}"
+                        echo "    ✅ Built ${svc_name}"
                         built=$((built + 1))
                     else
-                        echo "    [ ] Build failed for ${svc_name}" >&2
+                        echo "    ❌ Build failed for ${svc_name}" >&2
                         return 1
                     fi
                 else
-                    echo "  [ ] Build context missing: ${abs_ctx}" >&2
+                    echo "  ❌ Build context missing: ${abs_ctx}" >&2
                 fi
             fi
         fi
     done
     echo ""
-    echo "[x] Built ${built} service(s)."
+    echo "✅ Built ${built} service(s)."
 }
 
 # ── Remove Application ───────────────────────────────────────────────────────────
@@ -542,7 +575,7 @@ app_cmd_remove() {
         if _app_container_exists "$svc_container"; then
             echo "  Removing container ${svc_container} ..."
             if "${DOCKER_BIN:-docker}" rm -f "$svc_container" 2>/dev/null; then
-                echo "    [x] Removed by name"
+                echo "    ✅ Removed by name"
                 removed=$((removed + 1))
                 continue
             fi
@@ -552,16 +585,16 @@ app_cmd_remove() {
             cid="$(_app_container_id "$svc_container")"
             if [ -n "$cid" ]; then
                 if "${DOCKER_BIN:-docker}" rm -f "$cid" 2>/dev/null; then
-                    echo "    [x] Removed by ID (${cid:0:12})"
+                    echo "    ✅ Removed by ID (${cid:0:12})"
                     removed=$((removed + 1))
                     continue
                 fi
             fi
 
-            echo "    [ ] Failed to remove ${svc_container}. Manual cleanup required:"
+            echo "    ❌ Failed to remove ${svc_container}. Manual cleanup required:"
             echo "        docker rm -f ${svc_container}"
         else
-            echo "    [ ] Container ${svc_container} does not exist (already cleaned)"
+            echo "    ❌ Container ${svc_container} does not exist (already cleaned)"
         fi
     done
 
@@ -576,10 +609,10 @@ app_cmd_remove() {
             [ -z "$orphan_name" ] && continue
             echo "    Removing orphan: ${orphan_name} ..."
             if "${DOCKER_BIN:-docker}" rm -f "$orphan_name" 2>/dev/null; then
-                echo "      [x] Removed"
+                echo "      ✅ Removed"
                 removed=$((removed + 1))
             else
-                echo "      [ ] Failed (manual: docker rm -f ${orphan_name})"
+                echo "      ❌ Failed (manual: docker rm -f ${orphan_name})"
             fi
         done <<< "$orphan"
     fi
@@ -610,7 +643,7 @@ app_cmd_remove() {
     "${DOCKER_BIN:-docker}" image prune -f 2>/dev/null || true
 
     echo ""
-    echo "[x] Removed ${removed} container(s)."
+    echo "✅ Removed ${removed} container(s)."
     echo ""
     echo "NOTE: Source code in apps/${app_name}/ was NOT deleted."
     echo "      Run: rm -rf apps/${app_name}  to delete permanently."
@@ -812,10 +845,10 @@ app_cmd_install() {
     # Add as submodule
     local submodule_path="${app_dir}/provider"
     if ! git submodule add -b "$branch" "$git_url" "$submodule_path" 2>/dev/null; then
-        echo "  [ ] git submodule add failed (already tracked or URL invalid)" >&2
+        echo "  ❌ git submodule add failed (already tracked or URL invalid)" >&2
         # Fallback: clone directly if submodule add fails (e.g. shallow history issue)
         git clone --depth=1 --branch "$branch" "$git_url" "$submodule_path" 2>/dev/null || {
-            echo "  [ ] Clone failed for ${git_url}" >&2
+            echo "  ❌ Clone failed for ${git_url}" >&2
             rm -rf "$app_dir"
             return 1
         }
@@ -868,7 +901,7 @@ EOF
     mkdir -p "${app_dir}/prometheus" "${app_dir}/grafana/dashboards"
 
     echo ""
-    echo "[x] Installation complete: ${app_dir}/"
+    echo "✅ Installation complete: ${app_dir}/"
     echo ""
     echo "Next steps:"
     echo "  1. Edit ${app_dir}/app.yaml to define your services"
@@ -946,7 +979,7 @@ _app_generate_prometheus_targets() {
 ]
 EOF
 
-    echo "  [x] Generated Prometheus targets for ${app_name}"
+    echo "  ✅ Generated Prometheus targets for ${app_name}"
 }
 
 # Copy Grafana dashboards from app into platform provisioning
