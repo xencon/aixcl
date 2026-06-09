@@ -63,7 +63,7 @@ _app_ensure_compose() {
 # Build a compose command for a specific app directory.
 # Usage: _app_compose_cmd "ftso" up -d
 _app_compose_cmd() {
-    local app_name="$1"
+    local app_name="${1:-}"
     shift
     local app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local compose_file="${app_dir}/docker-compose.yml"
@@ -214,7 +214,7 @@ app_cmd_list() {
 # Usage: app_cmd start <name>
 # Start all services for an app in manifest order with dependency waits
 app_cmd_start() {
-    local app_name="$1"
+    local app_name="${1:-}"
     if [ -z "$app_name" ]; then
         echo "Error: app name required." >&2
         _app_usage >&2
@@ -309,17 +309,17 @@ app_cmd_start() {
                 printf " ."
             done
             if [ "$wait_ok" = true ]; then
-                echo " ${ICON_SUCCESS:-✅}"
+                echo " ${ICON_SUCCESS:-OK}"
             else
-                echo " ${ICON_ERROR:-❌} (timed out after ${timeout}s)"
+                echo " ${ICON_ERROR:-ERR} (timed out after ${timeout}s)"
             fi
         else
             # No health URL — just check if container is running
             sleep 2
             if _app_container_running "$svc_container"; then
-                echo "  ${ICON_SUCCESS:-✅} ${svc_name} running"
+                echo "  ${ICON_SUCCESS:-OK} ${svc_name} running"
             else
-                echo "  ${ICON_ERROR:-❌} ${svc_container} not running" >&2
+                echo "  ${ICON_ERROR:-ERR} ${svc_container} not running" >&2
                 # Allow manual retry; warn only
             fi
         fi
@@ -342,9 +342,10 @@ app_cmd_start() {
 
 # Usage: app_cmd stop <name>
 app_cmd_stop() {
-    local app_name="$1"
+    local app_name="${1:-}"
     if [ -z "$app_name" ]; then
         echo "Error: app name required." >&2
+        _app_usage >&2
         return 1
     fi
 
@@ -387,14 +388,14 @@ app_cmd_stop() {
 
 # Usage: app_cmd restart <name>
 app_cmd_restart() {
-    local app_name="$1"
+    local app_name="${1:-}"
     app_cmd_stop "$app_name" && app_cmd_start "$app_name"
 }
 
 # Usage: app_cmd status <name>
 # Optional: support `./aixcl app status` (no arg) to show all apps later
 app_cmd_status() {
-    local app_name="$1"
+    local app_name="${1:-}"
     if [ -z "$app_name" ]; then
         echo "Error: app name required." >&2
         return 1
@@ -421,16 +422,16 @@ app_cmd_status() {
             hurl="$(_app_service_healthcheck_url "$i")"
             if [ -n "$htype" ] && [ "$htype" != "container_running" ] && [ -n "$hurl" ]; then
                 if _app_http_ok "$hurl"; then
-                    status_icon="${ICON_SUCCESS:-✅}"
+                    status_icon="${ICON_SUCCESS:-OK}"
                 else
-                    status_icon="${ICON_WARNING:-⚠️}"
+                    status_icon="${ICON_WARNING:-WARN}"
                     note=" (starting)"
                 fi
             else
-                status_icon="${ICON_SUCCESS:-✅}"
+                status_icon="${ICON_SUCCESS:-OK}"
             fi
         else
-            status_icon="${ICON_ERROR:-❌}"
+            status_icon="${ICON_ERROR:-ERR}"
             note=" (stopped)"
         fi
         echo "    ${status_icon} ${svc_container}${note:-}"
@@ -441,7 +442,7 @@ app_cmd_status() {
 # Usage: app_cmd build <name>
 # Builds all services with built: true
 app_cmd_build() {
-    local app_name="$1"
+    local app_name="${1:-}"
     if [ -z "$app_name" ]; then
         echo "Error: app name required." >&2
         return 1
@@ -493,7 +494,7 @@ app_cmd_build() {
 # Usage: app_cmd_scaffold <name>
 # Generates a new app skeleton in apps/<name>/
 app_cmd_scaffold() {
-    local app_name="$1"
+    local app_name="${1:-}"
     if [ -z "$app_name" ]; then
         echo "Error: app name required." >&2
         echo "Usage: ./aixcl app scaffold <name>" >&2
@@ -752,7 +753,7 @@ EOF
 
 # Copy Prometheus target JSON from app manifest to platform discovery dir
 _app_wire_prometheus() {
-    local app_name="$1"
+    local app_name="${1:-}"
     local app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_sd="${SCRIPT_DIR}/prometheus/file_sd"
 
@@ -771,7 +772,7 @@ _app_wire_prometheus() {
 
 # Symlink or copy Grafana dashboards into platform provisioning
 _app_wire_grafana() {
-    local app_name="$1"
+    local app_name="${1:-}"
     local app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
 
