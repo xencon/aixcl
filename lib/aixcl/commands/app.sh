@@ -39,6 +39,7 @@ Actions:
   restart <name>                 Restart an app's services
   status  <name>                 Show status of an app's services
   build   <name>                 Build containers for an app (built: true)
+  remove  <name>                 Stop, rm containers, and prune images
   scaffold <name>                Generate a new app skeleton from template
   install <git-url> [--name <n>] [--branch <b>]
                                 Clone a builder repo as submodule and scaffold
@@ -489,6 +490,77 @@ app_cmd_build() {
     echo "[x] Built ${built} service(s)."
 }
 
+# ── Remove Application ───────────────────────────────────────────────────────────
+
+# Usage: app_cmd_remove <name>
+# Stops containers, removes them (docker rm -f), and wipes local image caches.
+# Does NOT delete the app source directory — caller must do that manually.
+app_cmd_remove() {
+    local app_name="${1:-}"
+    if [ -z "$app_name" ]; then
+        echo "Error: app name required." >&2
+        _app_usage >&2
+        return 1
+    fi
+
+    _app_ensure_parser
+    if ! _app_load_manifest "$app_name"; then
+        return 1
+    fi
+
+    echo ""
+    echo "Removing Application: ${app_name}"
+    echo "========================"
+    echo ""
+
+    # 1. Stop and remove each container by name
+    local svc_count removed=0
+    svc_count="$(_app_service_count)"
+    for i in $(seq 0 "$((svc_count - 1))"); do
+        local svc_container
+        svc_container="$(_app_service_container_name "$i")"
+        [ -z "$svc_container" ] && continue
+
+        if _app_container_running "$svc_container"; then
+            echo "  Stopping ${svc_container} ..."
+            _app_compose_cmd "$app_name" stop "$svc_container" 2>/dev/null || true
+        fi
+
+        echo "  Removing container ${svc_container} ..."
+        if "${DOCKER_BIN:-docker}" rm -f "$svc_container" 2>/dev/null; then
+            echo "    [x] Removed"
+            removed=$((removed + 1))
+        else
+            echo "    [ ] Container not found (already cleaned)"
+        fi
+    done
+
+    # 2. Remove Prometheus file_sd if present
+    local prom_file="${SCRIPT_DIR}/prometheus/file_sd/${app_name}.json"
+    if [ -f "$prom_file" ]; then
+        rm -f "$prom_file"
+        echo "  Removed Prometheus target file"
+    fi
+
+    # 3. Remove Grafana symlink if present
+    local grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
+    if [ -L "$grafana_dash" ]; then
+        rm -f "$grafana_dash"
+        echo "  Removed Grafana symlink"
+    fi
+
+    # 4. Clean dangling images (optional)
+    echo ""
+    echo "Cleaning dangling images..."
+    "${DOCKER_BIN:-docker}" image prune -f 2>/dev/null || true
+
+    echo ""
+    echo "[x] Removed ${removed} container(s)."
+    echo ""
+    echo "NOTE: Source code in apps/${app_name}/ was NOT deleted."
+    echo "      Run: rm -rf apps/${app_name}  to delete permanently."
+}
+
 # ── Scaffolding ────────────────────────────────────────────────────────────────
 
 # Usage: app_cmd_scaffold <name>
@@ -814,6 +886,9 @@ app_cmd() {
             ;;
         build)
             app_cmd_build "$@"
+            ;;
+        remove)
+            app_cmd_remove "$@"
             ;;
         scaffold)
             app_cmd_scaffold "$@"

@@ -205,7 +205,7 @@ _aixcl_complete() {
             return 0
             ;;
         'app')
-            local app_actions="list start stop restart status build scaffold install help"
+            local app_actions="list start stop restart status build remove scaffold install help"
             mapfile -t COMPREPLY < <(compgen -W "$app_actions" -- "$cur")
             return 0
             ;;
@@ -248,7 +248,7 @@ _aixcl_complete() {
             ;;
         'help')
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                mapfile -t COMPREPLY < <(compgen -W "list start stop restart status build scaffold install" -- "$cur")
+                mapfile -t COMPREPLY < <(compgen -W "list start stop restart status build remove scaffold install" -- "$cur")
                 return 0
             fi
             ;;
