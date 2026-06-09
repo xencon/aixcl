@@ -906,9 +906,7 @@ _app_generate_prometheus_targets() {
 
     # Collect labels
     local labels=""
-    # Common labels: app name
-    labels="\"app\": \"${app_name}\""
-    # Additional labels from manifest
+    # Start with manifest labels (which already include 'app: ftso')
     local label_keys
     label_keys="$(env | grep "^APP_PROMETHEUS_LABELS_" | sed 's/^APP_PROMETHEUS_LABELS_//' | sed 's/=.*//' | sort -u)"
     if [ -n "$label_keys" ]; then
@@ -918,6 +916,14 @@ _app_generate_prometheus_targets() {
             val="$(eval "echo \${APP_PROMETHEUS_LABELS_${key}:-}" 2>/dev/null || true)"
             [ -n "$val" ] && labels="${labels}, \"$(echo "$key" | tr '[:upper:]' '[:lower:]' | tr '_' '-')\": \"${val}\""
         done <<< "$label_keys"
+    fi
+
+    # Fallback: if no labels at all, add app name
+    if [ -z "$labels" ]; then
+        labels="\"app\": \"${app_name}\""
+    else
+        # Remove leading comma
+        labels="${labels#, }"
     fi
 
     # Build JSON
