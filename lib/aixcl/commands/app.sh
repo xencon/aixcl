@@ -339,9 +339,9 @@ app_cmd_start() {
         started=$((started + 1))
     done
 
-    # Wire Prometheus file_sd if enabled
-    if [ "${APP_PROMETHEUS_ENABLED:-}" = "True" ] || [ "${APP_PROMETHEUS_ENABLED:-}" = "true" ] || [ "${APP_PROMETHEUS_ENABLED:-}" = "1" ]; then
-        _app_wire_prometheus "$app_name"
+    # Wire Prometheus file_sd if enabled or targets are defined
+    if [ "${APP_PROMETHEUS_ENABLED:-}" = "True" ] || [ "${APP_PROMETHEUS_ENABLED:-}" = "true" ] || [ "${APP_PROMETHEUS_ENABLED:-}" = "1" ] || [ -n "${APP_PROMETHEUS_TARGETS_0:-}" ]; then
+        _app_generate_prometheus_targets "$app_name"
     fi
 
     # Wire Grafana dashboards if enabled
@@ -872,23 +872,69 @@ EOF
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
 
-# Copy Prometheus target JSON from app manifest to platform discovery dir
-_app_wire_prometheus() {
+# Generate Prometheus target JSON from manifest variables
+_app_generate_prometheus_targets() {
     local app_name="${1:-}"
     local app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_sd="${SCRIPT_DIR}/prometheus/file_sd"
 
     mkdir -p "$platform_sd"
 
-    # If app provides a static JSON, copy it; otherwise generate from manifest
+    # Check if static file is provided first
     if [ -f "${app_dir}/prometheus/target.json" ]; then
         cp "${app_dir}/prometheus/target.json" "${platform_sd}/${app_name}.json"
-    else
-        # Generate from manifest variables (requires manifest loaded)
-        # The required logic would build a JSON array from APP_PROMETHEUS_FILE_SD_*
-        # For MVP, we recommend apps provide prometheus/target.json
-        echo "  Note: Add ${app_dir}/prometheus/target.json for Prometheus auto-discovery." >&2
+        return 0
     fi
+
+    # Auto-generate from manifest variables (APP_PROMETHEUS_TARGETS_*, APP_PROMETHEUS_LABELS_*)
+    local targets=()
+    local i=0
+    while true; do
+        local t
+        t="$(eval "echo \${APP_PROMETHEUS_TARGETS_${i}:-}" 2>/dev/null || true)"
+        if [ -z "$t" ]; then
+            break
+        fi
+        targets+=("\"$t\"")
+        i=$((i + 1))
+    done
+
+    if [ ${#targets[@]} -eq 0 ]; then
+        echo "  Note: No Prometheus targets configured in manifest." >&2
+        return 0
+    fi
+
+    # Collect labels
+    local labels=""
+    # Common labels: app name
+    labels="\"app\": \"${app_name}\""
+    # Additional labels from manifest
+    local label_keys
+    label_keys="$(env | grep "^APP_PROMETHEUS_LABELS_" | sed 's/^APP_PROMETHEUS_LABELS_//' | sed 's/=.*//' | sort -u)"
+    if [ -n "$label_keys" ]; then
+        while IFS= read -r key; do
+            [ -z "$key" ] && continue
+            local val
+            val="$(eval "echo \${APP_PROMETHEUS_LABELS_${key}:-}" 2>/dev/null || true)"
+            [ -n "$val" ] && labels="${labels}, \"$(echo "$key" | tr '[:upper:]' '[:lower:]' | tr '_' '-')\": \"${val}\""
+        done <<< "$label_keys"
+    fi
+
+    # Build JSON
+    local target_list
+    target_list="$(printf '%s, ' "${targets[@]}")"
+    target_list="${target_list%, }"
+
+    cat > "${platform_sd}/${app_name}.json" << EOF
+[
+  {
+    "targets": [${target_list}],
+    "labels": {${labels}}
+  }
+]
+EOF
+
+    echo "  [x] Generated Prometheus targets for ${app_name}"
 }
 
 # Symlink or copy Grafana dashboards into platform provisioning
