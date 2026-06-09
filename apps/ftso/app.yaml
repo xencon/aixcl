@@ -53,10 +53,8 @@ services:
     ports:
       - "9103:9103"
     healthcheck:
-      type: http
-      url: "http://127.0.0.1:9103/metrics"
-      startup_timeout: 120
-      interval: 10
+      type: container_running
+      startup_timeout: 30
     depends_on: ["ftso-price-monitor"]
 
 prometheus:
