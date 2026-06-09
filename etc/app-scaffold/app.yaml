@@ -1,0 +1,42 @@
+# AIXCL Application Manifest
+# This file defines metadata, services, and integration points for an application.
+# Place this file in apps/<name>/app.yaml alongside docker-compose.yml.
+
+app:
+  name: "example-app"
+  version: "0.1.0"
+  description: "Example AIXCL application scaffold"
+  repository: "https://github.com/owner/example-app"
+
+# Services that run as Docker containers (appended to platform compose)
+services:
+  - name: "example-service"
+    image: "example-app:latest"
+    build:
+      context: "provider"
+      dockerfile: "Dockerfile"
+    ports:
+      - "9000:9000"
+    environment:
+      - "EXAMPLE_VAR=default"
+    depends_on:
+      - "ollama"
+
+# Prometheus scrape targets for this application
+prometheus:
+  targets:
+    - "localhost:9000"
+  labels:
+    app: "example-app"
+    job: "example-service"
+
+# Grafana dashboard provisioning (optional)
+grafana:
+  dashboards:
+    - "grafana/dashboards/example-dashboard.json"
+
+# Git submodules for builder code
+submodules:
+  - path: "provider"
+    url: "https://github.com/owner/example-app.git"
+    branch: "main"

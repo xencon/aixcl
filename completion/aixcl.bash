@@ -41,7 +41,9 @@ _aixcl_complete() {
     cword=$COMP_CWORD
     
     # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
-    local commands="stack service models engine utils vault help restart"
+    local commands="app stack service models engine utils vault help restart"
+
+    # Application service names are discovered dynamically from apps/*/app.yaml
     
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
@@ -98,6 +100,19 @@ _aixcl_complete() {
                 mapfile -t COMPREPLY < <(compgen -W "--profile -p" -- "$cur")
                 return 0
             fi
+            # If previous word was 'app', complete with app names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names=""
+                for app_dir in apps/*/; do
+                    if [ -f "${app_dir}/app.yaml" ]; then
+                        app_names+=" $(basename "$app_dir")"
+                    fi
+                done
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
             ;;
         'restart')
             # If previous word was 'service', complete with service names
@@ -111,11 +126,37 @@ _aixcl_complete() {
                 mapfile -t COMPREPLY < <(compgen -W "--profile -p" -- "$cur")
                 return 0
             fi
+            # If previous word was 'app', complete with app names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names=""
+                for app_dir in apps/*/; do
+                    if [ -f "${app_dir}/app.yaml" ]; then
+                        app_names+=" $(basename "$app_dir")"
+                    fi
+                done
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
             ;;
         'stop')
             # If previous word was 'service', complete with service names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "service" ]]; then
                 mapfile -t COMPREPLY < <(compgen -W "$services" -- "$cur")
+                return 0
+            fi
+            # If previous word was 'app', complete with app names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names=""
+                for app_dir in apps/*/; do
+                    if [ -f "${app_dir}/app.yaml" ]; then
+                        app_names+=" $(basename "$app_dir")"
+                    fi
+                done
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
                 return 0
             fi
             ;;
@@ -163,7 +204,54 @@ _aixcl_complete() {
             mapfile -t COMPREPLY < <(compgen -W "$vault_actions" -- "$cur")
             return 0
             ;;
-
+        'app')
+            local app_actions="list start stop restart status build remove scaffold install help"
+            mapfile -t COMPREPLY < <(compgen -W "$app_actions" -- "$cur")
+            return 0
+            ;;
+        'status')
+            # If previous word was 'app', complete with available app names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names=""
+                for app_dir in apps/*/; do
+                    if [ -f "${app_dir}/app.yaml" ]; then
+                        app_names+=" $(basename "$app_dir")"
+                    fi
+                done
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
+        'build')
+            # If previous word was 'app', complete with available app names
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names=""
+                for app_dir in apps/*/; do
+                    if [ -f "${app_dir}/app.yaml" ]; then
+                        app_names+=" $(basename "$app_dir")"
+                    fi
+                done
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
+        'install'|'scaffold')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                # No completions: user must type the URL or name
+                COMPREPLY=()
+                return 0
+            fi
+            ;;
+        'help')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                mapfile -t COMPREPLY < <(compgen -W "list start stop restart status build remove scaffold install" -- "$cur")
+                return 0
+            fi
+            ;;
 
         'add'|'remove')
             # If previous word was 'models', complete with available models
