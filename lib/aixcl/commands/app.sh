@@ -591,11 +591,17 @@ app_cmd_remove() {
         echo "  Removed Prometheus target file"
     fi
 
-    # 3. Remove Grafana symlink if present
-    local grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
-    if [ -L "$grafana_dash" ]; then
-        rm -f "$grafana_dash"
-        echo "  Removed Grafana symlink"
+    # 3. Remove Grafana dashboard files if present
+    local grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/${app_name}"
+    if [ -d "$grafana_dash" ]; then
+        rm -rf "$grafana_dash"
+        echo "  Removed Grafana dashboards"
+    fi
+
+    # 3a. Clean up old symlink path (backward compatibility)
+    local old_grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
+    if [ -L "$old_grafana_dash" ] || [ -d "$old_grafana_dash" ]; then
+        rm -rf "$old_grafana_dash"
     fi
 
     # 4. Clean dangling images (optional)
@@ -947,11 +953,11 @@ EOF
 _app_wire_grafana() {
     local app_name="${1:-}"
     local app_dir="${SCRIPT_DIR}/apps/${app_name}"
-    local platform_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
+    local platform_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/${app_name}"
 
     if [ -d "${app_dir}/grafana/dashboards" ]; then
-        # Copy dashboard JSON files so Grafana sees them inside the container
-        # (symlinks break across bind mounts with absolute paths)
+        # Copy dashboard JSON files into dedicated apps/ subdirectory
+        # This avoids UID collisions with AIXCL platform dashboards
         mkdir -p "$platform_dash"
         cp -f "${app_dir}"/grafana/dashboards/*.json "$platform_dash/" 2>/dev/null || true
     fi
