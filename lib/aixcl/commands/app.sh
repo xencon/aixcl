@@ -442,6 +442,7 @@ app_cmd_status() {
         [ -z "$svc_container" ] && continue
 
         display_status="${ICON_ERROR:-❌}"
+        health_status=""
         is_healthy=false
 
         if _app_container_running "$svc_container"; then
