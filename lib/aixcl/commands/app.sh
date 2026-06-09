@@ -87,7 +87,35 @@ _app_compose_cmd() {
         return 1
     fi
 
-    (cd "$app_dir" && "${cmd[@]}" "$@" 2>&1)
+    (cd "$app_dir" && "${cmd[@]}" "$@" 2>&1) | \
+    awk '
+        /^[[:space:]]*-[ev][[:space:]]/ { next }
+        /^[[:space:]]*--/ { next }
+        /^[[:space:]]*\{/ { next }
+        /^[[:space:]]*\}/ { next }
+        /^[[:space:]]*\[/ { next }
+        /^[[:space:]]*\]/ { next }
+        /^[[:space:]]*"/ { next }
+        /^[[:space:]]*\x27/ { next }
+        /^[[:space:]]*,[[:space:]]*$/ { next }
+        /^[[:space:]]*\}[,[:space:]]*$/ { next }
+        /^[[:space:]]*\][,[:space:]]*$/ { next }
+        /^\*\* / { next }
+        /^podman run/ { next }
+        /^\[.podman/ { next }
+        /^exit code:/ { next }
+        /^podman volume/ { next }
+        /^\*\* merged:/ { next }
+        /^\*\* excluding:/ { next }
+        /^recreating:/ { next }
+        /^podman-compose version:/ { next }
+        /^using podman version:/ { next }
+        /^Container / { next }
+        /^\[\+/ { next }
+        /^ ✔/ { next }
+        /^ ✘/ { next }
+        { print }
+    '
     return ${PIPESTATUS[0]:-0}
 }
 
@@ -260,7 +288,7 @@ app_cmd_start() {
 
     local started=0
     for i in $(seq 0 "$((svc_count - 1))"); do
-        local svc_name svc_container build_ctx health_type
+        local svc_name svc_container health_type
         svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
         svc_container="$(_app_service_container_name $i)"
         if [ -z "$svc_name" ] || [ -z "$svc_container" ]; then
@@ -291,10 +319,9 @@ app_cmd_start() {
             fi
         fi
 
-        # Start the service
-        echo "  Starting ${svc_name}..."
-        _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" 2>/dev/null || {
-            echo "  ❌ Failed to start ${svc_name}" >&2
+        # Start the service silently, then print single status line
+        _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" >/dev/null 2>&1 || {
+            echo "  ❌ ${svc_name}" >&2
             return 1
         }
 
@@ -307,7 +334,6 @@ app_cmd_start() {
             url="$(_app_service_healthcheck_url "$i")"
             wait_inter="$(_app_service_healthcheck_interval "$i")"
             wait_start=$(date +%s)
-            echo -n "  Waiting for ${svc_name}..."
             local wait_ok=false
             while true; do
                 if _app_http_ok "$url"; then
@@ -319,21 +345,19 @@ app_cmd_start() {
                     break
                 fi
                 sleep "$wait_inter"
-                printf " ."
             done
             if [ "$wait_ok" = true ]; then
-                echo " ${ICON_SUCCESS:-✅}"
+                echo "  ✅ ${svc_name}"
             else
-                echo " ${ICON_ERROR:-❌} (timed out after ${timeout}s)"
+                echo "  ⚠️ ${svc_name} (starting up)"
             fi
         else
             # No health URL — just check if container is running
             sleep 2
             if _app_container_running "$svc_container"; then
-                echo "  ${ICON_SUCCESS:-✅} ${svc_name} running"
+                echo "  ✅ ${svc_name}"
             else
-                echo "  ${ICON_ERROR:-❌} ${svc_container} not running" >&2
-                # Allow manual retry; warn only
+                echo "  ❌ ${svc_name}" >&2
             fi
         fi
         started=$((started + 1))
@@ -350,7 +374,6 @@ app_cmd_start() {
     fi
 
     echo ""
-    echo "✅ Started ${started} service(s) for app: ${app_name}"
 }
 
 # Usage: app_cmd stop <name>
@@ -377,7 +400,6 @@ app_cmd_stop() {
     fi
 
     # Stop in reverse order
-    local stopped=0
     for i in $(seq "$((svc_count - 1))" -1 0); do
         local svc_container
         svc_container="$(_app_service_container_name "$i")"
@@ -385,8 +407,11 @@ app_cmd_stop() {
             continue
         fi
         if _app_container_running "$svc_container"; then
-            _app_compose_cmd "$app_name" stop "$svc_container" 2>/dev/null || true
-            stopped=$((stopped + 1))
+            if _app_compose_cmd "$app_name" stop "$svc_container" >/dev/null 2>&1; then
+                echo "  ✅ ${svc_container}"
+            else
+                echo "  ❌ ${svc_container}" >&2
+            fi
         fi
     done
 
@@ -395,8 +420,6 @@ app_cmd_stop() {
     if [ -f "$prom_file" ]; then
         rm -f "$prom_file"
     fi
-
-    echo "  ✅ Stopped ${stopped} service(s)."
 }
 
 # Usage: app_cmd restart <name>
@@ -533,7 +556,6 @@ app_cmd_build() {
         fi
     done
     echo ""
-    echo "✅ Built ${built} service(s)."
 }
 
 # ── Remove Application ───────────────────────────────────────────────────────────
@@ -560,7 +582,7 @@ app_cmd_remove() {
     echo ""
 
     # 1. Stop and remove each container by name (running or stopped)
-    local svc_count removed=0
+    local svc_count removed=0 failed=0
     svc_count="$(_app_service_count)"
     for i in $(seq 0 "$((svc_count - 1))"); do
         local svc_container
@@ -568,79 +590,70 @@ app_cmd_remove() {
         [ -z "$svc_container" ] && continue
 
         if _app_container_running "$svc_container"; then
-            echo "  Stopping ${svc_container} ..."
-            _app_compose_cmd "$app_name" stop "$svc_container" 2>/dev/null || true
+            _app_compose_cmd "$app_name" stop "$svc_container" >/dev/null 2>&1 || true
         fi
 
+        local removed_ok=false
         # Attempt 1: remove by exact name
         if _app_container_exists "$svc_container"; then
-            echo "  Removing container ${svc_container} ..."
-            if "${DOCKER_BIN:-docker}" rm -f "$svc_container" 2>/dev/null; then
-                echo "    ✅ Removed by name"
-                removed=$((removed + 1))
-                continue
-            fi
-
-            # Attempt 2: remove by container ID (handles project ownership mismatch)
-            local cid
-            cid="$(_app_container_id "$svc_container")"
-            if [ -n "$cid" ]; then
-                if "${DOCKER_BIN:-docker}" rm -f "$cid" 2>/dev/null; then
-                    echo "    ✅ Removed by ID (${cid:0:12})"
-                    removed=$((removed + 1))
-                    continue
+            if "${DOCKER_BIN:-docker}" rm -f "$svc_container" >/dev/null 2>&1; then
+                removed_ok=true
+            else
+                # Attempt 2: remove by container ID
+                local cid
+                cid="$(_app_container_id "$svc_container")"
+                if [ -n "$cid" ]; then
+                    if "${DOCKER_BIN:-docker}" rm -f "$cid" >/dev/null 2>&1; then
+                        removed_ok=true
+                    fi
                 fi
             fi
+        fi
 
-            echo "    ❌ Failed to remove ${svc_container}. Manual cleanup required:"
-            echo "        docker rm -f ${svc_container}"
+        if [ "$removed_ok" = true ]; then
+            echo "  ✅ ${svc_container}"
+            removed=$((removed + 1))
         else
-            echo "    ❌ Container ${svc_container} does not exist (already cleaned)"
+            echo "  ❌ ${svc_container}"
+            failed=$((failed + 1))
         fi
     done
 
     # 2. Safety sweep: remove any containers matching the app prefix
-    #    (catches orphans from old platform-level compose runs)
     local orphan
     orphan=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${app_name}[-_]|^dd-${app_name}[-_]" || true)
     if [ -n "$orphan" ]; then
-        echo ""
-        echo "  Removing orphaned containers ..."
         while IFS= read -r orphan_name; do
             [ -z "$orphan_name" ] && continue
-            echo "    Removing orphan: ${orphan_name} ..."
-            if "${DOCKER_BIN:-docker}" rm -f "$orphan_name" 2>/dev/null; then
-                echo "      ✅ Removed"
+            if "${DOCKER_BIN:-docker}" rm -f "$orphan_name" >/dev/null 2>&1; then
+                echo "  ✅ ${orphan_name}"
                 removed=$((removed + 1))
             else
-                echo "      ❌ Failed (manual: docker rm -f ${orphan_name})"
+                echo "  ❌ ${orphan_name}"
+                failed=$((failed + 1))
             fi
         done <<< "$orphan"
     fi
 
-    # 2. Remove Prometheus file_sd if present
+    # 3. Remove Prometheus file_sd if present
     local prom_file="${SCRIPT_DIR}/prometheus/file_sd/${app_name}.json"
     if [ -f "$prom_file" ]; then
         rm -f "$prom_file"
-        echo "  Removed Prometheus target file"
     fi
 
-    # 3. Remove Grafana dashboard files if present
+    # 4. Remove Grafana dashboard files if present
     local grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/${app_name}"
     if [ -d "$grafana_dash" ]; then
         rm -rf "$grafana_dash"
-        echo "  Removed Grafana dashboards"
     fi
 
-    # 3a. Clean up old symlink path (backward compatibility)
+    # 4a. Clean up old symlink path (backward compatibility)
     local old_grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
     if [ -L "$old_grafana_dash" ] || [ -d "$old_grafana_dash" ]; then
         rm -rf "$old_grafana_dash"
     fi
 
     # 4. Clean dangling images (optional)
-    echo ""
-    echo "Cleaning dangling images..."
     "${DOCKER_BIN:-docker}" image prune -f 2>/dev/null || true
 
     echo ""
@@ -980,7 +993,7 @@ _app_generate_prometheus_targets() {
 ]
 EOF
 
-    echo "  ✅ Generated Prometheus targets for ${app_name}"
+    echo "  ✅ Prometheus targets"
 }
 
 # Copy Grafana dashboards from app into platform provisioning
