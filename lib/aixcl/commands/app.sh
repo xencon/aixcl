@@ -174,6 +174,18 @@ _app_container_running() {
     "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" 2>/dev/null | grep -q "^${name}$"
 }
 
+# Check if a container exists in any state (running, stopped, created, dead)
+_app_container_exists() {
+    local name="$1"
+    "${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${name}$"
+}
+
+# Return the container ID for a given name (any state)
+_app_container_id() {
+    local name="$1"
+    "${DOCKER_BIN:-docker}" ps -a --format "{{.ID}}" --filter "name=^${name}$" 2>/dev/null | head -n 1
+}
+
 # ── Public Actions ─────────────────────────────────────────────────────────────
 
 # Usage: app_cmd list
@@ -513,7 +525,7 @@ app_cmd_remove() {
     echo "========================"
     echo ""
 
-    # 1. Stop and remove each container by name
+    # 1. Stop and remove each container by name (running or stopped)
     local svc_count removed=0
     svc_count="$(_app_service_count)"
     for i in $(seq 0 "$((svc_count - 1))"); do
@@ -526,14 +538,51 @@ app_cmd_remove() {
             _app_compose_cmd "$app_name" stop "$svc_container" 2>/dev/null || true
         fi
 
-        echo "  Removing container ${svc_container} ..."
-        if "${DOCKER_BIN:-docker}" rm -f "$svc_container" 2>/dev/null; then
-            echo "    [x] Removed"
-            removed=$((removed + 1))
+        # Attempt 1: remove by exact name
+        if _app_container_exists "$svc_container"; then
+            echo "  Removing container ${svc_container} ..."
+            if "${DOCKER_BIN:-docker}" rm -f "$svc_container" 2>/dev/null; then
+                echo "    [x] Removed by name"
+                removed=$((removed + 1))
+                continue
+            fi
+
+            # Attempt 2: remove by container ID (handles project ownership mismatch)
+            local cid
+            cid="$(_app_container_id "$svc_container")"
+            if [ -n "$cid" ]; then
+                if "${DOCKER_BIN:-docker}" rm -f "$cid" 2>/dev/null; then
+                    echo "    [x] Removed by ID (${cid:0:12})"
+                    removed=$((removed + 1))
+                    continue
+                fi
+            fi
+
+            echo "    [ ] Failed to remove ${svc_container}. Manual cleanup required:"
+            echo "        docker rm -f ${svc_container}"
         else
-            echo "    [ ] Container not found (already cleaned)"
+            echo "    [ ] Container ${svc_container} does not exist (already cleaned)"
         fi
     done
+
+    # 2. Safety sweep: remove any containers matching the app prefix
+    #    (catches orphans from old platform-level compose runs)
+    local orphan
+    orphan=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${app_name}[-_]|^dd-${app_name}[-_]" || true)
+    if [ -n "$orphan" ]; then
+        echo ""
+        echo "  Removing orphaned containers ..."
+        while IFS= read -r orphan_name; do
+            [ -z "$orphan_name" ] && continue
+            echo "    Removing orphan: ${orphan_name} ..."
+            if "${DOCKER_BIN:-docker}" rm -f "$orphan_name" 2>/dev/null; then
+                echo "      [x] Removed"
+                removed=$((removed + 1))
+            else
+                echo "      [ ] Failed (manual: docker rm -f ${orphan_name})"
+            fi
+        done <<< "$orphan"
+    fi
 
     # 2. Remove Prometheus file_sd if present
     local prom_file="${SCRIPT_DIR}/prometheus/file_sd/${app_name}.json"
