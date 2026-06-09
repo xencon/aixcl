@@ -60,6 +60,36 @@ _app_ensure_compose() {
     fi
 }
 
+# Build a compose command for a specific app directory.
+# Usage: _app_compose_cmd "ftso" up -d
+_app_compose_cmd() {
+    local app_name="$1"
+    shift
+    local app_dir="${SCRIPT_DIR}/apps/${app_name}"
+    local compose_file="${app_dir}/docker-compose.yml"
+
+    if [ ! -f "$compose_file" ]; then
+        echo "[ ] Missing ${compose_file}" >&2
+        return 1
+    fi
+
+    # Use the same runtime detection as the platform but with app compose file
+    local cmd=()
+    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+        cmd=(docker compose -f "$compose_file" -p "aixcl-${app_name}")
+    elif command -v docker-compose >/dev/null 2>&1; then
+        cmd=(docker-compose -f "$compose_file" -p "aixcl-${app_name}")
+    elif command -v podman-compose >/dev/null 2>&1; then
+        cmd=(podman-compose -f "$compose_file" -p "aixcl-${app_name}")
+    else
+        echo "[ ] No compose tool found" >&2
+        return 1
+    fi
+
+    (cd "$app_dir" && "${cmd[@]}" "$@" 2>&1)
+    return ${PIPESTATUS[0]:-0}
+}
+
 # Resolve whether a service has `built: true` in its manifest
 # Note: `_app_load_manifest` must be run before calling this.
 _app_service_needs_build() {
@@ -250,7 +280,7 @@ app_cmd_start() {
 
         # Start the service
         echo "  Starting ${svc_name}..."
-        run_compose up -d --no-deps "$svc_container" 2>/dev/null || {
+        _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" 2>/dev/null || {
             echo "  [ ] Failed to start ${svc_name}" >&2
             return 1
         }
@@ -319,7 +349,6 @@ app_cmd_stop() {
     fi
 
     _app_ensure_parser
-    _app_ensure_compose
 
     if ! _app_load_manifest "$app_name"; then
         return 1
@@ -342,7 +371,7 @@ app_cmd_stop() {
             continue
         fi
         if _app_container_running "$svc_container"; then
-            run_compose stop "$svc_container" 2>/dev/null || true
+            _app_compose_cmd "$app_name" stop "$svc_container" 2>/dev/null || true
             stopped=$((stopped + 1))
         fi
     done

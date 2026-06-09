@@ -1,0 +1,82 @@
+# FTSO Application Docker Compose
+# This file is loaded by ./aixcl app start ftso using Docker Compose include.
+#
+# IMPORTANT: All services must use network_mode: host (AIXCL invariant).
+# Paths are relative to apps/ftso/.
+
+services:
+  dd-ftso-v2-provider:
+    image: localhost/dd-ftso-v2-provider:latest
+    container_name: dd-ftso-v2-provider
+    pull_policy: missing
+    build:
+      context: ./provider
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_OPTIONS=--max-old-space-size=2048
+    network_mode: host
+    restart: unless-stopped
+    cpus: '1.0'
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "require('http').get('http://localhost:3101/api-doc',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  ftso-price-monitor:
+    image: localhost/ftso-price-monitor:latest
+    container_name: ftso-price-monitor
+    pull_policy: missing
+    build:
+      context: ftso/price-monitor
+    environment:
+      - PROVIDER_URL=http://localhost:3101
+      - POLL_INTERVAL=30
+    volumes:
+      - aixcl-vault-secrets:/run/secrets:ro
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      dd-ftso-v2-provider:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --no-verbose
+        - --tries=1
+        - --spider
+        - http://127.0.0.1:9102/metrics
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ftso-monitor-agent:
+    image: localhost/ftso-monitor-agent:latest
+    container_name: ftso-monitor-agent
+    pull_policy: missing
+    build:
+      context: ./services/ftso-monitor-agent
+    environment:
+      - METRICS_URL=http://localhost:9102/metrics
+      - PROMETHEUS_URL=http://localhost:9090
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 35s
+    depends_on:
+      ftso-price-monitor:
+        condition: service_healthy
+    cap_drop:
+      - ALL
+    volumes:
+      - aixcl-ftso-proposals:/proposals
+
+volumes:
+  aixcl-vault-secrets:
+    external: true
+  aixcl-ftso-proposals:
+    external: ${FTSO_PROPOSALS_VOL_EXTERNAL:-false}

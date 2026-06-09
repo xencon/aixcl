@@ -1,0 +1,4 @@
+aiohttp==3.9.5
+asyncpg==0.29.0
+prometheus-client==0.20.0
+web3==6.15.0
