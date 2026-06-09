@@ -1,6 +1,0 @@
-[
-  {
-    "targets": ["localhost:9102", "localhost:9103"],
-    "labels": {"app": "ftso"}
-  }
-]
