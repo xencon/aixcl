@@ -39,6 +39,7 @@ COMMANDS
         restart <app>                                   Restart an application
         status <app>                                    Show application status
         build <app>                                     Build an application image
+        remove <app>                                    Stop, rm, and clean an application
         scaffold <name>                                 Create a new application scaffold
         install <url>                                   Install an application from a URL
         help                                            Show app command help
