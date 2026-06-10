@@ -41,24 +41,24 @@ This document describes the Docker secrets management implementation for AIXCL, 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Docker Swarm Mode                        │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Manager   │────│   Secret    │────│  Encrypted  │     │
-│  │    Node     │    │   Store     │    │   Raft Log  │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │   Manager   │────│   Secret    │────│  Encrypted  │      │
+│  │    Node     │    │   Store     │    │   Raft Log  │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
 │         │                                                   │
 │         │ Distributes to worker nodes                       │
 │         ▼                                                   │
-│  ┌─────────────┐                                           │
-│  │   Worker    │                                           │
-│  │    Node     │                                           │
-│  └─────────────┘                                           │
+│  ┌─────────────┐                                            │
+│  │   Worker    │                                            │
+│  │    Node     │                                            │
+│  └─────────────┘                                            │
 │         │                                                   │
 │         │ Mounts secret as tmpfs in container               │
 │         ▼                                                   │
-│  ┌─────────────┐                                           │
-│  │  Container  │  /run/secrets/postgres_password (tmpfs)   │
-│  │  (AIXCL)    │  Memory-only, never touches disk          │
-│  └─────────────┘                                           │
+│  ┌─────────────┐                                            │
+│  │  Container  │  /run/secrets/postgres_password (tmpfs)    │
+│  │  (AIXCL)    │  Memory-only, never touches disk           │
+│  └─────────────┘                                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -93,13 +93,13 @@ This document describes the Docker secrets management implementation for AIXCL, 
 scripts/security/
 ├── init-secrets.sh          # Create/rotate/verify secrets
 ├── start-with-secrets.sh    # Start stack with secrets
-└── README.md               # This documentation
+└── README.md                # This documentation
 
 services/
 ├── docker-compose.yml              # Base configuration
 └── docker-compose.secrets.yml      # Secrets overlay
 
-.env                              # Non-sensitive config only
+.env                                # Non-sensitive config only
 ```
 
 ---
