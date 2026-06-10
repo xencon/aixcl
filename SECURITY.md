@@ -491,7 +491,7 @@ For day-to-day operations, prefer scoped AppRole tokens (already configured for
 
 | Role | Responsibility | Contact |
 |------|---------------|---------|
-| Maintainer | Security strategy, incident response, compliance | @sbadakhc (GitHub) |
+| Maintainer | Security strategy, incident response, compliance | <maintainer> (GitHub) |
 
 **Emergency / Non-Emergency**: Open a security advisory at https://github.com/xencon/aixcl/security/advisories
 
