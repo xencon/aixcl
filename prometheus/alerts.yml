@@ -162,64 +162,6 @@ groups:
           summary: "High memory usage in container {{ $labels.name }}"
           description: "Container {{ $labels.name }} memory usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
 
-  # Ollama Alerts
-  - name: aixcl_ollama
-    interval: 30s
-    rules:
-      - alert: OllamaDown
-        expr: ollama_up == 0
-        for: 1m
-        labels:
-          severity: critical
-          component: ai-engine
-        annotations:
-          summary: "Ollama AI engine is down"
-          description: "Ollama has been down or unresponsive for more than 1 minute. Inference engine is unavailable."
-
-      - alert: OllamaNoModels
-        expr: ollama_models_loaded_total == 0
-        for: 5m
-        labels:
-          severity: warning
-          component: ai-engine
-        annotations:
-          summary: "Ollama has no models loaded"
-          description: "Ollama has no models loaded for more than 5 minutes. Users cannot perform inference."
-
-      - alert: OllamaContainerDown
-        expr: up{job="ollama"} == 0
-        for: 1m
-        labels:
-          severity: critical
-          component: ai-engine
-        annotations:
-          summary: "Ollama exporter is down"
-          description: "Ollama metrics exporter is not responding. Check if ollama-exporter service is running."
-
-  # Open WebUI Alerts
-  - name: aixcl_openwebui
-    interval: 30s
-    rules:
-      - alert: OpenWebUIDown
-        expr: openwebui_up == 0
-        for: 1m
-        labels:
-          severity: critical
-          component: ui
-        annotations:
-          summary: "Open WebUI is down"
-          description: "Open WebUI has been down or unresponsive for more than 1 minute. Users cannot access the interface."
-
-      - alert: OpenWebUIAPIDown
-        expr: openwebui_api_up == 0
-        for: 2m
-        labels:
-          severity: warning
-          component: ui
-        annotations:
-          summary: "Open WebUI API is not responding"
-          description: "Open WebUI API endpoint is not responding for more than 2 minutes. Chat functionality may be impacted."
-
   # GPU Alerts (using nvidia-smi metrics for rootless Podman compatibility)
   # Note: DCGM metrics don't work in rootless mode, using custom exporter instead
   - name: aixcl_gpu
@@ -303,17 +245,5 @@ groups:
           summary: "Alertmanager is down"
           description: "Alertmanager is not responding for more than 2 minutes. Alert notifications may not be delivered."
 
-  # Ollama Capacity Alerts
-  - name: aixcl_ollama_capacity
-    interval: 30s
-    rules:
-      - alert: OllamaHighModelStorage
-        expr: ollama_model_storage_bytes > 107374182400  # 100GB
-        for: 5m
-        labels:
-          severity: warning
-          component: ai-engine
-        annotations:
-          summary: "Ollama model storage is high"
-          description: "Ollama model storage is above 100GB. Current usage: {{ $value | humanize1024 }}B. Consider removing unused models."
+
 
