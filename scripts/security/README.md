@@ -39,27 +39,27 @@ This document describes the Docker secrets management implementation for AIXCL, 
 ### How Docker Secrets Work
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Docker Swarm Mode                        │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Manager   │────│   Secret    │────│  Encrypted  │     │
-│  │    Node     │    │   Store     │    │   Raft Log  │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-│         │                                                   │
-│         │ Distributes to worker nodes                       │
-│         ▼                                                   │
-│  ┌─────────────┐                                           │
-│  │   Worker    │                                           │
-│  │    Node     │                                           │
-│  └─────────────┘                                           │
-│         │                                                   │
-│         │ Mounts secret as tmpfs in container               │
-│         ▼                                                   │
-│  ┌─────────────┐                                           │
-│  │  Container  │  /run/secrets/postgres_password (tmpfs)   │
-│  │  (AIXCL)    │  Memory-only, never touches disk          │
-│  └─────────────┘                                           │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                    Docker Swarm Mode                        |
+|  +-------------+    +-------------+    +-------------+     |
+|  |   Manager   |----|   Secret    |----|  Encrypted  |     |
+|  |    Node     |    |   Store     |    |   Raft Log  |     |
+|  +-------------+    +-------------+    +-------------+     |
+|         |                                                   |
+|         | Distributes to worker nodes                       |
+|         V                                                   |
+|  +-------------+                                           |
+|  |   Worker    |                                           |
+|  |    Node     |                                           |
+|  +-------------+                                           |
+|         |                                                   |
+|         | Mounts secret as tmpfs in container               |
+|         V                                                   |
+|  +-------------+                                           |
+|  |  Container  |  /run/secrets/postgres_password (tmpfs)   |
+|  |  (AIXCL)    |  Memory-only, never touches disk          |
+|  +-------------+                                           |
++-------------------------------------------------------------+
 ```
 
 **Key Properties**:
@@ -91,13 +91,13 @@ This document describes the Docker secrets management implementation for AIXCL, 
 
 ```
 scripts/security/
-├── init-secrets.sh          # Create/rotate/verify secrets
-├── start-with-secrets.sh    # Start stack with secrets
-└── README.md               # This documentation
+|-- init-secrets.sh          # Create/rotate/verify secrets
+|-- start-with-secrets.sh    # Start stack with secrets
++-- README.md               # This documentation
 
 services/
-├── docker-compose.yml              # Base configuration
-└── docker-compose.secrets.yml      # Secrets overlay
+|-- docker-compose.yml              # Base configuration
++-- docker-compose.secrets.yml      # Secrets overlay
 
 .env                              # Non-sensitive config only
 ```
@@ -243,12 +243,12 @@ docker compose -f services/docker-compose.yml \
 
 ### Threat Model Updates
 
-**Credential Theft → Lateral Movement** (T1078)
+**Credential Theft -> Lateral Movement** (T1078)
 
 | Before | After |
 |--------|-------|
 | HIGH risk - .env readable by any process | LOW risk - secrets in Docker encrypted store |
-| Attack: `cat .env` → credentials stolen | Attack: requires docker daemon compromise |
+| Attack: `cat .env` -> credentials stolen | Attack: requires docker daemon compromise |
 | Mitigation: file permissions (insufficient) | Mitigation: Docker secrets + daemon security |
 
 ---
@@ -310,11 +310,11 @@ docker run --rm -v postgres_password:/secret:ro alpine cat /secret
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| 3.6.1 (Key generation) | ✅ Implemented | /dev/urandom CSPRNG |
-| 3.6.2 (Key distribution) | ✅ Implemented | Docker encrypted transport |
-| 3.6.3 (Key storage) | ✅ Implemented | Docker encrypted Raft log |
-| 3.6.4 (Key rotation) | ✅ Implemented | init-secrets.sh --rotate |
-| 8.2.1 (Password complexity) | ✅ Implemented | 32 char random passwords |
+| 3.6.1 (Key generation) | [x] Implemented | /dev/urandom CSPRNG |
+| 3.6.2 (Key distribution) | [x] Implemented | Docker encrypted transport |
+| 3.6.3 (Key storage) | [x] Implemented | Docker encrypted Raft log |
+| 3.6.4 (Key rotation) | [x] Implemented | init-secrets.sh --rotate |
+| 8.2.1 (Password complexity) | [x] Implemented | 32 char random passwords |
 
 ### SOC 2 Controls
 
