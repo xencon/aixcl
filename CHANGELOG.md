@@ -4,7 +4,40 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.25] - 2026-06-10
+## [v1.1.26] - 2026-06-10
+
+### Summary
+
+Release v1.1.26 -- Documentation overhaul, CLI alignment, and username leak remediation.
+
+### Added
+
+- [x] **App Framework User Guide**: Created `docs/user/apps.md` for the BYO application framework. (Fixes #1323)
+- [x] **Threat Model Document**: Created `docs/security/threat-model.md` covering threat actors, attack vectors, MITRE ATT&CK mapping, and compensating control cross-references. (Fixes #1323)
+
+### Changed
+
+- [x] **CLI Help Alignment**: Added missing `vault` command with all 10 subcommands to `help_menu()`. Renamed `utils clean` to `utils prune` and added `prune --all`. (Fixes #1323)
+- [x] **AGENTS.md Section Numbering**: Fixed broken numbering (now sequential 1-11). (Fixes #1323)
+- [x] **DEVELOPMENT.md Version Reference**: Corrected "AGENTS.md v1.5" to "AGENTS.md v2.0" and fixed Section 8 reference for Emergency Workflow Override. (Fixes #1323)
+- [x] **Unicode to ASCII Conversion**: Replaced all ✅/❌/⚠️/🔄/📝 Unicode symbols with markdown checkboxes or plain text across SECURITY.md, modes, and operations docs. (Fixes #1323)
+
+### Fixed
+
+- [x] **README Step Numbering**: Corrected broken Step 4/5 ordering in Quick Start. (Fixes #1323)
+- [x] **Stale Command References**: Replaced non-existent `aixcl-setup` with `./aixcl stack init`, fixed `vault passwords` to `vault credentials`, and removed non-existent `aixcl security` command references. (Fixes #1323)
+- [x] **Manifest Example**: Fixed `docs/developer/adding-apps.md` YAML example to match actual `app_parser.sh` flat key format and corrected Prometheus file_sd path. (Fixes #1323)
+- [x] **Profile Docs**: Added missing Alertmanager to bld/sys profile service lists and corrected nvidia-gpu-exporter port from 9400 to 9445. (Fixes #1323)
+- [x] **Username Leakage**: Removed hardcoded `sbadakhc` references from SECURITY.md, CONTRIBUTING.md, and script usage examples. (Fixes #1323)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [ ] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
 
 ### Summary
 
