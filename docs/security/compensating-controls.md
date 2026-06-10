@@ -286,7 +286,7 @@ Critical actions require human approval to prevent irreversible or high-impact a
 
 - **Queue**: PostgreSQL `human_approvals` table
 - **Notification**: Slack #security + email
-- **Approval Interface**: CLI (`./aixcl security approve <request-id>`) or GitHub PR review
+- **Approval Interface**: GitHub PR review (primary). Human approval workflow CLI is planned but not yet implemented.
 - **Timeout**: Request auto-denied if no response within timeout period
 
 ### Schema

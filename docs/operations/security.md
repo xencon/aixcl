@@ -100,11 +100,11 @@ The following security controls are applied to services where applicable:
 
 | Service | User | cap_drop | no-new-priv | read_only | tmpfs | :ro Mounts |
 |---------|------|----------|-------------|-----------|-------|------------|
-| **prometheus** | default | ALL | ✅ | ✅ | ✅ | 2 |
-| **grafana** | default | ALL | ✅ | ❌* | - | 1 |
-| **loki** | default | ALL | ✅ | ❌* | - | 2 |
-| **postgres-exporter** | 65534:65534 | ALL | ✅ | ✅ | ✅ | 0 |
-| **node-exporter** | 65534:65534 | ALL | ✅ | ✅ | ✅ | 3 |
+| **prometheus** | default | ALL | [x] | [x] | [x] | 2 |
+| **grafana** | default | ALL | [x] | [ ]* | - | 1 |
+| **loki** | default | ALL | [x] | [ ]* | - | 2 |
+| **postgres-exporter** | 65534:65534 | ALL | [x] | [x] | [x] | 0 |
+| **node-exporter** | 65534:65534 | ALL | [x] | [x] | [x] | 3 |
 | **cadvisor** | root | - | - | - | - | 5 |
 | **open-webui** | root** | - | - | - | - | 0 |
 | **pgadmin** | root** | - | - | - | - | 1 |
