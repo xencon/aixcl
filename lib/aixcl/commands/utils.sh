@@ -32,7 +32,7 @@ function prune() {
     rm -f .aixcl.initialized .env pgadmin-servers.json
     echo ""
 
-    # Remove all containers before volumes — Podman will not release a volume
+    # Remove all containers before volumes -- Podman will not release a volume
     # while any container (even stopped) still references it. stack stop removes
     # running containers but stopped/exited ones may linger with volume mounts.
     echo "Removing all containers..."
@@ -48,6 +48,16 @@ function prune() {
     if [ -n "$all_volumes" ]; then
         echo "$all_volumes" | xargs -r $docker_cmd volume rm -f 2>/dev/null || true
     fi
+    echo ""
+
+    # Remove runtime-generated artifacts from host filesystem (bind-mounted directories)
+    # These are not tracked in git (see .gitignore) and must be cleaned explicitly.
+    echo "Removing runtime-generated dashboard provisioning..."
+    rm -rf "${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/"* 2>/dev/null || true
+    echo ""
+
+    echo "Removing runtime-generated Prometheus file_sd targets..."
+    rm -f "${SCRIPT_DIR}/prometheus/file_sd/"*.json 2>/dev/null || true
     echo ""
 
     echo "Prune complete. Images retained for fast restart."
