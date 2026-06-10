@@ -20,7 +20,7 @@ Release v1.1.26 -- Documentation overhaul, CLI alignment, and username leak reme
 - [x] **CLI Help Alignment**: Added missing `vault` command with all 10 subcommands to `help_menu()`. Renamed `utils clean` to `utils prune` and added `prune --all`. (Fixes #1323)
 - [x] **AGENTS.md Section Numbering**: Fixed broken numbering (now sequential 1-11). (Fixes #1323)
 - [x] **DEVELOPMENT.md Version Reference**: Corrected "AGENTS.md v1.5" to "AGENTS.md v2.0" and fixed Section 8 reference for Emergency Workflow Override. (Fixes #1323)
-- [x] **Unicode to ASCII Conversion**: Replaced all ✅/❌/⚠️/🔄/📝 Unicode symbols with markdown checkboxes or plain text across SECURITY.md, modes, and operations docs. (Fixes #1323)
+- [x] **Unicode to ASCII Conversion**: Replaced all [x]/[ ]/[!]/In Progress/Future Unicode symbols with markdown checkboxes or plain text across SECURITY.md, modes, and operations docs. (Fixes #1323)
 
 ### Fixed
 
@@ -174,7 +174,7 @@ Release v1.1.20 -- follow-up to v1.1.19, includes the vault-status.sh hotfix tha
 
 ### Fixed
 
-- [x] **Vault Status Unknown State**: Fixed `check_vault_health()` in `lib/aixcl/commands/vault-status.sh` to correctly parse `"sealed": false` from Vault health API. Same jq `//` false handling bug as #1229, but in a different file. Also fixed false "⚠ Vault needs initialization" warning caused by `check_credentials()` returning 1 when no generated credential files were present yet. (Fixes #1234, #1235)
+- [x] **Vault Status Unknown State**: Fixed `check_vault_health()` in `lib/aixcl/commands/vault-status.sh` to correctly parse `"sealed": false` from Vault health API. Same jq `//` false handling bug as #1229, but in a different file. Also fixed false "[!] Vault needs initialization" warning caused by `check_credentials()` returning 1 when no generated credential files were present yet. (Fixes #1234, #1235)
 
 ### Verification
 
@@ -853,12 +853,12 @@ Release Candidate 6 for v1.0.0. This release includes 15+ commits since RC5 focu
 - **Service Security Matrix**: Each hardened service now runs with minimal privileges:
   | Service | User | cap_drop | no-new-priv | read_only |
   |---------|------|----------|-------------|-----------|
-  | prometheus | default | ALL | ✅ | ✅ |
-  | grafana | default | ALL | ✅ | ❌* |
-  | loki | default | ALL | ✅ | ❌* |
-  | postgres-exporter | 65534:65534 | ALL | ✅ | ✅ |
-  | node-exporter | 65534:65534 | ALL | ✅ | ✅ |
-  | alloy | 12345:12345 | ALL | ✅ | ✅ |
+  | prometheus | default | ALL | [x] | [x] |
+  | grafana | default | ALL | [x] | [ ]* |
+  | loki | default | ALL | [x] | [ ]* |
+  | postgres-exporter | 65534:65534 | ALL | [x] | [x] |
+  | node-exporter | 65534:65534 | ALL | [x] | [x] |
+  | alloy | 12345:12345 | ALL | [x] | [x] |
   
   *\*Requires data volume writes*
 

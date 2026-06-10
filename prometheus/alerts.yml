@@ -236,7 +236,7 @@ groups:
           component: gpu
         annotations:
           summary: "High GPU temperature on GPU {{ $labels.gpu }}"
-          description: "GPU {{ $labels.gpu }} temperature is above 85°C for more than 5 minutes. Current temperature: {{ $value }}°C"
+          description: "GPU {{ $labels.gpu }} temperature is above 85C for more than 5 minutes. Current temperature: {{ $value }}C"
 
       - alert: GPUHighMemoryUsage
         expr: (nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes) * 100 > 90
