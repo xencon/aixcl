@@ -40,6 +40,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 - node-exporter (host metrics)
 - postgres-exporter (database metrics)
 - nvidia-gpu-exporter (GPU metrics, if GPU available)
+- Alertmanager (alert routing)
 
 **Excludes**:
 - Open WebUI (web interface)
@@ -55,7 +56,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 **Includes**:
 - Runtime core: Inference Engine, OpenCode (plugin)
 - Vault (dynamic secrets management)
-- All bld services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
+- All bld services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, Alertmanager
 - Open WebUI (web interface for model interaction)
 - pgAdmin (database administration UI)
 

@@ -15,12 +15,12 @@ This document outlines the security architecture for AIXCL in adversarial enviro
 
 | Control Category | Status | Evidence |
 |-----------------|--------|----------|
-| Network Security | [!] Partial | Host firewall compensates for container host networking |
-| Container Security | [!] Partial | Some hardening, privileged containers remain |
-| Data Protection | [!] Partial | PII detection in place, encryption in progress |
-| Access Control | [x] Implemented | RBAC, human-in-the-loop approvals |
-| Monitoring | [x] Implemented | Prometheus/Grafana/Loki stack |
-| Incident Response | [x] Implemented | 4-hour RTO, automated containment |
+| Network Security | Partial | Host firewall compensates for container host networking |
+| Container Security | Partial | Some hardening, privileged containers remain |
+| Data Protection | Partial | PII detection in place, encryption in progress |
+| Access Control | Implemented | RBAC, human-in-the-loop approvals |
+| Monitoring | Implemented | Prometheus/Grafana/Loki stack |
+| Incident Response | Implemented | 4-hour RTO, automated containment |
 
 **Overall Assessment**: Suitable for internal adversarial testing with documented compensating controls. **Not production-ready for customer-facing PCI DSS workloads without VM-level isolation.**
 
@@ -41,16 +41,16 @@ This document outlines the security architecture for AIXCL in adversarial enviro
 
 | Debt | Current State | Target | Timeline |
 |------|--------------|--------|----------|
-| Plaintext Credentials | ~~.env file with passwords~~ [x] **DONE** | Docker secrets | Phase 1.6 Complete |
-| PostgreSQL SSL | ~~sslmode=disable~~ [x] **DONE** | sslmode=require | Phase 1.6 Complete |
+| Plaintext Credentials | [x] [x] DONE | Docker secrets | Phase 1.6 Complete |
+| PostgreSQL SSL | [x] [x] DONE | sslmode=require | Phase 1.6 Complete |
 | Secret Rotation | Manual via script | Automated 90-day rotation | Phase 2 |
-| Code Signing | ~~Unsigned commits~~ [x] **DONE** | GPG-signed commits | Phase 2 Complete |
+| Code Signing | [x] [x] DONE | GPG-signed commits | Phase 2 Complete |
 
 ---
 
 ## Compensating Controls
 
-**Legend:** [x] Implemented | In Progress In Progress | Future Future Work
+**Legend:** Implemented | In Progress | Future Work
 
 ### 1. Host Firewall (iptables) [x]
 
@@ -156,9 +156,9 @@ Planned capabilities:
 
 ### Attack Vectors
 
-#### 1. Prompt Injection -> Data Exfiltration
+#### 1. Prompt Injection → Data Exfiltration
 
-**Path**: Malicious prompt -> LLM -> Sensitive data in response
+**Path**: Malicious prompt → LLM → Sensitive data in response
 
 **Mitigations**:
 - llm-firewall injection detection
@@ -167,9 +167,9 @@ Planned capabilities:
 
 **Residual Risk**: Medium (sophisticated jailbreaks possible)
 
-#### 2. Container Escape -> Host Compromise
+#### 2. Container Escape → Host Compromise
 
-**Path**: Exploit privileged container -> Root on host
+**Path**: Exploit privileged container → Root on host
 
 **Mitigations**:
 - Remove/disable cAdvisor in production
@@ -178,9 +178,9 @@ Planned capabilities:
 
 **Residual Risk**: High (if privileged containers required)
 
-#### 3. Credential Theft -> Lateral Movement
+#### 3. Credential Theft → Lateral Movement
 
-**Path**: Steal .env credentials -> Access PostgreSQL/Ollama
+**Path**: Steal .env credentials → Access PostgreSQL/Ollama
 
 **Mitigations**:
 - Docker secrets (in progress)
@@ -189,9 +189,9 @@ Planned capabilities:
 
 **Residual Risk**: Low (with secrets implementation)
 
-#### 4. Model Extraction -> IP Theft
+#### 4. Model Extraction → IP Theft
 
-**Path**: High-volume API queries -> Reconstruct training data
+**Path**: High-volume API queries → Reconstruct training data
 
 **Mitigations**:
 - Rate limiting (100 req/hour)
@@ -202,7 +202,7 @@ Planned capabilities:
 
 #### 5. Supply Chain Poisoning
 
-**Path**: Malicious Ollama model -> Backdoor in inference
+**Path**: Malicious Ollama model → Backdoor in inference
 
 **Mitigations**:
 - Local LLM preference (reduces attack surface)
@@ -361,14 +361,14 @@ Is activity in threat detector rules? (future system)
 
 | Requirement | Status | Gap | Plan |
 |-------------|--------|-----|------|
-| 1. Network Security | [!] Partial | Host networking | Compensating controls documented |
-| 2. System Hardening | [!] Partial | Privileged containers | Remove cAdvisor, secure Alloy |
-| 3. Data Protection | [x] Implemented | - | Vault secrets management (Phase 1.6) |
-| 4. Encryption | [x] Implemented | - | PostgreSQL SSL enabled (Phase 1.6) |
-| 6. Secure Development | [x] Implemented | - | Issue-First workflow, code review |
-| 8. Authentication | [x] Implemented | - | Human approval, RBAC |
-| 10. Logging | [x] Implemented | - | Comprehensive audit trail |
-| 11. Testing | [!] Planned | - | Penetration testing scheduled |
+| 1. Network Security | Partial | Host networking | Compensating controls documented |
+| 2. System Hardening | Partial | Privileged containers | Remove cAdvisor, secure Alloy |
+| 3. Data Protection | Implemented | - | Vault secrets management (Phase 1.6) |
+| 4. Encryption | Implemented | - | PostgreSQL SSL enabled (Phase 1.6) |
+| 6. Secure Development | Implemented | - | Issue-First workflow, code review |
+| 8. Authentication | Implemented | - | Human approval, RBAC |
+| 10. Logging | Implemented | - | Comprehensive audit trail |
+| 11. Testing | Planned | - | Penetration testing scheduled |
 
 **Overall PCI DSS Readiness**: ~70%
 
@@ -491,7 +491,7 @@ For day-to-day operations, prefer scoped AppRole tokens (already configured for
 
 | Role | Responsibility | Contact |
 |------|---------------|---------|
-| Maintainer | Security strategy, incident response, compliance | @sbadakhc (GitHub) |
+| Maintainer | Security strategy, incident response, compliance | <maintainer> (GitHub) |
 
 **Emergency / Non-Emergency**: Open a security advisory at https://github.com/xencon/aixcl/security/advisories
 

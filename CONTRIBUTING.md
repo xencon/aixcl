@@ -100,7 +100,7 @@ gh pr create --repo xencon/aixcl \
 
 ## Workflow for Maintainers
 
-If you are a CODEOWNER (@sbadakhc):
+If you are a CODEOWNER (<maintainer>):
 
 ### Consuming Upstream Changes
 

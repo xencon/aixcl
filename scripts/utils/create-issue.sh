@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # create-issue.sh — Safe issue creation wrapper
-# Usage: ./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:cli" "sbadakhc"
+# Usage: ./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:cli" "<github-username>"
 #
 # Benefits over manual gh issue create:
 # - Uses /tmp for body files (never touches repo)
