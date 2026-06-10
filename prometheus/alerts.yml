@@ -27,7 +27,10 @@ groups:
           description: "Memory usage is above 80% for more than 5 minutes. Current value: {{ $value }}%"
 
       - alert: HighDiskUsage
-        expr: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
+        expr: |
+          (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"}
+          - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"})
+          / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
         for: 5m
         labels:
           severity: warning
@@ -267,7 +270,7 @@ groups:
           component: monitoring
         annotations:
           summary: "Prometheus storage is filling up"
-          description: "Prometheus storage usage is above 80% of retention limit. Current usage: {{ $value }}%. Consider increasing retention or adding storage."
+          description: "Prometheus storage is above 80% of retention. Current usage: {{ $value }}%. Consider increasing retention or adding storage."
 
       - alert: PrometheusTargetDown
         expr: up{job!~"nvidia-gpu"} == 0
