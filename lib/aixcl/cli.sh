@@ -47,7 +47,22 @@ COMMANDS
     utils <action>
         check-env                                       Verify environment
         bash-completion                                 Install bash completion
-        clean                                           Clean Docker resources
+        prune                                           Clean Docker resources (keeps images)
+        prune --all                                     Full wipe including images
+
+    vault <action>
+        start                                           Start Vault container
+        stop                                            Stop Vault container
+        restart                                         Restart Vault container
+        init                                            Initialize Vault
+        unseal                                          Unseal Vault
+        status                                          Check Vault health
+        credentials                                     View dynamic credentials
+        passwords                                       View bootstrap passwords
+        rotate                                          Trigger credential rotation
+        logs [n]                                        View Vault logs
+
+    restart                                             Shortcut for stack restart
 
 PROFILES
 
