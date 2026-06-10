@@ -88,11 +88,11 @@ opencode
 
 ## Connection Status
 
-✅ Dev Container: Running  
-✅ AIXCL Services: Healthy (2/2)  
-✅ Model Loaded: qwen2.5-coder:0.5b  
-✅ API Accessible: http://localhost:11434/v1  
-✅ Model Available: qwen2.5-coder:0.5b  
+[x] Dev Container: Running
+[x] AIXCL Services: Healthy (2/2)
+[x] Model Loaded: qwen2.5-coder:0.5b
+[x] API Accessible: http://localhost:11434/v1
+[x] Model Available: qwen2.5-coder:0.5b  
 
 ## Quick Test
 

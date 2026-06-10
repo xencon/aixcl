@@ -5,7 +5,7 @@
 set -euo pipefail
 
 TOKEN="${1:-}"
-REQUIRED_MAINTAINER="${2:-sbadakhc}"  # Default maintainer
+REQUIRED_MAINTAINER="${2:-<maintainer>}"  # Default maintainer (set explicitly in production)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output

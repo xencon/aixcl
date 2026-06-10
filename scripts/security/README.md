@@ -310,11 +310,11 @@ docker run --rm -v postgres_password:/secret:ro alpine cat /secret
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| 3.6.1 (Key generation) | ✅ Implemented | /dev/urandom CSPRNG |
-| 3.6.2 (Key distribution) | ✅ Implemented | Docker encrypted transport |
-| 3.6.3 (Key storage) | ✅ Implemented | Docker encrypted Raft log |
-| 3.6.4 (Key rotation) | ✅ Implemented | init-secrets.sh --rotate |
-| 8.2.1 (Password complexity) | ✅ Implemented | 32 char random passwords |
+| 3.6.1 (Key generation) | [x] Implemented | /dev/urandom CSPRNG |
+| 3.6.2 (Key distribution) | [x] Implemented | Docker encrypted transport |
+| 3.6.3 (Key storage) | [x] Implemented | Docker encrypted Raft log |
+| 3.6.4 (Key rotation) | [x] Implemented | init-secrets.sh --rotate |
+| 8.2.1 (Password complexity) | [x] Implemented | 32 char random passwords |
 
 ### SOC 2 Controls
 

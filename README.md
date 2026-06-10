@@ -95,6 +95,8 @@ source ~/.bashrc
 
 This pulls images, starts all services, initialises Vault, and generates bootstrap credentials. Allow 3-5 minutes for full startup on first run.
 
+> **Note:** Use `--profile bld` for a monitoring-only stack (no WebUI). Use `--profile sys` for the full stack with WebUI and pgAdmin.
+
 Check status:
 
 ```bash
@@ -111,15 +113,13 @@ Check status:
 ./aixcl stack status
 ```
 
-### Step 5: Test Inference (Hello World)
-
 ### Step 4: View Credentials
 
 ```bash
-./aixcl vault passwords
+./aixcl vault credentials
 ```
 
-### Step 5: Add a Model and Test Inference
+### Step 5: Test Inference (Hello World)
 
 ```bash
 ./aixcl models add qwen2.5-coder:0.5b
@@ -137,9 +137,9 @@ curl http://localhost:11434/v1/chat/completions \
 
 | Service | URL | Login |
 |---------|-----|-------|
-| Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault passwords` |
-| pgAdmin | http://localhost:5050 | Email: `admin@example.com`, Password: `./aixcl vault passwords` |
-| Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault passwords` |
+| Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault credentials` |
+| pgAdmin | http://localhost:5050 | Email: `admin@example.com`, Password: `./aixcl vault credentials` |
+| Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault credentials` |
 | Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
 | Loki | http://localhost:3100 | API only -- use Grafana for log browsing |
@@ -193,11 +193,11 @@ git log --show-signature -1
 
 The following are **not optional** and cannot be disabled:
 
-- - [x] **Podman rootless** - No privileged containers
-- - [x] **GPG-signed commits** - All commits to main must be signed (CODEOWNERS only)
-- - [x] **HashiCorp Vault** - Dynamic secrets with automatic rotation
-- - [x] **PostgreSQL SSL** - Encrypted database connections
-- - [x] **Host firewall** - Network isolation at host level
+- [x] **Podman rootless** - No privileged containers
+- [x] **GPG-signed commits** - All commits to main must be signed (CODEOWNERS only)
+- [x] **HashiCorp Vault** - Dynamic secrets with automatic rotation
+- [x] **PostgreSQL SSL** - Encrypted database connections
+- [x] **Host firewall** - Network isolation at host level
 
 See [SECURITY.md](SECURITY.md) for architecture details.
 
@@ -266,16 +266,36 @@ sudo lsof -i :8200   # Vault
 
 # Soft reset -- removes volumes and state, keeps images for fast restart
 ./aixcl utils prune
-aixcl-setup
+./aixcl stack init
+./aixcl stack start --profile sys
 
 # Full wipe -- removes everything including images (slow rebuild)
 ./aixcl utils prune --all
-aixcl-setup
+./aixcl stack init
+./aixcl stack start --profile sys
 ```
 
----
+## Deploying Apps
 
-## Next Steps
+AIXCL supports bringing your own applications (BYO) via the app framework. Install from a Git URL, scaffold a new app, or manage existing apps:
+
+```bash
+# Install an app from a Git repository
+./aixcl app install https://github.com/example/my-app.git
+
+# Scaffold a new app skeleton
+./aixcl app scaffold my-app
+
+# List, start, stop, or remove apps
+./aixcl app list
+./aixcl app start my-app
+./aixcl app stop my-app
+./aixcl app remove my-app
+```
+
+See [docs/user/apps.md](docs/user/apps.md) for the complete app guide.
+
+---
 
 1. **Add more models**: `./aixcl models add qwen2.5-coder:1.5b`
 2. **Customize**: Edit `.env` for your environment

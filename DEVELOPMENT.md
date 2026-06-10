@@ -3,7 +3,7 @@
 | field         | value                                                                      |
 |---------------|----------------------------------------------------------------------------|
 | file          | DEVELOPMENT.md                                                             |
-| version       | 2.0 (tracks workflow evolution; subordinate to AGENTS.md v1.5)             |
+| version       | 2.0 (tracks workflow evolution; subordinate to AGENTS.md v2.0)             |
 | scope         | all agents                                                                 |
 | priority      | high                                                                       |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, any MCP-compatible agent           |
@@ -136,15 +136,15 @@ Feature Branch → Dev → Main
 
 ### Emergency Workflow Override
 
-See AGENTS.md Section 9 -- Emergency Workflow Override for the protocol to proceed without a pre-existing issue when explicitly authorized by a human operator.
+See AGENTS.md Section 8 -- Emergency Workflow Override for the protocol to proceed without a pre-existing issue when explicitly authorized by a human operator.
 
-### ❌ INCORRECT Workflows
+### INCORRECT Workflows
 
 | Workflow | Status | Why |
 |----------|--------|-----|
-| `feature → main` | ❌ **WRONG** | Bypasses dev testing |
-| `main → feature` | ❌ **WRONG** | Wrong base branch |
-| `main → dev` | ❌ **WRONG** | Dev feeds main, not vice versa |
+| `feature → main` | WRONG | Bypasses dev testing |
+| `main → feature` | WRONG | Wrong base branch |
+| `main → dev` | WRONG | Dev feeds main, not vice versa |
 
 ### Emergency Hotfixes
 

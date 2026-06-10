@@ -28,12 +28,12 @@ Switch to reviewing mode for providing code review feedback without making chang
 
 ## Available Tools
 
-- ✅ **read** - Read files and directories
-- ✅ **grep** - Search codebase
-- ✅ **bash** (limited) - Read-only commands (git status, git diff, ls, cat, grep)
-- ❌ **edit** - Disabled
-- ❌ **write** - Disabled
-- ❌ **webfetch** - Disabled
+- [x] **read** - Read files and directories
+- [x] **grep** - Search codebase
+- [x] **bash** (limited) - Read-only commands (git status, git diff, ls, cat, grep)
+- [ ] **edit** - Disabled
+- [ ] **write** - Disabled
+- [ ] **webfetch** - Disabled
 
 ## Review Checklist
 

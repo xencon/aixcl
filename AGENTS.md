@@ -11,7 +11,7 @@
 
 Authoritative agent operating contract for this repository.
 
-## Core Principles
+## 1. Core Principles
 
 1. **Security over convenience**
 2. **Determinism over creativity**
@@ -19,7 +19,7 @@ Authoritative agent operating contract for this repository.
 4. **Explicit reasoning over implicit assumptions**
 5. **No speculative modifications**
 
-## Authority Hierarchy
+## 2. Authority Hierarchy
 
 When conflicts arise, follow this order:
 
@@ -30,7 +30,7 @@ When conflicts arise, follow this order:
 5. **docs/architecture/governance/** (platform invariants)
 6. **docs/developer/** (developer guides)
 
-## Critical Constraints
+## 3. Critical Constraints
 
 ### Issue-First Development (MANDATORY)
 
@@ -89,7 +89,7 @@ When conflicts arise, follow this order:
 - Generated files stay generated; use `.gitignore`
 - Verify: no dated reports, no tracked generated files, no stale archive directories
 
-## Safe Areas for Agentic Contribution
+## 4. Safe Areas for Agentic Contribution
 
 **You MAY:**
 - Modify operational services (monitoring, logging, automation)
@@ -105,7 +105,7 @@ When conflicts arise, follow this order:
 - Collapse service boundaries
 - Add external libraries, cloud services, telemetry, or analytics without explicit approval
 
-## Essential Commands
+## 5. Essential Commands
 
 ### Stack Operations
 ```bash
@@ -122,7 +122,7 @@ When conflicts arise, follow this order:
 ./tests/run-tests.sh                  # Run all platform tests
 ```
 
-## Self-Verification Checklist
+## 6. Self-Verification Checklist
 
 Before ANY operation, confirm:
 
@@ -136,7 +136,7 @@ Before ANY operation, confirm:
 
 If ANY check fails → **HALT** and escalate.
 
-## Escalation Procedures
+## 7. Escalation Procedures
 
 When halting due to insufficient evidence, missing requirements, or conflicts:
 
@@ -145,7 +145,7 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 3. **If security concern:** Flag with `[SECURITY]` prefix and await explicit approval
 4. **If authority conflict:** Document override request, obtain explicit written confirmation
 
-## Emergency Workflow Override
+## 8. Emergency Workflow Override
 
 In exceptional situations, a human operator may explicitly authorize the agent to proceed without a pre-existing issue.
 
@@ -165,7 +165,7 @@ In exceptional situations, a human operator may explicitly authorize the agent t
 - "Just do it" without context
 - Vague urgency
 
-## 10. Human in the Loop Checklist Policy
+## 9. Human in the Loop Checklist Policy
 
 The agent MUST distinguish between agent-completed items and human-verification items.
 
@@ -176,7 +176,7 @@ The agent MUST distinguish between agent-completed items and human-verification 
 
 The human sees `[ ]` on verification items and ticks them during code review.
 
-## 11. Quick References
+## 10. Quick References
 
 ### Tool Usage
 
@@ -192,7 +192,7 @@ The human sees `[ ]` on verification items and ticks them during code review.
 - Be concise but thorough; surface risks explicitly
 - Suggest tests when making code changes
 
-## External References
+## 11. External References
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) -- Full workflow rules and templates
 - [docs/developer/development-workflow.md](docs/developer/development-workflow.md) -- Complete developer guide

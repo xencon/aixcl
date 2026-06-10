@@ -6,7 +6,7 @@ For installation and quick start, see [README.md](/README.md).
 
 | Profile | Purpose | Services |
 |---------|---------|----------|
-| **bld** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter |
+| **bld** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, Alertmanager |
 | **sys** | Full stack | bld + Open WebUI, pgAdmin |
 
 Deprecated (not supported):
@@ -22,7 +22,9 @@ Deprecated (not supported):
 | Grafana | http://localhost:3000 |
 | Vault UI | http://localhost:8200 |
 | Prometheus | http://localhost:9090 |
+| Alertmanager | http://localhost:9093 |
 | Ollama API | http://localhost:11434 |
+| Loki | http://localhost:3100 |
 
 ## Common Commands
 
