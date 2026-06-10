@@ -44,9 +44,9 @@ app:
 services:
   - name: "my-app-service"
     image: "my-app:latest"
-    build:
-      context: "provider"
-      dockerfile: "Dockerfile"
+    built: true
+    build_context: "provider"
+    build_dockerfile: "Dockerfile"
     ports:
       - "9000:9000"
     environment:
@@ -125,7 +125,7 @@ prometheus:
     app: "my-app"
 ```
 
-These targets are written to `prometheus/app-targets/<app_name>.json` and picked up by Prometheus `file_sd_configs`.
+These targets are written to `prometheus/file_sd/<app_name>.json` and picked up by Prometheus `file_sd_configs`.
 
 ### `grafana` Block
 
