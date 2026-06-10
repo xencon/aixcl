@@ -222,7 +222,7 @@ services:
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
-      - aixcl-pgdata:/var/lib/postgresql/data
+      - aixcl-pgdata:/var/lib/postgresql
       - aixcl-vault-secrets:/run/secrets:ro
       - ../scripts/runtime/postgres-secret-entrypoint.sh:/usr/local/bin/postgres-secret-entrypoint.sh:ro
       - ../scripts/db/init:/docker-entrypoint-initdb.d:ro
@@ -473,7 +473,7 @@ services:
       retries: 3
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.57.0
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
     pull_policy: missing
     volumes:
