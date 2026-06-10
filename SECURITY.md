@@ -15,12 +15,12 @@ This document outlines the security architecture for AIXCL in adversarial enviro
 
 | Control Category | Status | Evidence |
 |-----------------|--------|----------|
-| Network Security | ⚠️ Partial | Host firewall compensates for container host networking |
-| Container Security | ⚠️ Partial | Some hardening, privileged containers remain |
-| Data Protection | ⚠️ Partial | PII detection in place, encryption in progress |
-| Access Control | ✅ Implemented | RBAC, human-in-the-loop approvals |
-| Monitoring | ✅ Implemented | Prometheus/Grafana/Loki stack |
-| Incident Response | ✅ Implemented | 4-hour RTO, automated containment |
+| Network Security | Partial | Host firewall compensates for container host networking |
+| Container Security | Partial | Some hardening, privileged containers remain |
+| Data Protection | Partial | PII detection in place, encryption in progress |
+| Access Control | Implemented | RBAC, human-in-the-loop approvals |
+| Monitoring | Implemented | Prometheus/Grafana/Loki stack |
+| Incident Response | Implemented | 4-hour RTO, automated containment |
 
 **Overall Assessment**: Suitable for internal adversarial testing with documented compensating controls. **Not production-ready for customer-facing PCI DSS workloads without VM-level isolation.**
 
@@ -41,18 +41,18 @@ This document outlines the security architecture for AIXCL in adversarial enviro
 
 | Debt | Current State | Target | Timeline |
 |------|--------------|--------|----------|
-| Plaintext Credentials | ~~.env file with passwords~~ ✅ **DONE** | Docker secrets | Phase 1.6 Complete |
-| PostgreSQL SSL | ~~sslmode=disable~~ ✅ **DONE** | sslmode=require | Phase 1.6 Complete |
+| Plaintext Credentials | [x] [x] DONE | Docker secrets | Phase 1.6 Complete |
+| PostgreSQL SSL | [x] [x] DONE | sslmode=require | Phase 1.6 Complete |
 | Secret Rotation | Manual via script | Automated 90-day rotation | Phase 2 |
-| Code Signing | ~~Unsigned commits~~ ✅ **DONE** | GPG-signed commits | Phase 2 Complete |
+| Code Signing | [x] [x] DONE | GPG-signed commits | Phase 2 Complete |
 
 ---
 
 ## Compensating Controls
 
-**Legend:** ✅ Implemented | 🔄 In Progress | 📝 Future Work
+**Legend:** Implemented | In Progress | Future Work
 
-### 1. Host Firewall (iptables) ✅
+### 1. Host Firewall (iptables) [x]
 
 Since containers use `network_mode: host`, we enforce network policies at the host level:
 
@@ -69,7 +69,7 @@ Since containers use `network_mode: host`, we enforce network policies at the ho
 **Limitations**: Bypassable if attacker gains host root access  
 **Verification**: `iptables -L -n -v | grep DROP`
 
-### 2. LLM Firewall (llm-firewall agent) 📝
+### 2. LLM Firewall (llm-firewall agent) Future
 
 > **Status:** Not yet implemented. Documented as architectural target.
 
@@ -86,7 +86,7 @@ Planned capabilities:
 **Projected Limitations**: Adds latency (~50ms per request)  
 **Projected Verification**: Check `llm_interactions` table in PostgreSQL
 
-### 3. Threat Detection (threat-detector agent) 📝
+### 3. Threat Detection (threat-detector agent) Future
 
 > **Status:** Not yet implemented. Documented as architectural target.
 
@@ -102,7 +102,7 @@ Planned capabilities:
 **Projected False Positive Rate**: ~5% (tuned via ML)  
 **Projected Verification**: Prometheus alerts, Loki logs
 
-### 4. Audit Trail 📝
+### 4. Audit Trail Future
 
 > **Status:** Partially implemented. File-based audit logging active. PostgreSQL hash-chain target is future work.
 
@@ -122,7 +122,7 @@ Planned enhancements:
 **Projected Tamper Resistance**: Hash chain + append-only  
 **Projected Verification**: `scripts/audit/verify-chain.sh`
 
-### 5. Human-in-the-Loop 📝
+### 5. Human-in-the-Loop Future
 
 > **Status:** Not yet implemented. Documented as architectural target.
 
@@ -361,14 +361,14 @@ Is activity in threat detector rules? (future system)
 
 | Requirement | Status | Gap | Plan |
 |-------------|--------|-----|------|
-| 1. Network Security | ⚠️ Partial | Host networking | Compensating controls documented |
-| 2. System Hardening | ⚠️ Partial | Privileged containers | Remove cAdvisor, secure Alloy |
-| 3. Data Protection | ✅ Implemented | - | Vault secrets management (Phase 1.6) |
-| 4. Encryption | ✅ Implemented | - | PostgreSQL SSL enabled (Phase 1.6) |
-| 6. Secure Development | ✅ Implemented | - | Issue-First workflow, code review |
-| 8. Authentication | ✅ Implemented | - | Human approval, RBAC |
-| 10. Logging | ✅ Implemented | - | Comprehensive audit trail |
-| 11. Testing | ⚠️ Planned | - | Penetration testing scheduled |
+| 1. Network Security | Partial | Host networking | Compensating controls documented |
+| 2. System Hardening | Partial | Privileged containers | Remove cAdvisor, secure Alloy |
+| 3. Data Protection | Implemented | - | Vault secrets management (Phase 1.6) |
+| 4. Encryption | Implemented | - | PostgreSQL SSL enabled (Phase 1.6) |
+| 6. Secure Development | Implemented | - | Issue-First workflow, code review |
+| 8. Authentication | Implemented | - | Human approval, RBAC |
+| 10. Logging | Implemented | - | Comprehensive audit trail |
+| 11. Testing | Planned | - | Penetration testing scheduled |
 
 **Overall PCI DSS Readiness**: ~70%
 
