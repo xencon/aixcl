@@ -4,7 +4,42 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.24] - 2026-06-08
+## [v1.1.25] - 2026-06-10
+
+### Summary
+
+Release v1.1.25 -- Major version bumps for Ollama, Vault, PostgreSQL, Grafana, Alertmanager, Loki, and cAdvisor.
+
+### Changed
+
+- [x] **Ollama 0.30.7**: Bumped inference engine from 0.20.5 to 0.30.7. (Fixes #1314)
+- [x] **Vault 2.0.2**: Bumped secret management from 1.18 to 2.0.2. (Fixes #1314)
+- [x] **PostgreSQL 18.4**: Bumped database from 17.9 to 18.4 with updated mount path (`/var/lib/postgresql` per 18+ Docker image requirement). (Fixes #1314)
+- [x] **Grafana 13.0.2**: Bumped observability UI from 12.4.2 to 13.0.2. (Fixes #1314)
+- [x] **Alertmanager v0.32.2**: Bumped alerting from v0.28.0 to v0.32.2. (Fixes #1314)
+- [x] **Loki 3.7.2**: Bumped log aggregation from 3.3.0 to 3.7.2. (Fixes #1314)
+- [x] **cAdvisor v0.55.1**: Attempted bump to v0.57.0 (not available on GCR); reverted to v0.55.1. (Fixes #1314)
+
+### Added
+
+- [x] **Prometheus v3.12.0**: Bumped metrics collection from v3.11.1. (Fixes #1313)
+- [x] **Open WebUI v0.9.6**: Bumped web interface from v0.9.5. (Fixes #1313)
+- [x] **NVIDIA GPU Exporter 1.4.1**: Bumped GPU metrics from 1.3.2. (Fixes #1313)
+- [x] **vLLM v0.22.1**: Bumped inference engine alternative from v0.19.0 (version-only, pull_policy: missing). (Fixes #1313)
+- [x] **Llama.cpp b9585**: Bumped inference engine alternative from b8334 (version-only, pull_policy: missing). (Fixes #1313)
+
+### Fixed
+
+- [x] **PostgreSQL 18 Mount Path**: Changed volume mount from `/var/lib/postgresql/data` to `/var/lib/postgresql` to satisfy PostgreSQL 18+ Docker image layout requirements. (Fixes #1315)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+---
 
 ### Summary
 
