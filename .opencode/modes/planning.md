@@ -29,12 +29,12 @@ Switch to planning mode for analysis, code review, and design work without makin
 
 ## Available Tools
 
-- ✅ **read** - Read files and directories
-- ✅ **grep** - Search codebase
-- ✅ **bash** (limited) - Read-only commands only (git status, ls, cat)
-- ❌ **edit** - Disabled
-- ❌ **write** - Disabled
-- ❌ **webfetch** - Disabled
+- [x] **read** - Read files and directories
+- [x] **grep** - Search codebase
+- [x] **bash** (limited) - Read-only commands only (git status, ls, cat)
+- [ ] **edit** - Disabled
+- [ ] **write** - Disabled
+- [ ] **webfetch** - Disabled
 
 ## Prompt
 

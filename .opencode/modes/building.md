@@ -29,12 +29,12 @@ Switch to building mode for active development with full tool access.
 
 ## Available Tools
 
-- ✅ **read** - Read files and directories
-- ✅ **edit** - Modify files (with approval)
-- ✅ **write** - Create new files
-- ✅ **bash** - Execute commands (with approval for destructive operations)
-- ✅ **grep** - Search codebase
-- ✅ **webfetch** - Fetch external content (with approval)
+- [x] **read** - Read files and directories
+- [x] **edit** - Modify files (with approval)
+- [x] **write** - Create new files
+- [x] **bash** - Execute commands (with approval for destructive operations)
+- [x] **grep** - Search codebase
+- [x] **webfetch** - Fetch external content (with approval)
 
 ## Safety Rules
 

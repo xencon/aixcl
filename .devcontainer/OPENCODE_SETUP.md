@@ -62,36 +62,36 @@ opencode
 ## How It Works
 
 ```
-+-------------------------------------------------------------+
-|  Your Host Machine (WSL2)                                     |
-|  +--------------------------------------------------------+ |
-|  |  OpenCode CLI                                         | |
-|  |  - Reads opencode.json                                | |
-|  |  - Use /connect to select provider                    | |
-|  |  - aixcl-local -> http://localhost:11434/v1            | |
-|  |  - cloud providers -> remote API                      | |
-|  +--------------------+-----------------------------------+ |
-+-----------------------+-------------------------------------+
-                        |
-                        | (port forwarded, when using local)
-                        |
-+-----------------------+-------------------------------------+
-|  Dev Container        |                                       |
-|  +--------------------+-----------------------------------+ |
-|  |  AIXCL Ollama Service                                  | |
-|  |  - Listens on port 11434                               | |
-|  |  - Uses host network mode (--network=host)             | |
-|  |  - Accessible as localhost:11434 from host             | |
-|  +--------------------------------------------------------+ |
-+-------------------------------------------------------------+
+┌─────────────────────────────────────────────────────────────┐
+│  Your Host Machine (WSL2)                                     │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  OpenCode CLI                                         │ │
+│  │  - Reads opencode.json                                │ │
+│  │  - Use /connect to select provider                    │ │
+│  │  - aixcl-local -> http://localhost:11434/v1            │ │
+│  │  - cloud providers -> remote API                      │ │
+│  └────────────────────┬───────────────────────────────────┘ │
+└───────────────────────┼─────────────────────────────────────┘
+                        │
+                        │ (port forwarded, when using local)
+                        │
+┌───────────────────────┼─────────────────────────────────────┐
+│  Dev Container        │                                       │
+│  ┌────────────────────▼───────────────────────────────────┐ │
+│  │  AIXCL Ollama Service                                  │ │
+│  │  - Listens on port 11434                               │ │
+│  │  - Uses host network mode (--network=host)             │ │
+│  │  - Accessible as localhost:11434 from host             │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Connection Status
 
-[x] Dev Container: Running  
-[x] AIXCL Services: Healthy (2/2)  
-[x] Model Loaded: qwen2.5-coder:0.5b  
-[x] API Accessible: http://localhost:11434/v1  
+[x] Dev Container: Running
+[x] AIXCL Services: Healthy (2/2)
+[x] Model Loaded: qwen2.5-coder:0.5b
+[x] API Accessible: http://localhost:11434/v1
 [x] Model Available: qwen2.5-coder:0.5b  
 
 ## Quick Test

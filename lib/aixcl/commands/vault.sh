@@ -25,10 +25,10 @@ function cmd_vault() {
         status)
             cmd_vault_status "$@"
             ;;
-        credentials| creds)
+        credentials|creds)
             cmd_vault_credentials "$@"
             ;;
-        passwords| password)
+        passwords|password)
             cmd_vault_passwords "$@"
             ;;
         rotate)

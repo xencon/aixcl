@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # create-pr.sh — Safe pull request creation wrapper
-# Usage: ./scripts/utils/create-pr.sh "Title (#42)" "Fixes #42" "component:cli" "sbadakhc"
+# Usage: ./scripts/utils/create-pr.sh "Title (#42)" "Fixes #42" "component:cli" "<github-username>"
 #
 # Benefits over manual gh pr create:
 # - Always passes --assignee at creation time (no PR validation race condition)

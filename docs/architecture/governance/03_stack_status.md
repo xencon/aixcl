@@ -99,7 +99,7 @@ When implementing stack status:
 
 4. **Output Format**
    - Default: Human-readable, grouped by category
-    - After Runtime Core, show **Configured Models**: OpenCode VS Code plugin, OpenCode CLI (no Ollama). Use green (✅) when models are configured, red (❌) when not, to match other services. OpenCode CLI in same format as `cn`: Config: <name>   Model: <current model> (prefer `cn -p "/info"` when available; else parse `opencode.json` provider settings)
+    - After Runtime Core, show **Configured Models**: OpenCode VS Code plugin, OpenCode CLI (no Ollama). Use `[x]` when models are configured, `[ ]` when not, to match other services. OpenCode CLI in same format: Config: <name>   Model: <current model> (parse `opencode.json` provider settings to determine current model)
    - Verbose: Include service details, ports, dependencies
    - JSON: Machine-readable format for automation
 
