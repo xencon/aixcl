@@ -641,13 +641,20 @@ app_cmd_remove() {
         rm -f "$prom_file"
     fi
 
-    # 4. Remove Grafana dashboard files if present
+    # 3a. Remove Grafana dashboard files if present (handle both lowercase and uppercase app names)
     local grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/${app_name}"
     if [ -d "$grafana_dash" ]; then
         rm -rf "$grafana_dash"
     fi
 
-    # 4a. Clean up old symlink path (backward compatibility)
+    # 3b. Handle uppercase app name variant (e.g., ftso -> FTSO for display names)
+    local grafana_dash_upper
+    grafana_dash_upper="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/$(echo "$app_name" | tr '[:lower:]' '[:upper:]')"
+    if [ -d "$grafana_dash_upper" ] && [ "$grafana_dash_upper" != "$grafana_dash" ]; then
+        rm -rf "$grafana_dash_upper"
+    fi
+
+    # 4. Clean up old symlink path (backward compatibility)
     local old_grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/${app_name}"
     if [ -L "$old_grafana_dash" ] || [ -d "$old_grafana_dash" ]; then
         rm -rf "$old_grafana_dash"

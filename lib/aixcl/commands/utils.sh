@@ -50,6 +50,16 @@ function prune() {
     fi
     echo ""
 
+    # Remove runtime-generated artifacts from host filesystem (bind-mounted directories)
+    # These are not tracked in git (see .gitignore) and must be cleaned explicitly.
+    echo "Removing runtime-generated dashboard provisioning..."
+    rm -rf "${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/"* 2>/dev/null || true
+    echo ""
+
+    echo "Removing runtime-generated Prometheus file_sd targets..."
+    rm -f "${SCRIPT_DIR}/prometheus/file_sd/"*.json 2>/dev/null || true
+    echo ""
+
     echo "Prune complete. Images retained for fast restart."
     echo "Run './aixcl stack init && ./aixcl stack start --profile sys' to bring the stack back up."
 }
