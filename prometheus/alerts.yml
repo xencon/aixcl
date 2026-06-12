@@ -244,6 +244,3 @@ groups:
         annotations:
           summary: "Alertmanager is down"
           description: "Alertmanager is not responding for more than 2 minutes. Alert notifications may not be delivered."
-
-
-
