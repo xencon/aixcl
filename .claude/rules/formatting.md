@@ -11,6 +11,13 @@
 - Use markdown checkboxes: `- [x]` for completed, `- [ ]` for incomplete (for issues, PRs, and documentation)
 - Use Unix line endings (LF) -- CRLF is rejected by CI
 
+### Scope of the ASCII rule
+The ASCII mandate applies to markdown files, issues, PRs, commit messages,
+and documentation -- artifacts that travel through git, CI, and web UIs.
+Interactive terminal output (CLI status icons) MAY use Unicode glyphs
+provided every glyph has an ASCII fallback (the `${ICON_*:-[x]}` pattern
+in lib/) so non-UTF-8 terminals degrade gracefully.
+
 ## Labels
 **Issue Types** (select exactly one): `Bug`, `Feature`, `Task`
 **Component Labels** (required): `component:runtime-core`, `component:ollama`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`

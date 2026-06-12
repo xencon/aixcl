@@ -23,7 +23,7 @@ Read the following documents before beginning work:
 3. `docs/developer/development-workflow.md` -- full workflow guide
 4. `docs/architecture/governance/` -- platform invariants and service contracts
 
-**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent → **HALT** and create [TASK] issue: "Missing governance documentation". Await human clarification before proceeding.
+**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent → **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
 
 ---
 
@@ -32,12 +32,18 @@ Read the following documents before beginning work:
 **Always create an issue before starting work.** Every code change, fix, or feature must be
 traceable to a GitHub issue. Do not begin modifying files until an issue exists.
 
-Select the correct template from `.github/ISSUE_TEMPLATE/` based on the type of work:
+Select the correct template from `.github/ISSUE_TEMPLATE/` based on the type of work.
+
+**Labels are defined once, in AGENTS.md (Label Taxonomy) -- that section is
+canonical.** In summary: exactly one type label (`Bug`, `Feature`, `Task`),
+at least one `component:*` label (required), optional priority (`P1`-`P3`),
+optional profile (`profile:bld`, `profile:sys`), optional category. Do not
+invent labels outside that taxonomy.
 
 ### Bug report - `.github/ISSUE_TEMPLATE/bug_report.md`
 
 - Title prefix: `[BUG]`
-- Labels: `priority:medium`, `profile:sys`
+- Labels: `Bug` + required `component:*` (+ optional `P1`-`P3`, `profile:*`)
 - Assignee: `<assignee>`
 - Required sections: Bug Summary, Steps to Reproduce, Expected Behavior, Actual Behavior,
   Impact (component / severity / frequency), Root Cause Analysis, Remediation, Verification,
@@ -46,7 +52,7 @@ Select the correct template from `.github/ISSUE_TEMPLATE/` based on the type of 
 ### Feature request - `.github/ISSUE_TEMPLATE/feature_request.md`
 
 - Title prefix: `[FEATURE]`
-- Labels: `enhancement`
+- Labels: `Feature` + required `component:*`
 - Assignee: `<assignee>`
 - Required sections: Feature Overview, Problem Statement, Current Behavior, Proposed Solution,
   Design Considerations, Implementation Plan, Verification
@@ -54,7 +60,7 @@ Select the correct template from `.github/ISSUE_TEMPLATE/` based on the type of 
 ### Task / investigation - `.github/ISSUE_TEMPLATE/task.md`
 
 - Title prefix: `[TASK]`
-- Labels: `maintenance`
+- Labels: `Task` + required `component:*`
 - Assignee: `<assignee>`
 - Required sections: Task Summary, Background, Deliverables, Verification
 
@@ -73,9 +79,9 @@ Brief description here.
 - [ ] Step 1
 - [ ] Step 2
 EOF
-gh issue create --title "[BUG] <title>" --body-file /tmp/issue-body.md --label "priority:medium,profile:sys" --assignee <assignee>
-gh issue create --title "[FEATURE] <title>" --body-file /tmp/issue-body.md --label "enhancement" --assignee <assignee>
-gh issue create --title "[TASK] <title>" --body-file /tmp/issue-body.md --label "maintenance" --assignee <assignee>
+gh issue create --title "[BUG] <title>" --body-file /tmp/issue-body.md --label "Bug,component:<name>" --assignee <assignee>
+gh issue create --title "[FEATURE] <title>" --body-file /tmp/issue-body.md --label "Feature,component:<name>" --assignee <assignee>
+gh issue create --title "[TASK] <title>" --body-file /tmp/issue-body.md --label "Task,component:<name>" --assignee <assignee>
 ```
 
 **Recommended**: Use the wrapper script `./scripts/utils/create-issue.sh` which handles validation, uses `/tmp`, and prevents both backtick injection and assignee race conditions.
@@ -167,6 +173,31 @@ feature/<short-description>
 fix/<short-description>
 ```
 
+### Fork Workflow
+
+This project is developed both in the canonical repository and in forks
+(e.g. app-builder forks doing local MVP work). The rules above assume the
+canonical repo; forks follow these adaptations:
+
+- **Remotes:** `origin` is your fork, `upstream` is the canonical repo
+  (xencon/aixcl). Sync `dev`/`main` from upstream; never push to upstream
+  directly -- contribute via PRs from the fork.
+- **Local-only branches** (work that will not be pushed) may use the
+  Emergency Workflow Override (AGENTS.md Section 8) standing for the
+  duration of that work, since fork-local issues would never be triaged.
+  All other rules (commit format, diff verification, CI checks run
+  locally) still apply.
+- **Capturing upstream defects:** platform problems discovered during
+  fork work are recorded in `UPSTREAM-ISSUES.md` at the repository root
+  -- one entry per candidate ticket with severity and suggested labels.
+  This file is working inventory, exempt from the dated-reports lean
+  policy. When an entry is filed as a real issue upstream, delete it
+  from the file (the issue tracker takes over).
+- **Before proposing fork work upstream:** scrub anything fork-specific
+  (local tokens, machine paths, app experiments), squash exploratory
+  history, and reference or create the upstream issue per the standard
+  workflow.
+
 ---
 
 ## 4. Commit message format
@@ -184,10 +215,23 @@ Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
 - First line under 72 characters
 - Use bullet points for multi-change commits
 - Always include `Fixes #<n>` or `Addresses #<n>`
+- **Review the staged diff before committing** (see the Pre-Commit
+  Checklist in `.claude/rules/ci-checks.md` / `.opencode/rules/ci-checks.md`,
+  and `./scripts/checks/check-ai-elisions.sh --staged`). Unexplained mass
+  deletions and placeholder text are commit blockers, not review nits.
 
-### GPG-Signed Commits (Required)
+### GPG-Signed Commits
 
-All commits to `main` and `dev` branches **must be GPG-signed**.
+Commits pushed to `main` and `dev` **must be GPG-signed by the human
+operator**. Honest scoping of this rule:
+
+- CI does **not** currently verify signatures; enforcement is by
+  maintainer discipline and branch protection. (Adding signature
+  verification to CI is a tracked enhancement.)
+- Agents running without a TTY cannot complete GPG pinentry. An agent
+  asked to push signed commits must surface that limitation and hand the
+  push to the operator -- never disable signing or bypass the requirement
+  silently. Local working branches that are not pushed may be unsigned.
 
 **Setup** (run once per developer):
 ```bash

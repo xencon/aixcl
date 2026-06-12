@@ -3,6 +3,18 @@
 ## Pre-Commit Checklist
 Before committing any changes, verify locally:
 
+### Diff Verification (ALWAYS, especially after AI-assisted edits)
+- Review the staged diff before every commit: `git diff --cached --stat`
+- A large net deletion in a file that is NOT being deleted is a stop-and-inspect
+  signal: open the file and confirm the removed content was meant to go
+- Never commit placeholder text standing in for preserved content
+  ("rest of the file unchanged", "existing code here", and similar) --
+  that means the edit truncated the file
+- Mechanical check (also enforced by CI on every PR):
+  `./scripts/checks/check-ai-elisions.sh --staged`
+- Intentional large rewrites: re-run with `AIXCL_ALLOW_MASS_DELETE=1`
+  and state the intent in the commit message
+
 ### Shell Scripts
 - Run ShellCheck: `shellcheck --severity=warning --exclude=SC1091 <file.sh>`
 - Run syntax check: `bash -n <file.sh>`
