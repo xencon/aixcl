@@ -83,7 +83,10 @@ scrape_configs:
           service: 'alertmanager'
 
   # Application services - discovered via file_sd_configs
-  # Apps write their targets to prometheus/app-targets/<app_name>.json
+  # Apps write their targets to /etc/prometheus/app-targets/<app_name>.json
+  # (mounted from host ./prometheus/file_sd/)
+  # Default scrape path is /metrics; apps with a different path declare
+  # prometheus.metrics_path in app.yaml (emitted as __metrics_path__ label).
   - job_name: 'aixcl-apps'
     file_sd_configs:
       - files:

@@ -139,3 +139,7 @@ export/
 
 # Generated SSL/certificates
 .security/
+
+# Generated app integration files (written by ./aixcl app start)
+prometheus/file_sd/
+grafana/provisioning/dashboards/apps/
