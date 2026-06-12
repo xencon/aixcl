@@ -4,6 +4,40 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.26] - 2026-06-13
+
+### Summary
+
+Release v1.1.26 -- Declarative app provisioning contract for BYO apps, governance consistency fixes, and AI elision guard.
+
+### Added
+
+- [x] **App Provisioning Contract**: New declarative `provision:` block in `app.yaml`. The platform idempotently seeds Vault secrets under `kv/apps/<name>`, renders them to a per-app secrets volume, and creates the PostgreSQL role and database. New `./aixcl app provision` and `./aixcl app secrets` subcommands; scaffold template includes a commented provision block. (Fixes #1331)
+- [x] **App Healthcheck Dispatcher**: `http`, `cmd`, and `container_running` healthcheck types declared in `app.yaml` are now honored by app status reporting. (Fixes #1336)
+- [x] **AI Elision Guard**: New `scripts/checks/check-ai-elisions.sh` detects placeholder text standing in for preserved content and suspicious mass deletions; enforced in CI on every PR and documented in the pre-commit checklist. (Fixes #1346)
+- [x] **Rules and Skills Mirror Parity Check**: `check-agents.sh` now verifies `.claude/` and `.opencode/` rules and skills directories are byte-identical. (Fixes #1348)
+- [x] **Fork Workflow Documentation**: New DEVELOPMENT.md section covering fork remotes, local-only overrides, upstream defect capture, and pre-upstream scrub checklist. (Fixes #1349)
+
+### Changed
+
+- [x] **Per-App Secret Isolation**: Apps no longer mount the shared platform secrets volume; each app receives its own `aixcl-app-<name>-secrets` volume rendered by the platform. Apps never hold Vault tokens. (Fixes #1333)
+- [x] **App and Platform Demarcation**: Removed app-specific bootstrap scripts, Vault agent config, and Prometheus metrics-path hardcoding from platform files; app metrics paths are declared in `app.yaml` and emitted as `__metrics_path__`. (Fixes #1334, #1335)
+- [x] **Escalation Policy Consolidated**: DEVELOPMENT.md escalation defers to AGENTS.md Section 7; agents do not create issues unilaterally. (Fixes #1344)
+- [x] **Label Taxonomy Canonicalized**: DEVELOPMENT.md and issue templates aligned to the canonical AGENTS.md taxonomy (Bug/Feature/Task plus required component labels). (Fixes #1343)
+- [x] **Governance Drift Fixes**: ASCII rule scoped to git/CI/web artifacts with Unicode-with-fallback allowance for terminal output; workflow-guard skill corrected; issue templates carry canonical labels. (Fixes #1350)
+
+### Fixed
+
+- [x] **Static Compliance Self-Attestation Removed**: Deleted `GOVERNANCE_COMPLIANCE.md`; compliance is now enforced mechanically by CI checks instead of asserted in a document. (Fixes #1345)
+- [x] **Trailing Blank Lines in alerts.yml**: Removed trailing blank lines that failed repo-wide yamllint on every PR. (Fixes #1353)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
 ## [v1.1.25] - 2026-06-10
 
 ### Summary
