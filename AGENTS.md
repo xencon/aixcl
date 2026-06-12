@@ -5,7 +5,7 @@
 | purpose | agent_contract |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-06-08 |
+| last_updated | 2026-06-12 |
 
 # AGENTS.md
 
@@ -133,6 +133,9 @@ Before ANY operation, confirm:
 - [ ] No security principles are violated
 - [ ] No unauthorized dependencies are introduced
 - [ ] Merged files scanned for conflict markers (when merge performed)
+- [ ] Staged diff reviewed before commit -- no unexplained mass deletions,
+      no placeholder/elision text standing in for preserved content
+      (verify: `./scripts/checks/check-ai-elisions.sh --staged`)
 
 If ANY check fails → **HALT** and escalate.
 
