@@ -152,6 +152,18 @@ _app_service_needs_build() {
     [ "$built_val" = "True" ] || [ "$built_val" = "true" ] || [ "$built_val" = "1" ]
 }
 
+# Warn when a service declares build config but built: true is unset --
+# previously a silent no-op in both build paths
+_app_warn_skipped_build() {
+    local index="$1" svc_name="$2"
+    local ctx
+    ctx="$(_app_service_build_context "$index")"
+    if [ -n "$ctx" ]; then
+        echo "  ${ICON_WARNING:-[!]} ${svc_name}: build config present but 'built: true' not set; skipping build" >&2
+        echo "      Set 'built: true' in the manifest to enable building." >&2
+    fi
+}
+
 _app_service_healthcheck_type() {
     local index="$1"
     eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_TYPE:-}" 2>/dev/null || true
@@ -476,6 +488,8 @@ app_cmd_start() {
                     echo "  [ ] Build context not found: ${abs_ctx}" >&2
                 fi
             fi
+        else
+            _app_warn_skipped_build "$i" "$svc_name"
         fi
 
         # Remove stale container if it exists but isn't running
@@ -718,8 +732,15 @@ app_cmd_build() {
                     echo "  [ ] Build context missing: ${abs_ctx}" >&2
                 fi
             fi
+        else
+            local skip_name
+            skip_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+            _app_warn_skipped_build "$i" "${skip_name:-service ${i}}"
         fi
     done
+    if [ "$built" -eq 0 ]; then
+        echo "  No services were built (no service has 'built: true')."
+    fi
     echo ""
 }
 
