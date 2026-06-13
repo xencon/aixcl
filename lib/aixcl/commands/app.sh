@@ -38,7 +38,8 @@ Usage: ./aixcl app <action> [args]
 
 Actions:
   list                          Discover and list all registered apps
-  start   <name>                 Start an app's services from manifest
+  start   <name> [--verbose]     Start an app's services from manifest
+                                (--verbose shows full compose and build output)
   stop    <name>                 Stop an app's services
   restart <name>                 Restart an app's services
   status  <name>                 Show status of an app's services
@@ -93,7 +94,22 @@ _app_compose_cmd() {
         return 1
     fi
 
-    (cd "$app_dir" && "${cmd[@]}" "$@" 2>&1) | \
+    # Capture raw output: quiet (filtered) on success, but a failure must
+    # dump the unfiltered compose output -- the noise filter below must
+    # never hide the reason a command failed.
+    local out_file rc=0
+    out_file="$(mktemp /tmp/aixcl_compose_out.XXXXXX)" || return 1
+    (cd "$app_dir" && "${cmd[@]}" "$@" >"$out_file" 2>&1) || rc=$?
+    if [ "$rc" -ne 0 ]; then
+        cat "$out_file" >&2
+        rm -f "$out_file"
+        return "$rc"
+    fi
+    if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+        cat "$out_file"
+        rm -f "$out_file"
+        return 0
+    fi
     awk '
         /^[[:space:]]*-[ev][[:space:]]/ { next }
         /^[[:space:]]*--/ { next }
@@ -121,8 +137,9 @@ _app_compose_cmd() {
         /^ [x]/ { next }
         /^ [ ]/ { next }
         { print }
-    '
-    return ${PIPESTATUS[0]:-0}
+    ' < "$out_file"
+    rm -f "$out_file"
+    return 0
 }
 
 # Resolve whether a service has `built: true` in its manifest
@@ -365,7 +382,20 @@ app_cmd_list() {
 # Usage: app_cmd start <name>
 # Start all services for an app in manifest order with dependency waits
 app_cmd_start() {
-    local app_name="${1:-}"
+    local app_name="" arg
+    for arg in "$@"; do
+        case "$arg" in
+            --verbose|-v)
+                AIXCL_VERBOSE=1
+                export AIXCL_VERBOSE
+                ;;
+            *)
+                if [ -z "$app_name" ]; then
+                    app_name="$arg"
+                fi
+                ;;
+        esac
+    done
     if [ -z "$app_name" ]; then
         echo "Error: app name required." >&2
         _app_usage >&2
@@ -431,12 +461,16 @@ app_cmd_start() {
                 abs_ctx="${app_dir}/${build_ctx}"
                 if [ -d "$abs_ctx" ]; then
                     echo "  Building ${svc_name}..."
-                    local df
+                    local df build_out
                     df="$(_app_service_build_dockerfile "$i")"
-                    if "${DOCKER_BIN:-docker}" build -f "${abs_ctx}/${df}" -t "localhost/${svc_container}:latest" "$abs_ctx" >/dev/null 2>&1; then
+                    if build_out="$("${DOCKER_BIN:-docker}" build -f "${abs_ctx}/${df}" -t "localhost/${svc_container}:latest" "$abs_ctx" 2>&1)"; then
+                        if [ "${AIXCL_VERBOSE:-0}" = "1" ]; then
+                            printf '%s\n' "$build_out"
+                        fi
                         echo "    [x] ${svc_name} built"
                     else
                         echo "    [ ] ${svc_name} build failed (non-fatal; compose up may pull instead)" >&2
+                        printf '%s\n' "$build_out" >&2
                     fi
                 else
                     echo "  [ ] Build context not found: ${abs_ctx}" >&2
@@ -449,9 +483,10 @@ app_cmd_start() {
             "${DOCKER_BIN:-docker}" rm -f "$svc_container" >/dev/null 2>&1 || true
         fi
 
-        # Start the service silently, then print single status line
-        _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" >/dev/null 2>&1 || {
-            echo "  [ ] ${svc_name}" >&2
+        # Quiet on success; _app_compose_cmd dumps the raw compose output
+        # to stderr on failure so the reason is visible
+        _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" >/dev/null || {
+            echo "  [ ] ${svc_name} failed to start (compose output above)" >&2
             return 1
         }
 
