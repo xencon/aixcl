@@ -199,6 +199,77 @@ _app_service_depends_on() {
     printf '%s\n' "${deps[@]}"
 }
 
+# Resolve manifest service start order honoring depends_on.
+# Prints one service index per line, dependencies before dependents.
+# A dependency naming another manifest service orders it earlier; one
+# naming an already-running container (platform service) is satisfied;
+# anything else fails loudly. Cycles fail loudly.
+# Usage: _app_resolve_start_order <svc_count>
+_app_resolve_start_order() {
+    local svc_count="$1"
+    local i j dep
+    local -a names svc_deps indeg done_flag
+
+    for ((i = 0; i < svc_count; i++)); do
+        names[i]="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+        svc_deps[i]=""
+        indeg[i]=0
+        done_flag[i]=0
+    done
+
+    for ((i = 0; i < svc_count; i++)); do
+        while IFS= read -r dep; do
+            [ -z "$dep" ] && continue
+            local found=-1
+            for ((j = 0; j < svc_count; j++)); do
+                if [ "${names[j]}" = "$dep" ]; then
+                    found=$j
+                    break
+                fi
+            done
+            if [ "$found" -ge 0 ]; then
+                case " ${svc_deps[i]} " in
+                    *" ${found} "*) ;;  # duplicate entry, already counted
+                    *)
+                        svc_deps[i]="${svc_deps[i]} ${found}"
+                        indeg[i]=$((indeg[i] + 1))
+                        ;;
+                esac
+            elif _app_container_running "$dep"; then
+                : # platform dependency already running
+            else
+                echo "  ${ICON_ERROR:-[ ]} ${names[i]}: depends_on '${dep}' is not a manifest service and no running container has that name" >&2
+                echo "      Declare '${dep}' under services: or start it first." >&2
+                return 1
+            fi
+        done < <(_app_service_depends_on "$i")
+    done
+
+    # Kahn's algorithm; stable index order among ready services.
+    local emitted=0 progress
+    while [ "$emitted" -lt "$svc_count" ]; do
+        progress=0
+        for ((i = 0; i < svc_count; i++)); do
+            [ "${done_flag[i]}" = "1" ] && continue
+            [ "${indeg[i]}" -ne 0 ] && continue
+            echo "$i"
+            done_flag[i]=1
+            emitted=$((emitted + 1))
+            progress=1
+            for ((j = 0; j < svc_count; j++)); do
+                case " ${svc_deps[j]} " in
+                    *" ${i} "*) indeg[j]=$((indeg[j] - 1)) ;;
+                esac
+            done
+        done
+        if [ "$progress" -eq 0 ]; then
+            echo "  ${ICON_ERROR:-[ ]} Dependency cycle detected in manifest depends_on" >&2
+            return 1
+        fi
+    done
+    return 0
+}
+
 # Check if a URL responds healthy (same helper as ftso.sh)
 _app_http_ok() {
     local url="$1"
@@ -332,8 +403,16 @@ app_cmd_start() {
         return 1
     fi
 
+    # Honor manifest depends_on: dependencies start (and pass their
+    # health checks) before dependents; unresolvable deps fail here.
+    local start_order
+    if ! start_order="$(_app_resolve_start_order "$svc_count")"; then
+        echo "  ${ICON_ERROR:-[ ]} Cannot start ${app_name}: unresolvable service dependencies" >&2
+        return 1
+    fi
+
     local started=0
-    for i in $(seq 0 "$((svc_count - 1))"); do
+    for i in $start_order; do
         local svc_name svc_container health_type
         svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
         svc_container="$(_app_service_container_name $i)"

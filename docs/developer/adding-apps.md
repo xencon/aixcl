@@ -112,7 +112,10 @@ An array of service definitions used by the app command implementation. Each ser
 - `build`: Build context and Dockerfile path
 - `ports`: Exposed ports
 - `environment`: Environment variables
-- `depends_on`: Upstream platform services (e.g., `ollama`)
+- `depends_on`: Either another service in this manifest (started and
+  health-checked before the dependent) or an already-running platform
+  container (e.g., `ollama`). A name matching neither fails `app start`
+  before any service is started; dependency cycles also fail.
 - `healthcheck`: Readiness probe used by `app start` and `app status`:
   - `type: http` with `url` -- healthy on HTTP 200
   - `type: cmd` with `command` -- run inside the container, healthy on exit 0
