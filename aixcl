@@ -50,6 +50,10 @@ source "${SCRIPT_DIR}/lib/cli/profile.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/core/app_parser.sh"
 
+# App provisioning (platform-side hook implementing the app.yaml provision contract)
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/core/app_provision.sh"
+
 # ── Source AIXCL modules ─────────────────────────────────────────────────────
 
 # CLI module (contains help_menu, install_completion)

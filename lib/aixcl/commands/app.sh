@@ -25,6 +25,10 @@ _app_ensure_parser() {
         # shellcheck disable=SC1091
         source "${SCRIPT_DIR}/lib/core/app_parser.sh"
     fi
+    if ! command -v _app_provision >& /dev/null 2>&1; then
+        # shellcheck disable=SC1091
+        source "${SCRIPT_DIR}/lib/core/app_provision.sh"
+    fi
 }
 
 # Print usage
@@ -39,6 +43,8 @@ Actions:
   restart <name>                 Restart an app's services
   status  <name>                 Show status of an app's services
   build   <name>                 Build containers for an app (built: true)
+  provision <name>               Provision declared vault secrets and postgres
+  secrets <name>                 Show an app's provisioned secrets (local dev)
   remove  <name>                 Stop, rm containers, and prune images
   scaffold <name>                Generate a new app skeleton from template
   install <git-url> [--name <n>] [--branch <b>]
@@ -70,7 +76,7 @@ _app_compose_cmd() {
     local compose_file="${app_dir}/docker-compose.yml"
 
     if [ ! -f "$compose_file" ]; then
-        echo "[ ] Missing ${compose_file}" >&2
+        echo "${ICON_ERROR:-[ ]} Missing ${compose_file}" >&2
         return 1
     fi
 
@@ -83,7 +89,7 @@ _app_compose_cmd() {
     elif command -v podman-compose >/dev/null 2>&1; then
         cmd=(podman-compose -f "$compose_file" -p "aixcl-${app_name}")
     else
-        echo "[ ] No compose tool found" >&2
+        echo "${ICON_ERROR:-[ ]} No compose tool found" >&2
         return 1
     fi
 
@@ -137,6 +143,11 @@ _app_service_healthcheck_type() {
 _app_service_healthcheck_url() {
     local index="$1"
     eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_URL:-}" 2>/dev/null || true
+}
+
+_app_service_healthcheck_command() {
+    local index="$1"
+    eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_COMMAND:-}" 2>/dev/null || true
 }
 
 _app_service_healthcheck_interval() {
@@ -194,6 +205,34 @@ _app_http_ok() {
     local code
     code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 --max-time 5 "$url" 2>/dev/null || echo "000")
     [ "$code" = "200" ]
+}
+
+# Run a manifest healthcheck of type `cmd` inside the service container
+_app_cmd_ok() {
+    local container="$1"
+    local check_cmd="$2"
+    "${DOCKER_BIN:-docker}" exec "$container" sh -c "$check_cmd" >/dev/null 2>&1
+}
+
+# Dispatch a single health probe for service <index> (container must be known)
+# Returns 0 if healthy. Supported types: http (url), cmd (command).
+_app_health_ok() {
+    local index="$1"
+    local container="$2"
+    local htype
+    htype="$(_app_service_healthcheck_type "$index")"
+    case "$htype" in
+        http)
+            _app_http_ok "$(_app_service_healthcheck_url "$index")"
+            ;;
+        cmd)
+            _app_cmd_ok "$container" "$(_app_service_healthcheck_command "$index")"
+            ;;
+        *)
+            # Unknown or container_running: healthy if the container is up
+            _app_container_running "$container"
+            ;;
+    esac
 }
 
 # Check if a container is running (same pattern as ftso.sh / stack.sh)
@@ -266,7 +305,7 @@ app_cmd_start() {
     _app_ensure_compose
 
     if ! _app_load_manifest "$app_name"; then
-        echo "[ ] Failed to load manifest for app: ${app_name}" >&2
+        echo "${ICON_ERROR:-[ ]} Failed to load manifest for app: ${app_name}" >&2
         return 1
     fi
 
@@ -278,6 +317,13 @@ app_cmd_start() {
     echo "Starting Application: ${app_name}"
     echo "=============================="
     echo ""
+
+    # Provision declared platform resources (vault secrets, postgres) first.
+    # Idempotent: safe to run on every start, heals a freshly re-initialised stack.
+    if ! _app_provision "$app_name"; then
+        echo "  ${ICON_ERROR:-[ ]} Provisioning failed for ${app_name}" >&2
+        return 1
+    fi
 
     local svc_count
     svc_count="$(_app_service_count)"
@@ -319,6 +365,11 @@ app_cmd_start() {
             fi
         fi
 
+        # Remove stale container if it exists but isn't running
+        if _app_container_exists "$svc_container" && ! _app_container_running "$svc_container"; then
+            "${DOCKER_BIN:-docker}" rm -f "$svc_container" >/dev/null 2>&1 || true
+        fi
+
         # Start the service silently, then print single status line
         _app_compose_cmd "$app_name" up -d --no-deps "$svc_container" >/dev/null 2>&1 || {
             echo "  [ ] ${svc_name}" >&2
@@ -330,36 +381,35 @@ app_cmd_start() {
         local timeout
         timeout="$(_app_service_healthcheck_timeout "$i")"
         if [ -n "$health_type" ] && [ "$health_type" != "container_running" ]; then
-            local url wait_start wait_inter elapsed
-            url="$(_app_service_healthcheck_url "$i")"
+            local wait_start wait_inter elapsed
             wait_inter="$(_app_service_healthcheck_interval "$i")"
             wait_start=$(date +%s)
             local wait_ok=false
             while true; do
-                if _app_http_ok "$url"; then
-                    wait_ok=true
-                    break
-                fi
-                elapsed=$(( $(date +%s) - wait_start ))
-                if [ "$elapsed" -ge "$timeout" ]; then
-                    break
-                fi
-                sleep "$wait_inter"
-            done
-            if [ "$wait_ok" = true ]; then
-                echo "  [x] ${svc_name}"
-            else
-                echo "  [!] ${svc_name} (starting up)"
+            if _app_health_ok "$i" "$svc_container"; then
+                wait_ok=true
+                break
             fi
+            elapsed=$(( $(date +%s) - wait_start ))
+            if [ "$elapsed" -ge "$timeout" ]; then
+                break
+            fi
+            sleep "$wait_inter"
+        done
+        if [ "$wait_ok" = true ]; then
+            echo "  ${ICON_SUCCESS:-[x]} ${svc_name}"
         else
-            # No health URL -- just check if container is running
-            sleep 2
-            if _app_container_running "$svc_container"; then
-                echo "  [x] ${svc_name}"
-            else
-                echo "  [ ] ${svc_name}" >&2
-            fi
+            echo "  ${ICON_WARNING:-[!]} ${svc_name} (starting up)"
         fi
+    else
+        # No health URL -- just check if container is running
+        sleep 2
+        if _app_container_running "$svc_container"; then
+            echo "  ${ICON_SUCCESS:-[x]} ${svc_name}"
+        else
+            echo "  ${ICON_ERROR:-[ ]} ${svc_name}" >&2
+        fi
+    fi
         started=$((started + 1))
     done
 
@@ -408,9 +458,11 @@ app_cmd_stop() {
         fi
         if _app_container_running "$svc_container"; then
             if _app_compose_cmd "$app_name" stop "$svc_container" >/dev/null 2>&1; then
-                echo "  [x] ${svc_container}"
+                # Force remove to prevent restart policy from bringing it back
+                "${DOCKER_BIN:-docker}" rm -f "$svc_container" >/dev/null 2>&1 || true
+                echo "  ${ICON_SUCCESS:-[x]} ${svc_container}"
             else
-                echo "  [ ] ${svc_container}" >&2
+                echo "  ${ICON_ERROR:-[ ]} ${svc_container}" >&2
             fi
         fi
     done
@@ -459,7 +511,7 @@ app_cmd_status() {
     local svc_count
     svc_count="$(_app_service_count)"
     for i in $(seq 0 "$((svc_count - 1))"); do
-        local svc_name svc_container htype hurl display_status health_status is_healthy
+        local svc_name svc_container htype display_status health_status is_healthy
         svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
         svc_container="$(_app_service_container_name "$i")"
         [ -z "$svc_container" ] && continue
@@ -470,9 +522,8 @@ app_cmd_status() {
 
         if _app_container_running "$svc_container"; then
             htype="$(_app_service_healthcheck_type "$i")"
-            hurl="$(_app_service_healthcheck_url "$i")"
-            if [ -n "$htype" ] && [ "$htype" != "container_running" ] && [ -n "$hurl" ]; then
-                if _app_http_ok "$hurl"; then
+            if [ -n "$htype" ] && [ "$htype" != "container_running" ]; then
+                if _app_health_ok "$i" "$svc_container"; then
                     display_status="${ICON_SUCCESS:-[x]}"
                     is_healthy=true
                 else
@@ -556,6 +607,45 @@ app_cmd_build() {
         fi
     done
     echo ""
+}
+
+# Usage: app_cmd provision <name>
+# Run the manifest provision contract standalone (vault secrets, postgres)
+app_cmd_provision() {
+    local app_name="${1:-}"
+    if [ -z "$app_name" ]; then
+        echo "Error: app name required." >&2
+        return 1
+    fi
+
+    _app_ensure_parser
+    if ! _app_load_manifest "$app_name"; then
+        return 1
+    fi
+
+    if ! _app_provision_required; then
+        echo "No provision section declared in apps/${app_name}/app.yaml -- nothing to do."
+        return 0
+    fi
+
+    _app_provision "$app_name"
+}
+
+# Usage: app_cmd secrets <name>
+# Show the app's provisioned secret values (local development convenience)
+app_cmd_secrets() {
+    local app_name="${1:-}"
+    if [ -z "$app_name" ]; then
+        echo "Error: app name required." >&2
+        return 1
+    fi
+
+    _app_ensure_parser
+    if ! _app_load_manifest "$app_name"; then
+        return 1
+    fi
+
+    _app_provision_show_secrets "$app_name"
 }
 
 # -- Remove Application -----------------------------------------------------------
@@ -664,7 +754,7 @@ app_cmd_remove() {
     "${DOCKER_BIN:-docker}" image prune -f 2>/dev/null || true
 
     echo ""
-    echo "[x] Removed ${removed} container(s)."
+    echo "${ICON_SUCCESS:-[x]} Removed ${removed} container(s)."
     echo ""
     echo "NOTE: Source code in apps/${app_name}/ was NOT deleted."
     echo "      Run: rm -rf apps/${app_name}  to delete permanently."
@@ -720,6 +810,18 @@ services:
       startup_timeout: 60
       interval: 5
     depends_on: []
+
+# Platform resources provisioned automatically on 'app start' (idempotent).
+# Secrets are generated into Vault and rendered to the per-app volume
+# aixcl-app-${app_name}-secrets as /run/secrets/${app_name}-<name>.
+# Uncomment what your app needs:
+# provision:
+#   secrets:
+#     - db-password
+#   postgres:
+#     database: ${app_name}
+#     owner: ${app_name}
+#     password_secret: db-password
 
 prometheus:
   enabled: true
@@ -922,7 +1024,7 @@ EOF
     mkdir -p "${app_dir}/prometheus" "${app_dir}/grafana/dashboards"
 
     echo ""
-    echo "[x] Installation complete: ${app_dir}/"
+    echo "${ICON_SUCCESS:-[x]} Installation complete: ${app_dir}/"
     echo ""
     echo "Next steps:"
     echo "  1. Edit ${app_dir}/app.yaml to define your services"
@@ -967,6 +1069,8 @@ _app_generate_prometheus_targets() {
     # Collect labels
     local labels=""
     # Start with manifest labels (which already include 'app: ftso')
+    # NOTE: Prometheus label names must match [a-zA-Z_][a-zA-Z0-9_]* -- keep
+    # underscores as-is (converting to dashes produces invalid label names).
     local label_keys
     label_keys="$(env | grep "^APP_PROMETHEUS_LABELS_" | sed 's/^APP_PROMETHEUS_LABELS_//' | sed 's/=.*//' | sort -u)"
     if [ -n "$label_keys" ]; then
@@ -974,8 +1078,14 @@ _app_generate_prometheus_targets() {
             [ -z "$key" ] && continue
             local val
             val="$(eval "echo \${APP_PROMETHEUS_LABELS_${key}:-}" 2>/dev/null || true)"
-            [ -n "$val" ] && labels="${labels}, \"$(echo "$key" | tr '[:upper:]' '[:lower:]' | tr '_' '-')\": \"${val}\""
+            [ -n "$val" ] && labels="${labels}, \"$(echo "$key" | tr '[:upper:]' '[:lower:]')\": \"${val}\""
         done <<< "$label_keys"
+    fi
+
+    # Per-app scrape path override (manifest: prometheus.metrics_path).
+    # __metrics_path__ is honoured natively by Prometheus file_sd targets.
+    if [ -n "${APP_PROMETHEUS_METRICS_PATH:-}" ]; then
+        labels="${labels}, \"__metrics_path__\": \"${APP_PROMETHEUS_METRICS_PATH}\""
     fi
 
     # Fallback: if no labels at all, add app name
@@ -1000,7 +1110,7 @@ _app_generate_prometheus_targets() {
 ]
 EOF
 
-    echo "  [x] Prometheus targets"
+    echo "  ${ICON_SUCCESS:-[x]} Prometheus targets"
 }
 
 # Copy Grafana dashboards from app into platform provisioning
@@ -1048,6 +1158,12 @@ app_cmd() {
             ;;
         build)
             app_cmd_build "$@"
+            ;;
+        provision)
+            app_cmd_provision "$@"
+            ;;
+        secrets)
+            app_cmd_secrets "$@"
             ;;
         remove)
             app_cmd_remove "$@"

@@ -74,3 +74,27 @@ jobs:
           else
             echo "PASS: All markdown files use ASCII-only punctuation"
           fi
+
+  check-ai-elisions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check diff for AI-elision damage
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || true)"
+            HEAD="$(git rev-parse HEAD)"
+          fi
+          if [ -z "$BASE" ]; then
+            echo "No parent commit to compare against; skipping."
+            exit 0
+          fi
+          bash scripts/checks/check-ai-elisions.sh --range "$BASE" "$HEAD"

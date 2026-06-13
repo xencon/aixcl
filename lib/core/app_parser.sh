@@ -58,6 +58,8 @@ if 'app' in data:
 if 'services' in data:
     for i, svc in enumerate(data['services']):
         flatten(svc, f"APP_SERVICE_{i}")
+if 'provision' in data:
+    flatten(data['provision'], 'APP_PROVISION')
 if 'prometheus' in data:
     flatten(data['prometheus'], 'APP_PROMETHEUS')
 if 'grafana' in data:

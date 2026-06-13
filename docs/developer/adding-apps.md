@@ -108,10 +108,63 @@ cp -r /path/to/my-app-source/* provider/
 An array of service definitions used by the app command implementation. Each service can declare:
 - `name`: Service name (used for container naming)
 - `image`: Docker image reference
+- `built`: Set `true` if the platform should build the image
 - `build`: Build context and Dockerfile path
 - `ports`: Exposed ports
 - `environment`: Environment variables
 - `depends_on`: Upstream platform services (e.g., `ollama`)
+- `healthcheck`: Readiness probe used by `app start` and `app status`:
+  - `type: http` with `url` -- healthy on HTTP 200
+  - `type: cmd` with `command` -- run inside the container, healthy on exit 0
+  - `type: container_running` -- healthy if the container is up
+  - `startup_timeout` / `interval` -- wait behavior in seconds
+
+### `provision` Block
+
+Declares platform resources the app needs. The platform provisions them
+idempotently on every `./aixcl app start <app>` (and standalone via
+`./aixcl app provision <app>`). This is the demarcation line between
+platform and app: apps declare, the platform creates. Apps never hold
+Vault tokens, never mount the shared platform secrets volume, and never
+ship files into platform directories.
+
+```yaml
+provision:
+  secrets:
+    - db-password
+    - auth-password
+  postgres:
+    database: my_app
+    owner: my_app
+    password_secret: db-password
+```
+
+Behavior:
+
+- Each name under `secrets` becomes a field in Vault KV at
+  `kv/apps/<app>`. Missing fields are generated (32-char alphanumeric);
+  existing values are never overwritten, so re-provisioning is safe.
+- Every secret is rendered to the per-app volume
+  `aixcl-app-<app>-secrets` as `/run/secrets/<app>-<secret>` (mode 0600).
+  Mount that volume read-only in your compose file:
+
+  ```yaml
+  volumes:
+    my-secrets:
+      name: aixcl-app-my-app-secrets
+      external: true
+  ```
+
+- If `postgres.database` is set, the platform creates the role (LOGIN,
+  password synced from `password_secret`, default `db-password`) and the
+  database (owned by `owner`, default the database name) in the platform
+  PostgreSQL instance. Identifiers must match `[a-z][a-z0-9_]*`.
+- To inspect provisioned secret values during local development:
+  `./aixcl app secrets <app>`.
+
+A fresh or re-initialised stack heals itself: the next `app start`
+regenerates Vault entries, re-renders the secrets volume, and recreates
+the database role.
 
 ### `prometheus` Block
 
@@ -119,13 +172,14 @@ Defines scrape targets for this application:
 
 ```yaml
 prometheus:
+  metrics_path: "/api/metrics"   # optional, default /metrics
   targets:
     - "localhost:9000"
   labels:
     app: "my-app"
 ```
 
-These targets are written to `prometheus/file_sd/<app_name>.json` and picked up by Prometheus `file_sd_configs`.
+These targets are written to `prometheus/file_sd/<app_name>.json` and picked up by Prometheus `file_sd_configs`. `metrics_path` is emitted as a per-target `__metrics_path__` label, so apps with non-standard scrape paths do not require platform configuration changes. Label names must match `[a-zA-Z_][a-zA-Z0-9_]*`.
 
 ### `grafana` Block
 
@@ -171,6 +225,8 @@ The `docker-compose.yml` in the app directory must obey AIXCL invariants:
 | `./aixcl app restart <app>`      | Restart an application              |
 | `./aixcl app status <app>`       | Show application status             |
 | `./aixcl app build <app>`        | Build/rebuild application image     |
+| `./aixcl app provision <app>`    | Provision declared platform resources |
+| `./aixcl app secrets <app>`      | Show provisioned secrets (local dev) |
 | `./aixcl app scaffold <name>`    | Create scaffolding for a new app    |
 | `./aixcl app install <url>`      | Install from a git URL              |
 
@@ -188,7 +244,7 @@ To verify targets are detected:
 
 ## Grafana Integration
 
-Dashboards listed in the `grafana` block of the manifest are symlinked into Grafana's provisioning directory when the app starts. Regenerate or restart Grafana to pick up changes.
+Dashboards listed in the `grafana` block of the manifest are copied into `grafana/provisioning/dashboards/apps/<app>/` when the app starts (a dedicated subdirectory avoids UID collisions with platform dashboards). Grafana's provisioner picks up changes on its scan interval; restart Grafana to force a reload.
 
 ## Lifecycle and Isolation
 

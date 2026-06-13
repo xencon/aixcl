@@ -400,6 +400,7 @@ services:
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ../prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ../prometheus/file_sd:/etc/prometheus/app-targets:ro
       - aixcl-prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

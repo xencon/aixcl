@@ -122,6 +122,49 @@ check_skills() {
     done
 }
 
+# Check that the per-tool rules mirrors have not drifted apart.
+# .claude/rules/ and .opencode/rules/ carry the same behavioral constraints
+# for different agent tools; divergence here has caused contradictory
+# guidance in the past. Update both together, always.
+check_rules_parity() {
+    local claude_rules=".claude/rules"
+    local opencode_rules=".opencode/rules"
+
+    if [[ ! -d "$claude_rules" ]] || [[ ! -d "$opencode_rules" ]]; then
+        return 0
+    fi
+
+    info "Checking rules parity: $claude_rules <-> $opencode_rules"
+
+    local rule_file basename
+    for rule_file in "$claude_rules"/*.md; do
+        [[ -e "$rule_file" ]] || continue
+        basename=$(basename "$rule_file")
+        if [[ ! -f "$opencode_rules/$basename" ]]; then
+            error "rules parity: $basename exists in $claude_rules but not $opencode_rules"
+        elif ! diff -q "$rule_file" "$opencode_rules/$basename" >/dev/null; then
+            error "rules parity: $basename differs between $claude_rules and $opencode_rules"
+        fi
+    done
+
+    for rule_file in "$opencode_rules"/*.md; do
+        [[ -e "$rule_file" ]] || continue
+        basename=$(basename "$rule_file")
+        if [[ ! -f "$claude_rules/$basename" ]]; then
+            error "rules parity: $basename exists in $opencode_rules but not $claude_rules"
+        fi
+    done
+
+    # Skills are mirrored the same way
+    if [[ -d .claude/skills ]] && [[ -d .opencode/skills ]]; then
+        info "Checking skills parity: .claude/skills <-> .opencode/skills"
+        if ! diff -rq .claude/skills .opencode/skills >/dev/null 2>&1; then
+            error "skills parity: .claude/skills and .opencode/skills differ (sync them together)"
+            diff -rq .claude/skills .opencode/skills 2>/dev/null | sed 's/^/    /' >&2 || true
+        fi
+    fi
+}
+
 # Check AI report files
 check_reports() {
     local reports_dir="docs/reference"
@@ -152,6 +195,7 @@ main() {
 
     check_agents
     check_skills
+    check_rules_parity
     check_reports
 
     echo ""

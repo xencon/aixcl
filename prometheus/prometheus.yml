@@ -49,15 +49,6 @@ scrape_configs:
           service: 'postgres'
           database: 'aixcl'
 
-  # Ollama - LLM Engine
-  # Uses custom exporter on port 11435 that polls Ollama API
-  # Provides model info, version, and availability metrics
-  - job_name: 'ollama'
-    static_configs:
-      - targets: ['localhost:11435']
-        labels:
-          service: 'ollama'
-
   # NVIDIA GPU Exporter - GPU metrics (utilization, memory, temperature, power)
   # Uses custom exporter (nvidia-smi) on port 9445 in rootless mode
   # DCGM exporter (port 9400) requires root/Docker socket and doesn't work in rootless
@@ -91,16 +82,11 @@ scrape_configs:
         labels:
           service: 'alertmanager'
 
-  # Open WebUI - User interface metrics
-  # Uses custom exporter on port 11436
-  - job_name: 'open-webui'
-    static_configs:
-      - targets: ['localhost:11436']
-        labels:
-          service: 'open-webui'
-
   # Application services - discovered via file_sd_configs
-  # Apps write their targets to prometheus/app-targets/<app_name>.json
+  # Apps write their targets to /etc/prometheus/app-targets/<app_name>.json
+  # (mounted from host ./prometheus/file_sd/)
+  # Default scrape path is /metrics; apps with a different path declare
+  # prometheus.metrics_path in app.yaml (emitted as __metrics_path__ label).
   - job_name: 'aixcl-apps'
     file_sd_configs:
       - files:

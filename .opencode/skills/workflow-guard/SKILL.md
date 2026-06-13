@@ -2,11 +2,11 @@
 name: workflow-guard
 description: Validates Issue-First workflow compliance before execution
 license: MIT
-compatibility: opencode
+compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
   security_level: critical
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Workflow Guard Skill
@@ -34,6 +34,9 @@ Validates that all actions comply with the Issue-First development workflow befo
 - [ ] Commits reference issue: `Fixes #<number>`
 - [ ] First line under 72 characters
 - [ ] No breaking changes without explicit approval
+- [ ] Diff verified: no unexplained mass deletions, no AI-elision placeholder text
+  - *Detection*: `./scripts/checks/check-ai-elisions.sh --staged` (or `--range <base> <head>` for pushed commits)
+  - *Background*: an AI-assisted edit once replaced a 639-line module with a stub whose final line claimed the remainder of the module was unchanged, and it was committed; the script catches both the phrase pattern and the deletion pattern
 
 ### 4. Pull Request Requirements
 - [ ] PR title format: `<description> (#<number>)` (no colons)
@@ -51,16 +54,16 @@ Validates that all actions comply with the Issue-First development workflow befo
 ## Workflow State Machine
 
 ```
-┌─────────┐    ┌──────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│  Issue  │───▶│  Branch  │───▶│ Commit  │───▶│   PR    │───▶│  Merge  │
-│ Created │    │ Created  │    │ Pushed  │    │ Opened  │    │ to dev  │
-└─────────┘    └──────────┘    └─────────┘    └─────────┘    └─────────┘
-     │               │               │              │               │
-     ▼               ▼               ▼              ▼               ▼
-┌─────────┐    ┌──────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│validate │    │validate  │    │validate │    │validate │    │validate │
-│issue    │    │branch    │    │commit   │    │PR       │    │merge    │
-└─────────┘    └──────────┘    └─────────┘    └─────────┘    └─────────┘
++---------+    +----------+    +---------+    +---------+    +---------+
+|  Issue  |--->|  Branch  |--->| Commit  |--->|   PR    |--->|  Merge  |
+| Created |    | Created  |    | Pushed  |    | Opened  |    | to dev  |
++---------+    +----------+    +---------+    +---------+    +---------+
+     |               |               |              |               |
+     v               v               v              v               v
++---------+    +----------+    +---------+    +---------+    +---------+
+|validate |    |validate  |    |validate |    |validate |    |validate |
+|issue    |    |branch    |    |commit   |    |PR       |    |merge    |
++---------+    +----------+    +---------+    +---------+    +---------+
 ```
 
 ## Critical Actions Requiring Approval
@@ -124,12 +127,12 @@ If any validation step fails:
 @orchestrator Please validate the workflow for issue #917
 
 Agent loads this skill and runs validation:
-1. Check issue #917 exists ✓
-2. Check issue is assigned ✓
-3. Check branch issue-917/security-first-agentic-foundation format ✓
-4. Check branch from dev ✓
-5. Check commits reference #917 ✓
-6. Check security-gate approval ✓
+1. Check issue #917 exists [x]
+2. Check issue is assigned [x]
+3. Check branch issue-917/security-first-agentic-foundation format [x]
+4. Check branch from dev [x]
+5. Check commits reference #917 [x]
+6. Check security-gate approval [x]
 
 Result: All validations passed. Workflow approved.
 ```
@@ -150,7 +153,7 @@ This skill is automatically invoked by:
 | Clean issue body | workflow-guard skill | Reject garbled body (backtick injection) |
 | Branch from dev | AGENTS.md | Reject branches from main |
 | Component labels required | DEVELOPMENT.md | Reject unlabeled PRs |
-| Assignee required         | DEVELOPMENT.md | Reject unassigned PRs |
+| Assignee required | DEVELOPMENT.md | Reject unassigned PRs |
 
 ## Self-Verification
 
