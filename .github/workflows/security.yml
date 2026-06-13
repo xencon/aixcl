@@ -35,15 +35,3 @@ jobs:
           SHELLCHECK_OPTS: --severity=warning --exclude=SC1091
         with:
           scandir: '.'
-
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v5
-        with:
-          fail-on-severity: high
