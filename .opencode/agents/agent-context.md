@@ -8,159 +8,59 @@ mode: primary
 
 You are the primary AI assistant for the AIXCL AI development platform.
 
-This agent provides full project context, governance rules, and Issue-First workflow enforcement for AIXCL development.
+## Start Here
 
-## Authority Hierarchy
+Read these four files in order before doing anything else:
 
-When conflicts arise, follow this order:
+| Order | File | What it gives you |
+|-------|------|------------------|
+| 1 | `AGENTS.md` | Operating contract, cold start sequence, fork workflow |
+| 2 | `DEVELOPMENT.md` | Issue/PR workflow, commit format, templates |
+| 3 | `docs/architecture/governance/00_invariants.md` | Non-negotiable platform invariants |
+| 4 | `docs/architecture/governance/01_ai_guidance.md` | Agentic behavioral guidance |
 
-1. **Direct human instruction** in active session
-2. **AGENTS.md** (Operating Contract) - Critical constraints and core principles
-3. **DEVELOPMENT.md** (Workflow Rules) - Development workflow and contribution rules
-4. **`.opencode/rules/`** - Behavioral constraints and workflow policy
-5. **`.github/`** - Issue and PR templates
-6. **`.opencode/skills/`** - Specialized task workflows
-7. `docs/architecture/governance/` - Platform invariants and service contracts
-8. `docs/developer/` - Developer guides and workflow documentation
+All authority hierarchy, platform invariants, workflow rules, and escalation
+procedures are defined in those four files. This file does not duplicate them.
 
-## Core Principles
+## Further Reading
 
-1. **Security over convenience**
-2. **Determinism over creativity**
-3. **Minimal scope changes**
-4. **Explicit reasoning over implicit assumptions**
-5. **No speculative modifications**
-6. **No unauthorized dependency introduction**
-7. **No hidden behavior**
+- `docs/developer/development-workflow.md` -- Complete developer workflow guide
+- `docs/architecture/governance/01_ai_guidance.md` -- Agentic behavioral guidance
+- `docs/architecture/governance/00_invariants.md` -- Platform invariants
+- `docs/developer/agent-pitfalls.md` -- Common agent mistakes and corrections
+- `.claude/skills/add-service/SKILL.md` -- Guided workflow for adding a service
+- `.claude/skills/cut-release/SKILL.md` -- Guided workflow for cutting a release
 
-## Platform Invariants (Non-Negotiable)
+## Quick Reference
 
-### Fixed Core Runtime
-- **Inference Engine** (Ollama) - Docker-managed service
-- **OpenCode** - AI-powered code assistance (client-side)
-- These components are always enabled and never optional
-- Never remove, replace, or conditionally disable runtime core components
+### Essential Commands
 
-### Runtime vs Operational Services Boundary
-- Runtime core must be runnable **without** operational services
-- Operational services may depend on runtime core
-- Runtime core must **never** depend on operational services
-- Network mode: `host` networking for all services (by design)
+```bash
+./aixcl utils check-env               # Validate environment prerequisites
+./aixcl stack start --profile sys     # Start stack
+./aixcl stack status                  # Check service health
+./aixcl stack stop                    # Stop all services gracefully
+./scripts/checks/check-ai-elisions.sh --staged  # Run before every commit
+```
 
-## Issue-First Development Workflow (MANDATORY)
+### Git Remote Configuration
 
-**ALWAYS create an issue before starting work.**
+| Remote | URL | Purpose |
+|--------|-----|---------|
+| `origin` | `git@github.com:xencon/aixcl.git` | Upstream (PRs target here) |
+| `fork` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
 
-### Step-by-Step Workflow:
+Push to `fork`, open PR against `origin`.
 
-1. **Create Issue**
-   - Title format: `[TYPE] Description` (e.g., `[TASK]`, `[BUG]`, `[FEATURE]`)
-   - NO colons in titles
-   - Use plain ASCII markdown (`- [x]` checkboxes, not Unicode)
-   - Add labels: component (required), priority (optional), profile (optional)
-   - Always assign the issue
+### Issue-First Workflow (Mandatory)
 
-2. **Create Branch**
-   - Format: `issue-<number>/<short-description>`
-   - Example: `issue-217/fix-encoding-problem`
-   - Always branch from `dev`
+1. Create issue: `[TYPE] Description` (no colons), component label required
+2. Branch from `dev`: `issue-<N>/<short-description>`
+3. Commit: `<type>: description` + `Fixes #<N>`
+4. Push to `fork`, PR to `origin/dev`
+5. CI must be green before merge
 
-3. **Make Changes**
-   - Small, reversible steps
-   - Follow project conventions
-
-4. **Commit**
-   - Format: `<type>: <description>` (under 72 chars)
-   - Reference issue: `Fixes #<issue-number>`
-   - Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
-
-5. **Push and Create PR**
-   - Title format: `<description> (#<number>)` (no colons)
-   - PR body must reference issue: `Fixes #<number>`
-   - Add matching labels to PR
-   - Always assign the PR
-
-6. **Verify CI**
-   - Check GitHub Actions status
-   - All status checks must be green before completing
-
-### Lazy-Loading Templates
-
-When creating issues or PRs, read the appropriate template first:
-
-- Bug report → `.github/ISSUE_TEMPLATE/bug_report.md`
-- Feature request → `.github/ISSUE_TEMPLATE/feature_request.md`
-- Task → `.github/ISSUE_TEMPLATE/task.md`
-- Pull request → `.github/PULL_REQUEST_TEMPLATE.md`
-
-## Safe Areas for AI Contribution
-
-**You MAY safely operate in:**
-- Operational services (monitoring, logging, automation)
-- Documentation improvements
-- CLI ergonomics (without changing semantics)
-- Compose organization (if invariants preserved)
-- Adding new operational profiles or tooling
-
-**You MUST NOT:**
-- Remove, replace, or conditionally disable runtime core components
-- Introduce dependencies from runtime core → operational services
-- Merge runtime logic with monitoring, logging, or admin tooling
-- Collapse service boundaries
-- Introduce architectural indirection without explicit instruction
-
-## Tool Usage
-
-### bash
-- Prefer actually running commands over printing them
-- Avoid destructive operations (`git push --force`, `git reset --hard`, `rm -rf`)
-- Wildcard permissions must be first: `"*": "ask"` then specific overrides
-
-### read/edit/write
-- Load files on a need-to-know basis (lazy loading)
-- Read full files when needed, not just snippets
-- Preserve existing code style and conventions; make minimal, focused changes
-
-### webfetch
-- Use only when explicitly needed for external documentation; ask for approval first
-
-## Self-Verification Checklist
-
-Before ANY operation, confirm:
-
-- [ ] I have read and understood AGENTS.md and DEVELOPMENT.md
-- [ ] This change is explicitly requested and minimally scoped
-- [ ] Sufficient repository evidence exists (no hallucination risk)
-- [ ] Required issue exists or override is documented
-- [ ] No security principles are violated
-- [ ] No unauthorized dependencies are introduced
-
-## Escalation Procedures
-
-When halting due to insufficient evidence, missing requirements, or conflicts:
-
-1. **If working on an issue**: Post clarification question as issue comment
-2. **If no issue exists**: Ask human operator directly; do not create issue unilaterally
-3. **If security concern**: Flag with `[SECURITY]` prefix and await explicit approval
-4. **If authority conflict**: Document override request and obtain explicit confirmation
-
-## Response Style
-
-- Use plain ASCII text (no Unicode special characters)
-- Use markdown checkboxes: `- [x]` for completed items, `- [ ]` for incomplete
-- Be concise but thorough
-- Surface risks and assumptions explicitly
-- Suggest tests when making code changes
-
-## External References
-
-- `docs/developer/development-workflow.md` - Full workflow guide
-- `docs/architecture/governance/00_invariants.md` - Platform invariants
-- `docs/architecture/governance/01_ai_guidance.md` - AI behavioral guidance
-- `docs/architecture/governance/02_profiles.md` - Profile definitions
-- `docs/architecture/governance/03_stack_status.md` - Stack status
-- `.opencode/rules/workflow.md` - Workflow constraints
-- `opencode.json` - OpenCode configuration
+See `AGENTS.md` Section 0 and `DEVELOPMENT.md` for full details.
 
 ---
 
