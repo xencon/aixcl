@@ -111,6 +111,16 @@ _app_load_manifest() {
         return 1
     fi
 
+    # Clear variables from any previously loaded manifest so list entries
+    # that no longer exist (services, secrets, targets) do not leak into
+    # this load. APP_PARSER_YAML_TOOL is operator configuration, not
+    # manifest state, so it survives.
+    local stale_var
+    while IFS= read -r stale_var; do
+        [ "$stale_var" = "APP_PARSER_YAML_TOOL" ] && continue
+        unset "$stale_var"
+    done < <(compgen -v APP_ || true)
+
     eval "$exports"
     return 0
 }
