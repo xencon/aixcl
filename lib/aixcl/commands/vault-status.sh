@@ -13,7 +13,16 @@ VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
 # Load root token from GPG-encrypted store if not already in environment
 _VAULT_TOKEN_FILE="${SCRIPT_DIR}/.security/vault-root-token.gpg"
 if [ -z "${VAULT_TOKEN:-}" ] && [ -f "$_VAULT_TOKEN_FILE" ]; then
-    VAULT_TOKEN=$(gpg --quiet --decrypt "$_VAULT_TOKEN_FILE" 2>/dev/null) || VAULT_TOKEN=""
+    if ! VAULT_TOKEN=$(gpg --quiet --decrypt "$_VAULT_TOKEN_FILE" 2>/dev/null); then
+        VAULT_TOKEN=""
+        echo "[!] Warning: could not decrypt ${_VAULT_TOKEN_FILE}; continuing without a token." >&2
+        if [ ! -t 0 ]; then
+            echo "    No TTY for GPG pinentry. Set VAULT_TOKEN in the environment," >&2
+            echo "    or decrypt with: gpg --pinentry-mode loopback --decrypt <file>" >&2
+        else
+            echo "    Check your GPG key (gpg --list-secret-keys) or set VAULT_TOKEN." >&2
+        fi
+    fi
 fi
 VAULT_TOKEN="${VAULT_TOKEN:-}"
 
