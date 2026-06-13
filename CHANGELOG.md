@@ -4,11 +4,12 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.1.26] - 2026-06-13
+## [v1.1.27] - 2026-06-13
 
 ### Summary
 
-Release v1.1.26 -- Declarative app provisioning contract for BYO apps, governance consistency fixes, and AI elision guard.
+Release v1.1.27 -- Declarative app provisioning contract for BYO apps, governance consistency fixes, and AI elision guard.
+
 
 ### Added
 
@@ -35,6 +36,39 @@ Release v1.1.26 -- Declarative app provisioning contract for BYO apps, governanc
 
 - [x] CHANGELOG updated
 - [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
+## [v1.1.26] - 2026-06-10
+
+### Summary
+
+Release v1.1.26 -- Documentation overhaul, CLI alignment, and username leak remediation.
+
+### Added
+
+- [x] **App Framework User Guide**: Created `docs/user/apps.md` for the BYO application framework. (Fixes #1323)
+- [x] **Threat Model Document**: Created `docs/security/threat-model.md` covering threat actors, attack vectors, MITRE ATT&CK mapping, and compensating control cross-references. (Fixes #1323)
+
+### Changed
+
+- [x] **CLI Help Alignment**: Added missing `vault` command with all 10 subcommands to `help_menu()`. Renamed `utils clean` to `utils prune` and added `prune --all`. (Fixes #1323)
+- [x] **AGENTS.md Section Numbering**: Fixed broken numbering (now sequential 1-11). (Fixes #1323)
+- [x] **DEVELOPMENT.md Version Reference**: Corrected "AGENTS.md v1.5" to "AGENTS.md v2.0" and fixed Section 8 reference for Emergency Workflow Override. (Fixes #1323)
+- [x] **Unicode to ASCII Conversion**: Replaced all [x]/[ ]/[!]/In Progress/Future Unicode symbols with markdown checkboxes or plain text across SECURITY.md, modes, and operations docs. (Fixes #1323)
+
+### Fixed
+
+- [x] **README Step Numbering**: Corrected broken Step 4/5 ordering in Quick Start. (Fixes #1323)
+- [x] **Stale Command References**: Replaced non-existent `aixcl-setup` with `./aixcl stack init`, fixed `vault passwords` to `vault credentials`, and removed non-existent `aixcl security` command references. (Fixes #1323)
+- [x] **Manifest Example**: Fixed `docs/developer/adding-apps.md` YAML example to match actual `app_parser.sh` flat key format and corrected Prometheus file_sd path. (Fixes #1323)
+- [x] **Profile Docs**: Added missing Alertmanager to bld/sys profile service lists and corrected nvidia-gpu-exporter port from 9400 to 9445. (Fixes #1323)
+- [x] **Username Leakage**: Removed hardcoded `sbadakhc` references from SECURITY.md, CONTRIBUTING.md, and script usage examples. (Fixes #1323)
+
+### Verification
+
+- [x] CHANGELOG updated
+- [ ] All CI checks passing on dev
 - [ ] All CI checks passing on main
 - [ ] Release signed and published
 
@@ -175,7 +209,7 @@ Release v1.1.20 -- follow-up to v1.1.19, includes the vault-status.sh hotfix tha
 
 ### Fixed
 
-- [x] **Vault Status Unknown State**: Fixed `check_vault_health()` in `lib/aixcl/commands/vault-status.sh` to correctly parse `"sealed": false` from Vault health API. Same jq `//` false handling bug as #1229, but in a different file. Also fixed false "⚠ Vault needs initialization" warning caused by `check_credentials()` returning 1 when no generated credential files were present yet. (Fixes #1234, #1235)
+- [x] **Vault Status Unknown State**: Fixed `check_vault_health()` in `lib/aixcl/commands/vault-status.sh` to correctly parse `"sealed": false` from Vault health API. Same jq `//` false handling bug as #1229, but in a different file. Also fixed false "[!] Vault needs initialization" warning caused by `check_credentials()` returning 1 when no generated credential files were present yet. (Fixes #1234, #1235)
 
 ### Verification
 
@@ -854,12 +888,12 @@ Release Candidate 6 for v1.0.0. This release includes 15+ commits since RC5 focu
 - **Service Security Matrix**: Each hardened service now runs with minimal privileges:
   | Service | User | cap_drop | no-new-priv | read_only |
   |---------|------|----------|-------------|-----------|
-  | prometheus | default | ALL | ✅ | ✅ |
-  | grafana | default | ALL | ✅ | ❌* |
-  | loki | default | ALL | ✅ | ❌* |
-  | postgres-exporter | 65534:65534 | ALL | ✅ | ✅ |
-  | node-exporter | 65534:65534 | ALL | ✅ | ✅ |
-  | alloy | 12345:12345 | ALL | ✅ | ✅ |
+  | prometheus | default | ALL | [x] | [x] |
+  | grafana | default | ALL | [x] | [ ]* |
+  | loki | default | ALL | [x] | [ ]* |
+  | postgres-exporter | 65534:65534 | ALL | [x] | [x] |
+  | node-exporter | 65534:65534 | ALL | [x] | [x] |
+  | alloy | 12345:12345 | ALL | [x] | [x] |
   
   *\*Requires data volume writes*
 
