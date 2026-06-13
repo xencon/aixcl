@@ -130,7 +130,7 @@ services:
     network_mode: host
     depends_on:
       - vault
-    restart: unless-stopped
+    restart: on-failure
 
   # Bootstrap service for Open WebUI Vault KV password
   vault-agent-openwebui-bootstrap:
@@ -156,7 +156,7 @@ services:
     network_mode: host
     depends_on:
       - vault
-    restart: unless-stopped
+    restart: on-failure
 
    # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
@@ -182,7 +182,7 @@ services:
     network_mode: host
     depends_on:
       - vault
-    restart: unless-stopped
+    restart: on-failure
 
    # Bootstrap service for Grafana Vault KV password
   vault-agent-grafana-bootstrap:
@@ -208,7 +208,7 @@ services:
     network_mode: host
     depends_on:
       - vault
-    restart: unless-stopped
+    restart: on-failure
 
   postgres:
     image: docker.io/postgres:18.4
