@@ -112,7 +112,10 @@ An array of service definitions used by the app command implementation. Each ser
 - `build`: Build context and Dockerfile path
 - `ports`: Exposed ports
 - `environment`: Environment variables
-- `depends_on`: Upstream platform services (e.g., `ollama`)
+- `depends_on`: Either another service in this manifest (started and
+  health-checked before the dependent) or an already-running platform
+  container (e.g., `ollama`). A name matching neither fails `app start`
+  before any service is started; dependency cycles also fail.
 - `healthcheck`: Readiness probe used by `app start` and `app status`:
   - `type: http` with `url` -- healthy on HTTP 200
   - `type: cmd` with `command` -- run inside the container, healthy on exit 0
@@ -214,6 +217,42 @@ The `docker-compose.yml` in the app directory must obey AIXCL invariants:
     com.aixcl.app: "my-app"
     com.aixcl.service: "my-app-service"
   ```
+
+### Hardened images and cap_drop: ALL
+
+Official images (redis, postgres, etc.) whose entrypoints `chown` their
+data directories as root crash-loop under `cap_drop: ALL` after the
+first boot.
+
+**Why it fails:** The entrypoint runs `find / chown` to fix ownership
+before dropping to the service user. This requires `DAC_OVERRIDE` or
+`DAC_READ_SEARCH`. Under `cap_drop: ALL` those capabilities are gone.
+The first boot succeeds because the data directory is freshly created
+with root ownership; every subsequent boot fails under `set -e` because
+`chown` returns EPERM. The container never starts, restart counts climb
+(one redis sidecar hit 6342 restarts before the pattern was identified).
+
+**Fix:** Run the container as the service user so the entrypoint skips
+the root-only ownership phase entirely:
+
+```yaml
+services:
+  redis:
+    image: redis:7
+    user: "999:999"   # redis default UID:GID in the official image
+    cap_drop:
+      - ALL
+```
+
+**How to find the UID:** Check the official image documentation or run:
+
+```bash
+docker run --rm --entrypoint id redis:7
+```
+
+**When cap_drop: ALL is safe without user:** Images that do not chown
+on startup (e.g. the Vault image, which starts as a non-root user by
+default) can use `cap_drop: ALL` without the `user:` override.
 
 ## CLI Commands
 

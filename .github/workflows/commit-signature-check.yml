@@ -1,0 +1,74 @@
+name: Commit Signature Check
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  check-signatures:
+    name: Report unsigned commits (non-blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Report unsigned commits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Check the commits introduced by this push.
+          # GITHUB_EVENT_BEFORE is the SHA before the push; on a new branch
+          # GitHub sets it to the zero SHA, so we fall back to HEAD~1 in
+          # that case (single-commit branches still get checked).
+          BEFORE="${{ github.event.before }}"
+          ZERO="0000000000000000000000000000000000000000"
+
+          if [ "$BEFORE" = "$ZERO" ]; then
+            # New branch -- check the single tip commit only
+            range="HEAD~1..HEAD"
+          else
+            range="${BEFORE}..HEAD"
+          fi
+
+          unsigned=()
+          while IFS= read -r sha; do
+            [ -z "$sha" ] && continue
+            sig=$(git log --format="%G?" -1 "$sha" 2>/dev/null || echo "N")
+            # G = good, U = unsigned, B = bad/expired, E = no key, X = expired
+            case "$sig" in
+              G) ;;  # verified
+              *)
+                short=$(git log --format="%h %s" -1 "$sha")
+                unsigned+=("$short (signature: ${sig})")
+                ;;
+            esac
+          done < <(git rev-list "$range" 2>/dev/null || true)
+
+          if [ ${#unsigned[@]} -eq 0 ]; then
+            echo "All commits in this push are GPG-signed and verified."
+            exit 0
+          fi
+
+          echo "::warning::${#unsigned[@]} unsigned or unverified commit(s) in this push."
+          echo ""
+          echo "DEVELOPMENT.md requires GPG-signed commits on main and dev."
+          echo "Enforcement is by maintainer discipline; this check is non-blocking."
+          echo "Agents pushing working branches are exempt (no TTY for pinentry)."
+          echo ""
+          echo "Unsigned commits:"
+          for c in "${unsigned[@]}"; do
+            echo "  - $c"
+            echo "::warning file=.github/workflows/commit-signature-check.yml::Unsigned commit: $c"
+          done
+          echo ""
+          echo "To sign: git commit --amend -S  (or configure commit.gpgsign=true)"
+          # Exit 0 -- this is a warning report, not a blocking check.
+          exit 0

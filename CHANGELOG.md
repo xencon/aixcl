@@ -4,6 +4,40 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.28] - 2026-06-13
+
+### Summary
+
+Release v1.1.28 -- App CLI robustness, vault bootstrap security hardening, and developer documentation improvements.
+
+### Added
+
+- [x] **Manifest depends_on Ordering**: `app start` now performs a topological sort of manifest services and starts dependencies first, honoring health checks before starting dependents. Platform services named in `depends_on` (e.g. `ollama`) are verified running; unresolvable names and cycles fail with actionable errors. Closes #1332.
+- [x] **Compose Diagnostics on Failure**: A failing `app start` or build-on-start now dumps the raw compose output to stderr. New `--verbose` flag on `app start` shows full compose and build output on success too. Closes #1337.
+- [x] **GPG Signature CI Report**: New `commit-signature-check.yml` workflow reports unsigned or unverified commits pushed to `main` or `dev` as non-blocking `::warning::` annotations. Enforcement remains maintainer discipline per DEVELOPMENT.md. Closes #1347.
+
+### Changed
+
+- [x] **Vault Bootstrap Agents -- One-Shot**: All four `vault-agent-*-bootstrap` containers converted from `restart: unless-stopped` with an infinite polling loop to `restart: on-failure` one-shot containers. Bootstrap scripts exit 0 after a successful secret write; Docker retries only on genuine failure. Root token is no longer held in a long-running container environment after stack startup. Closes #1338.
+
+### Fixed
+
+- [x] **Stale Manifest Variables**: `_app_load_manifest` now clears all `APP_*` variables before applying a new manifest's exports. Previously, loading a second manifest in the same process left stale list entries (services, secrets) from the first, corrupting `_app_service_count` and service iteration. Closes #1341.
+- [x] **Missing TTY for Vault Token Decrypt**: `_load_vault_token_for_stack` short-circuits when `VAULT_TOKEN` is already set (CI/agent escape hatch). On decrypt failure without a TTY, it now prints actionable options (`export VAULT_TOKEN`, `gpg --pinentry-mode loopback`) instead of a hint that cannot work without a terminal. Also fixed a latent bug where `GPG_TTY` was being set to the literal string `not a tty` in non-interactive sessions. Closes #1339.
+- [x] **Silent Build Skip**: Both `app build` and the build-on-start path now warn when a service declares build configuration (`build_context`) but `built: true` is not set, explaining how to enable the build. Closes #1340.
+
+### Documentation
+
+- [x] **cap_drop: ALL Crash-Loop Pattern**: Added "Hardened images and cap_drop: ALL" subsection to `docs/developer/adding-apps.md` documenting the failure mode (official images chown data dirs as root on every startup; fails under `cap_drop: ALL` after first boot), the fix (`user: "UID:GID"`), and how to find the correct UID. Closes #1342.
+- [x] **depends_on Field Semantics**: Updated `docs/developer/adding-apps.md` to document the actual implemented semantics for `depends_on` (ordering, platform service check, error on unresolvable, cycle detection).
+
+### Verification
+
+- [x] CHANGELOG updated
+- [x] All CI checks passing on dev
+- [ ] All CI checks passing on main
+- [ ] Release signed and published
+
 ## [v1.1.27] - 2026-06-13
 
 ### Summary

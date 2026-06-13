@@ -102,13 +102,11 @@ if [ $retries -eq 0 ]; then
     exit 1
 fi
 
-# Initial fetch
-fetch_bootstrap_password
-
-# Keep checking every 30 seconds (password rarely changes)
-while true; do
-    sleep 30
-    # Always re-fetch to ensure file has latest password from KV
-    # (password changes on re-init, stale files must not persist)
-    fetch_bootstrap_password
-done
+# Fetch once and exit. restart: on-failure in compose retries on error.
+# On success (exit 0) the container stops cleanly; the root token is
+# no longer held in a long-running process environment.
+if ! fetch_bootstrap_password; then
+    log "ERROR: Bootstrap failed, exiting non-zero so compose can retry"
+    exit 1
+fi
+log "Bootstrap complete"

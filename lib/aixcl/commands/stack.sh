@@ -280,6 +280,14 @@ function ensure_nvidia_cdi() {
 _load_vault_token_for_stack() {
     local token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
 
+    # Automation escape hatch: a pre-set VAULT_TOKEN (CI, scripts, agents)
+    # wins over GPG decryption, which needs a TTY for pinentry.
+    if [ -n "${VAULT_TOKEN:-}" ]; then
+        export VAULT_TOKEN
+        echo "Vault token taken from VAULT_TOKEN environment variable"
+        return 0
+    fi
+
     if [ ! -f "$token_file" ]; then
         echo "[ ] Error: Vault token file not found: ${token_file}"
         echo "   Vault may not have been initialised yet."
@@ -287,10 +295,15 @@ _load_vault_token_for_stack() {
         return 1
     fi
 
-    # Ensure GPG_TTY is set so passphrase prompts work in non-interactive sessions
+    # Ensure GPG_TTY is set so passphrase prompts work in interactive
+    # sessions. tty prints "not a tty" on stdout when there is none, so
+    # only keep its output when it succeeds.
     if [ -z "${GPG_TTY:-}" ]; then
-        GPG_TTY=$(tty 2>/dev/null || true)
-        export GPG_TTY
+        if GPG_TTY=$(tty 2>/dev/null); then
+            export GPG_TTY
+        else
+            GPG_TTY=""
+        fi
     fi
 
     local token
@@ -299,8 +312,16 @@ _load_vault_token_for_stack() {
 
     if [ $gpg_exit -ne 0 ] || [ -z "$token" ]; then
         echo "[ ] Error: Failed to decrypt Vault root token from ${token_file}"
-        echo "   Is your GPG key available?  Check: gpg --list-secret-keys"
-        echo "   Try: export GPG_TTY=\$(tty)"
+        if [ ! -t 0 ]; then
+            echo "   No TTY is available for GPG pinentry (CI, script, or agent context)."
+            echo "   Options:"
+            echo "     - export VAULT_TOKEN=<token>   (skips GPG decryption entirely)"
+            echo "     - decrypt with a loopback pinentry, e.g.:"
+            echo "       VAULT_TOKEN=\$(gpg --pinentry-mode loopback --decrypt ${token_file})"
+        else
+            echo "   Is your GPG key available?  Check: gpg --list-secret-keys"
+            echo "   Try: export GPG_TTY=\$(tty)"
+        fi
         return 1
     fi
 
