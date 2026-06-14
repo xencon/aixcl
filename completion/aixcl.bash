@@ -209,7 +209,7 @@ _aixcl_complete() {
             return 0
             ;;
         'app')
-            local app_actions="list register unregister start stop restart status build remove scaffold install help"
+            local app_actions="list register unregister start stop restart status build remove scaffold install secrets provision help"
             mapfile -t COMPREPLY < <(compgen -W "$app_actions" -- "$cur")
             return 0
             ;;
@@ -243,6 +243,16 @@ _aixcl_complete() {
                 return 0
             fi
             ;;
+        'secrets'|'provision')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names
+                app_names="$(_aixcl_app_names)"
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
         'register')
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
                 # Complete with directories for the local path argument
@@ -270,7 +280,7 @@ _aixcl_complete() {
             ;;
         'help')
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                mapfile -t COMPREPLY < <(compgen -W "list register unregister start stop restart status build remove scaffold install" -- "$cur")
+                mapfile -t COMPREPLY < <(compgen -W "list register unregister start stop restart status build remove scaffold install secrets provision" -- "$cur")
                 return 0
             fi
             ;;
