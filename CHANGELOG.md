@@ -4,6 +4,22 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.30] - 2026-06-14
+
+### Summary
+
+Release v1.1.30 -- Bug fixes for vault cold start failure and misleading bootstrap container status display, with regression tests for both.
+
+### Fixed
+
+- [x] **Cold Start VAULT_TOKEN Bug**: `_load_vault_token_for_stack` now accepts `--force`, bypassing the env-var early-return on the post-init path. A stale `VAULT_TOKEN` in the shell no longer poisons bootstrap containers after a cold vault init, which previously caused all vault-dependent services to fail to start. Closes #1376.
+- [x] **Bootstrap Container Status Display**: `check_service_status` gains a `one-shot` health_check_type that treats containers exited with code 0 as healthy (shown as `complete`). The four `vault-agent-*-bootstrap` entries now use this type, fixing the misleading `15/19 healthy` count on a fully healthy stack. Closes #1377.
+
+### Tests
+
+- [x] **test-00a-stack-token-reload.sh**: Three assertions covering the `--force` flag behaviour -- env var preserved without `--force`, bypass confirmed with `--force`, disk token loaded when GPG available. Closes #1376.
+- [x] **test-02-stack-status.sh**: Extended with six assertions -- each bootstrap container must show healthy with `(complete)` annotation, and total healthy count must equal total service count. Closes #1377.
+
 ## [v1.1.29] - 2026-06-14
 
 ### Summary
