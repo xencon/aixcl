@@ -4,6 +4,16 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.31] - 2026-06-14
+
+### Summary
+
+Release v1.1.31 -- Fix for Loki container healthcheck failing on distroless image.
+
+### Fixed
+
+- [x] **Loki Container Healthcheck**: Removed broken `wget`-based healthcheck from the Loki service in `services/docker-compose.yml`. The Loki 3.7.2 image is distroless and contains no shell, wget, or curl. The healthcheck was permanently failing (exit 127), causing Loki to show as unhealthy in podman and as a warning in stack status despite serving requests normally. Stack status already performs an external curl check against `http://127.0.0.1:3100/ready` which correctly reflects Loki readiness. Closes #1384.
+
 ## [v1.1.30] - 2026-06-14
 
 ### Summary
