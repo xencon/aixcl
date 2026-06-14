@@ -4,6 +4,32 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.29] - 2026-06-14
+
+### Summary
+
+Release v1.1.29 -- Agent intelligence package for agentic navigation.
+
+### Added
+
+- [x] **Agent Cold Start Sequence**: `AGENTS.md` section 0 defines exactly four files to read in order for full orientation, eliminating the previous 5-hop document chain. Closes #1371.
+- [x] **Fork Workflow Documentation**: `AGENTS.md` and `agent-context.md` now document the two-remote setup (`origin` = upstream, `fork` = personal) and SSH requirement, preventing the push failures that affected previous agent sessions. Closes #1371.
+- [x] **12 CONTEXT.md Files**: High-traffic directories now have agent-readable index files covering purpose, key behavioural notes, agent guidance, and cross-references. Directories covered: `lib/aixcl/commands/`, `lib/core/`, `lib/cli/`, `scripts/checks/`, `scripts/vault/`, `scripts/runtime/`, `scripts/security/`, `services/`, `vault/agent-config/`, `tests/command-tests/`, `.claude/rules/`, `etc/app-scaffold/`. Closes #1371.
+- [x] **5 Architectural Decision Records**: `docs/architecture/decisions/` documents the five decisions agents repeatedly question or revert: `network_mode: host` (001), one-shot bootstrap containers (002), `VAULT_TOKEN` escape hatch (003), topological sort for `depends_on` (004), and Python3 for YAML parsing (005). Closes #1371.
+- [x] **Service Map**: `docs/reference/service-map.md` provides a single table of all 21 platform services with profile membership, port, entrypoint, and health check -- replacing the need to parse `docker-compose.yml` for an overview. Closes #1371.
+- [x] **add-service Skill**: `.claude/skills/add-service/SKILL.md` (and `.opencode` mirror) provides a 9-step guided checklist for adding a platform service while preserving all invariants. Closes #1371.
+- [x] **cut-release Skill**: `.claude/skills/cut-release/SKILL.md` (and `.opencode` mirror) encodes the full release workflow with dynamic version computation. Closes #1371.
+- [x] **Agent Pitfalls Guide**: `docs/developer/agent-pitfalls.md` documents 12 common agent mistakes with corrections -- covering workflow, architecture, vault, and versioning errors. Closes #1371.
+
+### Changed
+
+- [x] **docker-compose.yml Invariant Comment**: Header comment block explicitly states that `network_mode: host` and `restart: on-failure` on bootstrap containers are intentional invariants, with ADR references, to stop repeated reviewer questions. Closes #1371.
+- [x] **agent-context.md Extended**: `.opencode/agents/agent-context.md` gains the cold-start sequence, fork remote table, elision check reminder, and references to new ADRs and skills -- while retaining the full context OpenCode agents require. Closes #1371.
+
+### Fixed
+
+- [x] **check-agents.sh Arithmetic Bug**: `((WARNINGS++))` caused the script to exit on the first warning under `set -e` (arithmetic expression evaluating to 0 is falsy in bash). Changed to `WARNINGS=$((WARNINGS + 1))` so warnings accumulate correctly and only errors cause non-zero exit. Closes #1371.
+
 ## [v1.1.28] - 2026-06-13
 
 ### Summary

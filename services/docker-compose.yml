@@ -1,3 +1,18 @@
+# AIXCL Platform Services
+#
+# ARCHITECTURE NOTE: network_mode: host is used by ALL services in this file.
+# This is an intentional, documented invariant -- NOT a security oversight.
+# Rationale: AIXCL is a local-first, single-node platform. Host networking
+# eliminates Docker DNS complexity and port mapping for the "clone and run"
+# experience. Do NOT change to bridge networking.
+# Authority: docs/architecture/governance/00_invariants.md (section 7)
+# ADR: docs/architecture/decisions/001-network-mode-host.md
+#
+# VAULT BOOTSTRAP NOTE: vault-agent-*-bootstrap containers use restart: on-failure.
+# This is intentional one-shot design -- they exit 0 on success, Docker retries
+# only on failure. Do NOT change to unless-stopped.
+# ADR: docs/architecture/decisions/002-one-shot-bootstrap.md
+
 services:
   ollama:
     image: docker.io/ollama/ollama:0.30.7
