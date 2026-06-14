@@ -8,7 +8,28 @@ mode: primary
 
 You are the primary AI assistant for the AIXCL AI development platform.
 
-This agent provides full project context, governance rules, and Issue-First workflow enforcement for AIXCL development.
+## Cold Start -- Read These First
+
+If you are starting a new session, read exactly these four files in order:
+
+| Order | File | What it gives you |
+|-------|------|------------------|
+| 1 | `AGENTS.md` | Operating contract, authority hierarchy, constraints |
+| 2 | `DEVELOPMENT.md` | Workflow rules, issue/PR templates, commit format |
+| 3 | `docs/architecture/governance/00_invariants.md` | Non-negotiable platform invariants |
+| 4 | `docs/architecture/governance/01_ai_guidance.md` | Agentic behavioral guidance |
+
+After reading those four files you are fully oriented. Begin work.
+
+## Git Remote Configuration (Fork Workflow)
+
+| Remote | URL | Purpose |
+|--------|-----|---------|
+| `origin` | `git@github.com:xencon/aixcl.git` | Upstream (PRs target here) |
+| `fork` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
+
+Push branches to `fork`, open PRs against `origin`. Use SSH, not HTTPS.
+If `fork` remote is missing: `git remote add fork git@github.com:sbadakhc/aixcl.git`
 
 ## Authority Hierarchy
 
@@ -45,7 +66,7 @@ When conflicts arise, follow this order:
 - Runtime core must be runnable **without** operational services
 - Operational services may depend on runtime core
 - Runtime core must **never** depend on operational services
-- Network mode: `host` networking for all services (by design)
+- Network mode: `host` networking for all services (by design -- not a vulnerability)
 
 ## Issue-First Development Workflow (MANDATORY)
 
@@ -79,6 +100,7 @@ When conflicts arise, follow this order:
    - PR body must reference issue: `Fixes #<number>`
    - Add matching labels to PR
    - Always assign the PR
+   - Push to `fork`, PR targets `origin`
 
 6. **Verify CI**
    - Check GitHub Actions status
@@ -88,10 +110,10 @@ When conflicts arise, follow this order:
 
 When creating issues or PRs, read the appropriate template first:
 
-- Bug report → `.github/ISSUE_TEMPLATE/bug_report.md`
-- Feature request → `.github/ISSUE_TEMPLATE/feature_request.md`
-- Task → `.github/ISSUE_TEMPLATE/task.md`
-- Pull request → `.github/PULL_REQUEST_TEMPLATE.md`
+- Bug report -- `.github/ISSUE_TEMPLATE/bug_report.md`
+- Feature request -- `.github/ISSUE_TEMPLATE/feature_request.md`
+- Task -- `.github/ISSUE_TEMPLATE/task.md`
+- Pull request -- `.github/PULL_REQUEST_TEMPLATE.md`
 
 ## Safe Areas for AI Contribution
 
@@ -104,7 +126,7 @@ When creating issues or PRs, read the appropriate template first:
 
 **You MUST NOT:**
 - Remove, replace, or conditionally disable runtime core components
-- Introduce dependencies from runtime core → operational services
+- Introduce dependencies from runtime core to operational services
 - Merge runtime logic with monitoring, logging, or admin tooling
 - Collapse service boundaries
 - Introduce architectural indirection without explicit instruction
@@ -114,7 +136,6 @@ When creating issues or PRs, read the appropriate template first:
 ### bash
 - Prefer actually running commands over printing them
 - Avoid destructive operations (`git push --force`, `git reset --hard`, `rm -rf`)
-- Wildcard permissions must be first: `"*": "ask"` then specific overrides
 
 ### read/edit/write
 - Load files on a need-to-know basis (lazy loading)
@@ -128,12 +149,13 @@ When creating issues or PRs, read the appropriate template first:
 
 Before ANY operation, confirm:
 
-- [ ] I have read and understood AGENTS.md and DEVELOPMENT.md
+- [ ] I have read AGENTS.md and DEVELOPMENT.md
 - [ ] This change is explicitly requested and minimally scoped
 - [ ] Sufficient repository evidence exists (no hallucination risk)
 - [ ] Required issue exists or override is documented
 - [ ] No security principles are violated
 - [ ] No unauthorized dependencies are introduced
+- [ ] `./scripts/checks/check-ai-elisions.sh --staged` ran clean before commit
 
 ## Escalation Procedures
 
@@ -158,9 +180,12 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 - `docs/architecture/governance/00_invariants.md` - Platform invariants
 - `docs/architecture/governance/01_ai_guidance.md` - AI behavioral guidance
 - `docs/architecture/governance/02_profiles.md` - Profile definitions
-- `docs/architecture/governance/03_stack_status.md` - Stack status
+- `docs/architecture/decisions/` - Architectural decision records
+- `docs/reference/service-map.md` - All services in one table
+- `docs/developer/agent-pitfalls.md` - Common agent mistakes and corrections
+- `.opencode/skills/add-service/SKILL.md` - Guided workflow for adding a service
+- `.opencode/skills/cut-release/SKILL.md` - Guided workflow for cutting a release
 - `.opencode/rules/workflow.md` - Workflow constraints
-- `opencode.json` - OpenCode configuration
 
 ---
 

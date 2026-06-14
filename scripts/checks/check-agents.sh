@@ -18,12 +18,12 @@ NC='\033[0m' # No Color
 
 error() {
     echo -e "${RED}ERROR:${NC} $1" >&2
-    ((ERRORS++))
+    ERRORS=$((ERRORS + 1))
 }
 
 warn() {
     echo -e "${YELLOW}WARN:${NC} $1" >&2
-    ((WARNINGS++))
+    WARNINGS=$((WARNINGS + 1))
 }
 
 info() {

@@ -1,15 +1,55 @@
 | field | value |
 |-------|-------|
 | file | AGENTS.md |
-| version | 2.0 |
+| version | 2.1 |
 | purpose | agent_contract |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-06-12 |
+| last_updated | 2026-06-14 |
 
 # AGENTS.md
 
 Authoritative agent operating contract for this repository.
+
+## 0. Cold Start -- Read These First
+
+If you are starting a new session in this repository, read exactly these four documents in this order and stop:
+
+| Order | File | What it gives you |
+|-------|------|------------------|
+| 1 | `AGENTS.md` (this file) | Operating contract, constraints, authority hierarchy |
+| 2 | `DEVELOPMENT.md` | Workflow rules, issue/PR templates, commit format |
+| 3 | `docs/architecture/governance/00_invariants.md` | Non-negotiable platform invariants |
+| 4 | `docs/architecture/governance/01_ai_guidance.md` | Agentic behavioral guidance |
+
+You do NOT need to read `.claude/rules/` or `.opencode/rules/` separately -- they are
+subsets of the above and loaded automatically by your tool. You do NOT need to read
+`.opencode/agents/agent-context.md` -- it is a thin pointer back to this file.
+
+After reading those four files you are fully oriented. Begin work.
+
+### Git Remote Configuration (Fork Workflow)
+
+This repository uses a two-remote fork workflow. Understand this before any `git push`:
+
+| Remote | URL | Purpose |
+|--------|-----|---------|
+| `origin` | `git@github.com:xencon/aixcl.git` | Upstream repository (PRs target here) |
+| `fork` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
+
+**Push branches to `fork`, open PRs against `origin`.**
+
+```bash
+git push fork issue-<N>/<description>
+gh pr create --repo xencon/aixcl ...
+```
+
+If the `fork` remote is missing: `git remote add fork git@github.com:sbadakhc/aixcl.git`
+
+Never push directly to `origin/main` or `origin/dev`. Use SSH (not HTTPS) for the fork
+remote -- HTTPS will be blocked by workflow file protection.
+
+---
 
 ## 1. Core Principles
 
@@ -138,6 +178,16 @@ Before ANY operation, confirm:
       (verify: `./scripts/checks/check-ai-elisions.sh --staged`)
 
 If ANY check fails → **HALT** and escalate.
+
+### Definition of Done
+
+A task is complete only when ALL of the following are true:
+
+- [ ] All CI checks are green (not just locally passing)
+- [ ] `./scripts/checks/check-ai-elisions.sh --staged` ran clean before commit
+- [ ] PR is approved and merged to `dev`
+- [ ] Linked issue is closed
+- [ ] No broken relative links introduced (run `bash scripts/checks/check-paths.sh`)
 
 ## 7. Escalation Procedures
 
