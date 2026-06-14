@@ -254,11 +254,44 @@ docker run --rm --entrypoint id redis:7
 on startup (e.g. the Vault image, which starts as a non-root user by
 default) can use `cap_drop: ALL` without the `user:` override.
 
+## External App Repos
+
+Apps do not need to live inside the platform tree. If your app source is in its
+own repository, register it with the platform using its local path:
+
+```bash
+# Clone your app repo somewhere convenient
+git clone git@github.com:you/my-app.git ~/src/my-app
+
+# Register it with the platform (reads app.name from app.yaml)
+./aixcl app register ~/src/my-app
+
+# Use it like any built-in app
+./aixcl app start my-app
+./aixcl app status my-app
+./aixcl app stop my-app
+
+# Remove the registration (does not touch files or running containers)
+./aixcl app unregister my-app
+```
+
+The registry is stored at `~/.config/aixcl/registry` as a plain text file.
+It is machine-local and not committed to the platform repo.
+
+`./aixcl app list` shows both built-in apps and registered external apps,
+with the external path displayed for registered entries.
+
+Tab completion works for `register` (directory paths) and for all app-name
+arguments (`start`, `stop`, `status`, `build`, `unregister`) across both
+built-in and registered apps.
+
 ## CLI Commands
 
 | Command                          | Description                         |
 |----------------------------------|-------------------------------------|
-| `./aixcl app list`               | List installed applications         |
+| `./aixcl app list`               | List all apps (built-in and registered) |
+| `./aixcl app register <path>`    | Register an external app by local path |
+| `./aixcl app unregister <name>`  | Remove a registered external app    |
 | `./aixcl app start <app>`        | Start an application                |
 | `./aixcl app stop <app>`         | Stop an application                 |
 | `./aixcl app restart <app>`      | Restart an application              |
@@ -266,7 +299,7 @@ default) can use `cap_drop: ALL` without the `user:` override.
 | `./aixcl app build <app>`        | Build/rebuild application image     |
 | `./aixcl app provision <app>`    | Provision declared platform resources |
 | `./aixcl app secrets <app>`      | Show provisioned secrets (local dev) |
-| `./aixcl app scaffold <name>`    | Create scaffolding for a new app    |
+| `./aixcl app scaffold <name>`    | Create scaffolding for a new built-in app |
 | `./aixcl app install <url>`      | Install from a git URL              |
 
 ## Prometheus Integration
