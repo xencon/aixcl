@@ -80,14 +80,79 @@ _app_yaml_parser_file() {
 
 # Load manifest variables into current shell environment
 # Sets: APP_NAME, APP_VERSION, APP_DESCRIPTION, APP_SERVICE_0_NAME, etc.
-_app_load_manifest() {
-    local app_name="$1"
-    local manifest="apps/${app_name}/app.yaml"
+# Returns path to the registry file (~/.config/aixcl/registry).
+# Format: one entry per line as  name=/absolute/path
+_app_registry_file() {
+    echo "${HOME}/.config/aixcl/registry"
+}
 
+# Resolve the directory for a named app.
+# Checks built-in apps/ first, then the registry.
+# Prints the absolute path and returns 0 on success, 1 if not found.
+_app_resolve_dir() {
+    local app_name="$1"
+    local builtin_dir="${SCRIPT_DIR}/apps/${app_name}"
+    if [ -d "$builtin_dir" ] && [ -f "${builtin_dir}/app.yaml" ]; then
+        echo "$builtin_dir"
+        return 0
+    fi
+    local reg_file
+    reg_file="$(_app_registry_file)"
+    if [ -f "$reg_file" ]; then
+        local reg_path
+        reg_path=$(grep "^${app_name}=" "$reg_file" 2>/dev/null | head -1 | cut -d= -f2-)
+        if [ -n "$reg_path" ] && [ -d "$reg_path" ] && [ -f "${reg_path}/app.yaml" ]; then
+            echo "$reg_path"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Parse a manifest at an absolute path, loading variables into the shell.
+# Used by app_cmd_register to extract the app name before registration.
+_app_load_manifest_from_path() {
+    local manifest="$1"
     if [ ! -f "$manifest" ]; then
         echo "[ ] Error: Manifest not found: ${manifest}" >&2
         return 1
     fi
+    if ! _app_has_yaml_parser; then
+        echo "[ ] Error: python3-yaml not installed. Run: sudo apt-get install python3-yaml" >&2
+        return 1
+    fi
+    local parser_file
+    parser_file="$(_app_yaml_parser_file)"
+    if [ -z "$parser_file" ] || [ ! -f "$parser_file" ]; then
+        echo "[ ] Error: Failed to create temporary parser file" >&2
+        return 1
+    fi
+    local exports
+    exports="$(${_APP_PARSER_YAML_TOOL} "$parser_file" "$manifest" 2>/dev/null)"
+    local py_exit=$?
+    rm -f "$parser_file"
+    if [ $py_exit -ne 0 ] || [ -z "$exports" ]; then
+        echo "[ ] Error: Failed to parse manifest: ${manifest}" >&2
+        return 1
+    fi
+    local stale_var
+    while IFS= read -r stale_var; do
+        [ "$stale_var" = "APP_PARSER_YAML_TOOL" ] && continue
+        unset "$stale_var"
+    done < <(compgen -v APP_ || true)
+    eval "$exports"
+    return 0
+}
+
+_app_load_manifest() {
+    local app_name="$1"
+    local app_dir
+    if ! app_dir="$(_app_resolve_dir "$app_name")"; then
+        echo "[ ] Error: App not found: ${app_name}" >&2
+        echo "[ ]   Check apps/ directory or run './aixcl app register <path>'" >&2
+        return 1
+    fi
+    local manifest="${app_dir}/app.yaml"
 
     if ! _app_has_yaml_parser; then
         echo "[ ] Error: python3-yaml not installed. Run: sudo apt-get install python3-yaml" >&2
@@ -125,20 +190,33 @@ _app_load_manifest() {
     return 0
 }
 
-# Discover all apps with valid manifests
+# Discover all apps with valid manifests (built-in and registered).
 _app_discover() {
     local found=0
-    for app_dir in apps/*/; do
-        if [ ! -d "$app_dir" ]; then
-            continue
-        fi
-        local name
+    # Built-in apps under apps/
+    local app_dir name
+    for app_dir in "${SCRIPT_DIR}/apps/"/*/; do
+        [ -d "$app_dir" ] || continue
         name="$(basename "$app_dir")"
-        if [ -f "${app_dir}app.yaml" ]; then
+        if [ -f "${app_dir}/app.yaml" ]; then
             echo "$name"
             found=$((found + 1))
         fi
     done
+    # Registered external apps
+    local reg_file
+    reg_file="$(_app_registry_file)"
+    if [ -f "$reg_file" ]; then
+        local reg_name reg_path
+        while IFS='=' read -r reg_name reg_path; do
+            [ -z "$reg_name" ] && continue
+            [[ "$reg_name" == \#* ]] && continue
+            if [ -f "${reg_path}/app.yaml" ]; then
+                echo "$reg_name"
+                found=$((found + 1))
+            fi
+        done < "$reg_file"
+    fi
     if [ $found -eq 0 ]; then
         return 1
     fi
@@ -187,4 +265,5 @@ _app_service_count() {
 
 # Export functions for app.sh
 export -f _app_has_yaml_parser _app_yaml_to_shell_script _app_yaml_parser_file
+export -f _app_registry_file _app_resolve_dir _app_load_manifest_from_path
 export -f _app_load_manifest _app_discover _app_validate_manifest _app_service_count
