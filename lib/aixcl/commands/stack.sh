@@ -278,11 +278,18 @@ function ensure_nvidia_cdi() {
 # Must be called after vault-init.sh has run on the first boot.
 # ---------------------------------------------------------------------------
 _load_vault_token_for_stack() {
+    # --force bypasses the env-var early-return and always reads from disk.
+    # Pass --force after a cold vault init so a freshly generated token
+    # replaces any stale VAULT_TOKEN that may be set in the shell.
+    local _force=false
+    [ "${1:-}" = "--force" ] && _force=true
+
     local token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
 
     # Automation escape hatch: a pre-set VAULT_TOKEN (CI, scripts, agents)
     # wins over GPG decryption, which needs a TTY for pinentry.
-    if [ -n "${VAULT_TOKEN:-}" ]; then
+    # Skipped when --force is passed (cold init path).
+    if [ "$_force" = "false" ] && [ -n "${VAULT_TOKEN:-}" ]; then
         export VAULT_TOKEN
         echo "Vault token taken from VAULT_TOKEN environment variable"
         return 0
@@ -770,10 +777,10 @@ function start() {
 
                 # Decrypt the token vault-init just wrote.
                 # This is the authoritative token delivery path for bootstrap agents.
-                # _load_vault_token_for_stack exports VAULT_TOKEN into this process,
-                # which run_compose then passes into containers via VAULT_TOKEN: ${VAULT_TOKEN:-}
-                # in docker-compose.yml.
-                if ! _load_vault_token_for_stack; then
+                # --force ensures a stale VAULT_TOKEN in the shell env is replaced
+                # by the newly generated token, which run_compose then passes into
+                # containers via VAULT_TOKEN: ${VAULT_TOKEN:-} in docker-compose.yml.
+                if ! _load_vault_token_for_stack --force; then
                     echo "[ ] Error: Could not load Vault token after init — bootstrap agents cannot start."
                     echo "   Run: ./aixcl vault init"
                     exit 1
