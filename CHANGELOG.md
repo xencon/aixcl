@@ -4,6 +4,22 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.32] - 2026-06-15
+
+### Summary
+
+Release v1.1.32 -- Bash completion extended to cover registered external apps for all app subcommands.
+
+### Added
+
+- [x] **External App Completion**: `_aixcl_app_names()` helper reads both built-in `apps/*/app.yaml` and `~/.config/aixcl/registry` (externally registered apps). All app subcommands (`start`, `stop`, `restart`, `status`, `build`, `remove`, `secrets`, `provision`, `unregister`) now complete registered external app names. Closes #1396.
+
+### Fixed
+
+- [x] **Completion for app remove**: `./aixcl app remove <TAB>` now suggests app names (both built-in and registered external). Previously the `remove` case had no completion handler, leaving both built-in and external apps invisible. Closes #1396.
+- [x] **Completion for app secrets/provision**: `./aixcl app secrets <TAB>` and `./aixcl app provision <TAB>` now suggest app names. Closes #1396.
+- [x] **Completion for app register/unregister**: `./aixcl app register <TAB>` now suggests directories; `./aixcl app unregister <TAB>` suggests registered app names. Closes #1396.
+
 ## [v1.1.31] - 2026-06-14
 
 ### Summary
