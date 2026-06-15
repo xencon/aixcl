@@ -61,3 +61,17 @@ jobs:
           chmod +x ./aixcl
           ./aixcl help > /dev/null || exit 1
           echo "Scripts are executable!"
+
+  lib-tests:
+    name: Library Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run lib test category
+        run: |
+          echo "Running library unit tests..."
+          bash tests/run-tests.sh --category lib
+          echo "Library tests passed!"
