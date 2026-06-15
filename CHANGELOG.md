@@ -4,6 +4,25 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.33] - 2026-06-15
+
+### Summary
+
+Release v1.1.33 -- Two bug fixes: Prometheus scrape target generation for
+externally registered apps, and Unicode icon output in app build.
+
+### Fixed
+
+- [x] **Prometheus Target for External Apps**: `_app_generate_prometheus_targets`
+  now uses `_app_resolve_dir` (same as the sibling `_app_wire_grafana`) so
+  `prometheus/file_sd/<app>.json` is correctly written when starting an
+  externally registered app. Previously all observations went missing from
+  Grafana dashboards. Closes #1402.
+- [x] **App Build Icon Output**: `app_cmd_build` hardcoded `[x]` / `[ ]`
+  instead of `${ICON_SUCCESS:-[x]}` / `${ICON_ERROR:-[ ]}`. Build success and
+  failure now display Unicode glyphs on UTF-8 terminals with ASCII fallback.
+  Closes #1404.
+
 ## [v1.1.32] - 2026-06-15
 
 ### Summary

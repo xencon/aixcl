@@ -37,25 +37,29 @@ _app_usage() {
 Usage: ./aixcl app <action> [args]
 
 Actions:
-  list                          Discover and list all registered apps
-  start   <name> [--verbose]     Start an app's services from manifest
+  list                          Discover and list all apps (built-in and registered)
+  register <path>               Register an external app repo by local path
+  unregister <name>             Remove a registered external app
+  start   <name> [--verbose]    Start an app's services from manifest
                                 (--verbose shows full compose and build output)
-  stop    <name>                 Stop an app's services
-  restart <name>                 Restart an app's services
-  status  <name>                 Show status of an app's services
-  build   <name>                 Build containers for an app (built: true)
-  provision <name>               Provision declared vault secrets and postgres
-  secrets <name>                 Show an app's provisioned secrets (local dev)
-  remove  <name>                 Stop, rm containers, and prune images
-  scaffold <name>                Generate a new app skeleton from template
+  stop    <name>                Stop an app's services
+  restart <name>                Restart an app's services
+  status  <name>                Show status of an app's services
+  build   <name>                Build containers for an app (built: true)
+  provision <name>              Provision declared vault secrets and postgres
+  secrets <name>                Show an app's provisioned secrets (local dev)
+  remove  <name>                Stop, rm containers, and prune images
+  scaffold <name>               Generate a new app skeleton from template
   install <git-url> [--name <n>] [--branch <b>]
                                 Clone a builder repo as submodule and scaffold
 
 Examples:
+  ./aixcl app register ~/src/my-org/my-app
   ./aixcl app list
-  ./aixcl app start ftso
-  ./aixcl app stop  ftso
-  ./aixcl app build ftso
+  ./aixcl app start my-app
+  ./aixcl app stop  my-app
+  ./aixcl app build my-app
+  ./aixcl app unregister my-app
   ./aixcl app scaffold my-app
   ./aixcl app install git@github.com:user/my-app.git --name my-app
 EOF
@@ -73,7 +77,11 @@ _app_ensure_compose() {
 _app_compose_cmd() {
     local app_name="${1:-}"
     shift
-    local app_dir="${SCRIPT_DIR}/apps/${app_name}"
+    local app_dir
+    if ! app_dir="$(_app_resolve_dir "$app_name")"; then
+        echo "${ICON_ERROR:-[ ]} App not found: ${app_name}" >&2
+        return 1
+    fi
     local compose_file="${app_dir}/docker-compose.yml"
 
     if [ ! -f "$compose_file" ]; then
@@ -363,10 +371,10 @@ app_cmd_list() {
     local apps
     apps="$(_app_discover 2>/dev/null)"
     if [ -z "$apps" ]; then
-        echo "No applications registered."
+        echo "No applications found."
         echo ""
-        echo "Use './aixcl app scaffold <name>' to create a new app,"
-        echo "or './aixcl app install <git-url>' to import an existing one."
+        echo "Use './aixcl app register <path>' to register an external app,"
+        echo "or './aixcl app scaffold <name>' to create a new built-in app."
         return 0
     fi
 
@@ -374,18 +382,24 @@ app_cmd_list() {
     echo "Registered Applications"
     echo "======================"
     echo ""
+    local reg_file
+    reg_file="$(_app_registry_file)"
     while IFS= read -r app_name; do
-        if [ -z "$app_name" ]; then
-            continue
-        fi
-        local version=""
+        [ -z "$app_name" ] && continue
+        local version="" location=""
         if _app_load_manifest "$app_name" 2>/dev/null; then
             version="${APP_VERSION:-}"
         fi
+        # Show path for registered external apps
+        local app_dir
+        app_dir="$(_app_resolve_dir "$app_name" 2>/dev/null || true)"
+        if [ -f "$reg_file" ] && grep -q "^${app_name}=" "$reg_file" 2>/dev/null; then
+            location=" [external: ${app_dir}]"
+        fi
         if [ -n "$version" ]; then
-            printf "  - %-20s (version: %s)\n" "$app_name" "$version"
+            printf "  - %-20s (version: %s)%s\n" "$app_name" "$version" "$location"
         else
-            printf "  - %-20s\n" "$app_name"
+            printf "  - %-20s%s\n" "$app_name" "$location"
         fi
     done <<< "${apps}"
     echo ""
@@ -422,7 +436,9 @@ app_cmd_start() {
         return 1
     fi
 
-    if ! _app_validate_manifest "apps/${app_name}/app.yaml"; then
+    local _start_app_dir
+    _start_app_dir="$(_app_resolve_dir "$app_name")"
+    if ! _app_validate_manifest "${_start_app_dir}/app.yaml"; then
         return 1
     fi
 
@@ -706,6 +722,8 @@ app_cmd_build() {
     local svc_count
     svc_count="$(_app_service_count)"
     local built=0
+    local _build_app_dir
+    _build_app_dir="$(_app_resolve_dir "$app_name")"
     for i in $(seq 0 "$((svc_count - 1))"); do
         if _app_service_needs_build "$i"; then
             local svc_name svc_container build_ctx df
@@ -714,22 +732,21 @@ app_cmd_build() {
             build_ctx="$(_app_service_build_context "$i")"
             df="$(_app_service_build_dockerfile "$i")"
             if [ -n "$build_ctx" ]; then
-                local app_dir="${SCRIPT_DIR}/apps/${app_name}"
                 local abs_ctx
-                abs_ctx="${app_dir}/${build_ctx}"
+                abs_ctx="${_build_app_dir}/${build_ctx}"
                 if [ -d "$abs_ctx" ]; then
                     echo "  Building ${svc_name}..."
                     if "${DOCKER_BIN:-docker}" build -f "${abs_ctx}/${df}" \
                           -t "localhost/${svc_container}:latest" \
                           "$abs_ctx"; then
-                        echo "    [x] Built ${svc_name}"
+                        echo "    ${ICON_SUCCESS:-[x]} Built ${svc_name}"
                         built=$((built + 1))
                     else
-                        echo "    [ ] Build failed for ${svc_name}" >&2
+                        echo "    ${ICON_ERROR:-[ ]} Build failed for ${svc_name}" >&2
                         return 1
                     fi
                 else
-                    echo "  [ ] Build context missing: ${abs_ctx}" >&2
+                    echo "  ${ICON_ERROR:-[ ]} Build context missing: ${abs_ctx}" >&2
                 fi
             fi
         else
@@ -1172,7 +1189,8 @@ EOF
 # Generate Prometheus target JSON from manifest variables
 _app_generate_prometheus_targets() {
     local app_name="${1:-}"
-    local app_dir="${SCRIPT_DIR}/apps/${app_name}"
+    local app_dir
+    app_dir="$(_app_resolve_dir "$app_name" 2>/dev/null)" || app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_sd="${SCRIPT_DIR}/prometheus/file_sd"
 
     mkdir -p "$platform_sd"
@@ -1251,7 +1269,8 @@ EOF
 # Copy Grafana dashboards from app into platform provisioning
 _app_wire_grafana() {
     local app_name="${1:-}"
-    local app_dir="${SCRIPT_DIR}/apps/${app_name}"
+    local app_dir
+    app_dir="$(_app_resolve_dir "$app_name" 2>/dev/null)" || app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/${app_name}"
 
     if [ -d "${app_dir}/grafana/dashboards" ]; then
@@ -1260,6 +1279,86 @@ _app_wire_grafana() {
         mkdir -p "$platform_dash"
         cp -f "${app_dir}"/grafana/dashboards/*.json "$platform_dash/" 2>/dev/null || true
     fi
+}
+
+# Usage: app_cmd_register <path>
+# Registers an external app repo by its local path.
+# Reads app.name from the manifest and writes to ~/.config/aixcl/registry.
+app_cmd_register() {
+    local raw_path="${1:-}"
+    if [ -z "$raw_path" ]; then
+        echo "Error: path required. Usage: ./aixcl app register <path>" >&2
+        return 1
+    fi
+
+    _app_ensure_parser
+
+    local app_path
+    app_path="$(cd "$raw_path" 2>/dev/null && pwd)" || {
+        echo "${ICON_ERROR:-[ ]} Path not found: ${raw_path}" >&2
+        return 1
+    }
+
+    local manifest="${app_path}/app.yaml"
+    if [ ! -f "$manifest" ]; then
+        echo "${ICON_ERROR:-[ ]} No app.yaml found at: ${app_path}" >&2
+        return 1
+    fi
+
+    if ! _app_load_manifest_from_path "$manifest"; then
+        echo "${ICON_ERROR:-[ ]} Failed to parse app.yaml at: ${app_path}" >&2
+        return 1
+    fi
+
+    local app_name="${APP_NAME:-}"
+    if [ -z "$app_name" ]; then
+        echo "${ICON_ERROR:-[ ]} app.name not set in manifest at: ${app_path}" >&2
+        return 1
+    fi
+
+    local reg_file
+    reg_file="$(_app_registry_file)"
+    mkdir -p "$(dirname "$reg_file")"
+
+    # Remove any existing entry for this name before writing new one
+    if [ -f "$reg_file" ]; then
+        grep -v "^${app_name}=" "$reg_file" > "${reg_file}.tmp" \
+            && mv "${reg_file}.tmp" "$reg_file" \
+            || rm -f "${reg_file}.tmp"
+    fi
+
+    printf '%s=%s\n' "$app_name" "$app_path" >> "$reg_file"
+    echo "${ICON_SUCCESS:-[x]} Registered '${app_name}'"
+    echo "    Path:     ${app_path}"
+    echo "    Registry: ${reg_file}"
+    echo ""
+    echo "    Run './aixcl app start ${app_name}' to start the app."
+}
+
+# Usage: app_cmd_unregister <name>
+# Removes a registered external app from ~/.config/aixcl/registry.
+# Does not stop running containers or delete any files.
+app_cmd_unregister() {
+    local app_name="${1:-}"
+    if [ -z "$app_name" ]; then
+        echo "Error: app name required. Usage: ./aixcl app unregister <name>" >&2
+        return 1
+    fi
+
+    local reg_file
+    reg_file="$(_app_registry_file)"
+
+    if [ ! -f "$reg_file" ] || ! grep -q "^${app_name}=" "$reg_file" 2>/dev/null; then
+        echo "${ICON_ERROR:-[ ]} '${app_name}' is not a registered external app." >&2
+        return 1
+    fi
+
+    grep -v "^${app_name}=" "$reg_file" > "${reg_file}.tmp" \
+        && mv "${reg_file}.tmp" "$reg_file" \
+        || rm -f "${reg_file}.tmp"
+
+    echo "${ICON_SUCCESS:-[x]} Unregistered '${app_name}'"
+    echo "    Note: running containers and source files are not affected."
 }
 
 # -- Dispatcher entry point -----------------------------------------------------
@@ -1278,6 +1377,12 @@ app_cmd() {
     case "$subcommand" in
         list)
             app_cmd_list "$@"
+            ;;
+        register)
+            app_cmd_register "$@"
+            ;;
+        unregister)
+            app_cmd_unregister "$@"
             ;;
         start)
             app_cmd_start "$@"

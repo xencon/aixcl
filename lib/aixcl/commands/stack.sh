@@ -278,11 +278,18 @@ function ensure_nvidia_cdi() {
 # Must be called after vault-init.sh has run on the first boot.
 # ---------------------------------------------------------------------------
 _load_vault_token_for_stack() {
+    # --force bypasses the env-var early-return and always reads from disk.
+    # Pass --force after a cold vault init so a freshly generated token
+    # replaces any stale VAULT_TOKEN that may be set in the shell.
+    local _force=false
+    [ "${1:-}" = "--force" ] && _force=true
+
     local token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
 
     # Automation escape hatch: a pre-set VAULT_TOKEN (CI, scripts, agents)
     # wins over GPG decryption, which needs a TTY for pinentry.
-    if [ -n "${VAULT_TOKEN:-}" ]; then
+    # Skipped when --force is passed (cold init path).
+    if [ "$_force" = "false" ] && [ -n "${VAULT_TOKEN:-}" ]; then
         export VAULT_TOKEN
         echo "Vault token taken from VAULT_TOKEN environment variable"
         return 0
@@ -770,10 +777,10 @@ function start() {
 
                 # Decrypt the token vault-init just wrote.
                 # This is the authoritative token delivery path for bootstrap agents.
-                # _load_vault_token_for_stack exports VAULT_TOKEN into this process,
-                # which run_compose then passes into containers via VAULT_TOKEN: ${VAULT_TOKEN:-}
-                # in docker-compose.yml.
-                if ! _load_vault_token_for_stack; then
+                # --force ensures a stale VAULT_TOKEN in the shell env is replaced
+                # by the newly generated token, which run_compose then passes into
+                # containers via VAULT_TOKEN: ${VAULT_TOKEN:-} in docker-compose.yml.
+                if ! _load_vault_token_for_stack --force; then
                     echo "[ ] Error: Could not load Vault token after init — bootstrap agents cannot start."
                     echo "   Run: ./aixcl vault init"
                     exit 1
@@ -1522,23 +1529,36 @@ function status() {
 
     # Helper function to check both container status and health
     # Returns: 0=healthy, 1=unhealthy, 2=stopped
-    # health_check_type can be: "curl" (with URL), "pg_isready" (with username), "status_var" (with variable name), or empty (no health check)
+    # health_check_type can be: "curl" (with URL), "pg_isready" (with username),
+    #   "status_var" (with variable name), "one-shot" (exited-0 = complete/healthy),
+    #   or empty (running = healthy, no endpoint check)
     check_service_status() {
         local service_name="$1"
         local container_name="$2"
         local health_check_type="$3"
         local health_check_arg="$4"
 
-        # Check container status
+        # Check if container is currently running
         local container_running=false
         if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
             container_running=true
         fi
 
-        # Check health (only if container is running)
+        # For one-shot containers: check if the container exited successfully (exit code 0).
+        # docker ps only lists running containers, so exited containers need docker ps -a.
+        local container_complete=false
+        if [ "$health_check_type" = "one-shot" ] && [ "$container_running" = "false" ]; then
+            local _exit_code
+            _exit_code=$("${DOCKER_BIN:-docker}" inspect --format '{{.State.ExitCode}}' "$container_name" 2>/dev/null)
+            if [ "$_exit_code" = "0" ]; then
+                container_complete=true
+            fi
+        fi
+
+        # Check health (only if container is running and has an active health check type)
         local health_status=""
         local health_result=""
-        if [ "$container_running" = "true" ] && [ -n "$health_check_type" ]; then
+        if [ "$container_running" = "true" ] && [ -n "$health_check_type" ] && [ "$health_check_type" != "one-shot" ]; then
             case "$health_check_type" in
                 curl)
                     health_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$health_check_arg" 2>/dev/null || echo "000")
@@ -1573,8 +1593,13 @@ function status() {
         local display_status="${ICON_ERROR:-❌}"
         local is_healthy=false
 
-        if [ "$container_running" = "true" ]; then
-            if [ -z "$health_check_type" ]; then
+        if [ "$container_complete" = "true" ]; then
+            # One-shot container that exited successfully -- job is done
+            display_status="${ICON_SUCCESS:-✅}"
+            health_status=" (complete)"
+            is_healthy=true
+        elif [ "$container_running" = "true" ]; then
+            if [ -z "$health_check_type" ] || [ "$health_check_type" = "one-shot" ]; then
                 display_status="${ICON_SUCCESS:-✅}"
                 is_healthy=true
             else
@@ -1739,10 +1764,11 @@ function status() {
     # Vault Agents (sidecars -- no HTTP endpoints, check container running only)
     check_operational_service "Vault Agent (PostgreSQL)" "vault-agent-postgres" "vault-agent-postgres" "" ""
     check_operational_service "Vault Agent (Open WebUI)" "vault-agent-openwebui" "vault-agent-openwebui" "" ""
-    check_operational_service "Vault Agent Bootstrap (PostgreSQL)" "vault-agent-postgres-bootstrap" "vault-agent-postgres-bootstrap" "" ""
-    check_operational_service "Vault Agent Bootstrap (Open WebUI)" "vault-agent-openwebui-bootstrap" "vault-agent-openwebui-bootstrap" "" ""
-    check_operational_service "Vault Agent Bootstrap (pgAdmin)" "vault-agent-pgadmin-bootstrap" "vault-agent-pgadmin-bootstrap" "" ""
-    check_operational_service "Vault Agent Bootstrap (Grafana)" "vault-agent-grafana-bootstrap" "vault-agent-grafana-bootstrap" "" ""
+    # Bootstrap agents are one-shot: they exit 0 on success. "one-shot" treats exit 0 as healthy.
+    check_operational_service "Vault Agent Bootstrap (PostgreSQL)" "vault-agent-postgres-bootstrap" "vault-agent-postgres-bootstrap" "one-shot" ""
+    check_operational_service "Vault Agent Bootstrap (Open WebUI)" "vault-agent-openwebui-bootstrap" "vault-agent-openwebui-bootstrap" "one-shot" ""
+    check_operational_service "Vault Agent Bootstrap (pgAdmin)" "vault-agent-pgadmin-bootstrap" "vault-agent-pgadmin-bootstrap" "one-shot" ""
+    check_operational_service "Vault Agent Bootstrap (Grafana)" "vault-agent-grafana-bootstrap" "vault-agent-grafana-bootstrap" "one-shot" ""
 
     # Health Summary section
     echo ""
