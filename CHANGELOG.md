@@ -4,6 +4,87 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.34] - 2026-06-15
+
+### Summary
+
+Release v1.1.34 -- Platform hardening, CI/CD governance, and profile-service
+authoritative sourcing. Fourteen PRs covering runtime fixes, CI pinning,
+agentic workflow standards, and expanded unit test coverage.
+
+### Added
+
+- [x] **Agent Identification Block Standard**: `AGENTS.md` Section 9.5 and
+  rule mirrors define a required identification block for every agent-authored
+  GitHub comment or PR body. Closes #1429.
+- [x] **Profile Services from Env Files**: Profile service lists are now
+  loaded authoritatively from `config/profiles/*.env` at runtime, replacing
+  hard-coded arrays. Fallback lists retained for safety. Closes #1415.
+- [x] **Runtime Vault Bootstrap Agent Discovery**: `_get_vault_bootstrap_agents()`
+  derives the active bootstrap agent list by intersecting compose-file services
+  with the active profile, eliminating the stale hardcoded array and the latent
+  bld-profile bug. Explicit PyYAML availability check added. Closes #1421.
+- [x] **Stack Helper Unit Tests**: `tests/lib/tests/test-03-stack-helpers.sh`
+  adds 13 assertions for `_print_stopped_status` and
+  `_load_vault_token_for_stack` (env-var shortcut and missing-file paths).
+  Closes #1417 step 1.
+- [x] **Lib Tests in CI**: `quick-tests.yml` now runs the lib test category
+  on every push to dev, catching profile and helper regressions early.
+  Closes #1414.
+- [x] **Workflow Concurrency Controls**: All GitHub Actions workflows gain
+  `concurrency` groups and timeout-minutes limits, preventing queue pile-ups
+  on rapid pushes. Closes #1426.
+- [x] **check-ai-elisions in CI**: `bash-ci.yml` runs
+  `check-ai-elisions.sh --range` on every PR to detect AI-elision placeholders
+  before merge. Rule mirrors updated. Closes #1428.
+
+### Fixed
+
+- [x] **Vault Image Version**: `stack.sh` five manual vault run commands now
+  use `vault:2.0.2` matching `docker-compose.yml`, removing the version skew
+  introduced by the default `vault:1.18` tag. Closes #1423.
+- [x] **Hardcoded Podman Calls**: `vault-status.sh` `is_container_running`
+  replaced with inline `${DOCKER_BIN:-docker} ps` so the runtime honours the
+  podman/docker detection already in place. Closes #1423.
+- [x] **GPU Overlay Entrypoints**: `services/docker-compose.gpu.yml` ollama
+  and vllm inline entrypoints now match their primary scripts
+  (`ollama-entrypoint.sh`, `vllm-entrypoint.sh`). PARITY REQUIREMENT comments
+  added. Closes #1416.
+- [x] **App Parser eval Removed**: `_app_load_manifest` and
+  `_app_load_manifest_from_path` replace `eval "$exports"` with
+  `bash -c "$exports"` indirect expansion, removing an injection vector.
+  Closes #1420.
+- [x] **Release Changelog Parser**: `release.yml` parser now handles standard
+  markdown headings (`### Added`, `### Fixed`) in addition to the old format.
+  Closes #1425.
+- [x] **Stale Volume References**: `docker-compose.secrets.yml` references to
+  removed named volumes cleaned up. Closes #1427.
+- [x] **Vault Bootstrap Status Labels**: Case statement added for Open WebUI
+  and pgAdmin so status display shows correct mixed-case labels instead of
+  awk-titlecased "Openwebui" / "Pgadmin". Closes #1421.
+
+### Changed
+
+- [x] **Actions Pinned to SHA**: All third-party GitHub Actions in
+  `ci.yml`, `bash-ci.yml`, `security.yml`, `documentation-checks.yml`, and
+  `quick-tests.yml` pinned to commit SHAs with version comments. Closes #1413,
+  #1445.
+
+### Maintenance
+
+- [x] **Remove Stale Draft Agents and Security README**: Outdated draft agent
+  files and a superseded `.claude/security-README.md` removed. Closes #1411.
+- [x] **Remove Stale Agent Refs**: Non-existent agent names removed from
+  `docs/architecture/governance/compensating-controls.md`. Closes #1442.
+- [x] **Move AIXCL.png**: Repository root `AIXCL.png` moved to
+  `docs/assets/AIXCL.png`; all references updated. Closes #1419.
+- [x] **Update Tests README**: `tests/README.md` updated to match the actual
+  test suite structure, categories, and helper functions. Closes #1410.
+- [x] **Remove Duplicate wait_for_api**: Duplicate function definition in
+  `tests/lib/test-framework.sh` removed. Closes #1418.
+- [x] **ASCII CI Output**: Unicode checkmark in `bash-ci.yml` step summary
+  replaced with `[PASS]` for cross-platform compatibility. Closes #1424.
+
 ## [v1.1.33] - 2026-06-15
 
 ### Summary
