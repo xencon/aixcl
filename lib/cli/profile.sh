@@ -65,6 +65,12 @@ _get_vault_bootstrap_agents() {
         return 0
     fi
 
+    if ! python3 -c 'import yaml' 2>/dev/null; then
+        echo "[ERROR] python3 PyYAML is required to discover Vault bootstrap agents." >&2
+        echo "        Install with: pip3 install pyyaml" >&2
+        return 1
+    fi
+
     local all_agents
     all_agents=$(python3 -c '
 import re, sys, yaml
@@ -73,7 +79,7 @@ with open(sys.argv[1]) as f:
 for name in sorted(data.get("services", {}).keys()):
     if re.match(r"^vault-agent-.*-bootstrap$", name):
         print(name)
-' "$compose_file" 2>/dev/null)
+' "$compose_file")
 
     if [ -z "$all_agents" ]; then
         return 0

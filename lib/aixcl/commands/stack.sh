@@ -1751,10 +1751,17 @@ function status() {
     local _status_bootstrap_agents=()
     readarray -t _status_bootstrap_agents < <(_get_vault_bootstrap_agents "$current_profile")
     for _agent in "${_status_bootstrap_agents[@]}"; do
-        local _label="${_agent#vault-agent-}"
-        _label="${_label%-bootstrap}"
-        _label="$(tr "-" " " <<<"$_label")"
-        _label="$(awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' <<<"$_label")"
+        local _label
+        case "$_agent" in
+            *openwebui*) _label="Open WebUI" ;;
+            *pgadmin*)   _label="pgAdmin" ;;
+            *)
+                _label="${_agent#vault-agent-}"
+                _label="${_label%-bootstrap}"
+                _label="$(tr "-" " " <<<"$_label")"
+                _label="$(awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' <<<"$_label")"
+                ;;
+        esac
         check_operational_service "Vault Agent Bootstrap ($_label)" "$_agent" "$_agent" "one-shot" ""
     done
 
