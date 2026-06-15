@@ -60,7 +60,7 @@ _aixcl_complete() {
         fi
         echo "$names"
     }
-    
+
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
     # Note: OpenCode is a VS Code plugin, not a containerized service
