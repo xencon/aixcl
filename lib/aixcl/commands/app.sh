@@ -641,9 +641,12 @@ app_cmd_status() {
     local total_services=0
     local healthy_services=0
 
+    local _title="${app_name^^} Application Status"
+    local _sep=""
+    for (( _i=0; _i<${#_title}; _i++ )); do _sep="${_sep}="; done
     echo ""
-    echo "${app_name^^} Application Status"
-    echo "=============================="
+    echo "$_title"
+    echo "$_sep"
     echo ""
     echo "App: ${app_name}"
     echo "Status: ${overall_status}"
