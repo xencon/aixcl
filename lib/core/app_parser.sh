@@ -254,7 +254,9 @@ _app_service_count() {
     local count=0
     while true; do
         local svc_name
-        svc_name="$(eval "echo \${APP_SERVICE_${count}_NAME:-}" 2>/dev/null || true)"
+        local varname
+        varname="APP_SERVICE_${count}_NAME"
+        svc_name="${!varname:-}"
         if [ -z "$svc_name" ]; then
             break
         fi

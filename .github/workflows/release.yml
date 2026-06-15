@@ -14,9 +14,14 @@ on:
         description: 'Tag to release (e.g. v1.2.3)'
         required: true
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -56,15 +61,15 @@ jobs:
             index($0, "## [") == 1 && in_section { in_section=0 }
             !in_section { next }
 
-            # Section header detection
-            $1 $2 == "###Summary" { section="Summary"; is_summary=1; next }
-            $1 $2 == "###Fixed"    { section="Fixed";    next }
-            $1 $2 == "###Changed"  { section="Changed";  next }
-            $1 $2 == "###Added"    { section="Added";    next }
-            $1 $2 == "###Removed"  { section="Removed";  next }
+            # Section header detection (accept both '###Summary' and '### Summary')
+            match($0, /^###[ \t]*Summary/) { section="Summary"; is_summary=1; next }
+            match($0, /^###[ \t]*Fixed/)    { section="Fixed";    next }
+            match($0, /^###[ \t]*Changed/)  { section="Changed";  next }
+            match($0, /^###[ \t]*Added/)    { section="Added";    next }
+            match($0, /^###[ \t]*Removed/)  { section="Removed";  next }
 
             # End on unknown header or separator
-            $1 == "###" || $0 == "---" { section=""; is_summary=0; next }
+            match($0, /^###[ \t]*[^ \t]/) || $0 == "---" { section=""; is_summary=0; next }
 
             # Capture summary paragraph (first non-empty line after ###Summary)
             is_summary && $0 != "" { summary_text=$0; is_summary=0; next }
@@ -135,11 +140,11 @@ jobs:
             }
           ' CHANGELOG.md > /tmp/release-notes.md
 
-          if [ -s /tmp/release-notes.md ] && [ "$(wc -l < /tmp/release-notes.md)" -gt 5 ]; then
+          if [ -s /tmp/release-notes.md ] && grep -qE '^#### (Added|Changed|Fixed|Removed)' /tmp/release-notes.md; then
             echo "Generated release notes for $VERSION"
             cat /tmp/release-notes.md
           else
-            echo "No changelog content found, using generic fallback"
+            echo "WARNING: No changelog content found for $VERSION; using generic fallback"
             {
               echo "## AIXCL ${VERSION}"
               echo ""
@@ -158,7 +163,7 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: "AIXCL ${{ steps.version.outputs.version }}"

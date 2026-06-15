@@ -173,13 +173,13 @@ function cmd_vault_rotate() {
     
     # Restart vault agents to trigger immediate rotation
     local agents
-    agents=$(podman ps --format "{{.Names}}" | grep "vault-agent" || true)
+    agents=$(${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep "vault-agent" || true)
     
     if [ -n "$agents" ]; then
         echo "Restarting Vault agents for immediate rotation..."
         while IFS= read -r agent; do
             echo "  Restarting $agent..."
-            podman restart "$agent" >/dev/null 2>&1 || true
+            ${DOCKER_BIN:-docker} restart "$agent" >/dev/null 2>&1 || true
         done <<< "$agents"
         echo "Agents restarted. Credentials will be updated within 30 seconds."
     else

@@ -14,13 +14,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   security-tests:
     name: Security Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Run security tests
         run: |
@@ -35,9 +40,10 @@ jobs:
   script-validation:
     name: Validate Shell Scripts
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check script syntax
         run: |
@@ -55,3 +61,17 @@ jobs:
           chmod +x ./aixcl
           ./aixcl help > /dev/null || exit 1
           echo "Scripts are executable!"
+
+  lib-tests:
+    name: Library Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Run lib test category
+        run: |
+          echo "Running library unit tests..."
+          bash tests/run-tests.sh --category lib
+          echo "Library tests passed!"

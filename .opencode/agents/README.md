@@ -3,11 +3,13 @@
 ## Active
 - `agent-context.md` - Main context agent (loaded by opencode.json)
 
-## Draft / Future Work (Not Yet Implemented)
+## Adding Agents
 
-The following agent definitions are architectural targets only. They are **not** loaded by OpenCode or Claude Code and do not exist as runnable agents:
-- `.draft/llm-firewall.md`
-- `.draft/audit-logger.md`
-- `.draft/blast-radius-controller.md`
-- `.draft/security-gate.md`
-- `.draft/threat-detector.md`
+Agent definitions are stored here and loaded by OpenCode. Any new agent must:
+
+- Follow the naming convention `agent-<name>.md`
+- Include required YAML frontmatter (`name`, `description`, `role: system`)
+- Reference canonical governance documents (`AGENTS.md`, `DEVELOPMENT.md`, `docs/architecture/governance/01_ai_guidance.md`)
+- Be mirrored to `.claude/agents/` if the same agent is used by Claude Code
+
+Run `bash scripts/checks/check-agents.sh` after adding or modifying agents.

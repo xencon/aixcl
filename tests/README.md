@@ -26,6 +26,7 @@ tests/
 │   └── cleanup.sh            # Cleanup utilities
 ├── command-tests/            # Individual CLI command tests
 │   ├── test-00-preflight.sh
+│   ├── test-00a-stack-token-reload.sh
 │   ├── test-01-stack-start.sh
 │   ├── test-02-stack-status.sh
 │   ├── test-03-engine-set-ollama.sh
@@ -37,7 +38,10 @@ tests/
 │   ├── test-09-models-add-llamacpp.sh
 │   ├── test-10-models-list.sh
 │   ├── test-11-service-restart.sh
-│   ├── test-12-logs.sh
+│   ├── test-13-opencode-prompts.sh
+│   ├── test-14-opencode-vllm.sh
+│   ├── test-15-opencode-llamacpp.sh
+│   ├── test-16-engine-model-integration.sh
 │   └── test-99-stack-stop.sh
 └── workflow-tests/
     └── test-readme-quickstart.sh
@@ -75,6 +79,7 @@ Validate individual CLI commands:
 | Test | Command | Description |
 |------|---------|-------------|
 | test-00-preflight | `utils check-env` | Environment validation |
+| test-00a-stack-token-reload | `stack start` | Vault token reload after stack restart |
 | test-01-stack-start | `stack start --profile sys` | Start full stack |
 | test-02-stack-status | `stack status` | Check service status |
 | test-03-engine-set-ollama | `engine set ollama` | Set ollama engine |
@@ -86,7 +91,10 @@ Validate individual CLI commands:
 | test-09-models-add-llamacpp | `models add .../q4_k_m.gguf` | Add GGUF model |
 | test-10-models-list | `models list` | List installed models |
 | test-11-service-restart | `service restart ollama` | Restart a service |
-| test-12-logs | `stack logs ollama 10` | View service logs |
+| test-13-opencode-prompts | `opencode` | OpenCode prompt integration |
+| test-14-opencode-vllm | `opencode` | OpenCode with vLLM engine |
+| test-15-opencode-llamacpp | `opencode` | OpenCode with llama.cpp engine |
+| test-16-engine-model-integration | `engine` + `models` | Engine and model integration |
 | test-99-stack-stop | `stack stop` | Stop all services |
 
 ### Workflow Tests (`workflow-tests/`)

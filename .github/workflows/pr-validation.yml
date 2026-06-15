@@ -13,10 +13,15 @@ on:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-pr-title:
     name: Validate PR Title Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check PR title format
         env:
@@ -44,6 +49,7 @@ jobs:
   validate-pr-assignee:
     name: Validate PR Assignee
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check PR has assignee
         env:
@@ -69,6 +75,7 @@ jobs:
   validate-pr-labels:
     name: Validate PR Labels
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check PR has component label
         env:

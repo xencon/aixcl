@@ -63,7 +63,7 @@ AIXCL Platform Test Runner
 Usage: ./tests/run-tests.sh [OPTIONS]
 
 Options:
-    --category <category>   Run only tests from category (command|workflow)
+    --category <category>   Run only tests from category (command|workflow|lib)
     --test <test-file>      Run specific test file
     --dry-run                Show what would run without executing
     --quick                  Skip slow tests (model downloads)
@@ -78,6 +78,7 @@ Examples:
 Categories:
     command      - CLI command validation tests
     workflow     - README Quick Start workflow test
+    lib          - Pure shell library unit tests (no running stack required)
 
 Notes:
     - Tests run sequentially and stop on first failure
@@ -115,9 +116,15 @@ discover_tests() {
                 fi
             done
         fi
-        
+
         if [[ -z "$CATEGORY" ]] || [[ "$CATEGORY" == "workflow" ]]; then
             for test in "${TEST_DIR}/workflow-tests"/test-*.sh; do
+                [[ -f "$test" ]] && tests+=("$test")
+            done
+        fi
+
+        if [[ -z "$CATEGORY" ]] || [[ "$CATEGORY" == "lib" ]]; then
+            for test in "${TEST_DIR}/lib/tests"/test-*.sh; do
                 [[ -f "$test" ]] && tests+=("$test")
             done
         fi

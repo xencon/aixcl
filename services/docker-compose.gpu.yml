@@ -11,16 +11,24 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
-    # Include permission setup that the original entrypoint provided
+    # Docker-in-Docker constraint: bind-mounted entrypoint scripts are unavailable
+    # in DinD environments, so the primary entrypoint logic is inlined here.
+    # PARITY REQUIREMENT: keep this block in sync with
+    # scripts/runtime/ollama-entrypoint.sh when that file changes.
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        # Setup permissions like original entrypoint
-        mkdir -p /home/ubuntu/.ollama
-        chown -R ubuntu:ubuntu /home/ubuntu
-        # Run ollama as ubuntu user
-        exec su - ubuntu -c "ollama serve"
+        OLLAMA_USER="ubuntu"
+        OLLAMA_UID="1000"
+        OLLAMA_HOME="/home/ubuntu"
+        OLLAMA_DATA="$OLLAMA_HOME/.ollama"
+        if ! id "$OLLAMA_USER" >/dev/null 2>&1; then
+            useradd -m -u "$OLLAMA_UID" "$OLLAMA_USER"
+        fi
+        mkdir -p "$OLLAMA_DATA"
+        chown -R "$OLLAMA_USER:$OLLAMA_USER" "$OLLAMA_HOME"
+        usermod -aG video,render "$OLLAMA_USER" 2>/dev/null || true
+        exec su - "$OLLAMA_USER" -c "exec ollama serve"
 
   vllm:
     deploy:
@@ -30,16 +38,23 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    # Docker-in-Docker fix: Override entrypoint to avoid bind mount issues
-    entrypoint: ["/usr/bin/python3", "-m", "vllm.entrypoints.openai.api_server"]
+    # Docker-in-Docker constraint: bind-mounted entrypoint scripts are unavailable
+    # in DinD environments, so the primary entrypoint logic is inlined here.
+    # PARITY REQUIREMENT: keep this block in sync with
+    # scripts/runtime/vllm-entrypoint.sh when that file changes.
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "11434"
-      - "--model"
-      - "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}"
-      - "--trust-remote-code"
+      - |
+        VLLM_HOME="/home/vllm"
+        mkdir -p "$VLLM_HOME/.cache/huggingface"
+        if [ -w "$VLLM_HOME" ]; then
+            chown -R "$(id -u):$(id -g)" "$VLLM_HOME/.cache" 2>/dev/null || true
+        fi
+        exec python3 -m vllm.entrypoints.openai.api_server \
+            --host 0.0.0.0 \
+            --port 11434 \
+            --model "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}" \
+            --trust-remote-code
     environment:
       - VLLM_MODEL=${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}
 
