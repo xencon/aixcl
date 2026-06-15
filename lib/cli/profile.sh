@@ -10,8 +10,9 @@
 #   2. services/docker-compose.yml - define the service
 # See: docs/developer/adding-services.md for complete checklist
 
-# Get the repository root relative to this script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Get the repository root relative to this script.
+# Intentionally namespaced to avoid overwriting the caller's SCRIPT_DIR.
+_PROFILE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Valid profiles array
 # shellcheck disable=SC2034
@@ -44,12 +45,51 @@ declare -A PROFILE_DESCRIPTIONS=(
 # calling shell. Expands $INFERENCE_ENGINE using the current environment.
 _load_profile_services() {
     local profile="$1"
-    local env_file="${SCRIPT_DIR}/config/profiles/${profile}.env"
+    local env_file="${_PROFILE_SCRIPT_DIR}/config/profiles/${profile}.env"
     (
         # shellcheck disable=SC1090
         source "$env_file" 2>/dev/null || true
         printf '%s' "${PROFILE_SERVICES:-}"
     )
+}
+
+# Derive the Vault bootstrap agent list for a profile directly from
+# services/docker-compose.yml service names matching ^vault-agent-.*-bootstrap$,
+# then intersect with the active profile's services. This eliminates the need
+# to maintain the same list in lib/cli/profile.sh and lib/aixcl/commands/stack.sh.
+_get_vault_bootstrap_agents() {
+    local profile="$1"
+    local compose_file="${_PROFILE_SCRIPT_DIR}/services/docker-compose.yml"
+
+    if [ ! -f "$compose_file" ]; then
+        return 0
+    fi
+
+    if ! python3 -c 'import yaml' 2>/dev/null; then
+        echo "[ERROR] python3 PyYAML is required to discover Vault bootstrap agents." >&2
+        echo "        Install with: pip3 install pyyaml" >&2
+        return 1
+    fi
+
+    local all_agents
+    all_agents=$(python3 -c '
+import re, sys, yaml
+with open(sys.argv[1]) as f:
+    data = yaml.safe_load(f)
+for name in sorted(data.get("services", {}).keys()):
+    if re.match(r"^vault-agent-.*-bootstrap$", name):
+        print(name)
+' "$compose_file")
+
+    if [ -z "$all_agents" ]; then
+        return 0
+    fi
+
+    local active_services
+    active_services=$(get_profile_services_for_profile "$profile" | tr ' ' '\n')
+
+    # Intersection: agents that exist in both compose and the active profile.
+    comm -12 <(printf '%s\n' "$all_agents" | sort) <(printf '%s\n' "$active_services" | sort)
 }
 
 # Profile service mappings (Docker-managed services only)
@@ -201,5 +241,5 @@ print_profile_info() {
 # Export functions for use in other modules
 export -f is_valid_profile get_profile_description get_profile_services
 export -f get_profile_db_storage_enabled list_profiles print_profile_info
-export -f get_profile_services_for_profile get_runtime_core_services _load_profile_services
+export -f get_profile_services_for_profile get_runtime_core_services _load_profile_services _get_vault_bootstrap_agents
 
