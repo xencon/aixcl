@@ -43,8 +43,24 @@ _aixcl_complete() {
     # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
     local commands="app stack service models engine utils vault help restart"
 
-    # Application service names are discovered dynamically from apps/*/app.yaml
-    
+    # Application names: built-in (apps/*/app.yaml) plus externally registered apps
+    _aixcl_app_names() {
+        local names=""
+        local d
+        for d in apps/*/; do
+            [ -f "${d}app.yaml" ] && names+=" $(basename "$d")"
+        done
+        local reg="${HOME}/.config/aixcl/registry"
+        if [ -f "$reg" ]; then
+            local line
+            while IFS='=' read -r line _; do
+                [[ "$line" == \#* ]] || [ -z "$line" ] && continue
+                names+=" $line"
+            done < "$reg"
+        fi
+        echo "$names"
+    }
+
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
     # Note: OpenCode is a VS Code plugin, not a containerized service
@@ -102,12 +118,8 @@ _aixcl_complete() {
             fi
             # If previous word was 'app', complete with app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
                 fi
@@ -128,12 +140,8 @@ _aixcl_complete() {
             fi
             # If previous word was 'app', complete with app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
                 fi
@@ -148,12 +156,8 @@ _aixcl_complete() {
             fi
             # If previous word was 'app', complete with app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
                 fi
@@ -210,14 +214,9 @@ _aixcl_complete() {
             return 0
             ;;
         'status')
-            # If previous word was 'app', complete with available app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
                 fi
@@ -225,14 +224,55 @@ _aixcl_complete() {
             fi
             ;;
         'build')
-            # If previous word was 'app', complete with available app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
+        'remove')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names
+                app_names="$(_aixcl_app_names)"
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
+                local available_models
+                available_models=$(_get_ollama_models)
+                if [ -n "$available_models" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$available_models" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
+        'secrets'|'provision')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names
+                app_names="$(_aixcl_app_names)"
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
+        'register')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                # Complete with directories for the local path argument
+                compopt -o dirnames 2>/dev/null
+                mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+                return 0
+            fi
+            ;;
+        'unregister')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
                 fi
@@ -253,7 +293,7 @@ _aixcl_complete() {
             fi
             ;;
 
-        'add'|'remove')
+        'add')
             # If previous word was 'models', complete with available models
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
                 local available_models
