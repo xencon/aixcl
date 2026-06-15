@@ -739,14 +739,14 @@ app_cmd_build() {
                     if "${DOCKER_BIN:-docker}" build -f "${abs_ctx}/${df}" \
                           -t "localhost/${svc_container}:latest" \
                           "$abs_ctx"; then
-                        echo "    [x] Built ${svc_name}"
+                        echo "    ${ICON_SUCCESS:-[x]} Built ${svc_name}"
                         built=$((built + 1))
                     else
-                        echo "    [ ] Build failed for ${svc_name}" >&2
+                        echo "    ${ICON_ERROR:-[ ]} Build failed for ${svc_name}" >&2
                         return 1
                     fi
                 else
-                    echo "  [ ] Build context missing: ${abs_ctx}" >&2
+                    echo "  ${ICON_ERROR:-[ ]} Build context missing: ${abs_ctx}" >&2
                 fi
             fi
         else
