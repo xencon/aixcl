@@ -803,7 +803,7 @@ function start() {
                     --env "VAULT_TOKEN=${_vtoken}" \
                     -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-postgres.sh:/usr/local/bin/bootstrap-password-postgres.sh:ro" \
                     -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-postgres.sh
+                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-postgres.sh
                 "$_bin" run -d --replace --name vault-agent-openwebui-bootstrap --restart unless-stopped \
                     --network host \
                     --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
@@ -813,7 +813,7 @@ function start() {
                     --env "VAULT_TOKEN=${_vtoken}" \
                     -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-openwebui.sh:/usr/local/bin/bootstrap-password-openwebui.sh:ro" \
                     -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-openwebui.sh
+                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-openwebui.sh
                 "$_bin" run -d --replace --name vault-agent-pgadmin-bootstrap --restart unless-stopped \
                     --network host \
                     --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
@@ -823,7 +823,7 @@ function start() {
                     --env "VAULT_TOKEN=${_vtoken}" \
                     -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-pgadmin.sh:/usr/local/bin/bootstrap-password-pgadmin.sh:ro" \
                     -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-pgadmin.sh
+                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-pgadmin.sh
                 "$_bin" run -d --replace --name vault-agent-grafana-bootstrap --restart unless-stopped \
                     --network host \
                     --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
@@ -833,7 +833,7 @@ function start() {
                     --env "VAULT_TOKEN=${_vtoken}" \
                     -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro" \
                     -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:1.18 /usr/local/bin/bootstrap-password-grafana.sh
+                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-grafana.sh
                 # Start non-bootstrap vault agents via compose
                 run_compose up -d --no-deps \
                     vault-agent-postgres \
@@ -847,7 +847,7 @@ function start() {
                     local _pw
                     _pw=$("$_docker_bin" run --rm \
                         -v aixcl-vault-secrets:/s \
-                        docker.io/hashicorp/vault:1.18 \
+                        docker.io/hashicorp/vault:2.0.2 \
                         sh -c "cat /s/postgres-password 2>/dev/null" 2>/dev/null || true)
                     if [ -n "$_pw" ]; then
                         echo "Bootstrap secrets ready."

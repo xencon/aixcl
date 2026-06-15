@@ -174,17 +174,7 @@ load_vault_token() {
 # ---------------------------------------------------------------------------
 
 is_vault_running() {
-    local bin="${DOCKER_BIN:-}"
-    if [ -z "$bin" ]; then
-        if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
-            bin="podman"
-        elif command -v docker >/dev/null 2>&1; then
-            bin="docker"
-        else
-            return 1
-        fi
-    fi
-    "$bin" ps --format "{{.Names}}" | grep -q "^vault$"
+    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^vault$"
 }
 
 # Returns true if the Vault HTTP API is responding (even when sealed/uninitialized)
@@ -259,15 +249,7 @@ wait_for_vault() {
 # Wait for PostgreSQL container to accept connections before configuring Vault DB engine
 wait_for_postgres() {
     log_info "Waiting for PostgreSQL to be ready..."
-    local docker_bin=""
-    if command -v podman >/dev/null 2>&1; then
-        docker_bin="podman"
-    elif command -v docker >/dev/null 2>&1; then
-        docker_bin="docker"
-    else
-        log_warn "No container runtime found; skipping PostgreSQL readiness check"
-        return 0
-    fi
+    local docker_bin="${DOCKER_BIN:-docker}"
 
     local retries=60
     while [ $retries -gt 0 ]; do
@@ -519,12 +501,8 @@ init_bootstrap_passwords() {
             postgres_password=$(cat /run/secrets/postgres-password | tr -d '\n')
             log_info "Read existing PostgreSQL password from shared volume"
         fi
-        if [ -z "$postgres_password" ] && command -v podman >/dev/null 2>&1; then
-            postgres_password=$(podman exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
-            [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
-        fi
-        if [ -z "$postgres_password" ] && command -v docker >/dev/null 2>&1; then
-            postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+        if [ -z "$postgres_password" ]; then
+            postgres_password=$(${DOCKER_BIN:-docker} exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
             [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
         fi
         [ -z "$postgres_password" ] && postgres_password=$(generate_password 32)
@@ -618,11 +596,8 @@ configure_postgres_connection() {
     # Always read the current password from Vault KV (authoritative) or the secrets volume
     postgres_password=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null | jq -r '.data.data.password // empty')
-    if [ -z "$postgres_password" ] && command -v podman >/dev/null 2>&1; then
-        postgres_password=$(podman exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
-    fi
-    if [ -z "$postgres_password" ] && command -v docker >/dev/null 2>&1; then
-        postgres_password=$(docker exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+    if [ -z "$postgres_password" ]; then
+        postgres_password=$(${DOCKER_BIN:-docker} exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
     fi
     if [ -z "$postgres_password" ]; then
         log_error "Could not retrieve PostgreSQL password from Vault KV or container"
