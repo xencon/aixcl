@@ -95,7 +95,7 @@ gh pr create \
   --base main \
   --title "Release v1.1.<N> (#<N>)" \
   --body-file /tmp/release-pr-body.md \
-  --assignee sbadakhc \
+  --assignee <assignee> \
   --label "Task,component:infrastructure,Maintenance"
 ```
 
@@ -142,7 +142,7 @@ gh pr create \
   --head main \
   --title "Sync main into dev after v1.1.<N> release (#<N>)" \
   --body "Reconcile release history. Fixes #<sync-issue-number>" \
-  --assignee sbadakhc \
+  --assignee <assignee> \
   --label "Task,component:infrastructure,Maintenance"
 ```
 
