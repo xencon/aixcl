@@ -1189,7 +1189,8 @@ EOF
 # Generate Prometheus target JSON from manifest variables
 _app_generate_prometheus_targets() {
     local app_name="${1:-}"
-    local app_dir="${SCRIPT_DIR}/apps/${app_name}"
+    local app_dir
+    app_dir="$(_app_resolve_dir "$app_name" 2>/dev/null)" || app_dir="${SCRIPT_DIR}/apps/${app_name}"
     local platform_sd="${SCRIPT_DIR}/prometheus/file_sd"
 
     mkdir -p "$platform_sd"
