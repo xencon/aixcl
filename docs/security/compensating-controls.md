@@ -81,121 +81,8 @@ done
 | Modify rules | **NEVER** -- requires approval | Only after documented change request |
 | Diagnose failures | Run verification commands, report | Decide on remediation |
 
----
 
-## 2. LLM Firewall (llm-firewall agent)
-
-### Purpose
-
-Sanitizes all LLM interactions to prevent prompt injection, PII leakage, and data exfiltration through the inference API.
-
-### Deployment
-
-- **Location**: `localhost:11435` (proxy to Ollama on `:11434`)
-- **Implementation**: `.opencode/agents/llm-firewall.md`
-- **Integration**: All LLM requests route through this proxy
-
-### Capabilities
-
-| Capability | Description | Verification |
-|------------|-------------|------------|
-| Prompt injection detection | Pattern matching + heuristic analysis on input prompts | Send known injection payload, expect block |
-| PII/PCI redaction | Regex + NER-based detection on input and output | Send test SSN/credit card, expect redaction |
-| Rate limiting | 100 requests/hour per source IP | Exceed limit, expect HTTP 429 |
-| Output filtering | Block encoded/escaped output patterns | Request base64-encoded response, expect block |
-| Audit logging | Every interaction logged to PostgreSQL | Query `llm_interactions` table |
-
-### Verification Commands
-
-```bash
-# Check proxy is listening
-ss -tlnp | grep 11435
-
-# Test rate limiting (requires 101+ requests)
-# See scripts/security/test-rate-limit.sh
-
-# Check audit log
-psql -U postgres -d aixcl -c "SELECT COUNT(*) FROM llm_interactions WHERE created_at > NOW() - INTERVAL '1 hour';"
-```
-
-### Failure Modes
-
-| Symptom | Cause | Agent Action | Human Action |
-|---------|-------|------------|--------------|
-| Port 11435 not listening | llm-firewall not running | Restart service | Investigate why it stopped |
-| False positive (legitimate prompt blocked) | Overly aggressive filter | Log and alert | Tune filter rules |
-| False negative (malicious prompt passed) | Bypass technique | Escalate immediately | Review logs, update patterns |
-| High latency (>200ms) | Filter complexity | Report metric | Acceptable up to ~50ms baseline |
-
-### Agent vs Human Responsibilities
-
-| Task | Agent | Human |
-|------|-------|-------|
-| Monitor proxy health | Check port every 60 seconds | Review dashboards weekly |
-| Respond to alerts | Auto-throttle if rate limit exceeded | Investigate sustained attacks |
-| Update filter rules | **NEVER** | After security review only |
-| Tune false positive rate | Report statistics | Adjust thresholds quarterly |
-
----
-
-## 3. Threat Detection (threat-detector agent)
-
-### Purpose
-
-Continuous monitoring for anomalous behavior targeting the AIXCL runtime and infrastructure.
-
-### Deployment
-
-- **Implementation**: `.opencode/agents/threat-detector.md`
-- **Alerting**: Slack #security channel
-- **Metrics**: Prometheus alerts, Loki logs
-
-### Detection Rules
-
-| Rule | Trigger | Severity | Response |
-|------|---------|----------|----------|
-| Model extraction attempt | >50 API queries in 10 minutes from single source | HIGH | Throttle + alert |
-| Data exfiltration pattern | Encoding request (base64, hex, rot13) in prompt | HIGH | Block + alert |
-| Docker socket access | Process attempts to read `/var/run/docker.sock` | CRITICAL | Alert + log |
-| Privilege escalation | Container runs with `--privileged` or cap_add | CRITICAL | Alert + log |
-| After-hours access | API request outside business hours (configurable) | MEDIUM | Log + monitor |
-| Anomalous query volume | >500 requests/hour (10x baseline) | HIGH | Throttle + alert |
-
-### Verification
-
-```bash
-# Check threat-detector agent is active
-# (Agent runs as part of operational stack)
-./aixcl stack status | grep threat-detector
-
-# Verify Prometheus alert rules
-promtool check rules prometheus/alerts.yml
-
-# Check Slack webhook configuration
-# Defined in .env: THREAT_DETECTOR_SLACK_WEBHOOK
-```
-
-### Failure Modes
-
-| Symptom | Cause | Agent Action | Human Action |
-|---------|-------|------------|--------------|
-| No alerts in Slack | Webhook misconfigured | Test webhook | Verify URL in .env |
-| High false positive rate (~>10%) | ML model drift | Report statistics | Retune model |
-| Missed detection | Bypass technique | Escalate if discovered | Review logs, update rules |
-| Agent not running | Crash or OOM | Restart service | Investigate resource usage |
-
-### Agent vs Human Responsibilities
-
-| Task | Agent | Human |
-|------|-------|-------|
-| Monitor metrics | Continuous | Review alerts |
-| Respond to HIGH/CRITICAL | Alert immediately | Acknowledge within 30 minutes |
-| Tune detection thresholds | Report false positive metrics | Adjust quarterly |
-| Update detection rules | **NEVER** | After security review |
-
----
-
-## 4. Audit Trail
+## 2. Audit Trail
 
 ### Purpose
 
@@ -265,7 +152,7 @@ Verification complete. Chain valid.
 
 ---
 
-## 5. Human-in-the-Loop
+## 3. Human-in-the-Loop
 
 ### Purpose
 
