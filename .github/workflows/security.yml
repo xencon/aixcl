@@ -26,6 +26,7 @@ jobs:
   shellcheck:
     name: Shell Script Linting
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
