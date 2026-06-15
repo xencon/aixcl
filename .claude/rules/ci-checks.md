@@ -51,7 +51,7 @@ gh pr create \
 | Workflow | Trigger | Key Checks |
 |----------|---------|------------|
 | pr-validation.yml | PR open/edit | Title format, assignee, component label |
-| bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown |
+| bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown, check-ai-elisions |
 | quick-tests.yml | Push to dev (.sh files) | Security tests, bash -n, ./aixcl help |
 | security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review |
 | documentation-checks.yml | PR + push | check-paths.sh, check-generated-files.sh, yamllint, compose validate |
