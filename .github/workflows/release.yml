@@ -61,7 +61,7 @@ jobs:
             index($0, "## [") == 1 && in_section { in_section=0 }
             !in_section { next }
 
-            # Section header detection (accept both '###Summary' and '### Summary')
+            # Section header detection (accept both ###Summary and ### Summary)
             match($0, /^###[ \t]*Summary/) { section="Summary"; is_summary=1; next }
             match($0, /^###[ \t]*Fixed/)    { section="Fixed";    next }
             match($0, /^###[ \t]*Changed/)  { section="Changed";  next }
