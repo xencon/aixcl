@@ -2,10 +2,16 @@
 # Profile management library for AIXCL
 # Defines profiles and provides functions to query profile information
 #
-# IMPORTANT: When adding a new service, you MUST update both:
-#   1. This file (lib/cli/profile.sh) - service mappings for each profile
-#   2. services/docker-compose.yml - service definition
+# IMPORTANT: Profile service composition is now authoritative in
+# config/profiles/<profile>.env. This file loads those env files and falls
+# back to the hard-coded lists below only if an env file is missing or empty.
+# When adding a new service, update BOTH:
+#   1. config/profiles/<profile>.env - add the service name to PROFILE_SERVICES
+#   2. services/docker-compose.yml - define the service
 # See: docs/developer/adding-services.md for complete checklist
+
+# Get the repository root relative to this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Valid profiles array
 # shellcheck disable=SC2034
@@ -33,15 +39,37 @@ declare -A PROFILE_DESCRIPTIONS=(
     [sys]="System-oriented (complete stack)"
 )
 
+# Load PROFILE_SERVICES from the authoritative env file for a profile.
+# Runs in a subshell to avoid leaking profile-specific variables into the
+# calling shell. Expands $INFERENCE_ENGINE using the current environment.
+_load_profile_services() {
+    local profile="$1"
+    local env_file="${SCRIPT_DIR}/config/profiles/${profile}.env"
+    (
+        # shellcheck disable=SC1090
+        source "$env_file" 2>/dev/null || true
+        printf '%s' "${PROFILE_SERVICES:-}"
+    )
+}
+
 # Profile service mappings (Docker-managed services only)
 # Each profile includes runtime core services plus profile-specific services.
 # NOTE: This is now a function to ensure INFERENCE_ENGINE is read after .env loading
 # Vault and bootstrap services are ONLY included in bld and sys profiles.
 get_profile_services_for_profile() {
     local profile="$1"
-    # Use current INFERENCE_ENGINE value (may have been updated after .env loading)
-    local engine="${INFERENCE_ENGINE:-ollama}"
+    # Ensure INFERENCE_ENGINE has a default value before sourcing the env file
+    INFERENCE_ENGINE="${INFERENCE_ENGINE:-ollama}"
     
+    local env_services
+    env_services="$(_load_profile_services "$profile")"
+    if [ -n "$env_services" ]; then
+        echo "$env_services"
+        return 0
+    fi
+    
+    # Fallback: hard-coded lists if env file is missing or PROFILE_SERVICES is empty.
+    local engine="${INFERENCE_ENGINE:-ollama}"
     case "$profile" in
         bld)
             echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter vault-agent-postgres vault-agent-postgres-bootstrap"
@@ -173,5 +201,5 @@ print_profile_info() {
 # Export functions for use in other modules
 export -f is_valid_profile get_profile_description get_profile_services
 export -f get_profile_db_storage_enabled list_profiles print_profile_info
-export -f get_profile_services_for_profile get_runtime_core_services
+export -f get_profile_services_for_profile get_runtime_core_services _load_profile_services
 
