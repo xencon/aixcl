@@ -37,6 +37,23 @@ Always create an issue before starting work. Every code change, fix, or feature 
    - Check GitHub Actions status
    - All status checks must be green before completing
 
+## Agent Identification in GitHub Interactions
+
+Every comment or PR body posted by an agent to GitHub **MUST** end with a standard identification block. See `AGENTS.md` Section 9.5 for the full specification and required fields.
+
+### When the block is required
+
+- Agent-authored issue comments
+- Agent-authored PR descriptions
+- Agent-authored PR review comments
+- Agent-authored issue bodies (when the agent creates issues under human direction)
+
+### When the block is not required
+
+- Commit messages (conventional commit format takes precedence)
+- Internal tool outputs not posted to GitHub
+- Human-authored content
+
 ## Branch Strategy
 
 | Branch | Purpose |
