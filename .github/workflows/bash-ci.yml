@@ -46,7 +46,7 @@ jobs:
             echo "You can use: sed -i 's/\\r$//' <file>"
             exit 1
           else
-            echo "✓ No CRLF files found - all line endings are Unix style (LF)"
+            echo "[OK] No CRLF files found - all line endings are Unix style (LF)"
           fi
 
   check-ascii-markdown:
