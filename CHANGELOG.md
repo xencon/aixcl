@@ -4,6 +4,25 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.32] - 2026-06-15
+
+### Summary
+
+Release v1.1.32 -- Fix bash completion for externally registered apps.
+
+### Fixed
+
+- [x] **App Bash Completion**: `status` and `build` subcommands now complete with
+  externally registered app names (e.g. `watcher`) in addition to built-in apps.
+  Both were using hardcoded `apps/*/` loops that skipped the registry file.
+  Replaced with `_aixcl_app_names` which checks both sources. Closes #1394.
+- [x] **App Remove Completion**: `./aixcl app remove <TAB>` now completes with
+  app names. The subcommand was listed in the `app` actions string but had no
+  completion handler. Closes #1394.
+- [x] **Models Remove Completion**: Consolidated `models remove` completion into
+  the new `remove` case to eliminate SC2221/SC2222 shellcheck shadowing warnings.
+  Closes #1394.
+
 ## [v1.1.31] - 2026-06-14
 
 ### Summary
