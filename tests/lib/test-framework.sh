@@ -306,24 +306,7 @@ wait_for_api() {
     local url="$1"
     local max_wait="${2:-60}"
     local waited=0
-    
-    log_info "Waiting for API: $url (max ${max_wait}s)"
-    while [[ $waited -lt $max_wait ]]; do
-        if curl -sf "$url" --max-time 5 > /dev/null 2>&1; then
-            log_success "API ready: $url (after ${waited}s)"
-            return 0
-        fi
-        ((waited++))
-    done
-    log_error "Timeout waiting for API: $url"
-    return 1
-}
 
-wait_for_api() {
-    local url="$1"
-    local max_wait="${2:-60}"
-    local waited=0
-    
     log_info "Waiting for API: $url (max ${max_wait}s)"
     while [[ $waited -lt $max_wait ]]; do
         if curl -sf "$url" --max-time 5 > /dev/null 2>&1; then
