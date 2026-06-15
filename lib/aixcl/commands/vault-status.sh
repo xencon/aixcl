@@ -41,25 +41,8 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Check if Vault container is running
 check_container() {
-    local container_runtime="unknown"
-    local is_running=false
-    
-    if command -v podman >/dev/null 2>&1; then
-        if podman ps --format "{{.Names}}" | grep -q "^vault$"; then
-            container_runtime="podman"
-            is_running=true
-        fi
-    fi
-    
-    if [ "$is_running" = false ] && command -v docker >/dev/null 2>&1; then
-        if docker ps --format "{{.Names}}" | grep -q "^vault$" 2>/dev/null; then
-            container_runtime="docker"
-            is_running=true
-        fi
-    fi
-    
-    if [ "$is_running" = true ]; then
-        echo -e "Container Status:     ${GREEN}Running${NC} ($container_runtime)"
+    if ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -q "^vault$"; then
+        echo -e "Container Status:     ${GREEN}Running${NC} (${DOCKER_BIN:-docker})"
         return 0
     else
         echo -e "Container Status:     ${RED}Not Running${NC}"
@@ -202,8 +185,8 @@ check_approle() {
 # Check Vault agents
 check_vault_agents() {
     local agents
-    agents=$(podman ps --format "{{.Names}}" 2>&1 | grep "vault-agent" || true)
-    
+    agents=$(${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>&1 | grep "vault-agent" || true)
+
     if [ -n "$agents" ]; then
         local count
         count=$(echo "$agents" | wc -l)

@@ -73,7 +73,7 @@ main() {
 
     if is_vault_sealed; then
         log_error "Vault is still sealed after submitting 3 key shares"
-        log_error "  Check: podman logs vault | tail -20"
+        log_error "  Check: ${DOCKER_BIN:-docker} logs vault | tail -20"
         return 1
     fi
 
