@@ -214,14 +214,9 @@ _aixcl_complete() {
             return 0
             ;;
         'status')
-            # If previous word was 'app', complete with available app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
                 fi
@@ -229,16 +224,29 @@ _aixcl_complete() {
             fi
             ;;
         'build')
-            # If previous word was 'app', complete with available app names
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
-                local app_names=""
-                for app_dir in apps/*/; do
-                    if [ -f "${app_dir}/app.yaml" ]; then
-                        app_names+=" $(basename "$app_dir")"
-                    fi
-                done
+                local app_names
+                app_names="$(_aixcl_app_names)"
                 if [ -n "$app_names" ]; then
                     mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            ;;
+        'remove')
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "app" ]]; then
+                local app_names
+                app_names="$(_aixcl_app_names)"
+                if [ -n "$app_names" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$app_names" -- "$cur")
+                fi
+                return 0
+            fi
+            if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
+                local available_models
+                available_models=$(_get_ollama_models)
+                if [ -n "$available_models" ]; then
+                    mapfile -t COMPREPLY < <(compgen -W "$available_models" -- "$cur")
                 fi
                 return 0
             fi
@@ -285,7 +293,7 @@ _aixcl_complete() {
             fi
             ;;
 
-        'add'|'remove')
+        'add')
             # If previous word was 'models', complete with available models
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "models" ]]; then
                 local available_models
