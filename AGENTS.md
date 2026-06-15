@@ -229,6 +229,47 @@ The agent MUST distinguish between agent-completed items and human-verification 
 
 The human sees `[ ]` on verification items and ticks them during code review.
 
+## 9.5 Agent Identification in GitHub Interactions
+
+Every comment or PR body posted by an agent to GitHub **MUST** end with a standard identification block. This lets reviewers calibrate trust based on which agent, model, methodology, and scope produced the contribution.
+
+### Required block format
+
+Use plain ASCII only. Place the block at the end of the comment or PR body, after any substantive content:
+
+```
+---
+- Agent: <agent name and model>
+- Date: YYYY-MM-DD
+- Method: <what the agent did, e.g. read-only repository scan>
+- Scope: <files, issues, or context the agent had access to>
+- Confirmation: <whether any code changes were made; yes/no>
+---
+```
+
+### Required fields
+
+| Field | Value |
+|-------|-------|
+| `Agent` | Tool name and model, e.g. `Claude Code (claude-sonnet-4-6)` or `OpenCode (ollama-cloud/kimi-k2.7-code)` |
+| `Date` | Date the interaction was posted, in `YYYY-MM-DD` format |
+| `Method` | Brief description of what the agent did, e.g. `read-only issue review and repository scan` |
+| `Scope` | Files, directories, issues, or context the agent had access to when forming the comment |
+| `Confirmation` | `yes` if the agent made code or file changes; `no` if it was read-only |
+
+### When the block is required
+
+- Agent-authored issue comments
+- Agent-authored PR descriptions
+- Agent-authored PR review comments
+- Agent-authored issue bodies (when the agent creates issues under human direction)
+
+### When the block is not required
+
+- Commit messages (conventional commit format takes precedence)
+- Internal tool outputs not posted to GitHub
+- Human-authored content
+
 ## 10. Quick References
 
 ### Tool Usage
