@@ -151,6 +151,36 @@ assert_file_contains() {
     fi
 }
 
+assert_string_contains() {
+    local haystack="$1"
+    local needle="$2"
+    local description="${3:-String contains: $needle}"
+    if [[ "$haystack" == *"$needle"* ]]; then
+        log_success "$description"
+        return 0
+    else
+        log_error "$description"
+        echo "  Haystack: $haystack" | head -c 200 >&2
+        echo "" >&2
+        return 1
+    fi
+}
+
+assert_string_not_contains() {
+    local haystack="$1"
+    local needle="$2"
+    local description="${3:-String does not contain: $needle}"
+    if [[ "$haystack" != *"$needle"* ]]; then
+        log_success "$description"
+        return 0
+    else
+        log_error "$description"
+        echo "  Haystack: $haystack" | head -c 200 >&2
+        echo "" >&2
+        return 1
+    fi
+}
+
 assert_env_equals() {
     local var="$1"
     local expected="$2"
@@ -392,6 +422,7 @@ export -f log_info log_success log_error log_warn
 export -f log_test_start log_test_pass log_test_fail log_test_skip
 export -f assert_command_success assert_command_fail
 export -f assert_file_exists assert_file_contains
+export -f assert_string_contains assert_string_not_contains
 export -f assert_env_equals assert_container_running
 export -f assert_container_healthy assert_api_responds assert_port_listening
 export -f has_nvidia_gpu get_engine_container wait_for_container wait_for_api
