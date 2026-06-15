@@ -672,11 +672,15 @@ function start() {
     # has run and the token is available. This eliminates the token-refresh cascade.
     # All vault-dependent services are excluded from the initial bring-up.
     # They are started explicitly after vault-init runs with the correct token.
-    local VAULT_BOOTSTRAP_AGENTS=(
-        vault-agent-postgres-bootstrap
-        vault-agent-openwebui-bootstrap
-        vault-agent-pgadmin-bootstrap
-        vault-agent-grafana-bootstrap
+    # Bootstrap agents are derived from compose service names and intersected
+    # with the active profile so the bld profile only waits for agents that
+    # are actually part of the profile.
+    local VAULT_BOOTSTRAP_AGENTS=()
+    readarray -t VAULT_BOOTSTRAP_AGENTS < <(_get_vault_bootstrap_agents "$profile")
+
+    # Other vault-dependent services must also be deferred until after Vault
+    # is initialized and the root token is available.
+    local VAULT_DEPENDENT_SERVICES=(
         vault-agent-postgres
         vault-agent-openwebui
         postgres
@@ -685,16 +689,18 @@ function start() {
         postgres-exporter
         grafana
     )
+
+    local deferred_services=("${VAULT_BOOTSTRAP_AGENTS[@]}" "${VAULT_DEPENDENT_SERVICES[@]}")
     local non_bootstrap_services=()
     for _svc in "${profile_services[@]}"; do
-        local _is_bootstrap=false
-        for _ba in "${VAULT_BOOTSTRAP_AGENTS[@]}"; do
-            if [ "$_svc" = "$_ba" ]; then
-                _is_bootstrap=true
+        local _is_deferred=false
+        for _defer in "${deferred_services[@]}"; do
+            if [ "$_svc" = "$_defer" ]; then
+                _is_deferred=true
                 break
             fi
         done
-        if [ "$_is_bootstrap" = false ]; then
+        if [ "$_is_deferred" = false ]; then
             non_bootstrap_services+=("$_svc")
         fi
     done
@@ -794,46 +800,22 @@ function start() {
                 # Force-recreate bootstrap agents with explicit VAULT_TOKEN.
                 # podman-compose 1.0.6 does not interpolate exported shell variables
                 # into compose environment blocks — pass the token directly via podman run.
-                "$_bin" run -d --replace --name vault-agent-postgres-bootstrap --restart unless-stopped \
-                    --network host \
-                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
-                    --tmpfs /vault/file:noexec,nosuid,size=1m \
-                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
-                    --env VAULT_ADDR=http://127.0.0.1:8200 \
-                    --env "VAULT_TOKEN=${_vtoken}" \
-                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-postgres.sh:/usr/local/bin/bootstrap-password-postgres.sh:ro" \
-                    -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-postgres.sh
-                "$_bin" run -d --replace --name vault-agent-openwebui-bootstrap --restart unless-stopped \
-                    --network host \
-                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
-                    --tmpfs /vault/file:noexec,nosuid,size=1m \
-                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
-                    --env VAULT_ADDR=http://127.0.0.1:8200 \
-                    --env "VAULT_TOKEN=${_vtoken}" \
-                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-openwebui.sh:/usr/local/bin/bootstrap-password-openwebui.sh:ro" \
-                    -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-openwebui.sh
-                "$_bin" run -d --replace --name vault-agent-pgadmin-bootstrap --restart unless-stopped \
-                    --network host \
-                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
-                    --tmpfs /vault/file:noexec,nosuid,size=1m \
-                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
-                    --env VAULT_ADDR=http://127.0.0.1:8200 \
-                    --env "VAULT_TOKEN=${_vtoken}" \
-                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-pgadmin.sh:/usr/local/bin/bootstrap-password-pgadmin.sh:ro" \
-                    -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-pgadmin.sh
-                "$_bin" run -d --replace --name vault-agent-grafana-bootstrap --restart unless-stopped \
-                    --network host \
-                    --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
-                    --tmpfs /vault/file:noexec,nosuid,size=1m \
-                    --tmpfs /vault/logs:noexec,nosuid,size=1m \
-                    --env VAULT_ADDR=http://127.0.0.1:8200 \
-                    --env "VAULT_TOKEN=${_vtoken}" \
-                    -v "${SCRIPT_DIR}/scripts/vault/bootstrap-password-grafana.sh:/usr/local/bin/bootstrap-password-grafana.sh:ro" \
-                    -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:2.0.2 /usr/local/bin/bootstrap-password-grafana.sh
+                # The agent list is derived from compose service names so adding a new
+                # bootstrap agent only requires a change in services/docker-compose.yml.
+                for _agent in "${VAULT_BOOTSTRAP_AGENTS[@]}"; do
+                    local _base="${_agent%-bootstrap}"
+                    local _script="bootstrap-password-${_base#vault-agent-}.sh"
+                    "$_bin" run -d --replace --name "$_agent" --restart unless-stopped \
+                        --network host \
+                        --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
+                        --tmpfs /vault/file:noexec,nosuid,size=1m \
+                        --tmpfs /vault/logs:noexec,nosuid,size=1m \
+                        --env VAULT_ADDR=http://127.0.0.1:8200 \
+                        --env "VAULT_TOKEN=${_vtoken}" \
+                        -v "${SCRIPT_DIR}/scripts/vault/${_script}:/usr/local/bin/${_script}:ro" \
+                        -v aixcl-vault-secrets:/run/secrets \
+                        docker.io/hashicorp/vault:2.0.2 "/usr/local/bin/${_script}"
+                done
                 # Start non-bootstrap vault agents via compose
                 run_compose up -d --no-deps \
                     vault-agent-postgres \
@@ -1765,10 +1747,16 @@ function status() {
     check_operational_service "Vault Agent (PostgreSQL)" "vault-agent-postgres" "vault-agent-postgres" "" ""
     check_operational_service "Vault Agent (Open WebUI)" "vault-agent-openwebui" "vault-agent-openwebui" "" ""
     # Bootstrap agents are one-shot: they exit 0 on success. "one-shot" treats exit 0 as healthy.
-    check_operational_service "Vault Agent Bootstrap (PostgreSQL)" "vault-agent-postgres-bootstrap" "vault-agent-postgres-bootstrap" "one-shot" ""
-    check_operational_service "Vault Agent Bootstrap (Open WebUI)" "vault-agent-openwebui-bootstrap" "vault-agent-openwebui-bootstrap" "one-shot" ""
-    check_operational_service "Vault Agent Bootstrap (pgAdmin)" "vault-agent-pgadmin-bootstrap" "vault-agent-pgadmin-bootstrap" "one-shot" ""
-    check_operational_service "Vault Agent Bootstrap (Grafana)" "vault-agent-grafana-bootstrap" "vault-agent-grafana-bootstrap" "one-shot" ""
+    # Derive the list from compose/profile so status checks stay in sync with the active profile.
+    local _status_bootstrap_agents=()
+    readarray -t _status_bootstrap_agents < <(_get_vault_bootstrap_agents "$current_profile")
+    for _agent in "${_status_bootstrap_agents[@]}"; do
+        local _label="${_agent#vault-agent-}"
+        _label="${_label%-bootstrap}"
+        _label="$(tr "-" " " <<<"$_label")"
+        _label="$(awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' <<<"$_label")"
+        check_operational_service "Vault Agent Bootstrap ($_label)" "$_agent" "$_agent" "one-shot" ""
+    done
 
     # Health Summary section
     echo ""
