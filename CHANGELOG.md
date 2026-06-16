@@ -4,6 +4,40 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.35] - 2026-06-16
+
+### Summary
+
+Release v1.1.35 -- Vault and stack-lifecycle hardening. Three fixes closing
+the gap between a wiped Vault data volume and the GPG-encrypted unseal
+artefacts that reference it, removing a silent data-destroying fallback in
+`stack stop`, and wiring up Vault's database secrets engine so fresh
+deployments (including environments with no pre-existing state, such as
+GitHub Codespaces) get working dynamic Postgres credentials with no manual
+steps.
+
+### Fixed
+
+- [x] **Stale Vault Unseal Keys After Prune**: `./aixcl utils prune` removed
+  the `aixcl-vault-data` volume but left the now-orphaned
+  `.security/vault-keys.gpg` and `vault-root-token.gpg` behind, causing the
+  next `vault init` to fail permanently with "still sealed after submitting
+  N key shares". `prune()` now clears the matching artefacts so the next
+  init starts clean. Closes #1463.
+- [x] **Stack Stop Force-Fallback Destroyed All Volumes**: `stack stop`'s
+  60-second force-shutdown fallback ran `docker compose down -v`, silently
+  removing every volume (including Vault and Postgres data) with only a
+  generic "Forcing shutdown..." message. Volume removal is now exclusive to
+  `./aixcl utils prune` / `prune --all`. Closes #1465.
+- [x] **Vault Database Secrets Engine Never Configured**: `enable_database_engine`,
+  `configure_postgres_connection`, and role/policy creation were implemented
+  in `vault-init.sh` but never called from `main()`, leaving
+  `vault-agent-postgres` / `vault-agent-openwebui` (and Open WebUI, pgAdmin,
+  Grafana behind them) permanently stuck on any Vault that initializes from
+  an empty data volume. Wired into the init flow, gated on Postgres being
+  present, with clearer error reporting when Postgres rejects the
+  configured password. Closes #1466.
+
 ## [v1.1.34] - 2026-06-15
 
 ### Summary
