@@ -822,11 +822,15 @@ function start() {
                 # bootstrap agent only requires a change in services/docker-compose.yml.
                 # NOTE: --replace is Podman-only (unsupported by plain Docker), so any
                 # existing same-named container is removed explicitly first instead.
+                # NOTE: --restart on-failure (not unless-stopped) -- these are one-shot
+                # jobs that exit 0 on success. docker-compose.yml documents the same
+                # policy for these services; unless-stopped would restart them forever
+                # even after a successful run, burning CPU for no benefit.
                 for _agent in "${VAULT_BOOTSTRAP_AGENTS[@]}"; do
                     local _base="${_agent%-bootstrap}"
                     local _script="bootstrap-password-${_base#vault-agent-}.sh"
                     "$_bin" rm -f "$_agent" >/dev/null 2>&1 || true
-                    "$_bin" run -d --name "$_agent" --restart unless-stopped \
+                    "$_bin" run -d --name "$_agent" --restart on-failure \
                         --network host \
                         --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
                         --tmpfs /vault/file:noexec,nosuid,size=1m \
