@@ -797,15 +797,36 @@ function start() {
                 echo "Starting Vault bootstrap agents..."
                 local _vtoken="${VAULT_TOKEN}"
                 local _bin="${DOCKER_BIN:-podman}"
+
+                # Ensure the shared secrets volume is writable by the image's
+                # non-root runtime user (uid 100, gid 1000) regardless of
+                # which engine created it. Podman rootless remaps this
+                # transparently via user namespaces; plain Docker does not,
+                # so a root-owned volume directory silently blocks every
+                # bootstrap agent below from writing its secret. Fix
+                # ownership narrowly (no chmod 777, no running the agents
+                # themselves as root) -- the same "briefly root, then drop
+                # privilege" pattern already used by the open-webui and
+                # pgadmin entrypoints elsewhere in this codebase. Safe to
+                # run every time: a no-op once ownership is already correct.
+                # --network none: this one-shot container only touches a
+                # volume, it never needs network access.
+                "$_bin" run --rm --network none --user 0:0 -v aixcl-vault-secrets:/run/secrets \
+                    docker.io/hashicorp/vault:2.0.2 chown -R 100:1000 /run/secrets \
+                    >/dev/null 2>&1 || true
+
                 # Force-recreate bootstrap agents with explicit VAULT_TOKEN.
                 # podman-compose 1.0.6 does not interpolate exported shell variables
                 # into compose environment blocks — pass the token directly via podman run.
                 # The agent list is derived from compose service names so adding a new
                 # bootstrap agent only requires a change in services/docker-compose.yml.
+                # NOTE: --replace is Podman-only (unsupported by plain Docker), so any
+                # existing same-named container is removed explicitly first instead.
                 for _agent in "${VAULT_BOOTSTRAP_AGENTS[@]}"; do
                     local _base="${_agent%-bootstrap}"
                     local _script="bootstrap-password-${_base#vault-agent-}.sh"
-                    "$_bin" run -d --replace --name "$_agent" --restart unless-stopped \
+                    "$_bin" rm -f "$_agent" >/dev/null 2>&1 || true
+                    "$_bin" run -d --name "$_agent" --restart unless-stopped \
                         --network host \
                         --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
                         --tmpfs /vault/file:noexec,nosuid,size=1m \
