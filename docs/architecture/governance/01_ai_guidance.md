@@ -22,7 +22,7 @@ Do **not** attempt to generalize or abstract the runtime core.
 Agents **must not**:
 
 - Remove, replace, or conditionally disable runtime core components
-- Introduce dependencies from runtime core → operational services
+- Introduce dependencies from runtime core -> operational services
 - Merge runtime logic with monitoring, logging, or admin tooling
 - Collapse service boundaries
 - Introduce architectural indirection without explicit instruction
