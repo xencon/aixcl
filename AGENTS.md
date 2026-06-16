@@ -140,7 +140,7 @@ When conflicts arise, follow this order:
 
 **You MUST NOT:**
 - Remove/replace/disable runtime core components
-- Introduce runtime core → operational service dependencies
+- Introduce runtime core -> operational service dependencies
 - Merge runtime logic with monitoring/admin tooling
 - Collapse service boundaries
 - Add external libraries, cloud services, telemetry, or analytics without explicit approval
@@ -177,7 +177,7 @@ Before ANY operation, confirm:
       no placeholder/elision text standing in for preserved content
       (verify: `./scripts/checks/check-ai-elisions.sh --staged`)
 
-If ANY check fails → **HALT** and escalate.
+If ANY check fails -> **HALT** and escalate.
 
 ### Definition of Done
 
@@ -294,6 +294,9 @@ Use plain ASCII only. Place the block at the end of the comment or PR body, afte
 - [docs/architecture/governance/01_ai_guidance.md](docs/architecture/governance/01_ai_guidance.md) -- Agentic behavioral guidance
 - `.opencode/rules/workflow.md` -- OpenCode workflow constraints
 - `.claude/rules/workflow.md` -- Claude Code workflow constraints
+- `.claude/rules/discussions.md` / `.opencode/rules/discussions.md` -- GitHub
+  Discussions policy (secret handling, untrusted-input treatment,
+  advisory-only status)
 - `opencode.json` -- OpenCode configuration
 
 ---
