@@ -10,6 +10,8 @@ assignees: ["<assignee>"]
 
 <!-- IMPORTANT: When creating via CLI, use --body-file or quoted HEREDOC to prevent backtick command substitution. Do not use inline --body with multiline strings containing backticks. -->
 
+<!-- REFERENCES: List one issue/PR reference per line. Do not comma-pack multiple #N references on a single line. -->
+
 ## Task Summary
 Describe what needs to be done.
 
