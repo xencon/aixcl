@@ -34,7 +34,8 @@ in lib/) so non-UTF-8 terminals degrade gracefully.
 - Do **not** hard-wrap prose paragraphs at a fixed column width.
 - Each paragraph in an issue or PR body should be a single source line, however long.
 - List items, headings, code fences, tables, and command examples keep their normal structure.
-- Rationale: GitHub's renderer reflows paragraphs to the viewport anyway, while hard-wrapping creates noisy multi-line diffs whenever a paragraph is edited.
+- Multiple discrete references inside a single list item should be split into separate list entries rather than comma-packed on one line.
+- Rationale: GitHub's renderer reflows paragraphs to the viewport anyway, while hard-wrapping creates noisy multi-line diffs whenever a paragraph is edited. Separating discrete references keeps diffs localized to the changed item.
 - This convention applies to issue and PR bodies specifically; other markdown files in the repository keep their existing wrapping style unless separately agreed.
 
 ## Lazy-Loading
