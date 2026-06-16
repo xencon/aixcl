@@ -10,12 +10,12 @@ The Qwen 2.5 Coder series is optimized for coding tasks with excellent performan
 
 | Model | Size | VRAM* | Best For | Ollama | vLLM | llama.cpp |
 |-------|------|-------|----------|--------|------|-----------|
-| `0.5b` | ~400MB | ~1GB | Ultra-lightweight, IoT, edge devices | ✅ | ✅ | ✅ |
-| `1.5b` | ~1GB | ~2.5GB | Lightweight, fast responses | ✅ | ✅ | ✅ |
-| `3b` | ~2GB | ~5GB | Balanced performance | ✅ | ✅ | ✅ |
-| `7b` | ~4.5GB | ~9GB | Higher quality, more capacity | ✅ | ✅ | ✅ |
-| `14b` | ~9GB | ~18GB | Best quality, larger GPUs | ✅ | ✅ | ✅ |
-| `32b` | ~20GB | ~40GB | Maximum quality, professional workstations | ✅ | ✅ | ✅ |
+| `0.5b` | ~400MB | ~1GB | Ultra-lightweight, IoT, edge devices | Yes | Yes | Yes |
+| `1.5b` | ~1GB | ~2.5GB | Lightweight, fast responses | Yes | Yes | Yes |
+| `3b` | ~2GB | ~5GB | Balanced performance | Yes | Yes | Yes |
+| `7b` | ~4.5GB | ~9GB | Higher quality, more capacity | Yes | Yes | Yes |
+| `14b` | ~9GB | ~18GB | Best quality, larger GPUs | Yes | Yes | Yes |
+| `32b` | ~20GB | ~40GB | Maximum quality, professional workstations | Yes | Yes | Yes |
 
 \* VRAM estimates are for inference with default context length. Actual usage varies by batch size and context.
 

@@ -32,6 +32,6 @@ in lib/) so non-UTF-8 terminals degrade gracefully.
 
 ## Lazy-Loading
 Load files on a need-to-know basis:
-- Creating an issue → Read `.github/ISSUE_TEMPLATE/task.md` first
-- Creating a PR → Read `.github/PULL_REQUEST_TEMPLATE.md` first
-- Releasing → Read `CHANGELOG.md` to extract latest version entry
+- Creating an issue -> Read `.github/ISSUE_TEMPLATE/task.md` first
+- Creating a PR -> Read `.github/PULL_REQUEST_TEMPLATE.md` first
+- Releasing -> Read `CHANGELOG.md` to extract latest version entry
