@@ -17,9 +17,11 @@ violations=()
 while IFS= read -r line; do
     # Only check list item lines (- or *)
     if [[ "$line" =~ ^[[:space:]]*[-*] ]]; then
-        # Count #N references on this line
-        count=$(grep -oE '#[0-9]+' <<< "$line" | wc -l)
-        if [[ "$count" -ge 2 ]]; then
+        # Strip inline code (backtick spans) before checking -- examples in
+        # code spans are not subject to the reference style rule
+        stripped=$(echo "$line" | sed 's/`[^`]*`//g')
+        # Flag only comma-separated #N references: #123, #456 or #123,#456
+        if echo "$stripped" | grep -qE '#[0-9]+[[:space:]]*,[[:space:]]*#[0-9]+'; then
             violations+=("$line")
         fi
     fi
