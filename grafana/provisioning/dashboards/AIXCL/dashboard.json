@@ -777,11 +777,11 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "ollama_models_loaded_total",
+          "expr": "0",
           "refId": "A"
         }
       ],
-      "title": "Models Loaded",
+      "title": "Models Loaded (not monitored)",
       "type": "stat"
     },
     {

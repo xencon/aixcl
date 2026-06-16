@@ -32,6 +32,17 @@ function prune() {
     rm -f .aixcl.initialized .env pgadmin-servers.json
     echo ""
 
+    # The Vault data volume is wiped below, which invalidates the existing
+    # unseal-key/root-token artefacts (they only decrypt to valid key shares
+    # for the specific Vault instance that generated them). Remove them too
+    # so the next `./aixcl vault init` performs a clean re-init instead of
+    # failing with "still sealed after submitting N key shares" (stale keys
+    # vs a fresh volume). The rest of .security/ is left alone -- clearing
+    # the whole directory remains prune_all()'s responsibility.
+    echo "Removing stale Vault unseal artefacts (data volume is about to be wiped)..."
+    rm -f "${SCRIPT_DIR}/.security/vault-keys.gpg" "${SCRIPT_DIR}/.security/vault-root-token.gpg"
+    echo ""
+
     # Remove all containers before volumes -- Podman will not release a volume
     # while any container (even stopped) still references it. stack stop removes
     # running containers but stopped/exited ones may linger with volume mounts.
@@ -61,6 +72,7 @@ function prune() {
     echo ""
 
     echo "Prune complete. Images retained for fast restart."
+    echo "Vault will be freshly re-initialized on next start (new unseal keys and root token)."
     echo "Run './aixcl stack init && ./aixcl stack start --profile sys' to bring the stack back up."
 }
 

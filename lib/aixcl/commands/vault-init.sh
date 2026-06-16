@@ -608,7 +608,9 @@ configure_postgres_connection() {
     # Always (re)configure — idempotent POST updates credentials if already present.
     # This ensures the stored password stays in sync after postgres password rotations.
     log_info "Configuring PostgreSQL connection (syncing credentials)..."
-    curl -sf -X POST "${VAULT_ADDR}/v1/database/config/postgresql" \
+    local response http_code body
+    response=$(curl -s -o /tmp/.vault-pg-config-resp.$$ -w "%{http_code}" -X POST \
+        "${VAULT_ADDR}/v1/database/config/postgresql" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         -H "Content-Type: application/json" \
         -d "{
@@ -617,10 +619,27 @@ configure_postgres_connection() {
             \"connection_url\": \"postgresql://{{username}}:{{password}}@127.0.0.1:5432/webui?sslmode=disable\",
             \"username\": \"${postgres_user}\",
             \"password\": \"${postgres_password}\"
-        }" >/dev/null 2>&1 || {
-        log_error "Failed to configure PostgreSQL connection"
+        }" 2>/dev/null)
+    http_code="$response"
+    body=$(cat /tmp/.vault-pg-config-resp.$$ 2>/dev/null || true)
+    rm -f /tmp/.vault-pg-config-resp.$$
+    if [ "$http_code" -ge 400 ]; then
+        log_error "Failed to configure PostgreSQL connection (HTTP ${http_code})"
+        if echo "$body" | grep -q "password authentication failed"; then
+            log_error "  Postgres rejected the password from Vault KV (bootstrap/postgres)."
+            log_error "  This means Postgres's live admin password and Vault's stored"
+            log_error "  bootstrap password have drifted apart -- typically because Vault"
+            log_error "  was reset/reinitialized while the Postgres data volume was kept."
+            log_error "  Reconcile them (e.g. ALTER ROLE to match Vault's KV value) before"
+            log_error "  re-running vault init."
+        elif echo "$body" | grep -qE "connect: connection refused|no such host|dial tcp"; then
+            log_error "  Postgres does not appear to be reachable at 127.0.0.1:5432."
+            log_error "  Confirm the postgres container is running and healthy."
+        else
+            log_error "  Response: ${body}"
+        fi
         return 1
-    }
+    fi
 
     # Verify the config was written and contains a connection_url
     if ! is_postgres_configured; then
@@ -850,6 +869,23 @@ main() {
     # NOTE: PostgreSQL must be ready before the database engine tries to connect.
     enable_kv_engine || return 1
     init_bootstrap_passwords || return 1
+
+    # Database secrets engine: provides dynamic Postgres credentials to
+    # vault-agent-postgres / vault-agent-openwebui (and by extension Open
+    # WebUI, pgAdmin, Grafana). Skip gracefully if Postgres isn't part of
+    # this deployment -- runtime core must stay usable without it.
+    if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^postgres$"; then
+        wait_for_postgres || return 1
+        enable_database_engine || return 1
+        configure_postgres_connection || return 1
+        create_app_role || return 1
+        create_admin_role || true
+        create_readonly_role || true
+        create_policies
+    else
+        log_warn "PostgreSQL container not found -- skipping database secrets engine setup"
+        log_warn "  Dynamic Postgres credentials (Open WebUI, pgAdmin, Grafana) will not be available"
+    fi
 
     show_summary
     return 0

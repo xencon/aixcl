@@ -1030,7 +1030,11 @@ function stop() {
     done
 
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
-    run_compose down --remove-orphans -v
+    # NOTE: deliberately no -v here. Volume removal is a destructive,
+    # explicit operation reserved for `./aixcl utils prune` / `prune --all`.
+    # A slow/stuck container must never cause persistent data (Vault seal
+    # state, Postgres databases, etc.) to be silently destroyed.
+    run_compose down --remove-orphans
     "${DOCKER_BIN:-docker}" ps -q | xargs -r "${DOCKER_BIN:-docker}" stop
 
     _print_stopped_status "$profile"
