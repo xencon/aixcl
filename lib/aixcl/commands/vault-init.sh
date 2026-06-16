@@ -874,6 +874,20 @@ main() {
     # vault-agent-postgres / vault-agent-openwebui (and by extension Open
     # WebUI, pgAdmin, Grafana). Skip gracefully if Postgres isn't part of
     # this deployment -- runtime core must stay usable without it.
+    #
+    # A mass `compose up -d` of many services can leave the postgres
+    # container not yet listed for a few seconds even though it IS part of
+    # this deployment and about to start. Tolerate a short existence wait
+    # here before falling back to the skip path, so a busy/slow host
+    # doesn't lose this race. wait_for_postgres() below handles the
+    # separate (longer) "container exists but isn't ready yet" wait.
+    local _pg_exists_retries=15
+    while [ "$_pg_exists_retries" -gt 0 ] \
+            && ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^postgres$"; do
+        sleep 2
+        _pg_exists_retries=$((_pg_exists_retries - 1))
+    done
+
     if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^postgres$"; then
         wait_for_postgres || return 1
         enable_database_engine || return 1

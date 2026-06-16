@@ -15,35 +15,35 @@ Vault runs in **production server mode** with file-based persistent storage. Sec
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      AIXCL Stack                           │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
-│  │   Services   │────│ Vault Agent  │────│    Vault     │   │
-│  │ (PostgreSQL) │    │  (sidecar)   │    │   Server     │   │
-│  │  (Grafana)   │    └──────────────┘    └──────────────┘   │
-│  └──────────────┘                            │              │
-│                                              │              │
-│                              ┌───────────────┴──────────┐   │
-│                              ▼                          │   │
-│                       ┌──────────────┐                  │   │
-│                       │  PostgreSQL  │                  │   │
-│                       │ (Dynamic     │                  │   │
-│                       │  Creds)      │                  │   │
-│                       └──────────────┘                  │   │
-│                                                         │   │
-│  ┌────────────────────────────────────────────────┐    │   │
-│  │ Audit Log: Every credential access logged       │    │   │
-│  └────────────────────────────────────────────────┘    │   │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                      AIXCL Stack                           |
+|  +--------------+    +--------------+    +--------------+   |
+|  |   Services   |----| Vault Agent  |----|    Vault     |   |
+|  | (PostgreSQL) |    |  (sidecar)   |    |   Server     |   |
+|  |  (Grafana)   |    +--------------+    +--------------+   |
+|  +--------------+                            |              |
+|                                              |              |
+|                              +---------------+----------+   |
+|                              v                          |   |
+|                       +--------------+                  |   |
+|                       |  PostgreSQL  |                  |   |
+|                       | (Dynamic     |                  |   |
+|                       |  Creds)      |                  |   |
+|                       +--------------+                  |   |
+|                                                         |   |
+|  +------------------------------------------------+    |   |
+|  | Audit Log: Every credential access logged       |    |   |
+|  +------------------------------------------------+    |   |
++-------------------------------------------------------------+
 ```
 
 ## Dynamic Secrets Flow
 
-1. **Service needs DB credentials** → Requests from Vault Agent
-2. **Vault generates new credentials** → Creates PostgreSQL user with random password
-3. **Service uses credentials** → Connects to database
-4. **TTL expires** → Vault automatically revokes PostgreSQL user
-5. **New credentials generated** → Seamless rotation
+1. **Service needs DB credentials** -> Requests from Vault Agent
+2. **Vault generates new credentials** -> Creates PostgreSQL user with random password
+3. **Service uses credentials** -> Connects to database
+4. **TTL expires** -> Vault automatically revokes PostgreSQL user
+5. **New credentials generated** -> Seamless rotation
 
 ## Quick Start
 

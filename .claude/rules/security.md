@@ -20,13 +20,13 @@
 
 **You MUST NOT:**
 - Remove/replace/disable runtime core components
-- Introduce runtime core → operational service dependencies
+- Introduce runtime core -> operational service dependencies
 - Merge runtime logic with monitoring/admin tooling
 - Collapse service boundaries
 - Add external libraries, cloud services, telemetry, or analytics without explicit approval
 
 ## Escalation
-1. If working on an issue → Post clarification as issue comment
-2. If no issue exists → Ask human operator directly; do not create issue unilaterally
-3. If security concern → Flag with `[SECURITY]` prefix and await explicit approval
-4. If authority conflict → Document override request and obtain explicit confirmation
+1. If working on an issue -> Post clarification as issue comment
+2. If no issue exists -> Ask human operator directly; do not create issue unilaterally
+3. If security concern -> Flag with `[SECURITY]` prefix and await explicit approval
+4. If authority conflict -> Document override request and obtain explicit confirmation

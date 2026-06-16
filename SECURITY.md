@@ -156,9 +156,9 @@ Planned capabilities:
 
 ### Attack Vectors
 
-#### 1. Prompt Injection → Data Exfiltration
+#### 1. Prompt Injection -> Data Exfiltration
 
-**Path**: Malicious prompt → LLM → Sensitive data in response
+**Path**: Malicious prompt -> LLM -> Sensitive data in response
 
 **Mitigations**:
 - llm-firewall injection detection
@@ -167,9 +167,9 @@ Planned capabilities:
 
 **Residual Risk**: Medium (sophisticated jailbreaks possible)
 
-#### 2. Container Escape → Host Compromise
+#### 2. Container Escape -> Host Compromise
 
-**Path**: Exploit privileged container → Root on host
+**Path**: Exploit privileged container -> Root on host
 
 **Mitigations**:
 - Remove/disable cAdvisor in production
@@ -178,9 +178,9 @@ Planned capabilities:
 
 **Residual Risk**: High (if privileged containers required)
 
-#### 3. Credential Theft → Lateral Movement
+#### 3. Credential Theft -> Lateral Movement
 
-**Path**: Steal .env credentials → Access PostgreSQL/Ollama
+**Path**: Steal .env credentials -> Access PostgreSQL/Ollama
 
 **Mitigations**:
 - Docker secrets (in progress)
@@ -189,9 +189,9 @@ Planned capabilities:
 
 **Residual Risk**: Low (with secrets implementation)
 
-#### 4. Model Extraction → IP Theft
+#### 4. Model Extraction -> IP Theft
 
-**Path**: High-volume API queries → Reconstruct training data
+**Path**: High-volume API queries -> Reconstruct training data
 
 **Mitigations**:
 - Rate limiting (100 req/hour)
@@ -202,7 +202,7 @@ Planned capabilities:
 
 #### 5. Supply Chain Poisoning
 
-**Path**: Malicious Ollama model → Backdoor in inference
+**Path**: Malicious Ollama model -> Backdoor in inference
 
 **Mitigations**:
 - Local LLM preference (reduces attack surface)

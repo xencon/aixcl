@@ -23,7 +23,7 @@ Read the following documents before beginning work:
 3. `docs/developer/development-workflow.md` -- full workflow guide
 4. `docs/architecture/governance/` -- platform invariants and service contracts
 
-**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent → **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
+**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent -> **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
 
 ---
 
@@ -99,16 +99,16 @@ This repository uses a **two-branch strategy** with clear promotion flow:
 | `main` | Production-ready code | Final releases only |
 | `dev` | Active development, feature integration | All feature development |
 
-### Correct Workflow (Feature → Dev → Main)
+### Correct Workflow (Feature -> Dev -> Main)
 
 **ALWAYS follow this path:**
 
 ```
-Feature Branch → Dev → Main
-      ↑            ↑       ↑
-   create        PR      PR
-   from         merge   merge
-   dev          (test)  (final test)
+Feature Branch -> Dev -> Main
+      ^             ^       ^
+   create         PR      PR
+   from          merge   merge
+   dev           (test)  (final test)
 ```
 
 #### Step-by-Step
@@ -148,9 +148,9 @@ See AGENTS.md Section 8 -- Emergency Workflow Override for the protocol to proce
 
 | Workflow | Status | Why |
 |----------|--------|-----|
-| `feature → main` | WRONG | Bypasses dev testing |
-| `main → feature` | WRONG | Wrong base branch |
-| `main → dev` | WRONG | Dev feeds main, not vice versa |
+| `feature -> main` | WRONG | Bypasses dev testing |
+| `main -> feature` | WRONG | Wrong base branch |
+| `main -> dev` | WRONG | Dev feeds main, not vice versa |
 
 ### Emergency Hotfixes
 

@@ -6,12 +6,12 @@ This directory contains configuration files for AIXCL.
 
 ```
 config/
-├── .env.example           # Template for environment variables
-├── opencode.json.example  # Template for OpenCode AI configuration
-├── README.md              # This file
-└── profiles/
-    ├── bld.env            # Observability-focused profile
-    └── sys.env            # System-oriented profile
++-- .env.example           # Template for environment variables
++-- opencode.json.example  # Template for OpenCode AI configuration
++-- README.md              # This file
+`-- profiles/
+    +-- bld.env            # Observability-focused profile
+    `-- sys.env            # System-oriented profile
 ```
 
 ## Files

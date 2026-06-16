@@ -18,33 +18,33 @@ This test suite executes actual `./aixcl` commands and validates system state ch
 
 ```
 tests/
-├── run-tests.sh              # Main test runner (entry point)
-├── test-results.md           # Generated report (OVERWRITTEN)
-├── lib/
-│   ├── test-framework.sh     # Assertions and utilities
-│   ├── state-capture.sh      # State management
-│   └── cleanup.sh            # Cleanup utilities
-├── command-tests/            # Individual CLI command tests
-│   ├── test-00-preflight.sh
-│   ├── test-00a-stack-token-reload.sh
-│   ├── test-01-stack-start.sh
-│   ├── test-02-stack-status.sh
-│   ├── test-03-engine-set-ollama.sh
-│   ├── test-04-engine-set-vllm.sh
-│   ├── test-05-engine-set-llamacpp.sh
-│   ├── test-06-engine-auto.sh
-│   ├── test-07-models-add-ollama.sh
-│   ├── test-08-models-add-vllm.sh
-│   ├── test-09-models-add-llamacpp.sh
-│   ├── test-10-models-list.sh
-│   ├── test-11-service-restart.sh
-│   ├── test-13-opencode-prompts.sh
-│   ├── test-14-opencode-vllm.sh
-│   ├── test-15-opencode-llamacpp.sh
-│   ├── test-16-engine-model-integration.sh
-│   └── test-99-stack-stop.sh
-└── workflow-tests/
-    └── test-readme-quickstart.sh
++-- run-tests.sh              # Main test runner (entry point)
++-- test-results.md           # Generated report (OVERWRITTEN)
++-- lib/
+|   +-- test-framework.sh     # Assertions and utilities
+|   +-- state-capture.sh      # State management
+|   `-- cleanup.sh            # Cleanup utilities
++-- command-tests/            # Individual CLI command tests
+|   +-- test-00-preflight.sh
+|   +-- test-00a-stack-token-reload.sh
+|   +-- test-01-stack-start.sh
+|   +-- test-02-stack-status.sh
+|   +-- test-03-engine-set-ollama.sh
+|   +-- test-04-engine-set-vllm.sh
+|   +-- test-05-engine-set-llamacpp.sh
+|   +-- test-06-engine-auto.sh
+|   +-- test-07-models-add-ollama.sh
+|   +-- test-08-models-add-vllm.sh
+|   +-- test-09-models-add-llamacpp.sh
+|   +-- test-10-models-list.sh
+|   +-- test-11-service-restart.sh
+|   +-- test-13-opencode-prompts.sh
+|   +-- test-14-opencode-vllm.sh
+|   +-- test-15-opencode-llamacpp.sh
+|   +-- test-16-engine-model-integration.sh
+|   `-- test-99-stack-stop.sh
+`-- workflow-tests/
+    `-- test-readme-quickstart.sh
 ```
 
 ## Quick Start
@@ -103,7 +103,7 @@ Validate complete user workflows:
 
 | Test | Description |
 |------|-------------|
-| test-readme-quickstart.sh | README Steps 1-5: Clone→Start→Engine→Model→OpenCode |
+| test-readme-quickstart.sh | README Steps 1-5: Clone -> Start -> Engine -> Model -> OpenCode |
 
 ## Test Results
 

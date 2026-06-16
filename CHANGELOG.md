@@ -4,6 +4,25 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.36] - 2026-06-16
+
+### Summary
+
+Release v1.1.36 -- Vault bootstrap hardening, Docker-engine compatibility, ASCII cleanup, and agent governance documentation.
+
+### Fixed
+
+- [x] **Vault Bootstrap Agents Docker Incompatible**: `stack.sh`'s manual `docker run` loop used `--replace` (Podman-only flag) and left the `aixcl-vault-secrets` volume owned `root:root`, blocking writes by the non-root Vault image user under plain Docker. Replaced `--replace` with a portable `rm -f` pre-step and added a targeted `chown` one-shot before the loop. Closes #1471.
+- [x] **Vault Init Postgres Race**: The database engine setup gate checked `docker ps | grep postgres` once with no retry, silently skipping the entire engine setup if Postgres was still being created during a mass `compose up`. Added a short existence-retry loop before the gate gives up. Closes #1473.
+- [x] **Vault Bootstrap Agents Restart Forever**: `stack.sh`'s bootstrap agent loop hardcoded `--restart unless-stopped`, causing successful one-shot containers to loop indefinitely. Changed to `--restart on-failure` to match `docker-compose.yml`'s documented intent. Closes #1480.
+
+### Documentation
+
+- [x] **GitHub Discussions Governance**: Added `.claude/rules/discussions.md` and `.opencode/rules/discussions.md` defining secret-handling, untrusted-input, advisory-only, and no-proactive-crawl rules for the Discussions surface. Closes #1475.
+- [x] **ASCII Sweep -- Arrows and Checkmarks**: Replaced non-ASCII arrow (`->`) and checkmark characters with plain ASCII equivalents across 7 markdown files. Closes #1477 (part 1).
+- [x] **ASCII Sweep -- Box-Drawing Diagrams**: Converted box-drawing tree characters to plain ASCII notation in 5 diagram/README files. Closes #1477 (part 2).
+- [x] **No-Hard-Wrap Convention**: Documented that issue and PR body prose paragraphs must not be hard-wrapped at a fixed column width, and that discrete references in list items should be split into separate entries rather than comma-packed. Closes #1482.
+
 ## [v1.1.35] - 2026-06-16
 
 ### Summary
