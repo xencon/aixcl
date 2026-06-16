@@ -6,15 +6,15 @@ This directory contains shared library modules for the AIXCL project.
 
 ```
 lib/
-├── core/           # Core utility libraries
-│   ├── color.sh    # Terminal color/formatting utilities
-│   ├── common.sh   # Common functions (env loading, service validation)
-│   ├── docker_utils.sh  # Docker/Compose utilities
-│   ├── env_check.sh     # Environment validation
-│   ├── logging.sh       # Logging utilities
-│   └── pgadmin_utils.sh # pgAdmin utilities
-└── cli/            # CLI-specific libraries
-    └── profile.sh  # Profile management (bld, sys)
++-- core/           # Core utility libraries
+|   +-- color.sh    # Terminal color/formatting utilities
+|   +-- common.sh   # Common functions (env loading, service validation)
+|   +-- docker_utils.sh  # Docker/Compose utilities
+|   +-- env_check.sh     # Environment validation
+|   +-- logging.sh       # Logging utilities
+|   `-- pgadmin_utils.sh # pgAdmin utilities
+`-- cli/            # CLI-specific libraries
+    `-- profile.sh  # Profile management (bld, sys)
 ```
 
 ## Usage
