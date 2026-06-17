@@ -191,8 +191,12 @@ setup_volume_permissions() {
       mkdir -p "$dir"
       log_info "Created: $dir"
     fi
-    # Ensure user ownership
-    chmod u+rwx "$dir"
+    # .security must be owner-only (vault-init verifies mode 700)
+    if [[ "$dir" == *".security" ]]; then
+      chmod 700 "$dir"
+    else
+      chmod u+rwx "$dir"
+    fi
   done
   
   # Setup Podman volumes (rootless)
