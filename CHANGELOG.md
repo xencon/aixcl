@@ -4,6 +4,18 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.38] - 2026-06-17
+
+### Summary
+
+Release v1.1.38 -- Podman and WSL hardening. Fixes `.security/` permissions, `DOCKER_BIN` fallback, and a `.env.podman` append bug that caused duplicate environment lines and missing variables (including `GPG_TTY`) on repeated setup runs.
+
+### Fixed
+
+- [x] **`.security/` Directory Permissions**: `setup-podman-rootless.sh` was creating `.security/` with mode 775 instead of the required 700, causing `vault-init.sh` artefact verification to fail. Closes #1503.
+- [x] **DOCKER_BIN Fallback in vault-init.sh**: `vault-init.sh` fell back to `docker` instead of `podman` on Podman-only systems, breaking bootstrap agent container management. Closes #1505.
+- [x] **`.env.podman` Append Bug**: `setup-podman-rootless.sh` appended `DOCKER_HOST` to `.env.podman` on every run, accumulating duplicate lines and omitting required variables (`DOCKER_BIN`, `alias docker=podman`, `GPG_TTY`, `PATH`). The missing `GPG_TTY` caused silent GPG passphrase failures during `./aixcl vault unseal` on WSL, leaving Vault sealed after restart. Fix rewrites the file idempotently with the full variable set on each setup run. Closes #1507.
+
 ## [v1.1.37] - 2026-06-17
 
 ### Summary
