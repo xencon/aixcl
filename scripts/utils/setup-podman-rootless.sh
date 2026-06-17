@@ -171,7 +171,14 @@ setup_podman_socket() {
   
   # Export for Docker compatibility
   export DOCKER_HOST="unix://$socket_path"
-  echo "export DOCKER_HOST=\"unix://$socket_path\"" >> "${PROJECT_ROOT}/.env.podman"
+  cat > "${PROJECT_ROOT}/.env.podman" << 'ENVEOF'
+# AIXCL Podman Configuration
+export DOCKER_BIN=podman
+export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
+alias docker=podman
+export GPG_TTY=$(tty)
+export PATH="$HOME/.local/bin:$PATH"
+ENVEOF
   log_info "DOCKER_HOST set for Docker compatibility"
 }
 
