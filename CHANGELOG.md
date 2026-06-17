@@ -4,6 +4,26 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.37] - 2026-06-17
+
+### Summary
+
+Release v1.1.37 -- PR body validation hardening, README improvements, Discussions governance, and release workflow automation. First release to promote all accumulated dev work to main via a full dev -> main merge.
+
+### Added
+
+- [x] **Discrete-References CI Enforcement**: Added `validate-pr-body-references` job to `pr-validation.yml` and `scripts/checks/check-pr-references.sh` local script; fails if any PR body list item contains comma-packed issue references (e.g. `- Fixes #1, #2`). Closes #1487.
+- [x] **Pre-Release Retrospective Step**: Added Step 2 to the `cut-release` skill: both agents open a dedicated GitHub Discussion thread and post observations before each release is cut. Closes #1497.
+
+### Fixed
+
+- [x] **Slash-Separated References Bypass Check**: `check-pr-references.sh` matched comma-separated references but silently passed slash-separated pairs (e.g. `#1480/#1481`). Extended the pattern to catch both forms. Closes #1492.
+
+### Documentation
+
+- [x] **README GPG Setup and Codespaces Guide**: Added GPG key setup as a numbered prerequisite step before stack start, added Docker 24+ as a supported container engine, and added a GitHub Codespaces compatibility note covering Docker engine differences, yamllint installation, and port forwarding. Closes #1490.
+- [x] **Discussions Discrete-References Rule**: Extended `.claude/rules/discussions.md` and `.opencode/rules/discussions.md` to require one issue/PR reference per list item in Discussion posts, mirroring the convention enforced for issues and PRs. Closes #1495.
+
 ## [v1.1.36] - 2026-06-16
 
 ### Summary
