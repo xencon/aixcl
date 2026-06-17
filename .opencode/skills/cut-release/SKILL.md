@@ -1,7 +1,7 @@
 ---
 name: cut-release
 description: Guided checklist for cutting a new AIXCL release following the versioning cadence
-version: 1.0
+version: 1.1
 ---
 
 # Skill: cut-release
@@ -43,7 +43,38 @@ number from a previous session or document.
   gh pr list --state merged --limit 30
   ```
 
-## Step 2 -- Update CHANGELOG.md
+## Step 2 -- Pre-Release Retrospective
+
+Before updating the CHANGELOG, open a dedicated discussion thread and post
+agent observations. This step is advisory -- the human may proceed once
+formal CI and review checks are complete, even if one agent has nothing
+material to add.
+
+Open the thread (substitute the computed `$NEXT` version):
+
+```bash
+gh api graphql -f query='
+mutation {
+  createDiscussion(input: {
+    repositoryId: "R_kgDOMOfaEA",
+    categoryId: "DIC_kwDOMOfaEM4C_SO-",
+    title: "Release v1.1.N retrospective",
+    body: "Pre-release retrospective for v1.1.N.\n\nBoth agents post observations below: what landed, what was deferred, and any open concerns before the tag goes out."
+  }) {
+    discussion { url number }
+  }
+}'
+```
+
+- [ ] New discussion thread opened titled "Release vX.Y.Z retrospective"
+- [ ] This agent has posted its retrospective (what landed, what was deferred, open concerns)
+- [ ] Kimi has posted its retrospective, or confirmed nothing material to add
+- [ ] Human has reviewed both posts and confirmed readiness to proceed
+
+Each agent post must include the standard agent identification block
+(AGENTS.md Section 9.5). Link the thread URL in the release PR body.
+
+## Step 3 -- Update CHANGELOG.md
 
 Read `CHANGELOG.md` first to confirm the current format, then add a new entry:
 
@@ -73,7 +104,7 @@ Rules:
 - [ ] No non-ASCII punctuation (plain ASCII only -- CI enforces this)
 - [ ] `[Unreleased]` section is cleared (contents moved to new version entry)
 
-## Step 3 -- Merge dev to main
+## Step 4 -- Merge dev to main
 
 ```bash
 # Ensure dev is up to date
@@ -102,7 +133,7 @@ gh pr create \
 - [ ] PR targets `main` (not `dev`) -- releases go to main
 - [ ] CI is green before merging
 
-## Step 4 -- Tag the Release
+## Step 5 -- Tag the Release
 
 After the PR is merged to `main`:
 
@@ -116,7 +147,7 @@ git push origin v1.1.<N>
 - [ ] Tag is pushed to `origin` (upstream), not just `fork`
 - [ ] The `release.yml` workflow fires within 30 seconds of tag push
 
-## Step 5 -- Verify GitHub Release
+## Step 6 -- Verify GitHub Release
 
 ```bash
 # Check workflow status
@@ -130,7 +161,7 @@ gh release view v1.1.<N> --repo xencon/aixcl
 - [ ] Release notes are populated (from CHANGELOG or release template)
 - [ ] No draft status -- release is published
 
-## Step 6 -- Sync dev with main
+## Step 7 -- Sync dev with main
 
 After release, sync `dev` to include the merge commit from `main`:
 
@@ -149,7 +180,7 @@ gh pr create \
 - [ ] Sync PR merged to `dev`
 - [ ] No divergence between `main` and `dev`
 
-## Step 7 -- Close Release Issue
+## Step 8 -- Close Release Issue
 
 - [ ] Close the GitHub issue that tracked this release
 - [ ] Update any MEMORY.md entries referencing the previous version
