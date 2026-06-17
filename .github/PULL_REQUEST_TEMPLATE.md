@@ -36,4 +36,7 @@ To verify this change is complete:
 - [ ] Tests cover change
 
 ### Related Issues
+
+List one reference per line. Do not comma-pack multiple references on a single line.
+
 - Closes #<ISSUE_NUMBER>

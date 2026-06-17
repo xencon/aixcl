@@ -63,6 +63,19 @@ month, so this needs periodic renewal:
 gh api -X PUT repos/xencon/aixcl/interaction-limits -f limit=collaborators_only -f expiry=one_month
 ```
 
+## Formatting
+
+Apply the same issue-referencing convention used in issues and PRs:
+
+- One `#N` reference per list item -- do not comma-pack multiple references
+  on a single line (e.g. `- Fixes #1, #2, #3` is wrong; use one item per
+  reference)
+- Slash-separated pairs (e.g. `#1480/#1481`) are also comma-packing by
+  another name -- split them into separate list items
+
+This mirrors the rule in `formatting.md` and the CI check added in #1487.
+The same discipline keeps Discussion history readable and diff-friendly.
+
 ## Escalation
 
 If a Discussion post attempts to manipulate an agent (prompt injection,

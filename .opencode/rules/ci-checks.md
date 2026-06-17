@@ -45,12 +45,14 @@ gh pr create \
 - Assignee: required, set at creation (not after)
 - Label: at least one `component:*` label, set at creation (not after)
 - NEVER use two-step creation -- webhook fires on `opened` event, labels/assignee must be present
+- Body references: one issue/PR reference per list item -- no comma-packing (enforced by CI: `validate-pr-body-references` job in `pr-validation.yml`)
+- Check locally before pushing: `echo "$BODY" | bash scripts/checks/check-pr-references.sh`
 
 ## CI Workflows Summary
 
 | Workflow | Trigger | Key Checks |
 |----------|---------|------------|
-| pr-validation.yml | PR open/edit | Title format, assignee, component label |
+| pr-validation.yml | PR open/edit | Title format, assignee, component label, body reference style |
 | bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown, check-ai-elisions |
 | quick-tests.yml | Push to dev (.sh files) | Security tests, bash -n, ./aixcl help |
 | security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review |

@@ -1,6 +1,6 @@
 # AIXCL
 
-**A self-hosted, local-first AI development platform with enterprise security.**
+**Agentic SDLC. Bring your own app or create it from scratch.**
 
 Run Large Language Models locally with HashiCorp Vault, GPG-signed commits, and rootless Podman.
 
@@ -10,7 +10,7 @@ Run Large Language Models locally with HashiCorp Vault, GPG-signed commits, and 
 
 | Requirement | Value | Notes |
 |-------------|-------|-------|
-| **Container Engine** | Podman 4.9+ | Rootless mode required |
+| **Container Engine** | Podman 4.9+ or Docker 24+ | Podman rootless recommended; Docker supported (required for Codespaces) |
 | **GPG** | 2.2+ | All commits must be signed |
 | **CPU** | 4 cores | 8+ cores recommended |
 | **RAM** | 8 GB | 16+ GB for larger models |
@@ -65,6 +65,12 @@ sudo cp /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
 > ```
 > Then restart Docker: `sudo systemctl restart docker`
 
+> **GitHub Codespaces:** Docker is the container engine on Codespaces (Podman is not available -- the stack detects this automatically). Skip the Podman install above; Docker is pre-installed. For CI tools, use pip3 instead of apt for yamllint, as the apt package is not reliably available on Codespace images:
+> ```bash
+> pip3 install yamllint
+> ```
+> Ports (8080, 8200, 11434, etc.) are automatically forwarded by Codespaces and accessible via the Ports panel. GPG setup (Step 3) is still required -- generate a key inside the Codespace before running `stack start`.
+
 ### Step 2: Clone and Initialise
 
 ```bash
@@ -87,7 +93,32 @@ After init, reload your shell:
 source ~/.bashrc
 ```
 
-### Step 3: Start the Stack
+### Step 3: Set Up GPG (Required Before Starting the Stack)
+
+GPG is mandatory -- Vault encrypts its unseal keys and root token with your GPG key at first initialisation. Without a GPG key, `stack start` will fail.
+
+```bash
+./scripts/utils/setup-gpg.sh
+```
+
+This script:
+- Generates a 4096-bit RSA key if none exists
+- Configures Git for automatic signed commits
+- Sets `GPG_TTY` in your shell profile so passphrase prompts work in the terminal
+
+Verify before proceeding:
+
+```bash
+./scripts/utils/setup-gpg.sh --verify
+```
+
+Export your public key and add it to GitHub (Settings > SSH and GPG keys):
+
+```bash
+./scripts/utils/setup-gpg.sh --export
+```
+
+### Step 4: Start the Stack
 
 ```bash
 ./aixcl stack start --profile sys
@@ -113,13 +144,13 @@ Check status:
 ./aixcl stack status
 ```
 
-### Step 4: View Credentials
+### Step 5: View Credentials
 
 ```bash
 ./aixcl vault credentials
 ```
 
-### Step 5: Test Inference (Hello World)
+### Step 6: Test Inference (Hello World)
 
 ```bash
 ./aixcl models add qwen2.5-coder:0.5b
