@@ -174,7 +174,7 @@ load_vault_token() {
 # ---------------------------------------------------------------------------
 
 is_vault_running() {
-    ${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep -q "^vault$"
+    ${DOCKER_BIN:-podman} ps --format "{{.Names}}" | grep -q "^vault$"
 }
 
 # Returns true if the Vault HTTP API is responding (even when sealed/uninitialized)
@@ -249,7 +249,7 @@ wait_for_vault() {
 # Wait for PostgreSQL container to accept connections before configuring Vault DB engine
 wait_for_postgres() {
     log_info "Waiting for PostgreSQL to be ready..."
-    local docker_bin="${DOCKER_BIN:-docker}"
+    local docker_bin="${DOCKER_BIN:-podman}"
 
     local retries=60
     while [ $retries -gt 0 ]; do
@@ -502,7 +502,7 @@ init_bootstrap_passwords() {
             log_info "Read existing PostgreSQL password from shared volume"
         fi
         if [ -z "$postgres_password" ]; then
-            postgres_password=$(${DOCKER_BIN:-docker} exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+            postgres_password=$(${DOCKER_BIN:-podman} exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
             [ -n "$postgres_password" ] && log_info "Read existing PostgreSQL password from container"
         fi
         [ -z "$postgres_password" ] && postgres_password=$(generate_password 32)
@@ -597,7 +597,7 @@ configure_postgres_connection() {
     postgres_password=$(curl -sf "${VAULT_ADDR}/v1/kv/data/bootstrap/postgres" \
         -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null | jq -r '.data.data.password // empty')
     if [ -z "$postgres_password" ]; then
-        postgres_password=$(${DOCKER_BIN:-docker} exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
+        postgres_password=$(${DOCKER_BIN:-podman} exec postgres cat /run/secrets/postgres-password 2>/dev/null | tr -d '\n' || true)
     fi
     if [ -z "$postgres_password" ]; then
         log_error "Could not retrieve PostgreSQL password from Vault KV or container"
@@ -883,12 +883,12 @@ main() {
     # separate (longer) "container exists but isn't ready yet" wait.
     local _pg_exists_retries=15
     while [ "$_pg_exists_retries" -gt 0 ] \
-            && ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^postgres$"; do
+            && ! "${DOCKER_BIN:-podman}" ps --format "{{.Names}}" | grep -q "^postgres$"; do
         sleep 2
         _pg_exists_retries=$((_pg_exists_retries - 1))
     done
 
-    if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^postgres$"; then
+    if "${DOCKER_BIN:-podman}" ps --format "{{.Names}}" | grep -q "^postgres$"; then
         wait_for_postgres || return 1
         enable_database_engine || return 1
         configure_postgres_connection || return 1
