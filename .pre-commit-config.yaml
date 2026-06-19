@@ -1,0 +1,41 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-merge-conflict
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: ['--severity=warning', '--exclude=SC1091']
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ['-c', '.yamllint.yml']
+
+  - repo: local
+    hooks:
+      - id: no-non-ascii-punctuation
+        name: No non-ASCII punctuation in markdown
+        language: pygrep
+        types: [markdown]
+        entry: "[–—‘’“”… ]"
+        args: ['--multiline']
+
+      - id: check-ai-elisions
+        name: Check for AI elision placeholders
+        language: script
+        entry: scripts/checks/check-ai-elisions.sh
+        args: ['--staged']
+        pass_filenames: false
+        stages: [pre-commit]
