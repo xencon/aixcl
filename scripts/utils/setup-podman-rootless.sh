@@ -179,6 +179,7 @@ alias docker=podman
 export GPG_TTY=$(tty)
 export PATH="$HOME/.local/bin:$PATH"
 ENVEOF
+  chmod 600 "${PROJECT_ROOT}/.env.podman"
   log_info "DOCKER_HOST set for Docker compatibility"
 }
 

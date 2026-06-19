@@ -34,20 +34,20 @@ This repository uses a two-remote fork workflow. Understand this before any `git
 
 | Remote | URL | Purpose |
 |--------|-----|---------|
-| `origin` | `git@github.com:xencon/aixcl.git` | Upstream repository (PRs target here) |
-| `fork` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
+| `origin` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
+| `upstream` | `git@github.com:xencon/aixcl.git` | Canonical repository (PRs target here) |
 
-**Push branches to `fork`, open PRs against `origin`.**
+**Push branches to `origin`, open PRs against `upstream`.**
 
 ```bash
-git push fork issue-<N>/<description>
+git push origin issue-<N>/<description>
 gh pr create --repo xencon/aixcl ...
 ```
 
-If the `fork` remote is missing: `git remote add fork git@github.com:sbadakhc/aixcl.git`
+If the `upstream` remote is missing: `git remote add upstream git@github.com:xencon/aixcl.git`
 
-Never push directly to `origin/main` or `origin/dev`. Use SSH (not HTTPS) for the fork
-remote -- HTTPS will be blocked by workflow file protection.
+Never push directly to `upstream/main` or `upstream/dev`. Use SSH (not HTTPS) for all
+remotes -- HTTPS will be blocked by workflow file protection.
 
 ---
 
@@ -92,8 +92,11 @@ When conflicts arise, follow this order:
 #### Fixed Core Runtime
 
 - **Inference Engine** (Ollama) - Docker-managed, always enabled
-- **OpenCode** - AI-powered code assistance, always enabled
-- Never remove, replace, or conditionally disable runtime core components
+- Never remove, replace, or conditionally disable the Inference Engine
+
+#### Supported AI Coding Clients (Non-Exclusive)
+
+AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Claude Code are documented clients; other MCP-compatible or OpenAI-API-compatible tools are equally valid. Do not treat any specific AI coding client as a platform invariant.
 
 #### Runtime vs Operational Services Boundary
 

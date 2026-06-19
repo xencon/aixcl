@@ -2,8 +2,12 @@
 
 ## Fixed Core Runtime (Non-Negotiable)
 - **Inference Engine** (Ollama) -- Docker-managed, always enabled
-- **OpenCode** -- AI-powered code assistance (VS Code plugin, client-side), always enabled
-- Never remove, replace, or conditionally disable runtime core components
+- Never remove, replace, or conditionally disable the Inference Engine
+
+## Supported AI Coding Clients (Non-Exclusive)
+- AIXCL is client-agnostic above the OpenAI-compatible API layer
+- OpenCode and Claude Code are documented clients; others are equally valid
+- Do not treat any specific AI coding client as a platform invariant
 
 ## Runtime vs Operational Services Boundary
 - Runtime core must be runnable **without** any operational services
