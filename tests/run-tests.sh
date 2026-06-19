@@ -79,6 +79,7 @@ Categories:
     command      - CLI command validation tests
     workflow     - README Quick Start workflow test
     lib          - Pure shell library unit tests (no running stack required)
+    apps         - App layer API connectivity tests (skip gracefully if stack not running)
 
 Notes:
     - Tests run sequentially and stop on first failure
@@ -125,6 +126,12 @@ discover_tests() {
 
         if [[ -z "$CATEGORY" ]] || [[ "$CATEGORY" == "lib" ]]; then
             for test in "${TEST_DIR}/lib/tests"/test-*.sh; do
+                [[ -f "$test" ]] && tests+=("$test")
+            done
+        fi
+
+        if [[ -z "$CATEGORY" ]] || [[ "$CATEGORY" == "apps" ]]; then
+            for test in "${TEST_DIR}/apps"/test-*.sh; do
                 [[ -f "$test" ]] && tests+=("$test")
             done
         fi
