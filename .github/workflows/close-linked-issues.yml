@@ -1,0 +1,45 @@
+name: Close Linked Issues on Dev Merge
+permissions:
+  issues: write
+  pull-requests: read
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types: [closed]
+
+jobs:
+  close-linked-issues:
+    name: Close issues linked in merged PR
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Extract and close linked issues
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "PR #${PR_NUMBER} merged to dev -- scanning body for linked issues..."
+
+          issue_numbers=$(echo "$PR_BODY" \
+            | grep -oiE '(fixes|closes|resolves)[[:space:]]+#[0-9]+' \
+            | grep -oE '[0-9]+' || true)
+
+          if [ -z "$issue_numbers" ]; then
+            echo "No linked issues found in PR body."
+            exit 0
+          fi
+
+          for issue in $issue_numbers; do
+            echo "Closing issue #${issue}..."
+            gh issue close "$issue" \
+              --repo "$REPO" \
+              --comment "Closed automatically: linked PR #${PR_NUMBER} merged to \`dev\`." \
+              && echo "Closed #${issue}" \
+              || echo "Warning: could not close #${issue} (may already be closed)"
+          done
