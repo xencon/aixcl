@@ -76,7 +76,23 @@ Each agent post must include the standard agent identification block
 
 ## Step 3 -- Update CHANGELOG.md
 
-Read `CHANGELOG.md` first to confirm the current format, then add a new entry:
+Generate a draft from conventional commits using git-cliff (if installed),
+then edit to match the required format:
+
+```bash
+# Generate draft for commits since the last tag
+git cliff --unreleased --tag "$NEXT" 2>/dev/null \
+  || echo "git-cliff not installed -- write entry manually"
+```
+
+The draft pre-fills Added/Fixed/Changed/Documentation sections from commit
+messages. You MUST still:
+- Write the `### Summary` line (cliff leaves a placeholder)
+- Verify and tighten every entry -- commit bodies rarely read as release notes
+- Confirm all `Closes #N` references are present and correct
+
+Read `CHANGELOG.md` first to confirm the current format, then prepend the
+edited entry under `## [Unreleased]`:
 
 ```markdown
 ## [v1.1.N] - YYYY-MM-DD
