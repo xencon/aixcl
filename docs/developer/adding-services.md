@@ -132,6 +132,14 @@ volumes:
   alertmanager-data:
 ```
 
+## Compose Overlay Files
+
+Some profiles and hardware configurations use overlay files (for example, `services/docker-compose.gpu.yml`, `services/docker-compose.arm.yml`, `services/docker-compose.gpu-podman.yml`, `services/docker-compose.postgres-ssl.yml`, and `services/docker-compose.secrets.yml`). These files are not valid Docker Compose projects on their own; they extend or override services defined in `services/docker-compose.yml`. Validate them by combining the base file and the overlay:
+
+```bash
+docker compose -f services/docker-compose.yml -f services/docker-compose.gpu.yml config > /dev/null
+```
+
 ## Related Documentation
 
 - [Profiles Documentation](../architecture/governance/02_profiles.md) - Profile definitions and service composition
