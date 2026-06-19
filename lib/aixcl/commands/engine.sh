@@ -37,8 +37,9 @@ function engine() {
         # Check if .env exists, if not use .env.example
         if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
             cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
+            chmod 600 "${SCRIPT_DIR}/.env"
         fi
-        
+
         if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
             sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=$engine/" "${SCRIPT_DIR}/.env"
         else
@@ -104,8 +105,9 @@ function engine() {
         # Check if .env exists, if not use .env.example
         if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
             cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
+            chmod 600 "${SCRIPT_DIR}/.env"
         fi
-        
+
         # Determine engine based on hardware
         if has_nvidia_container_toolkit; then
             local engine="vllm"

@@ -52,6 +52,7 @@ container_start() {
         if [ -f "${SCRIPT_DIR}/config/.env.example" ]; then
             log_warning ".env file not found. Copying from config/.env.example..."
             cp "${SCRIPT_DIR}/config/.env.example" "${SCRIPT_DIR}/.env"
+            chmod 600 "${SCRIPT_DIR}/.env"
             load_env_file "${SCRIPT_DIR}/.env"
         else
             log_error ".env file required for service '$service'"
