@@ -25,11 +25,11 @@ After reading those four files you are fully oriented. Begin work.
 
 | Remote | URL | Purpose |
 |--------|-----|---------|
-| `origin` | `git@github.com:xencon/aixcl.git` | Upstream (PRs target here) |
-| `fork` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
+| `origin` | `git@github.com:sbadakhc/aixcl.git` | Personal fork (push branches here) |
+| `upstream` | `git@github.com:xencon/aixcl.git` | Canonical repository (PRs target here) |
 
-Push branches to `fork`, open PRs against `origin`. Use SSH, not HTTPS.
-If `fork` remote is missing: `git remote add fork git@github.com:sbadakhc/aixcl.git`
+Push branches to `origin`, open PRs against `upstream`. Use SSH, not HTTPS.
+If `upstream` remote is missing: `git remote add upstream git@github.com:xencon/aixcl.git`
 
 ## Authority Hierarchy
 
