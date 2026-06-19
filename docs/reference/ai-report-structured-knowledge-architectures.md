@@ -20,7 +20,7 @@ references:
 
 ## Executive Summary
 
-This comprehensive research evaluates whether structured knowledge architectures—harnesses, knowledge maps, structured repositories, knowledge graphs, ontologies, and context management systems—improve software engineering outcomes when using Large Language Models (LLMs).
+This comprehensive research evaluates whether structured knowledge architectures -- harnesses, knowledge maps, structured repositories, knowledge graphs, ontologies, and context management systems -- improve software engineering outcomes when using Large Language Models (LLMs).
 
 Based on analysis of the AIXCL project and industry evidence, we find that:
 
@@ -28,7 +28,7 @@ Based on analysis of the AIXCL project and industry evidence, we find that:
 
 2. **Well-designed structured repositories reduce token consumption** by 20-40% for typical tasks through improved context locality and precision.
 
-3. **Token efficiency gains do not automatically translate to accuracy improvements**—quality depends more on retrieval precision and context relevance than quantity.
+3. **Token efficiency gains do not automatically translate to accuracy improvements** -- quality depends more on retrieval precision and context relevance than quantity.
 
 4. **Maintenance overhead and knowledge drift are significant risks** that can negate benefits if not properly managed.
 
