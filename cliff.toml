@@ -1,43 +1,30 @@
 [changelog]
 header = ""
 body = """
-## [{{ version | trim_start_matches(pat="v") | prepend(value="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+## [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}
 
 ### Summary
-<!-- TODO: write one-sentence release summary here -->
-
-{% if commits | filter(attribute="group", value="Added") | length > 0 %}\
+<!-- TODO: one sentence describing the release -->
+{% if commits | filter(attribute="group", value="Added") | length > 0 %}
 ### Added
-{% for commit in commits | filter(attribute="group", value="Added") %}\
-- [x] **{{ commit.message | split(pat=":") | last | trim | title }}**: \
-{{ commit.message | split(pat=":") | last | trim }}.
-{% endfor %}
-
-{% endif %}\
-{% if commits | filter(attribute="group", value="Changed") | length > 0 %}\
+{% for commit in commits | filter(attribute="group", value="Added") %}
+- [x] **{{ commit.message | split(pat=":") | last | trim | capitalize }}**: {{ commit.message | split(pat=":") | last | trim | capitalize }}.{% endfor %}
+{% endif %}
+{% if commits | filter(attribute="group", value="Changed") | length > 0 %}
 ### Changed
-{% for commit in commits | filter(attribute="group", value="Changed") %}\
-- [x] **{{ commit.message | split(pat=":") | last | trim | title }}**: \
-{{ commit.message | split(pat=":") | last | trim }}.
-{% endfor %}
-
-{% endif %}\
-{% if commits | filter(attribute="group", value="Fixed") | length > 0 %}\
+{% for commit in commits | filter(attribute="group", value="Changed") %}
+- [x] **{{ commit.message | split(pat=":") | last | trim | capitalize }}**: {{ commit.message | split(pat=":") | last | trim | capitalize }}.{% endfor %}
+{% endif %}
+{% if commits | filter(attribute="group", value="Fixed") | length > 0 %}
 ### Fixed
-{% for commit in commits | filter(attribute="group", value="Fixed") %}\
-- [x] **{{ commit.message | split(pat=":") | last | trim | title }}**: \
-{{ commit.message | split(pat=":") | last | trim }}.
-{% endfor %}
-
-{% endif %}\
-{% if commits | filter(attribute="group", value="Documentation") | length > 0 %}\
+{% for commit in commits | filter(attribute="group", value="Fixed") %}
+- [x] **{{ commit.message | split(pat=":") | last | trim | capitalize }}**: {{ commit.message | split(pat=":") | last | trim | capitalize }}.{% endfor %}
+{% endif %}
+{% if commits | filter(attribute="group", value="Documentation") | length > 0 %}
 ### Documentation
-{% for commit in commits | filter(attribute="group", value="Documentation") %}\
-- [x] **{{ commit.message | split(pat=":") | last | trim | title }}**: \
-{{ commit.message | split(pat=":") | last | trim }}.
-{% endfor %}
-
-{% endif %}\
+{% for commit in commits | filter(attribute="group", value="Documentation") %}
+- [x] **{{ commit.message | split(pat=":") | last | trim | capitalize }}**: {{ commit.message | split(pat=":") | last | trim | capitalize }}.{% endfor %}
+{% endif %}
 """
 trim = true
 footer = ""
@@ -60,10 +47,9 @@ commit_parsers = [
   { message = "^\\[OVERRIDE\\]", group = "Changed" },
   { message = "^Merge", skip = true },
   { message = "^Sync", skip = true },
+  { message = "^Release", skip = true },
 ]
 filter_commits = true
 tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+"
-skip_tags = ""
-ignore_tags = ""
 topo_order = false
 sort_commits = "newest"
