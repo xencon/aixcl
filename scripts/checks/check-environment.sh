@@ -269,6 +269,62 @@ check_docker() {
     fi
 }
 
+# Check pre-commit
+check_pre_commit() {
+    info "Checking pre-commit..."
+
+    if ! command -v pre-commit &>/dev/null; then
+        warn "pre-commit not installed -- local hooks will not run"
+        info "Install: pip install pre-commit"
+        info "Activate: pre-commit install"
+        return
+    fi
+
+    local version
+    version=$(pre-commit --version 2>/dev/null | head -1 || echo "version unknown")
+    pass "pre-commit installed ($version)"
+
+    if [ -f ".pre-commit-config.yaml" ]; then
+        if [ -f ".git/hooks/pre-commit" ]; then
+            pass "pre-commit hooks installed in .git/hooks"
+        else
+            warn "pre-commit installed but hooks not activated"
+            info "Run: pre-commit install"
+        fi
+    fi
+}
+
+# Check gitleaks
+check_gitleaks() {
+    info "Checking gitleaks (secret scanning)..."
+
+    if ! command -v gitleaks &>/dev/null; then
+        warn "gitleaks not installed -- secret scanning runs CI-only until installed"
+        info "Install from: https://github.com/gitleaks/gitleaks/releases"
+        info "Recommended: v8.21.2+"
+        return
+    fi
+
+    local version
+    version=$(gitleaks version 2>/dev/null | head -1 || echo "version unknown")
+    pass "gitleaks installed ($version)"
+}
+
+# Check git-cliff
+check_git_cliff() {
+    info "Checking git-cliff (changelog generation)..."
+
+    if ! command -v git-cliff &>/dev/null; then
+        warn "git-cliff not installed -- required for cut-release skill"
+        info "Install from: https://github.com/orhun/git-cliff/releases"
+        return
+    fi
+
+    local version
+    version=$(git-cliff --version 2>/dev/null | head -1 || echo "version unknown")
+    pass "git-cliff installed ($version)"
+}
+
 # Check ShellCheck version
 check_shellcheck() {
     info "Checking ShellCheck..."
@@ -332,6 +388,9 @@ main() {
     # Optional checks
     check_docker
     check_shellcheck
+    check_pre_commit
+    check_gitleaks
+    check_git_cliff
     
     echo ""
     echo "═══════════════════════════════════════════════════════════════"

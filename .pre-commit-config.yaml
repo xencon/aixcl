@@ -23,6 +23,12 @@ repos:
       - id: yamllint
         args: ['-c', '.yamllint.yml']
 
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        args: ['--config', '.gitleaks.toml']
+
   - repo: local
     hooks:
       - id: no-non-ascii-punctuation

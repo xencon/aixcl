@@ -22,6 +22,7 @@ That's it. Hooks run automatically on `git commit` from that point forward.
 | `check-merge-conflict` | Unresolved conflict markers |
 | `shellcheck` | Shell script issues (`--severity=warning --exclude=SC1091`) |
 | `yamllint` | YAML style violations (using `.yamllint.yml`) |
+| `gitleaks` | Secret patterns in staged files (uses `.gitleaks.toml` allowlist) |
 | `no-non-ascii-punctuation` | Smart quotes, em dashes, ellipsis in markdown |
 | `check-ai-elisions` | AI placeholder text standing in for real content |
 
