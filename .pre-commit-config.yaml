@@ -45,3 +45,40 @@ repos:
         args: ['--staged']
         pass_filenames: false
         stages: [pre-commit]
+
+      - id: check-generated-files
+        name: Check for tracked generated files
+        language: script
+        entry: scripts/checks/check-generated-files.sh
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: check-agents
+        name: Check agent and skill mirror parity
+        language: script
+        entry: scripts/checks/check-agents.sh
+        pass_filenames: false
+        stages: [pre-commit]
+        files: '^(\.claude|\.opencode)/'
+
+      - id: check-paths
+        name: Check documentation relative links
+        language: script
+        entry: scripts/checks/check-paths.sh
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: security-tests
+        name: Run security tests
+        language: script
+        entry: tests/run-security-tests.sh
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: lib-tests
+        name: Run library unit tests
+        language: script
+        entry: tests/run-lib-tests.sh
+        pass_filenames: false
+        stages: [pre-push]
+        files: '^(lib|tests)/'
