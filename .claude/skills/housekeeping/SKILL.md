@@ -1,11 +1,11 @@
 ---
 name: housekeeping
 description: Comprehensive repository health check covering hygiene, security, and code quality
-version: 1.0
+version: 1.1
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Skill: housekeeping
@@ -18,7 +18,7 @@ not block the others. Work through them in order and record findings.
 
 ```bash
 # Confirm tooling available
-command -v gh && echo "gh: ok" || echo "gh: not found -- skip checks 5, 4b"
+command -v gh && echo "gh: ok" || echo "gh: not found -- skip checks 4b, 5"
 command -v shellcheck && echo "shellcheck: ok" || echo "shellcheck: not found -- skip check 11"
 command -v gitleaks && echo "gitleaks: ok" || echo "gitleaks: not found -- fallback to grep patterns"
 ```
@@ -84,18 +84,33 @@ bash scripts/checks/check-paths.sh
 
 ---
 
-## Check 4 -- Branch Hygiene (Merged Branches)
+## Check 4 -- Branch Hygiene (Merged Branches and Fork Sync)
 
-List remote branches already merged into `dev` that have not been deleted.
-Local working branches are expected; remote merged branches are not.
+List remote branches already merged into `dev` that have not been deleted,
+and check whether the personal fork is in sync with upstream. Fork drift
+accumulates quickly with frequent releases -- catch it here before it causes
+merge conflicts on the next branch.
 
 ```bash
-git fetch --prune origin 2>/dev/null || git fetch --prune upstream 2>/dev/null || true
-git branch -r --merged origin/dev 2>/dev/null | grep -v 'origin/dev\|origin/main\|HEAD' \
-  || git branch -r --merged upstream/dev 2>/dev/null | grep -v 'upstream/dev\|upstream/main\|HEAD'
+git fetch --prune origin 2>/dev/null; git fetch --prune upstream 2>/dev/null || true
+
+# Stale merged branches
+git branch -r --merged upstream/dev 2>/dev/null \
+  | grep -v 'upstream/dev\|upstream/main\|origin/dev\|origin/main\|HEAD' \
+  || echo "ok: no stale merged remote branches"
+
+# Fork sync with upstream dev
+upstream_ahead=$(git rev-list origin/dev..upstream/dev 2>/dev/null | wc -l | tr -d ' ')
+if [ "$upstream_ahead" -gt 0 ]; then
+  echo "WARN: origin/dev is $upstream_ahead commit(s) behind upstream/dev"
+  echo "  Fix: git checkout dev && git pull upstream dev && git push origin dev"
+else
+  echo "ok: origin/dev is in sync with upstream/dev"
+fi
 ```
 
 - [ ] No merged remote branches outstanding, or owner notified to delete
+- [ ] `origin/dev` is in sync with `upstream/dev`, or sync performed
 
 ---
 
@@ -160,8 +175,7 @@ for f in $(find . \( -name ".env*" -o -name "*.env" \) \
   dupes=$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$f" \
           | cut -d= -f1 | sort | uniq -d)
   if [ -n "$dupes" ]; then
-    echo "DUPLICATE KEYS in $f:"
-    echo "$dupes"
+    echo "DUPLICATE KEYS in $f: $dupes"
   else
     echo "ok: $f"
   fi
@@ -174,24 +188,29 @@ done
 
 ## Check 8 -- File Permissions (Sensitive Files)
 
-Env files, key files, and token files must not be world-readable or
-world-writable. Expected mode: `600` (owner read/write only).
+Runtime env files must not be world-readable or world-writable. Expected
+mode: `600` (owner read/write only). Tracked config files in
+`config/profiles/` are excluded -- they contain service names and ports,
+not secrets.
 
 ```bash
-find . \( -name ".env*" -o -name "*.env" -o -name "*.key" \
+find . \( -name ".env" -o -name ".env.*" -o -name "*.key" \
           -o -name "*.token" -o -name "*.pem" -o -name "*.crt" \) \
-  -not -path "./.git/*" -not -name "*.example" -type f \
+  -not -path "./.git/*" \
+  -not -path "./config/profiles/*" \
+  -not -name "*.example" \
+  -type f \
   | while read -r f; do
       perms=$(stat -c "%a" "$f" 2>/dev/null || stat -f "%OLp" "$f" 2>/dev/null)
       if echo "$perms" | grep -qE "[1-7]$"; then
-        echo "WORLD-READABLE or WRITABLE: $f ($perms)"
+        echo "WORLD-READABLE or WRITABLE: $f ($perms) -- run: chmod 600 $f"
       else
         echo "ok: $f ($perms)"
       fi
     done
 ```
 
-- [ ] No sensitive files are world-readable or world-writable
+- [ ] No sensitive runtime env files are world-readable or world-writable
 - [ ] Files under `vault/` or `security/` paths checked specifically
 
 ---
@@ -227,10 +246,9 @@ All images in compose files must be pinned to a specific version tag.
 `latest` or untagged images are a reproducibility and supply chain risk.
 
 ```bash
-# Check all compose files for latest or untagged images
-grep -hn "image:" services/docker-compose*.yml \
-  | grep -E ":\s*(latest\s*$|[^:]+\s*$)" \
-  | grep -v "#" \
+# Flag :latest tags and bare image names with no tag (no colon after final slash)
+grep -hn "image:" services/docker-compose*.yml | grep -v "#" | \
+  grep -E "image:\s+(\S+:latest\s*$|\S*/[^:]+\s*$|[^/:]+\s*$)" \
   && echo "FAIL: unpinned image tags found above" || echo "ok: all images pinned"
 ```
 
@@ -244,10 +262,14 @@ Run shellcheck across the entire repo, not just staged files. This catches
 regressions in scripts nobody has recently touched.
 
 ```bash
-find . -name "*.sh" -not -path "./.git/*" \
-  | xargs shellcheck --severity=warning --exclude=SC1091 2>&1 \
-  | grep -E "^In |error|warning" | head -40 \
-  && echo "FAIL: shellcheck issues found" || echo "ok: all scripts clean"
+issues=$(find . -name "*.sh" -not -path "./.git/*" \
+  | xargs shellcheck --severity=warning --exclude=SC1091 2>&1)
+if [ -n "$issues" ]; then
+  echo "$issues" | head -40
+  echo "FAIL: shellcheck issues found"
+else
+  echo "ok: all scripts clean"
+fi
 ```
 
 - [ ] No shellcheck warnings or errors at severity `warning` or above
@@ -283,7 +305,7 @@ After running all checks, record findings:
 Check 1  -- Lean policy:         [ ] clean  [ ] items found
 Check 2  -- Mirror parity:       [ ] clean  [ ] mismatch
 Check 3  -- Broken links:        [ ] clean  [ ] broken
-Check 4  -- Branch hygiene:      [ ] clean  [ ] stale branches
+Check 4  -- Branch hygiene:      [ ] clean  [ ] stale branches / fork drift
 Check 5  -- Issue/PR hygiene:    [ ] clean  [ ] missing labels/assignees
 Check 6  -- Pre-commit sanity:   [ ] clean  [ ] failures
 Check 7  -- Env file integrity:  [ ] clean  [ ] duplicates
