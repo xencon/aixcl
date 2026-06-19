@@ -12,3 +12,8 @@ paths = [
   '''config/\.env\.example''',
   '''CHANGELOG\.md''',
 ]
+commits = [
+  "e282f4bc9df1b4d6a6eb37967a6600b10bb3c59e",
+  "238eae8c5d602831d568790d4dad4675cd876832",
+  "f3de0a4121fa0597887b3761ae3ce30e0c5d502d",
+]
