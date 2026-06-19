@@ -1,0 +1,14 @@
+# gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "AIXCL gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known safe patterns in this repository"
+paths = [
+  '''config/\.env\.example''',
+  '''CHANGELOG\.md''',
+]
