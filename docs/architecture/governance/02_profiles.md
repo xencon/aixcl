@@ -6,12 +6,11 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 ## 1. Runtime Core (Always Enabled)
 
-The runtime core consists of two components:
+The runtime core consists of one component:
 
 - **Inference Engine** (e.g., Ollama, vLLM, llama.cpp) - LLM inference engine (Docker-managed service)
-- **OpenCode** - AI-powered code assistance (VS Code plugin, not Docker-managed)
 
-OpenCode is a client-side IDE plugin that connects to the Inference Engine via the OpenAI-compatible API. Because it runs inside VS Code rather than as a Docker container, it is not included in the `RUNTIME_CORE_SERVICES` array or the active service mappings in `lib/cli/profile.sh` (which uses `get_profile_services_for_profile()`).
+The Inference Engine exposes an OpenAI-compatible API. AI coding clients (OpenCode, Claude Code, Cursor, or any compatible tool) connect to this API. Clients are not part of the runtime core and are not Docker-managed; they are configured separately in their respective tool directories (`.opencode/`, `.claude/`).
 
 ---
 
@@ -30,7 +29,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 **Purpose**: Observability-focused deployment for servers and operators.
 
 **Includes**:
-- Runtime core: Inference Engine, OpenCode (plugin)
+- Runtime core: Inference Engine
 - Vault (dynamic secrets management)
 - PostgreSQL (database for runtime data)
 - Prometheus (metrics collection)
@@ -54,7 +53,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 **Purpose**: System-oriented deployment with complete feature set.
 
 **Includes**:
-- Runtime core: Inference Engine, OpenCode (plugin)
+- Runtime core: Inference Engine
 - Vault (dynamic secrets management)
 - All bld services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, Alertmanager
 - Open WebUI (web interface for model interaction)
@@ -74,7 +73,7 @@ OpenCode is a client-side IDE plugin that connects to the Inference Engine via t
 ## 5. Profile Invariants
 
 All profiles **must**:
-- Include the complete runtime core (Inference Engine, OpenCode)
+- Include the complete runtime core (Inference Engine)
 - Include Vault for secret management (required by all database-dependent services)
 - Never disable or conditionally exclude runtime core components
 - Maintain runtime core independence from operational services
