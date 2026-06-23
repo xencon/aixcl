@@ -12,20 +12,20 @@ load_env_file() {
             # Skip empty lines and comments
             [ -z "$line" ] && continue
             [ "${line#\#}" != "$line" ] && continue
-            
+
             # Extract key and value, handling quoted values
             if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
                 local key="${BASH_REMATCH[1]}"
                 local value="${BASH_REMATCH[2]}"
-                
+
                 # Remove leading/trailing whitespace from key
                 key="${key%"${key##*[![:space:]]}"}"
                 key="${key#"${key%%[![:space:]]*}"}"
-                
+
                 # Remove leading/trailing whitespace from value
                 value="${value%"${value##*[![:space:]]}"}"
                 value="${value#"${value%%[![:space:]]*}"}"
-                
+
                 # Remove surrounding quotes if present
                 if [[ "$value" =~ ^\".*\"$ ]]; then
                     value="${value#\"}"
@@ -34,7 +34,7 @@ load_env_file() {
                     value="${value#\'}"
                     value="${value%\'}"
                 fi
-                
+
                 # Only export if key is not empty and contains valid characters
                 # Note: Bash cannot export variables with hyphens
                 # Docker Compose reads these directly from .env file, so we don't need to export them
@@ -126,60 +126,60 @@ has_nvidia() {
      if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
          return 0
      fi
-     
+
      # Check for NVIDIA Container Toolkit
      if command -v nvidia-container-cli >/dev/null 2>&1; then
          return 0
      fi
-     
+
      # Check for installation via package managers
      if command -v dpkg >/dev/null 2>&1 && dpkg -l 2>/dev/null | grep -q nvidia-container-toolkit; then
          return 0
      fi
-     
+
      if command -v rpm >/dev/null 2>&1 && rpm -qa | grep -q nvidia-container-toolkit; then
          return 0
      fi
-     
+
      # Check for Docker/Podman configured with nvidia runtime
      if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia"; then
          return 0
      fi
-     
+
      # Check for hardware via pciutils (if available)
      if command -v lspci >/dev/null 2>&1 && lspci | grep -qi "nvidia"; then
          return 0
      fi
-     
+
      return 1
  }
- 
+
 # Check for NVIDIA Container Toolkit (specifically for GPU monitoring)
 has_nvidia_container_toolkit() {
      # Check for NVIDIA Container Toolkit CLI (primary method)
      if command -v nvidia-ctk >/dev/null 2>&1; then
          return 0
      fi
-     
+
      # Check for nvidia-container-cli as alternative
      if command -v nvidia-container-cli >/dev/null 2>&1; then
          return 0
      fi
-     
+
      # Check for toolkit installation files
      if [ -f "/usr/bin/nvidia-container-toolkit" ] || [ -f "/usr/local/bin/nvidia-container-toolkit" ]; then
          return 0
      fi
-     
+
      # Check for installation via package managers
      if command -v dpkg >/dev/null 2>&1 && dpkg -l 2>/dev/null | grep -q nvidia-container-toolkit; then
          return 0
      fi
-     
+
      if command -v rpm >/dev/null 2>&1 && rpm -qa 2>/dev/null | grep -q nvidia-container-toolkit; then
          return 0
      fi
-     
+
       # Check for NVIDIA container runtime in Docker/Podman
       if ${DOCKER_BIN:-docker} info 2>/dev/null | grep -qi "nvidia.*runtime"; then
           return 0
@@ -224,6 +224,10 @@ is_rootless() {
         if podman info --format '{{.Host.Rootless}}' 2>/dev/null | grep -q "true"; then
             return 0
         fi
+        # Fallback for Podman versions where Go template fields differ -- parse YAML output
+        if podman info 2>/dev/null | grep -q "rootless: true"; then
+            return 0
+        fi
     fi
     # Fallback: check if we are not root but can run docker
     if [ "$(id -u)" != "0" ] && command -v docker >/dev/null 2>&1; then
@@ -261,7 +265,7 @@ get_docker_sock() {
             fi
         fi
     fi
-    
+
     # Default to standard root socket
     echo "/var/run/docker.sock"
 }
@@ -274,25 +278,25 @@ validate_db_name() {
     name="$1"
     local context
     context="${2:-database}"
-    
+
     # Check if empty
     if [ -z "$name" ]; then
         echo "Error: Database name for $context cannot be empty" >&2
         return 1
     fi
-    
+
     # Check length (PostgreSQL limit is 63 bytes)
     if [ "${#name}" -gt 63 ]; then
         echo "Error: Database name '$name' exceeds 63 characters" >&2
         return 1
     fi
-    
+
     # Validate against whitelist pattern: alphanumeric + underscore, must start with letter or underscore
     if [[ ! "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
         echo "Error: Database name '$name' contains invalid characters. Use only letters, numbers, and underscores. Must start with a letter or underscore." >&2
         return 1
     fi
-    
+
     # Check for reserved PostgreSQL database names
     local lower_name
     lower_name=$(echo "$name" | tr '[:upper:]' '[:lower:]')
@@ -302,6 +306,6 @@ validate_db_name() {
             return 1
             ;;
     esac
-    
+
     return 0
 }

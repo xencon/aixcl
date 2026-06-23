@@ -212,6 +212,7 @@ find . \( -name ".env" -o -name ".env.*" -o -name "*.key" \
 
 - [ ] No sensitive runtime env files are world-readable or world-writable
 - [ ] Files under `vault/` or `security/` paths checked specifically
+- [ ] Note: to check whether a file is tracked in git, use `git ls-files --error-unmatch <file>` -- plain `git ls-files <file>` exits 0 even when the file is not tracked, making `&& echo TRACKED` a false positive.
 
 ---
 
@@ -235,8 +236,9 @@ else
 fi
 ```
 
-- [ ] No secrets detected in tracked files
+- [ ] No secrets detected
 - [ ] If gitleaks not installed, note it as a tooling gap
+- [ ] Note: `--no-git` scans ALL files on disk, including gitignored runtime files (e.g. `pgadmin-servers.json`). Findings in gitignored runtime files belong in the `.gitleaks.toml` `paths` allowlist, not the `commits` allowlist.
 
 ---
 

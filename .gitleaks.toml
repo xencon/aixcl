@@ -11,6 +11,7 @@ description = "Known safe patterns in this repository"
 paths = [
   '''config/\.env\.example''',
   '''CHANGELOG\.md''',
+  '''pgadmin-servers\.json''',
 ]
 commits = [
   "e282f4bc9df1b4d6a6eb37967a6600b10bb3c59e",

@@ -4,6 +4,23 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.41] - 2026-06-24
+
+### Summary
+
+Release v1.1.41 -- Security hardening and tooling parity. Fixes rootless container detection false positive, promotes open-webui PID 1 to a non-root process via setpriv, hardens developer tooling parity between CI and local environments, and expands install documentation for all contributor tools.
+
+### Fixed
+
+- [x] **Rootless Detection False Positive in check-env**: `is_rootless()` queried Go template fields that do not exist on the installed Podman version, causing a spurious "Root container engine" warning even when Podman runs rootless. Added a YAML-parse fallback (`podman info | grep "rootless: true"`). Closes #1569.
+- [x] **open-webui PID 1 Running as Root**: The entrypoint used `exec su -m webui` which forks and retains `su` (UID 0) as PID 1. Replaced with `exec setpriv --reuid --regid --clear-groups` which exec's directly, making uvicorn (UID 1000) PID 1. Closes #1569.
+- [x] **gitleaks False Positive on Runtime pgadmin-servers.json**: `pgadmin-servers.json` is correctly gitignored and never committed, but `gitleaks --no-git` scans all files on disk and flagged the pgAdmin password it contains at runtime. Added the file to the `.gitleaks.toml` paths allowlist. Closes #1567.
+
+### Changed
+
+- [x] **Harden cut-release and housekeeping Skills**: cut-release skill now mandates `check-pr-references.sh` before every `gh pr create`, adds a force-push race check, and documents the trailing-whitespace re-stage pattern. Housekeeping skill adds notes on `--no-git` disk scan scope and `git ls-files --error-unmatch` for reliable tracking checks. Closes #1567.
+- [x] **Tooling Audit -- yamllint, shellcheck, CI pin, install docs**: Added yamllint to `./aixcl utils check-env` developer tooling section; bumped shellcheck-py pre-commit pin from v0.10.0.1 to v0.11.0.1 to match local and CI; pinned `yamllint==1.35.1` in `documentation-checks.yml`; added gitleaks 8.21.2 and git-cliff 2.13.1 install steps to README contributors section. Closes #1571.
+
 ## [v1.1.40] - 2026-06-23
 
 ### Summary
