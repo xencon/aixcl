@@ -32,17 +32,6 @@ function prune() {
     rm -f .aixcl.initialized .env pgadmin-servers.json
     echo ""
 
-    # The Vault data volume is wiped below, which invalidates the existing
-    # unseal-key/root-token artefacts (they only decrypt to valid key shares
-    # for the specific Vault instance that generated them). Remove them too
-    # so the next `./aixcl vault init` performs a clean re-init instead of
-    # failing with "still sealed after submitting N key shares" (stale keys
-    # vs a fresh volume). The rest of .security/ is left alone -- clearing
-    # the whole directory remains prune_all()'s responsibility.
-    echo "Removing stale Vault unseal artefacts (data volume is about to be wiped)..."
-    rm -f "${SCRIPT_DIR}/.security/vault-keys.gpg" "${SCRIPT_DIR}/.security/vault-root-token.gpg"
-    echo ""
-
     # Remove all containers before volumes -- Podman will not release a volume
     # while any container (even stopped) still references it. stack stop removes
     # running containers but stopped/exited ones may linger with volume mounts.
@@ -57,8 +46,16 @@ function prune() {
     local all_volumes
     all_volumes=$($docker_cmd volume ls -q 2>/dev/null || true)
     if [ -n "$all_volumes" ]; then
-        echo "$all_volumes" | xargs -r $docker_cmd volume rm -f 2>/dev/null || true
+        echo "$all_volumes" | xargs -r "$docker_cmd" volume rm -f 2>/dev/null || true
     fi
+    echo ""
+
+    # Remove Vault unseal artefacts AFTER volumes are gone -- these files are only
+    # valid for the specific Vault instance that generated them. Deleting them before
+    # volume removal risks split state if the volume rm fails. vault-init.sh self-heals
+    # split state automatically, but it is cleaner to avoid it here.
+    echo "Removing Vault unseal artefacts..."
+    rm -f "${SCRIPT_DIR}/.security/vault-keys.gpg" "${SCRIPT_DIR}/.security/vault-root-token.gpg"
     echo ""
 
     # Remove runtime-generated artifacts from host filesystem (bind-mounted directories)
