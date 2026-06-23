@@ -104,9 +104,10 @@ if [ "$(id -u)" = "0" ]; then
     chmod 1777 /tmp
 
     echo "Switching to webui user (UID: $USER_ID)..."
-    export -n USER_ID GROUP_ID
     export HOME=/home/webui
-    exec su -m webui -c 'exec /usr/local/bin/openwebui-entrypoint.sh'
+    # setpriv execs directly (unlike su which forks), so PID 1 becomes the non-root process
+    exec setpriv --reuid="$USER_ID" --regid="$GROUP_ID" --clear-groups -- \
+        /usr/local/bin/openwebui-entrypoint.sh
 fi
 
 # Running as non-root
