@@ -26,6 +26,7 @@ Release v1.1.40 -- Vault reliability and pre-commit hardening. Permanently fixes
 - [x] **Vault Split-State Self-Healing**: `vault-init.sh` now detects the split state (Vault initialized but `vault-keys.gpg` missing) and automatically wipes `aixcl-vault-data` and re-initializes, replacing the misleading loop-inducing error message. Closes #1557.
 - [x] **Vault prune() Ordering**: `utils.sh` deleted `.security/vault-keys.gpg` before removing volumes; a silent volume-removal failure left keys gone but vault data intact, creating split state. Artefact deletion now happens after volume removal. Closes #1557.
 - [x] **Gitleaks Allowlist for Historical Slack Webhook Commits**: Added `.gitleaks.toml` allowlist entries for historical Slack webhook URL commits that blocked gitleaks on the full git history. Closes #1548.
+- [x] **`.env` Permissions Not Corrected on Existing Installations**: The `chmod 600` fix from #1520 only fired in the creation guard; any `.env` created before that fix retained 644 permanently. Moved `chmod 600` outside the guard in `service_utils.sh` and `engine.sh` so it runs unconditionally on every start. Closes #1562.
 
 ## [v1.1.39] - 2026-06-19
 
