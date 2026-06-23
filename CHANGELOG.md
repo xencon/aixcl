@@ -4,6 +4,57 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.40] - 2026-06-23
+
+### Summary
+
+Release v1.1.40 -- Vault reliability and pre-commit hardening. Permanently fixes the recurring Vault split-state failure with self-healing logic and prune ordering correction; adds a vault rekey command for key rotation; wires all CI quality checks into pre-commit/pre-push hooks for local parity; surfaces developer tooling gaps in check-env.
+
+### Added
+
+- [x] **vault rekey Command**: New `./aixcl vault rekey` subcommand implements vault operator rekey -- generates new unseal key shares and GPG-encrypts them to `.security/vault-keys.gpg`. Use after GPG key rotation or when existing shares may have been exposed. Closes #1557.
+- [x] **Pre-commit CI/Local Parity**: Wired all remaining CI quality checks (check-generated-files, check-agents, check-paths, security-tests, lib-tests) into `.pre-commit-config.yaml` at commit and push stages, eliminating gaps between local and CI quality gates. Closes #1554.
+- [x] **Developer Tooling Checks in check-env**: `./aixcl utils check-env` and `scripts/checks/check-environment.sh` now warn when pre-commit, gitleaks, or git-cliff are absent, improving developer experience on fresh setups. Closes #1552.
+- [x] **Gitleaks Pre-commit Hook**: Added gitleaks v8.21.2 to `.pre-commit-config.yaml` so secret scanning runs on every local commit, not just in CI. Closes #1550.
+
+### Changed
+
+- [x] **Bump actions/checkout to 7.0.0**: Dependabot update for the actions/checkout GitHub Action.
+
+### Fixed
+
+- [x] **Vault Split-State Self-Healing**: `vault-init.sh` now detects the split state (Vault initialized but `vault-keys.gpg` missing) and automatically wipes `aixcl-vault-data` and re-initializes, replacing the misleading loop-inducing error message. Closes #1557.
+- [x] **Vault prune() Ordering**: `utils.sh` deleted `.security/vault-keys.gpg` before removing volumes; a silent volume-removal failure left keys gone but vault data intact, creating split state. Artefact deletion now happens after volume removal. Closes #1557.
+- [x] **Gitleaks Allowlist for Historical Slack Webhook Commits**: Added `.gitleaks.toml` allowlist entries for historical Slack webhook URL commits that blocked gitleaks on the full git history. Closes #1548.
+- [x] **`.env` Permissions Not Corrected on Existing Installations**: The `chmod 600` fix from #1520 only fired in the creation guard; any `.env` created before that fix retained 644 permanently. Moved `chmod 600` outside the guard in `service_utils.sh` and `engine.sh` so it runs unconditionally on every start. Closes #1562.
+
+## [v1.1.39] - 2026-06-19
+
+### Summary
+
+Release v1.1.39 -- Developer tooling, repository health automation, and CI hardening. Adds a housekeeping skill, gitleaks secret scanning in CI, Dependabot for dependency tracking, git-cliff for changelog automation, an app-layer test scaffold, and auto-close of linked issues on PR merge.
+
+### Added
+
+- [x] **Housekeeping Skill**: Added `housekeeping` skill with 12 checks covering lean policy, mirror parity, branch hygiene, secret scanning, shellcheck sweep, and more. Closes #1518.
+- [x] **Auto-Close Linked Issues**: Added GitHub Actions workflow to automatically close issues referenced in PR bodies when the PR merges to dev. Closes #1522.
+- [x] **Gitleaks Secret Scanning in CI**: Added gitleaks to the `security.yml` CI workflow using direct CLI install; scans all PRs and pushes for hardcoded secrets. Closes #1524.
+- [x] **Dependabot Configuration**: Added `.github/dependabot.yml` for automated Docker image and GitHub Actions version tracking. Closes #1525.
+- [x] **git-cliff Changelog Automation**: Added `cliff.toml` config and updated the `cut-release` skill to use git-cliff for generating CHANGELOG draft entries from conventional commits. Closes #1527.
+- [x] **App Layer Test Structure**: Established `tests/apps/` directory with a scaffold for per-app integration tests, separate from platform and library tests. Closes #1528.
+
+### Changed
+
+- [x] **OpenCode Demoted to Supported Client**: Corrected AGENTS.md, invariants, and governance docs to treat OpenCode as a supported AI coding client rather than a platform invariant; AIXCL is client-agnostic above the OpenAI-compatible API layer. Closes #1516.
+
+### Fixed
+
+- [x] **Housekeeping Skill False Positives and Env File Permissions**: Fixed false positives in branch hygiene and secret scanning checks; hardened env file permission check to avoid flagging example files. Closes #1520.
+
+### Documentation
+
+- [x] **Docker Compose Overlay Validation**: Documented the behavior and usage of the compose overlay validation check that catches long lines and missing keys in YAML overrides. Closes #1538.
+
 ## [v1.1.38] - 2026-06-17
 
 ### Summary
@@ -1522,4 +1573,3 @@ None
 - Database credentials are managed via environment variables
 - Connection pooling with configurable pool size
 - Graceful degradation when database is unavailable (service opencodes without persistence)
-
