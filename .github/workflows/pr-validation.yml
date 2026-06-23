@@ -8,7 +8,7 @@ on:
     branches:
       - main
       - dev
-    types: [opened, edited, synchronize, reopened, labeled, unlabeled, assigned, unassigned]
+    types: [opened, edited, synchronize, reopened]
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
