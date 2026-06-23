@@ -8,7 +8,7 @@
 function cmd_vault() {
     local subcommand="${1:-}"
     shift || true
-    
+
     case "$subcommand" in
         start)
             cmd_vault_start "$@"
@@ -34,6 +34,9 @@ function cmd_vault() {
         rotate)
             cmd_vault_rotate "$@"
             ;;
+        rekey)
+            cmd_vault_rekey "$@"
+            ;;
         logs)
             cmd_vault_logs "$@"
             ;;
@@ -56,7 +59,8 @@ function cmd_vault() {
             echo "  status       Check Vault health and initialization state"
             echo "  credentials  View generated dynamic credentials"
             echo "  passwords    View static bootstrap passwords (from Vault KV)"
-            echo "  rotate       Manually trigger credential rotation"
+            echo "  rotate       Manually trigger credential rotation (restarts agents for TTL refresh)
+  rekey        Rotate unseal keys -- generates new shares and re-encrypts to .security/"
             echo "  logs [n]     View Vault container logs (default: 50 lines)"
             echo ""
             echo "Examples:"
@@ -162,7 +166,7 @@ function cmd_vault_rotate() {
         return 1
     fi
     echo "Triggering manual credential rotation..."
-    
+
     # Check if Vault is accessible (via HTTP API, not vault CLI)
     local vault_addr="${VAULT_ADDR:-http://127.0.0.1:8200}"
     if ! curl -sf "${vault_addr}/v1/sys/health" >/dev/null 2>&1; then
@@ -170,11 +174,11 @@ function cmd_vault_rotate() {
         echo "Run: ./aixcl vault init"
         return 1
     fi
-    
+
     # Restart vault agents to trigger immediate rotation
     local agents
     agents=$(${DOCKER_BIN:-docker} ps --format "{{.Names}}" | grep "vault-agent" || true)
-    
+
     if [ -n "$agents" ]; then
         echo "Restarting Vault agents for immediate rotation..."
         while IFS= read -r agent; do
@@ -185,7 +189,7 @@ function cmd_vault_rotate() {
     else
         echo "No Vault agents running. They will pick up new credentials on next TTL refresh."
     fi
-    
+
     return 0
 }
 
@@ -193,17 +197,17 @@ function cmd_vault_logs() {
     # Show Vault container logs, consistent with stack logs behavior
     local tail_count="${1:-50}"
     local container_name="vault"
-    
+
     # Validate tail count
     if [[ ! "$tail_count" =~ ^[0-9]+$ ]] || [[ "$tail_count" -lt 1 ]] || [[ "$tail_count" -gt 10000 ]]; then
         echo "Error: Log line count must be a number between 1 and 10000"
         return 1
     fi
-    
+
     # Check if container exists (running or stopped)
     local actual_container
     actual_container=$("${DOCKER_BIN:-docker}" ps -a --format "{{.Names}}" 2>/dev/null | grep -E "^${container_name}$|_[0-9a-f]+_${container_name}$|^[0-9a-f]+_${container_name}$" | head -1)
-    
+
     if [ -n "$actual_container" ]; then
         echo "Fetching logs for Vault (last $tail_count lines)..."
         echo ""
@@ -226,7 +230,7 @@ vault_is_enabled_in_profile() {
         profile=$(grep -E "^[[:space:]]*PROFILE[[:space:]]*=" "$env_file" 2>/dev/null | head -1 | cut -d '=' -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || true)
     fi
     [ -z "$profile" ] && profile="sys"
-    
+
     # Check if profile contains vault service
     local profile_services
     profile_services=$(get_profile_services_for_profile "$profile" 2>/dev/null)
@@ -234,6 +238,21 @@ vault_is_enabled_in_profile() {
         return 0
     fi
     return 1
+}
+
+function cmd_vault_rekey() {
+    if ! vault_is_enabled_in_profile; then
+        echo "Vault is not enabled in the current profile."
+        echo "Use --profile bld or --profile sys to enable Vault."
+        return 1
+    fi
+    local rekey_script="${SCRIPT_DIR}/lib/aixcl/commands/vault-rekey.sh"
+    if [ -f "$rekey_script" ]; then
+        bash "$rekey_script" "$@"
+    else
+        echo "Error: vault-rekey.sh not found at $rekey_script"
+        return 1
+    fi
 }
 
 function cmd_vault_unseal() {
@@ -262,4 +281,5 @@ export -f cmd_vault_credentials
 export -f cmd_vault_passwords
 export -f cmd_vault_rotate
 export -f cmd_vault_logs
+export -f cmd_vault_rekey
 export -f cmd_vault_unseal
