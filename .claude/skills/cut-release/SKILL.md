@@ -135,8 +135,13 @@ git commit -m "chore: update changelog for v1.1.<N>
 
 Fixes #<issue-number>"
 
-# Push to fork and create PR targeting main (not dev)
-git push fork issue-<N>/release-v1-1-<N>
+# Push to fork
+git push origin issue-<N>/release-v1-1-<N>
+
+# Verify PR body passes reference check BEFORE creating
+cat /tmp/release-pr-body.md | bash scripts/checks/check-pr-references.sh
+
+# Create PR targeting main (not dev)
 gh pr create \
   --repo xencon/aixcl \
   --base main \
@@ -146,7 +151,13 @@ gh pr create \
   --label "Task,component:infrastructure,Maintenance"
 ```
 
+- [ ] PR body verified with `check-pr-references.sh` before creation
 - [ ] PR targets `main` (not `dev`) -- releases go to main
+- [ ] If the release branch is force-pushed after PR creation, confirm the PR HEAD SHA matches before the human merges:
+  ```bash
+  gh pr view <N> --repo xencon/aixcl --json headRefOid --jq '.headRefOid[:8]'
+  # must match: git log --oneline -1
+  ```
 - [ ] CI is green before merging
 
 ## Step 5 -- Tag the Release
@@ -208,3 +219,6 @@ gh pr create \
 - Forgetting to sync `dev` after release (dev diverges from main)
 - Using `latest` in CHANGELOG date instead of actual ISO date
 - Non-ASCII punctuation in CHANGELOG (CI fails the ASCII check)
+- Comma-packed PR body references -- always pipe the body through `check-pr-references.sh` before `gh pr create` and before `gh pr edit`
+- Force-push race: if a branch is force-pushed while the PR is open, GitHub may merge the pre-push HEAD if the human acts quickly. Always confirm `gh pr view <N> --json headRefOid` matches `git log --oneline -1` before asking the human to merge
+- Pre-commit trailing whitespace: if a commit fails with `trailing-whitespace`, the hook already fixed the files in the working tree. Run `git add <files>` to re-stage the linter's fixes and retry the commit -- never use `--no-verify`
