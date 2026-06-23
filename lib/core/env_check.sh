@@ -20,7 +20,7 @@ check_env() {
 
     # Check Docker / Podman
     local engine_found=0
-    
+
     if command -v podman &> /dev/null; then
         print_success "Podman is installed"
         engine_found=1
@@ -197,10 +197,10 @@ check_env() {
     if [ -z "$available_space" ] || [[ ! "$available_space" =~ ^[0-9]+$ ]]; then
         available_space=$(df -k "${SCRIPT_DIR}" | awk 'END{print $3}' 2>/dev/null || echo "0")
     fi
-    
+
     # Convert KB to GB (roughly)
     local available_gb=$((available_space / 1024 / 1024))
-    
+
     if [ "$available_gb" -lt "$required_space" ]; then
         print_warning "Low disk space. Required: ${required_space}GB, Available: ${available_gb}GB"
         # Only fail if it's extremely low, otherwise just warn for CI/small environments
@@ -215,7 +215,7 @@ check_env() {
     # Check memory
     local total_mem
     total_mem=$(free -g 2>/dev/null | awk '/^Mem:/{print $2}' || echo "")
-    
+
     if [[ -n "$total_mem" && "$total_mem" =~ ^[0-9]+$ ]]; then
         if [ "$total_mem" -lt 8 ]; then
             print_warning "Low memory detected (${total_mem}GB). Recommended: 8GB+"
@@ -238,7 +238,7 @@ check_env() {
                 env_errors=1
             fi
         done
-        
+
         # Validate database name using the shared function
         local db_name
         db_name=$(grep "^[[:space:]]*POSTGRES_DATABASE=" "${SCRIPT_DIR}/.env" | head -1 | cut -d'=' -f2 | sed "s/['\"]//g" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -306,6 +306,15 @@ check_env() {
     else
         print_warning "git-cliff not installed -- required for cut-release skill"
         echo "   Install from: https://github.com/orhun/git-cliff/releases"
+    fi
+
+    if command -v yamllint &>/dev/null; then
+        local yl_version
+        yl_version=$(yamllint --version 2>/dev/null | head -1 || echo "version unknown")
+        print_success "yamllint installed ($yl_version)"
+    else
+        print_warning "yamllint not installed -- YAML validation runs CI-only until installed"
+        echo "   Install: pip install yamllint==1.35.1  or  sudo apt-get install yamllint"
     fi
 
     if [ $missing_deps -eq 1 ]; then
