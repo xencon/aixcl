@@ -17,14 +17,14 @@ _clear_opencode_model() {
 
 function engine() {
     local action="${1:-}"
-    
+
     if [ -z "$action" ]; then
         echo "Usage: ./aixcl engine {set <engine>|auto}"
         echo "  set   - Manually set engine (ollama, vllm, llamacpp)"
         echo "  auto  - Auto-detect optimal engine based on hardware"
         return 1
     fi
-    
+
     if [ "$action" = "set" ]; then
         shift
         local engine="${1:-}"
@@ -33,12 +33,12 @@ function engine() {
             echo "Valid options: ollama, vllm, llamacpp"
             return 1
         fi
-        
+
         # Check if .env exists, if not use .env.example
         if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
             cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
-            chmod 600 "${SCRIPT_DIR}/.env"
         fi
+        [ -f "${SCRIPT_DIR}/.env" ] && chmod 600 "${SCRIPT_DIR}/.env"
 
         if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
             sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=$engine/" "${SCRIPT_DIR}/.env"
@@ -46,7 +46,7 @@ function engine() {
             echo "INFERENCE_ENGINE=$engine" >> "${SCRIPT_DIR}/.env"
         fi
         echo "[x] Inference engine set to: $engine"
-        
+
         # Set vLLM-specific configuration when switching to vLLM
         # Configure Open WebUI Ollama API setting based on engine
         # When using Ollama: ENABLE_OLLAMA_API=true (for full Ollama feature support)
@@ -58,13 +58,13 @@ function engine() {
             local enable_ollama="false"
             echo "[x] Open WebUI Ollama API disabled (using OpenAI-compatible API)"
         fi
-        
+
         if grep -qE "^[[:space:]]*#?ENABLE_OLLAMA_API=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
             sed -i "s/^[[:space:]]*#*ENABLE_OLLAMA_API=.*/ENABLE_OLLAMA_API=$enable_ollama/" "${SCRIPT_DIR}/.env"
         else
             echo "ENABLE_OLLAMA_API=$enable_ollama" >> "${SCRIPT_DIR}/.env"
         fi
-        
+
         if [ "$engine" = "vllm" ]; then
             # Set enforce-eager flag to true by default for vLLM (disable for better performance on bare metal)
             local enforce_eager="${VLLM_ENFORCE_EAGER:-true}"
@@ -85,10 +85,10 @@ function engine() {
             fi
             echo "[x] OpenCode output token limit set to: $opencode_token_limit"
             echo "   This prevents OpenCode from exceeding vLLM token limits."
-            
+
             # Export for current session
             export OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX="$opencode_token_limit"
-            
+
             # Set default model for vLLM to Qwen2.5-Coder-0.5B-Instruct
             local vllm_default_model="Qwen/Qwen2.5-Coder-0.5B-Instruct"
             if ! grep -qE "^[[:space:]]*#?INFERENCE_MODEL=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
@@ -96,7 +96,7 @@ function engine() {
                 echo "[x] Default vLLM model set to: $vllm_default_model"
             fi
         fi
-        
+
         _clear_opencode_model
 
         echo "Note: Restart the stack for the change to take effect:"
@@ -105,8 +105,8 @@ function engine() {
         # Check if .env exists, if not use .env.example
         if [ ! -f "${SCRIPT_DIR}/.env" ] && [ -f "${SCRIPT_DIR}/.env.example" ]; then
             cp "${SCRIPT_DIR}/.env.example" "${SCRIPT_DIR}/.env"
-            chmod 600 "${SCRIPT_DIR}/.env"
         fi
+        [ -f "${SCRIPT_DIR}/.env" ] && chmod 600 "${SCRIPT_DIR}/.env"
 
         # Determine engine based on hardware
         if has_nvidia_container_toolkit; then
@@ -116,28 +116,28 @@ function engine() {
         else
             local engine="ollama"
         fi
-        
+
         echo "Auto-detected engine: $engine"
-        
+
         # Configure Open WebUI Ollama API setting based on auto-detected engine
         if [ "$engine" = "ollama" ]; then
             local enable_ollama="true"
         else
             local enable_ollama="false"
         fi
-        
+
         if grep -qE "^[[:space:]]*#?ENABLE_OLLAMA_API=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
             sed -i "s/^[[:space:]]*#*ENABLE_OLLAMA_API=.*/ENABLE_OLLAMA_API=$enable_ollama/" "${SCRIPT_DIR}/.env"
         else
             echo "ENABLE_OLLAMA_API=$enable_ollama" >> "${SCRIPT_DIR}/.env"
         fi
-        
+
         if [ "$engine" = "ollama" ]; then
             echo "[x] Open WebUI Ollama API enabled (for full Ollama feature support)"
         else
             echo "[x] Open WebUI Ollama API disabled (using OpenAI-compatible API)"
         fi
-        
+
         _clear_opencode_model
 
         echo "Note: Restart the stack for the change to take effect:"
