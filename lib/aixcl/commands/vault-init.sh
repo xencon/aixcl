@@ -813,6 +813,60 @@ show_summary() {
 # restarts the bootstrap containers with the real token so postgres can proceed.
 
 # ---------------------------------------------------------------------------
+# Split-state recovery: Vault initialized but unseal keys missing
+#
+# This is unrecoverable without the keys -- the existing Vault data cannot
+# be unsealed. Wipe the data volume, restart vault, and perform a fresh init.
+# ---------------------------------------------------------------------------
+
+vault_wipe_and_reinit() {
+    local docker_bin="${DOCKER_BIN:-podman}"
+
+    log_warn "Split state detected: Vault is initialized but unseal keys are missing."
+    log_warn "Vault data is unrecoverable without the unseal keys."
+    log_warn "Wiping vault data volume and performing a fresh initialization..."
+    log_warn "All secrets stored in Vault will be lost. Bootstrap passwords will be regenerated."
+
+    # Stop the vault container so the volume is not held open
+    log_info "Stopping vault container..."
+    "$docker_bin" stop vault 2>/dev/null || true
+    "$docker_bin" rm vault 2>/dev/null || true
+
+    # Remove the vault data volume
+    log_info "Removing vault data volume (aixcl-vault-data)..."
+    if ! "$docker_bin" volume rm aixcl-vault-data 2>/dev/null; then
+        log_error "Failed to remove aixcl-vault-data volume."
+        log_error "  Manual recovery:"
+        log_error "    ${docker_bin} volume rm aixcl-vault-data"
+        log_error "    ./aixcl stack start --profile sys"
+        return 1
+    fi
+
+    # Clear any stale artefacts so operator init starts clean
+    rm -f "$VAULT_KEYS_FILE" "$VAULT_TOKEN_FILE"
+
+    # Restart vault via compose so it picks up a fresh empty volume
+    log_info "Restarting vault container..."
+    local compose_file="${SCRIPT_DIR}/services/docker-compose.yml"
+    if [ -f "$compose_file" ]; then
+        "$docker_bin" compose -f "$compose_file" up -d vault 2>/dev/null || {
+            log_error "Failed to restart vault container via compose."
+            log_error "  Run: ./aixcl stack start --profile sys"
+            return 1
+        }
+    else
+        log_error "Compose file not found at ${compose_file}"
+        return 1
+    fi
+
+    # Wait for the fresh vault API to stabilise before operator init
+    wait_for_vault_api || return 1
+
+    # Fresh operator init generates new keys and token
+    vault_operator_init || return 1
+}
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -833,21 +887,25 @@ main() {
         # First-time init: generate unseal keys and root token
         vault_operator_init || return 1
     else
-        log_info "Vault is already initialized — verifying artefacts and checking seal state..."
+        log_info "Vault is already initialized -- verifying artefacts and checking seal state..."
 
-        # Verify .security/ artefacts exist before attempting to load the token
+        # Verify .security/ artefacts exist before attempting to load the token.
+        # If vault-keys.gpg is missing, data is unrecoverable -- self-heal by wiping
+        # the vault data volume and re-initializing from scratch.
         log_info "Checking .security/ artefacts..."
-        check_artefact_dir  ".security directory"  "$SECURITY_DIR"     "700" || {
-            log_error "  Run: ./aixcl vault init  to re-initialize"
-            return 1
+        check_artefact_dir  ".security directory"  "$SECURITY_DIR"    "700" || {
+            log_warn "  .security directory missing -- treating as split state"
+            mkdir -p "$SECURITY_DIR"
+            chmod 700 "$SECURITY_DIR"
+            vault_wipe_and_reinit || return 1
         }
-        check_artefact_file "vault-keys.gpg"       "$VAULT_KEYS_FILE"  "600" || {
-            log_error "  Unseal keys missing — Vault cannot be unsealed automatically"
-            log_error "  Run: ./aixcl vault init  to recover"
-            return 1
-        }
+
+        if ! check_artefact_file "vault-keys.gpg" "$VAULT_KEYS_FILE" "600" 2>/dev/null; then
+            vault_wipe_and_reinit || return 1
+        fi
+
         check_artefact_file "vault-root-token.gpg" "$VAULT_TOKEN_FILE" "600" || {
-            log_error "  Root token missing — attempting operator init to recover keys..."
+            log_warn "  Root token missing -- performing fresh operator init to recover..."
             vault_operator_init || return 1
         }
 

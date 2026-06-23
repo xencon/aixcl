@@ -271,6 +271,43 @@ check_env() {
         echo "   Note: Ollama engine doesn't require hf"
     fi
 
+    # Check developer tooling (warnings only -- does not block stack)
+    echo -e "\nChecking developer tooling..."
+
+    if command -v pre-commit &>/dev/null; then
+        local pc_version
+        pc_version=$(pre-commit --version 2>/dev/null | head -1 || echo "version unknown")
+        print_success "pre-commit installed ($pc_version)"
+        if [ -f ".git/hooks/pre-commit" ]; then
+            print_success "pre-commit hooks activated"
+        else
+            print_warning "pre-commit installed but hooks not activated"
+            echo "   Run: pre-commit install"
+        fi
+    else
+        print_warning "pre-commit not installed -- local quality gates will not run"
+        echo "   Install: pip install pre-commit"
+        echo "   Activate: pre-commit install"
+    fi
+
+    if command -v gitleaks &>/dev/null; then
+        local gl_version
+        gl_version=$(gitleaks version 2>/dev/null | head -1 || echo "version unknown")
+        print_success "gitleaks installed ($gl_version)"
+    else
+        print_warning "gitleaks not installed -- secret scanning runs CI-only until installed"
+        echo "   Install v8.21.2+ from: https://github.com/gitleaks/gitleaks/releases"
+    fi
+
+    if command -v git-cliff &>/dev/null; then
+        local gc_version
+        gc_version=$(git-cliff --version 2>/dev/null | head -1 || echo "version unknown")
+        print_success "git-cliff installed ($gc_version)"
+    else
+        print_warning "git-cliff not installed -- required for cut-release skill"
+        echo "   Install from: https://github.com/orhun/git-cliff/releases"
+    fi
+
     if [ $missing_deps -eq 1 ]; then
         echo -e "\n"
         print_error "Environment check failed. Please address the issues above."
