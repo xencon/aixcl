@@ -274,7 +274,7 @@ services:
       retries: 3
 
   vllm:
-    image: docker.io/vllm/vllm-openai:v0.22.1
+    image: docker.io/vllm/vllm-openai:v0.24.0
     container_name: vllm
     pull_policy: missing
     tty: true
