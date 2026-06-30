@@ -458,7 +458,7 @@ services:
       retries: 3
 
   grafana:
-    image: docker.io/grafana/grafana:13.0.2
+    image: docker.io/grafana/grafana:13.0.3
     container_name: grafana
     pull_policy: missing
     cap_drop:
