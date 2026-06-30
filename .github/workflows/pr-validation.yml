@@ -31,7 +31,7 @@ jobs:
 
           # Check for issue reference (#number)
           if ! echo "$PR_TITLE" | grep -qE '\(#[0-9]+\)$'; then
-            echo "ERROR: PR title must end with issue reference '(#<number>)'"
+            echo "❌ PR title must end with issue reference '(#<number>)'"
             echo "Expected format: '<description> (#<number>)'"
             echo "Current title: $PR_TITLE"
             exit 1
@@ -39,12 +39,12 @@ jobs:
 
           # Check for colons in title (not allowed)
           if echo "$PR_TITLE" | grep -qE '^[^:]+:'; then
-            echo "ERROR: PR title should not contain colons before the issue reference"
+            echo "❌ PR title should not contain colons before the issue reference"
             echo "Expected format: '<description> (#<number>)' (NO colons)"
             exit 1
           fi
 
-          echo "PR title format is valid"
+          echo "✅ PR title format is valid"
 
   validate-pr-assignee:
     name: Validate PR Assignee
@@ -64,12 +64,12 @@ jobs:
           count=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.assignees | length')
 
           if [[ "$count" -gt 0 ]]; then
-            echo "PR has $count assignee(s):"
+            echo "✅ PR has $count assignee(s):"
             gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.assignees[].login'
             exit 0
           fi
 
-          echo "ERROR: PR must have at least one assignee"
+          echo "❌ PR must have at least one assignee"
           exit 1
 
   validate-pr-labels:
@@ -90,11 +90,11 @@ jobs:
           labels=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.labels[].name')
 
           if echo "$labels" | grep -q "component:"; then
-            echo "PR has component label: $(echo "$labels" | grep "component:" | head -1)"
+            echo "✅ PR has component label: $(echo "$labels" | grep "component:" | head -1)"
             exit 0
           fi
 
-          echo "ERROR: PR must have at least one component label (component:*)"
+          echo "❌ PR must have at least one component label (component:*)"
           echo "Available component labels: component:cli, component:infrastructure, component:runtime-core, etc."
           exit 1
 

@@ -4,6 +4,26 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.42] - 2026-06-30
+
+### Summary
+
+Release v1.1.42 -- CLI/CI icon consistency, LLM output tracing, and documentation corrections. Aligns all check scripts and CI workflow output to the Unicode icon standard used by stack status; adds an LLM tracing wrapper for app builders; and fixes phantom script references and a version inaccuracy found in pre-release review.
+
+### Added
+
+- [x] **LLM Output Tracing Wrapper**: New `scripts/utils/trace-llm-call.sh` logs every model request and response to `logs/traces/<app>-YYYY-MM-DD.jsonl`. Companion section added to app-builder-guide.md covering usage, trace schema, and query patterns. Closes #1529.
+
+### Changed
+
+- [x] **CLI Output Icon Alignment (Check Scripts and Setup Utilities)**: All scripts in `scripts/checks/` and `scripts/utils/` now source `lib/core/color.sh` and emit the same Unicode icons (ok, error, warning, info, skip) as `stack status` and `utils check-env`, giving a consistent user experience across the CLI. Closes #1581.
+- [x] **CI Workflow Icon Alignment**: Inline bash in `bash-ci.yml` and `pr-validation.yml` updated to use the same Unicode icon convention, consistent with local CLI output.
+
+### Fixed
+
+- [x] **Pre-commit False Positive on Emoji Exceptions**: The `no-non-ascii-punctuation` pre-commit hook incorrectly flagged `formatting.md` and `RELEASE_TEMPLATE.md`, which legitimately document the emoji-in-release-notes exception. Added `exclude` patterns for those two files.
+- [x] **Documentation Inaccuracies**: Replaced phantom `scripts/audit/verify-chain.sh` and `scripts/security/verify-controls.sh` references with the actual working psql queries in `compensating-controls.md`, `security-runbook.md`, and `incident-response.md`. Corrected "v1.2.0" to "v1.1.26" in `adding-apps.md`. Added cross-links between `adding-apps.md` and `app-builder-guide.md`. Closes #1583.
+
 ## [v1.1.41] - 2026-06-24
 
 ### Summary

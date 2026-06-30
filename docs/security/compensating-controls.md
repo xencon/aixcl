@@ -93,7 +93,7 @@ Immutable logging of all security-relevant events with cryptographic integrity v
 - **Storage**: PostgreSQL `audit_log` table
 - **Chain**: Cryptographic hash chain (each entry hashes previous entry's hash)
 - **Retention**: 30 days live, optional S3 archive
-- **Verification**: `scripts/audit/verify-chain.sh`
+- **Verification**: psql audit chain queries (see Verification Commands below)
 
 ### Schema
 
@@ -112,24 +112,14 @@ Immutable logging of all security-relevant events with cryptographic integrity v
 ### Verification Commands
 
 ```bash
-# Verify hash chain integrity
-./scripts/audit/verify-chain.sh
-
 # Check latest entries
 psql -U postgres -d aixcl -c "SELECT id, timestamp, actor, action, outcome FROM audit_log ORDER BY id DESC LIMIT 10;"
 
 # Check for gaps in sequence
 psql -U postgres -d aixcl -c "SELECT generate_series AS missing_id FROM generate_series(1, (SELECT MAX(id) FROM audit_log)) EXCEPT SELECT id FROM audit_log;"
-```
 
-### Expected Output (verify-chain.sh)
-
-```
-Verifying audit chain...
-Total entries: 12345
-Chain intact: YES
-Last hash: a1b2c3d4...
-Verification complete. Chain valid.
+# Verify hash chain integrity (manual spot check)
+psql -U postgres -d aixcl -c "SELECT id, entry_hash, prev_hash FROM audit_log ORDER BY id DESC LIMIT 5;"
 ```
 
 ### Failure Modes
@@ -269,7 +259,7 @@ echo "=== Threat Detector ==="
 ./aixcl stack status | grep threat-detector || echo "FAIL: Threat detector not in status"
 
 echo "=== Audit Chain ==="
-./scripts/audit/verify-chain.sh | grep "Chain intact" || echo "FAIL: Audit chain broken"
+psql -U postgres -d aixcl -tc "SELECT COUNT(*) FROM generate_series(1, (SELECT MAX(id) FROM audit_log)) EXCEPT SELECT id FROM audit_log;" | grep -q "^[[:space:]]*0$" || echo "FAIL: Audit chain gaps detected"
 
 echo "=== Pending Approvals ==="
 psql -U postgres -d aixcl -c "SELECT COUNT(*) FROM human_approvals WHERE status = 'PENDING';"

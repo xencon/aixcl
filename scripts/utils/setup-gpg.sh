@@ -16,12 +16,9 @@ set -euo pipefail
 # No project-relative paths needed for GPG key operations
 # GPG signing test marker: issue-1046
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/../../lib/core/color.sh"
 
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
@@ -234,9 +231,9 @@ verify_setup() {
 
   # Check GPG installed
   if command -v gpg >/dev/null 2>&1; then
-    log_info "[OK] GPG installed"
+    log_info "${ICON_SUCCESS:-✅} GPG installed"
   else
-    log_error "[FAIL] GPG not found"
+    log_error "${ICON_ERROR:-❌} GPG not found"
     all_good=false
   fi
 
@@ -244,9 +241,9 @@ verify_setup() {
   local gpg_keys
   gpg_keys=$(gpg --list-secret-keys --keyid-format LONG 2>/dev/null) || true
   if echo "$gpg_keys" | grep -q "^sec"; then
-    log_info "[OK] GPG private key exists"
+    log_info "${ICON_SUCCESS:-✅} GPG private key exists"
   else
-    log_error "[FAIL] No GPG private key found"
+    log_error "${ICON_ERROR:-❌} No GPG private key found"
     all_good=false
   fi
 
@@ -254,17 +251,17 @@ verify_setup() {
   local signing_key
   signing_key=$(git config --global user.signingkey 2>/dev/null || true)
   if [[ -n "$signing_key" ]]; then
-    log_info "[OK] Git signing key configured: $signing_key"
+    log_info "${ICON_SUCCESS:-✅} Git signing key configured: $signing_key"
   else
-    log_error "[FAIL] Git signing key not configured"
+    log_error "${ICON_ERROR:-❌} Git signing key not configured"
     all_good=false
   fi
 
   # Check auto-sign enabled
   if [[ "$(git config --global commit.gpgsign 2>/dev/null)" == "true" ]]; then
-    log_info "[OK] Git auto-sign enabled"
+    log_info "${ICON_SUCCESS:-✅} Git auto-sign enabled"
   else
-    log_warn "[WARN] Git auto-sign not enabled (run: git config --global commit.gpgsign true)"
+    log_warn "${ICON_WARNING:-⚠️} Git auto-sign not enabled (run: git config --global commit.gpgsign true)"
   fi
 
   # Test signing
@@ -274,10 +271,10 @@ verify_setup() {
   echo "test" > "$test_file"
 
   if gpg --detach-sign --armor "$test_file" 2>/dev/null; then
-    log_info "[OK] GPG signing works"
+    log_info "${ICON_SUCCESS:-✅} GPG signing works"
     rm -f "$test_file" "$test_file.asc"
   else
-    log_error "[FAIL] GPG signing test failed"
+    log_error "${ICON_ERROR:-❌} GPG signing test failed"
     rm -f "$test_file"
     all_good=false
   fi

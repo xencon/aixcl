@@ -43,16 +43,21 @@ jobs:
       - name: Check for Windows line endings (CRLF)
         run: |
           echo "Checking for CRLF line endings..."
-          CRLF_FILES=$(find . -type f -not -path "./.git/*" -not -path "./pgadmin-data/*" -not -path "./logs/*" -exec file {} \; 2>/dev/null | grep -i "with CRLF" | cut -d: -f1 | sed 's|^\./||')
+          CRLF_FILES=$(find . -type f \
+            -not -path "./.git/*" \
+            -not -path "./pgadmin-data/*" \
+            -not -path "./logs/*" \
+            -exec file {} \; 2>/dev/null \
+            | grep -i "with CRLF" | cut -d: -f1 | sed 's|^\./||')
           if [ -n "$CRLF_FILES" ]; then
-            echo "ERROR: Found files with Windows line endings (CRLF):"
+            echo "❌ Found files with Windows line endings (CRLF):"
             echo "$CRLF_FILES"
             echo ""
             echo "Please convert these files to Unix line endings (LF) before committing."
             echo "You can use: sed -i 's/\\r$//' <file>"
             exit 1
           else
-            echo "[OK] No CRLF files found - all line endings are Unix style (LF)"
+            echo "✅ No CRLF files found - all line endings are Unix style (LF)"
           fi
 
   check-ascii-markdown:
@@ -72,14 +77,14 @@ jobs:
             --exclude-dir=.git \
             . 2>/dev/null || true)
           if [ -n "$BAD_FILES" ]; then
-            echo "ERROR: Found markdown files containing non-ASCII Unicode punctuation:"
+            echo "❌ Found markdown files containing non-ASCII Unicode punctuation:"
             echo "$BAD_FILES"
             echo ""
             echo "Prohibited characters: em dash (--), en dash (-), smart quotes, ellipsis, non-breaking space"
             echo "Replace with ASCII equivalents: -- for em/en dash, ... for ellipsis, plain quotes"
             exit 1
           else
-            echo "PASS: All markdown files use ASCII-only punctuation"
+            echo "✅ All markdown files use ASCII-only punctuation"
           fi
 
   check-ai-elisions:
