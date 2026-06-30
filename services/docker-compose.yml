@@ -432,7 +432,7 @@ services:
       retries: 3
 
   alertmanager:
-    image: docker.io/prom/alertmanager:v0.32.2
+    image: docker.io/prom/alertmanager:v0.33.0
     container_name: alertmanager
     pull_policy: missing
     cap_drop:
