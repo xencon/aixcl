@@ -11,6 +11,10 @@
 
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck disable=SC1091
+source "${REPO_ROOT}/lib/core/color.sh"
+
 input_file="${1:-/dev/stdin}"
 
 violations=()
@@ -29,11 +33,11 @@ while IFS= read -r line; do
 done < "$input_file"
 
 if [[ "${#violations[@]}" -eq 0 ]]; then
-    echo "OK: no comma-packed issue references found"
+    print_success "no comma-packed issue references found"
     exit 0
 fi
 
-echo "ERROR: each issue/PR reference must be on its own list item line (no comma, slash, or space-separated bunching)"
+print_error "each issue/PR reference must be on its own list item line (no comma, slash, or space-separated bunching)"
 echo "Found ${#violations[@]} violation(s):"
 for v in "${violations[@]}"; do
     echo "  $v"

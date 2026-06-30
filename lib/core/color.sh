@@ -21,6 +21,7 @@ ICON_SUCCESS="✅"
 ICON_ERROR="❌"
 ICON_WARNING="⚠️"
 ICON_INFO="ℹ️"
+ICON_SKIP="○"
 
 # Print colored success message
 print_success() {
@@ -40,4 +41,9 @@ print_warning() {
 # Print colored info message
 print_info() {
     echo -e "${BLUE}${ICON_INFO}${NC} $1"
+}
+
+# Print skip message (check not applicable or not run)
+print_skip() {
+    echo -e "${YELLOW}${ICON_SKIP}${NC} $1"
 }
