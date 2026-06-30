@@ -44,7 +44,7 @@ services:
       start_period: 30s
 
   vault:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault
     pull_policy: missing
     cap_add:
@@ -73,7 +73,7 @@ services:
 
   # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
   vault-agent-postgres:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-postgres
     pull_policy: missing
     cap_drop:
@@ -98,7 +98,7 @@ services:
 
   # Vault Agent sidecar for Open WebUI (runs alongside open-webui)
   vault-agent-openwebui:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-openwebui
     pull_policy: missing
     cap_drop:
@@ -123,7 +123,7 @@ services:
 
   # Bootstrap service for PostgreSQL Vault KV password
   vault-agent-postgres-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-postgres-bootstrap
     pull_policy: missing
     cap_drop:
@@ -149,7 +149,7 @@ services:
 
   # Bootstrap service for Open WebUI Vault KV password
   vault-agent-openwebui-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-openwebui-bootstrap
     pull_policy: missing
     cap_drop:
@@ -175,7 +175,7 @@ services:
 
    # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-pgadmin-bootstrap
     pull_policy: missing
     cap_drop:
@@ -201,7 +201,7 @@ services:
 
    # Bootstrap service for Grafana Vault KV password
   vault-agent-grafana-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-grafana-bootstrap
     pull_policy: missing
     cap_drop:
