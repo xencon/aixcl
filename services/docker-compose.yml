@@ -15,7 +15,7 @@
 
 services:
   ollama:
-    image: docker.io/ollama/ollama:0.30.7
+    image: docker.io/ollama/ollama:0.31.1
     container_name: ollama
     pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
