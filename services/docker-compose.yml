@@ -561,7 +561,7 @@ services:
     restart: unless-stopped
 
   nvidia-gpu-exporter:
-    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.4.1
+    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.5.0
     container_name: nvidia-gpu-exporter
     pull_policy: missing
     cap_drop:
