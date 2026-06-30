@@ -533,7 +533,7 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: docker.io/prometheuscommunity/postgres-exporter:v0.19.1
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.20.0
     container_name: postgres-exporter
     pull_policy: missing
     user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
