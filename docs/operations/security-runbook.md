@@ -59,18 +59,11 @@ echo "PASS: Firewall rules match baseline"
 
 ### Check 3 -- Audit Chain Integrity
 
-- [ ] `./scripts/audit/verify-chain.sh` reports "Chain intact: YES"
-- [ ] No gaps in `audit_log` sequence
+- [ ] No gaps in `audit_log` sequence (psql gap check returns 0)
 - [ ] Last entry within last hour (audit is actively written)
 
 ```bash
-#!/bin/bash
-# daily-audit-check.sh
-result=$(./scripts/audit/verify-chain.sh)
-if ! echo "$result" | grep -q "Chain intact: YES"; then
-    echo "FAIL: Audit chain broken"
-    exit 1
-fi
+# Check for sequence gaps in audit chain
 gap=$(psql -U postgres -d aixcl -tc "SELECT COUNT(*) FROM generate_series(1, (SELECT MAX(id) FROM audit_log)) EXCEPT SELECT id FROM audit_log;")
 if [ "$gap" -gt 0 ]; then
     echo "FAIL: $gap missing entries in audit chain"
@@ -208,10 +201,23 @@ git secrets --scan-history --since="1 week ago"
 
 ### Check 1 -- Full Control Verification
 
-Run the comprehensive verification script from compensating-controls.md:
+Run the daily control checks from [compensating-controls.md](../security/compensating-controls.md) manually:
 
 ```bash
-./scripts/security/verify-controls.sh
+# Host firewall
+iptables -L -n | grep -E "Policy|DROP" | head -5
+
+# LLM firewall
+ss -tlnp | grep 11435 || echo "FAIL: LLM firewall not listening"
+
+# Threat detector
+./aixcl stack status | grep threat-detector || echo "FAIL: Threat detector not in status"
+
+# Audit chain gap check
+psql -U postgres -d aixcl -tc "SELECT COUNT(*) FROM generate_series(1, (SELECT MAX(id) FROM audit_log)) EXCEPT SELECT id FROM audit_log;" | grep -q "^[[:space:]]*0$" || echo "FAIL: Audit chain gaps detected"
+
+# Pending approvals
+psql -U postgres -d aixcl -c "SELECT COUNT(*) FROM human_approvals WHERE status = 'PENDING';"
 ```
 
 - [ ] Host firewall: PASS
@@ -293,13 +299,13 @@ Run after closing any security incident:
 |------|---------|-----------|
 | `./aixcl stack status` | Service health overview | Daily |
 | `iptables -L -n -v` | Firewall rule verification | Daily |
-| `./scripts/audit/verify-chain.sh` | Audit integrity | Daily |
+| `psql` audit gap query | Audit chain integrity | Daily |
 | `psql` queries | Approval queue and audit checks | Daily |
 | `./aixcl vault credentials` | Credential status | Weekly |
 | `podman ps` / `podman inspect` | Container security | Weekly |
 | `curl` to Loki API | Log analysis | Weekly |
 | `git log --show-signature` | Commit signing | Weekly |
-| `./scripts/security/verify-controls.sh` | Full control check | Monthly |
+| Manual checks in compensating-controls.md | Full control check | Monthly |
 | `promtool check rules` | Alert rule validation | Daily |
 
 ---

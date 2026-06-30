@@ -2,6 +2,7 @@
 
 This guide covers everything a developer needs to build an application on top of AIXCL.
 
+For scaffolding a new app and wiring it into the CLI see [adding-apps.md](adding-apps.md).
 For prerequisites and stack startup see [development-workflow.md](development-workflow.md).
 
 ## Inference API

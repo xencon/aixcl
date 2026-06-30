@@ -1,6 +1,8 @@
 # Adding Applications to AIXCL
 
-This guide explains how developers (builders) can integrate their own applications into the AIXCL platform using the generic "bring your own app" infrastructure introduced in v1.2.0.
+This guide explains how developers (builders) can integrate their own applications into the AIXCL platform using the generic "bring your own app" infrastructure introduced in v1.1.26.
+
+For calling the inference API and tracing LLM output from your app, see [app-builder-guide.md](app-builder-guide.md).
 
 ## Overview
 
