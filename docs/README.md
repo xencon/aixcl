@@ -7,7 +7,7 @@ Documentation organized by audience. Keep it lean -- if something can be regener
 | Directory | Audience | Key Files |
 |-----------|----------|-----------|
 | `user/` | End users | [`usage.md`](user/usage.md) - Commands and service URLs, [`apps.md`](user/apps.md) - App framework guide |
-| `developer/` | Contributors | [`development-workflow.md`](developer/development-workflow.md), [`opencode-setup.md`](developer/opencode-setup.md), [`adding-services.md`](developer/adding-services.md) |
+| `developer/` | Contributors | [`development-workflow.md`](developer/development-workflow.md), [`opencode-setup.md`](developer/opencode-setup.md), [`adding-services.md`](developer/adding-services.md), [`app-builder-guide.md`](developer/app-builder-guide.md) |
 | `architecture/governance/` | Architects | [`00_invariants.md`](architecture/governance/00_invariants.md), [`02_profiles.md`](architecture/governance/02_profiles.md), [`service_contracts/`](architecture/governance/service_contracts/) |
 | `operations/` | Operators | [`security.md`](operations/security.md), [`model-recommendations.md`](operations/model-recommendations.md) |
 | `reference/` | All | [`manpage.txt`](reference/manpage.txt) |
