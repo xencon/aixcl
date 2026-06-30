@@ -330,7 +330,7 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.6
+    image: ghcr.io/open-webui/open-webui:v0.10.1
     container_name: open-webui
     pull_policy: missing
     user: "0:0"
