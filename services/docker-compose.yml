@@ -274,7 +274,7 @@ services:
       retries: 3
 
   vllm:
-    image: docker.io/vllm/vllm-openai:v0.24.0
+    image: docker.io/vllm/vllm-openai:v0.22.1
     container_name: vllm
     pull_policy: missing
     tty: true
@@ -308,7 +308,7 @@ services:
       start_period: 180s
 
   llamacpp:
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b9851
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b9585
     container_name: llamacpp
     pull_policy: missing
     user: "1000:1000"
