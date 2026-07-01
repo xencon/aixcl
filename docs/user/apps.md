@@ -71,12 +71,18 @@ When an app is started:
 
 See [docs/developer/adding-apps.md](../developer/adding-apps.md) for the full developer guide including manifest reference and compliance rules.
 
-## Example: FTSO
+## Try It
 
-The repository includes `apps/ftso/` as a reference implementation. To test:
+Scaffold a new app and start it:
 
 ```bash
-./aixcl app build ftso
-./aixcl app start ftso
-./aixcl app status ftso
+./aixcl app scaffold my-app
+# Edit apps/my-app/app.yaml and docker-compose.yml for your use case
+./aixcl app build my-app
+./aixcl app start my-app
+./aixcl app status my-app
 ```
+
+The scaffold creates a working template with all supported manifest fields.
+See `etc/app-scaffold/` for the canonical templates and
+[docs/developer/adding-apps.md](../developer/adding-apps.md) for the full guide.

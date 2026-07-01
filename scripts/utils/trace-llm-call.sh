@@ -121,6 +121,40 @@ print(json.dumps(entry))
 
 log_info "trace written to ${TRACE_FILE}"
 
+# Optional Loki push -- set LOKI_ENABLED=true to activate.
+# LOKI_URL overrides the default endpoint (http://localhost:3100).
+# Push is best-effort: failures are suppressed so the trace file remains
+# the reliable primary store.
+if [ "${LOKI_ENABLED:-}" = "true" ]; then
+    python3 - "${LOKI_URL:-http://localhost:3100}" "$TRACE_FILE" << 'PYEOF'
+import sys, json, time
+try:
+    import urllib.request
+    loki_url, trace_file = sys.argv[1], sys.argv[2]
+    with open(trace_file) as fh:
+        lines = [ln for ln in fh if ln.strip()]
+    if not lines:
+        sys.exit(0)
+    raw = lines[-1].strip()
+    entry = json.loads(raw)
+    stream = {"app": entry["app"], "model": entry["model"],
+              "status": entry["status"], "job": "trace-llm-call"}
+    nanos = str(int(time.time() * 1e9))
+    body = json.dumps({
+        "streams": [{"stream": stream, "values": [[nanos, raw]]}]
+    }).encode()
+    req = urllib.request.Request(
+        loki_url.rstrip("/") + "/loki/api/v1/push",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    urllib.request.urlopen(req, timeout=2)
+except Exception:
+    pass
+PYEOF
+fi
+
 # Surface errors but still exit cleanly so callers can inspect the trace
 if [[ "$STATUS" != "ok" ]]; then
     log_error "API call failed: $STATUS"

@@ -22,6 +22,23 @@ services:
     depends_on:
       - "ollama"
 
+# Platform resource provisioning.
+# Declared resources are created idempotently on every `./aixcl app start`.
+# Remove this block entirely if your app needs no database or secrets.
+provision:
+  # Secrets are generated (32-char alphanumeric) and stored in Vault at
+  # kv/apps/<app-name>. Existing values are never overwritten.
+  # Each secret is rendered into the per-app volume as /run/secrets/<app>-<name>.
+  secrets:
+    - api-key
+    - db-password
+  # Postgres block creates a role and database in the platform PostgreSQL instance.
+  # The role password is synced from password_secret. Remove if not needed.
+  postgres:
+    database: example_app
+    owner: example_app
+    password_secret: db-password
+
 # Prometheus scrape targets for this application
 prometheus:
   targets:
@@ -30,10 +47,13 @@ prometheus:
     app: "example-app"
     job: "example-service"
 
-# Grafana dashboard provisioning (optional)
+# Grafana dashboard provisioning (optional).
+# Paths are relative to this app directory (apps/<name>/).
+# Dashboards are copied to grafana/provisioning/dashboards/apps/<name>/ on start.
+# A starter dashboard template is available at etc/app-scaffold/grafana/dashboards/app-overview.json.
 grafana:
   dashboards:
-    - "grafana/dashboards/example-dashboard.json"
+    - "grafana/dashboards/app-overview.json"
 
 # Git submodules for builder code
 submodules:

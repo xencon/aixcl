@@ -15,7 +15,7 @@
 
 services:
   ollama:
-    image: docker.io/ollama/ollama:0.30.7
+    image: docker.io/ollama/ollama:0.31.1
     container_name: ollama
     pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
@@ -44,7 +44,7 @@ services:
       start_period: 30s
 
   vault:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault
     pull_policy: missing
     cap_add:
@@ -73,7 +73,7 @@ services:
 
   # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
   vault-agent-postgres:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-postgres
     pull_policy: missing
     cap_drop:
@@ -98,7 +98,7 @@ services:
 
   # Vault Agent sidecar for Open WebUI (runs alongside open-webui)
   vault-agent-openwebui:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-openwebui
     pull_policy: missing
     cap_drop:
@@ -123,7 +123,7 @@ services:
 
   # Bootstrap service for PostgreSQL Vault KV password
   vault-agent-postgres-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-postgres-bootstrap
     pull_policy: missing
     cap_drop:
@@ -149,7 +149,7 @@ services:
 
   # Bootstrap service for Open WebUI Vault KV password
   vault-agent-openwebui-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-openwebui-bootstrap
     pull_policy: missing
     cap_drop:
@@ -175,7 +175,7 @@ services:
 
    # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-pgadmin-bootstrap
     pull_policy: missing
     cap_drop:
@@ -201,7 +201,7 @@ services:
 
    # Bootstrap service for Grafana Vault KV password
   vault-agent-grafana-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.2
+    image: docker.io/hashicorp/vault:2.0.3
     container_name: vault-agent-grafana-bootstrap
     pull_policy: missing
     cap_drop:
@@ -330,7 +330,7 @@ services:
       start_period: 30s
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.6
+    image: ghcr.io/open-webui/open-webui:v0.10.1
     container_name: open-webui
     pull_policy: missing
     user: "0:0"
@@ -432,7 +432,7 @@ services:
       retries: 3
 
   alertmanager:
-    image: docker.io/prom/alertmanager:v0.32.2
+    image: docker.io/prom/alertmanager:v0.33.0
     container_name: alertmanager
     pull_policy: missing
     cap_drop:
@@ -458,7 +458,7 @@ services:
       retries: 3
 
   grafana:
-    image: docker.io/grafana/grafana:13.0.2
+    image: docker.io/grafana/grafana:13.0.3
     container_name: grafana
     pull_policy: missing
     cap_drop:
@@ -489,7 +489,7 @@ services:
       retries: 3
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    image: gcr.io/cadvisor/cadvisor:v0.60.3
     container_name: cadvisor
     pull_policy: missing
     volumes:
@@ -533,7 +533,7 @@ services:
     restart: unless-stopped
 
   postgres-exporter:
-    image: docker.io/prometheuscommunity/postgres-exporter:v0.19.1
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.20.0
     container_name: postgres-exporter
     pull_policy: missing
     user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
@@ -561,7 +561,7 @@ services:
     restart: unless-stopped
 
   nvidia-gpu-exporter:
-    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.4.1
+    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.5.0
     container_name: nvidia-gpu-exporter
     pull_policy: missing
     cap_drop:
@@ -575,7 +575,7 @@ services:
     # This service will gracefully fail on systems without NVIDIA GPUs
 
   loki:
-    image: docker.io/grafana/loki:3.7.2
+    image: docker.io/grafana/loki:3.7.3
     container_name: loki
     pull_policy: missing
     cap_drop:
