@@ -150,6 +150,8 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 
 ## 5. Essential Commands
 
+`./aixcl` is the single entry point for both runtime and developer workflow.
+
 ### Stack Operations
 ```bash
 ./aixcl utils check-env               # Validate environment prerequisites
@@ -158,11 +160,13 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 ./aixcl stack stop                    # Stop all services gracefully
 ```
 
-### Validation & Lint
+### Validation, Tests, and Release
 ```bash
-./scripts/checks/check-agents.sh      # Lint agent and skill files
-./scripts/checks/check-environment.sh # Full environment check
-./tests/run-tests.sh                  # Run all platform tests
+./aixcl checks all                    # Full local CI parity sweep (summary table)
+./aixcl checks agents                 # Mirror parity only (.claude/.opencode)
+./aixcl test all                      # Run every test suite
+./aixcl test lib                      # Shell library unit tests (no stack needed)
+./aixcl release status                # Where the current release cycle stands
 ```
 
 ## 6. Self-Verification Checklist

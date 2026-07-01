@@ -62,6 +62,14 @@ COMMANDS
         env                                             Environment prerequisites
         pr-refs <file>                                  Issue/PR body reference style
 
+    test <suite> [--quick|--dry-run]
+        all                                             Run every test suite
+        command                                         CLI command validation tests
+        workflow                                        README Quick Start workflow test
+        lib                                             Shell library unit tests
+        apps                                            App layer API tests
+        security                                        Security tests
+
     vault <action>
         start                                           Start Vault container
         stop                                            Stop Vault container

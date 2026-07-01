@@ -96,6 +96,26 @@ COMMANDS
                The system remains fully operational after this command.
                To also reset Podman storage: podman system reset --force
 
+        checks {all|paths|agents|elisions|generated|ascii|yaml|compose|env|pr-refs <file>}
+               Run local CI parity checks. 'all' runs every check, continues
+               on failure, prints a summary table, and exits non-zero if any
+               check failed. Individual actions front the corresponding
+               scripts in scripts/checks/.
+
+        test {all|command|workflow|lib|apps|security} [--quick|--dry-run]
+               Run the platform test suites. 'all' runs every suite including
+               the security tests. --quick skips slow model-download tests;
+               --dry-run previews discovery without executing.
+
+        release {prep|tag|finish|status}
+               Release process mechanics. 'prep' drafts the changelog and
+               creates the release issue and branch, stopping at the GPG
+               commit. 'tag' tags the merged release on the canonical remote
+               and verifies publication. 'finish' syncs main back into dev
+               and cleans up. 'status' shows the current release cycle state.
+               GPG commits and merge decisions always remain with the human
+               operator.
+
         help
                Show help message
 

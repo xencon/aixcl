@@ -61,10 +61,14 @@ gh pr create \
 
 ## Running Checks Locally
 ```bash
-# Full pre-PR check
-bash scripts/checks/check-paths.sh
-bash scripts/checks/check-generated-files.sh
+# Full pre-PR check (paths, mirror parity, elisions, generated files,
+# ASCII, yamllint, compose validation, environment)
+./aixcl checks all
+
+# Shellcheck sweep (not part of checks all -- run before shell changes)
 shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path "./.git/*")
-yamllint -c .yamllint.yml .
-./aixcl utils check-env
+
+# Individual checks
+./aixcl checks paths        # or: agents, elisions, generated, ascii, yaml, compose, env
+./aixcl checks pr-refs <body-file>
 ```
