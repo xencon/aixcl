@@ -12,14 +12,13 @@ This test suite executes actual `./aixcl` commands and validates system state ch
 - **State Validation**: Verify `.env`, containers, and configs after commands
 - **Sequential Execution**: Tests run one at a time, stop on first failure
 - **Complete Cleanup**: Each test restores system state after running
-- **Single Report**: `test-results.md` is overwritten each run
+- **Single Report**: `/tmp/aixcl-test-results.md` is overwritten each run
 
 ## Test Structure
 
 ```
 tests/
-+-- run-tests.sh              # Main test runner (entry point)
-+-- test-results.md           # Generated report (OVERWRITTEN)
++-- run-tests.sh              # Main test runner (report written to /tmp/aixcl-test-results.md)
 +-- lib/
 |   +-- test-framework.sh     # Assertions and utilities
 |   +-- state-capture.sh      # State management
@@ -91,14 +90,14 @@ Validate complete user workflows:
 
 ## Test Results
 
-After each run, `tests/test-results.md` is generated with:
+After each run, `/tmp/aixcl-test-results.md` is generated with:
 
 - Test summary (passed/failed/skipped counts)
 - Detailed results table
 - Duration for each test
 - Status of each assertion
 
-The file is **overwritten** on each run.
+The file is overwritten on each run and is not committed to the repository.
 
 ## State Management
 

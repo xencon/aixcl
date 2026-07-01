@@ -15,7 +15,7 @@ source "${SCRIPT_DIR}/tests/lib/cleanup.sh"
 
 # Configuration
 TEST_DIR="${SCRIPT_DIR}/tests"
-REPORT_FILE="${TEST_DIR}/test-results.md"
+REPORT_FILE="/tmp/aixcl-test-results.md"
 RUN_START_TIME=$(date +%s)
 
 # Command line options
@@ -84,7 +84,7 @@ Categories:
 Notes:
     - Tests run sequentially and stop on first failure
     - Each test cleans up after itself
-    - Results are written to tests/test-results.md (overwritten each run)
+    - Results are written to /tmp/aixcl-test-results.md (overwritten each run)
 EOF
     exit 0
 fi

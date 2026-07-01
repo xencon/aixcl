@@ -30,8 +30,8 @@ SCRIPT_DIR="$TEST_SCRIPT_DIR"
 
 # Configuration
 # shellcheck disable=SC2034
-REPORT_FILE="${SCRIPT_DIR}/test-results.md"
-COMPARISON_FILE="${SCRIPT_DIR}/comparison-results.md"
+REPORT_FILE="/tmp/aixcl-test-results.md"
+COMPARISON_FILE="/tmp/aixcl-comparison-results.md"
 TEST_DIR="${SCRIPT_DIR}/command-tests"
 
 # Command options
@@ -109,8 +109,7 @@ EXAMPLES
 NOTES
 
     [*] Tests run sequentially for safety
-    [*] Comparison report at tests/comparison-results.md (when using --engine all)
-    [*] vLLM tests auto-skip if no GPU detected
+    [*] Comparison report at /tmp/aixcl-comparison-results.md (when using --engine all)
     [*] Each engine run is independent with cleanup between runs
 EOF
 }
@@ -386,7 +385,7 @@ EOF
         local result="${ENGINE_RESULTS[$engine]:-N/A}"
         local duration="${ENGINE_DURATIONS[$engine]:-N/A}"
         local status="❌ FAILED"
-        
+
         if [[ "$result" =~ ^[0-9]+/[0-9]+$ ]]; then
             IFS='/' read -ra parts <<< "$result"
             if [[ "${parts[0]}" -gt 0 ]] && [[ "${parts[1]}" -gt 0 ]] && [[ "${parts[0]}" -eq "${parts[1]}" ]]; then

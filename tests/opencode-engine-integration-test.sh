@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-RESULTS_FILE="${REPO_ROOT}/tests/opencode-test-results.md"
+RESULTS_FILE="/tmp/aixcl-opencode-test-results.md"
 
 # Colors for output
 RED='\033[0;31m'
@@ -79,33 +79,33 @@ test_engine() {
     local model=$2
     local engine_scores=()
     local engine_times=()
-    
+
     echo -e "${BLUE}========================================${NC}"
     echo -e "${BLUE}Testing Engine: $engine${NC}"
     echo -e "${BLUE}Model: $model${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo ""
-    
+
     # Switch engine
     echo -e "${YELLOW}Switching to $engine engine...${NC}"
     cd "$REPO_ROOT" && ./aixcl engine set "$engine"
     echo ""
-    
+
     # Start stack
     echo -e "${YELLOW}Starting stack...${NC}"
     cd "$REPO_ROOT" && ./aixcl stack start --profile sys
     echo ""
-    
+
     # Add model
     echo -e "${YELLOW}Adding model: $model${NC}"
     cd "$REPO_ROOT" && ./aixcl models add "$model" || true
     echo ""
-    
+
     # Restart if needed
     echo -e "${YELLOW}Restarting to apply changes...${NC}"
     cd "$REPO_ROOT" && ./aixcl stack restart
     echo ""
-    
+
     # Wait for API to be ready
     echo -e "${YELLOW}Waiting for API to be ready...${NC}"
     local retries=0
@@ -119,18 +119,18 @@ test_engine() {
     done
     echo -e "${GREEN}API is ready!${NC}"
     echo ""
-    
+
     # Test with each prompt
     local prompt_num=1
     for prompt in "${PROMPTS[@]}"; do
         echo -e "${YELLOW}Prompt $prompt_num/${#PROMPTS[@]} (${DIFFICULTY[$((prompt_num-1))]})${NC}"
         echo "Prompt: $prompt"
         echo ""
-        
+
         # Record start time
         local start_time
         start_time=$(date +%s.%N)
-        
+
         # Send request to OpenAI-compatible API
         local response
         response=$(curl -s http://localhost:11434/v1/completions \
@@ -141,27 +141,27 @@ test_engine() {
                 \"max_tokens\": 1024,
                 \"temperature\": 0.7
             }" 2>/dev/null)
-        
+
         # Record end time
         local end_time
         end_time=$(date +%s.%N)
         local duration
         duration=$(echo "$end_time - $start_time" | bc)
-        
+
         # Extract completion
         local completion
         completion=$(echo "$response" | grep -oP '"text":\s*"\K[^"]*' | head -1 | sed 's/\\n/\n/g')
-        
+
         echo -e "${GREEN}Response received in ${duration}s${NC}"
         echo "Response preview:"
         echo "$completion" | head -10
         echo "..."
         echo ""
-        
+
         # Store results
         engine_times+=("$duration")
         engine_scores+=("TBD")  # Manual scoring required
-        
+
         # Save detailed result
         cat >> "$RESULTS_FILE" << EOF
 
@@ -181,16 +181,16 @@ $completion
 ---
 
 EOF
-        
+
         prompt_num=$((prompt_num + 1))
         sleep 2  # Brief pause between prompts
     done
-    
+
     # Stop stack
     echo -e "${YELLOW}Stopping stack...${NC}"
     cd "$REPO_ROOT" && ./aixcl stack stop
     echo ""
-    
+
     return 0
 }
 
@@ -198,13 +198,13 @@ EOF
 engine_num=0
 for engine in "${ENGINES[@]}"; do
     model="${MODELS[$engine_num]}"
-    
+
     if test_engine "$engine" "$model"; then
         echo -e "${GREEN}✓ $engine tests completed${NC}"
     else
         echo -e "${RED}✗ $engine tests failed${NC}"
     fi
-    
+
     engine_num=$((engine_num + 1))
     echo ""
     echo "=========================================="
