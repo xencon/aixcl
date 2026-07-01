@@ -119,6 +119,14 @@ function engine() {
 
         echo "Auto-detected engine: $engine"
 
+        # Write detected engine to .env
+        if grep -qE "^[[:space:]]*#?INFERENCE_ENGINE=" "${SCRIPT_DIR}/.env" 2>/dev/null; then
+            sed -i "s/^[[:space:]]*#*INFERENCE_ENGINE=.*/INFERENCE_ENGINE=$engine/" "${SCRIPT_DIR}/.env"
+        else
+            echo "INFERENCE_ENGINE=$engine" >> "${SCRIPT_DIR}/.env"
+        fi
+        echo "[x] Inference engine set to: $engine"
+
         # Configure Open WebUI Ollama API setting based on auto-detected engine
         if [ "$engine" = "ollama" ]; then
             local enable_ollama="true"

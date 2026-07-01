@@ -45,7 +45,7 @@ grep "image:" services/docker-compose.yml | grep -v "#" | \
 | Alertmanager | `prom/alertmanager:<tag>` | GitHub releases |
 | Grafana | `grafana/grafana:<tag>` | GitHub releases |
 | Loki | `grafana/loki:<tag>` | GitHub releases |
-| cAdvisor | `gcr.io/cadvisor/cadvisor:<tag>` | GitHub releases |
+| cAdvisor | `ghcr.io/google/cadvisor:<tag>` | GitHub releases |
 | Node Exporter | `prom/node-exporter:<tag>` | GitHub releases |
 | Postgres Exporter | `prometheuscommunity/postgres-exporter:<tag>` | GitHub releases |
 | NVIDIA GPU Exporter | `utkuozdemir/nvidia_gpu_exporter:<tag>` | GitHub releases |

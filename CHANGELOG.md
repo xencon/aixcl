@@ -4,6 +4,21 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.44] - 2026-07-01
+
+### Summary
+
+Release v1.1.44 -- Test suite cleanup, cAdvisor registry fix, and engine auto-detection bug fix.
+
+### Changed
+
+- [x] **Test suite cleanup and renumbering**: Removed 8 defunct command tests covering vLLM, llama.cpp, and OpenCode engines. Removed 3 standalone defunct scripts (opencode-engine-integration-test.sh, aixcl-test, integration/platform-tests.sh). Renumbered remaining command tests to a clean 00-08/99 sequence. Redirected all test result output from the repo tree to /tmp. Closes #1641.
+
+### Fixed
+
+- [x] **cAdvisor image registry migration**: Updated cAdvisor image from gcr.io/cadvisor/cadvisor to ghcr.io/google/cadvisor following the upstream migration at v0.53.0. Updated check-updates skill mirrors to match. Closes #1637.
+- [x] **engine auto missing INFERENCE_ENGINE write**: `engine auto` detected the correct engine but did not write INFERENCE_ENGINE= to .env, leaving the value unset after detection. Now consistent with `engine set` behaviour. Closes #1639.
+
 ## [v1.1.43] - 2026-07-01
 
 ### Summary

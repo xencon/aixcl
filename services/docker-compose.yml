@@ -489,7 +489,7 @@ services:
       retries: 3
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.60.3
+    image: ghcr.io/google/cadvisor:v0.60.3
     container_name: cadvisor
     pull_policy: missing
     volumes:

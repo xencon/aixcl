@@ -15,7 +15,7 @@ source "${SCRIPT_DIR}/tests/lib/cleanup.sh"
 
 # Configuration
 TEST_DIR="${SCRIPT_DIR}/tests"
-REPORT_FILE="${TEST_DIR}/test-results.md"
+REPORT_FILE="/tmp/aixcl-test-results.md"
 RUN_START_TIME=$(date +%s)
 
 # Command line options
@@ -72,7 +72,7 @@ Options:
 Examples:
     ./tests/run-tests.sh                     # Run all tests
     ./tests/run-tests.sh --category command  # Run only command tests
-    ./tests/run-tests.sh --test test-03-engine-set-ollama.sh  # Run specific test
+    ./tests/run-tests.sh --test test-04-engine-set-ollama.sh  # Run specific test
     ./tests/run-tests.sh --dry-run           # Preview test execution
 
 Categories:
@@ -84,8 +84,7 @@ Categories:
 Notes:
     - Tests run sequentially and stop on first failure
     - Each test cleans up after itself
-    - Results are written to tests/test-results.md (overwritten each run)
-    - vLLM tests auto-skip if no GPU detected
+    - Results are written to /tmp/aixcl-test-results.md (overwritten each run)
 EOF
     exit 0
 fi
@@ -93,7 +92,7 @@ fi
 # Discover tests
 discover_tests() {
     local tests=()
-    
+
     if [[ -n "$SPECIFIC_TEST" ]]; then
         # Run specific test
         if [[ -f "${TEST_DIR}/command-tests/${SPECIFIC_TEST}" ]]; then
@@ -136,7 +135,7 @@ discover_tests() {
             done
         fi
     fi
-    
+
     echo "${tests[@]}"
 }
 
@@ -145,9 +144,9 @@ run_test() {
     local test_file="$1"
     local test_name
     test_name=$(basename "$test_file" .sh)
-    
+
     log_test_start "$test_name"
-    
+
     # Execute the test
     if bash "$test_file" 2>&1; then
         log_test_pass "All assertions passed"
@@ -218,7 +217,7 @@ for test in "${TESTS[@]}"; do
         FAILED=true
         break
     fi
-    
+
     # Cleanup between tests
     cleanup_old_backups 20
 done
