@@ -16,6 +16,10 @@
 # check has no bypass -- reword the text instead):
 #   AIXCL_ALLOW_MASS_DELETE=1 check-ai-elisions.sh --staged
 #
+# In --range mode (CI), the deletion check is also skipped when a commit
+# message in the range contains the token AIXCL_ALLOW_MASS_DELETE. State
+# the intent in the commit message and CI will honor it.
+#
 # Markdown files are exempt: documentation legitimately discusses these
 # phrases, and elision damage matters most in source files.
 #
@@ -172,6 +176,14 @@ check_mass_deletions() {
 
     if [ "${AIXCL_ALLOW_MASS_DELETE:-}" = "1" ]; then
         print_skip "Mass-deletion check skipped (AIXCL_ALLOW_MASS_DELETE=1)"
+        return 0
+    fi
+
+    # Range mode (CI): honor the bypass token when it is spelled out in a
+    # commit message within the range. Same trust model as the env var --
+    # the author must state the intent, and it stays auditable in review.
+    if [ "$MODE" = "range" ] && git log --format=%B "${RANGE_A}..${RANGE_B}" 2>/dev/null | grep -q "AIXCL_ALLOW_MASS_DELETE"; then
+        print_skip "Mass-deletion check skipped (AIXCL_ALLOW_MASS_DELETE token in commit message)"
         return 0
     fi
 
