@@ -292,7 +292,7 @@ check_env() {
         gc_version=$(git-cliff --version 2>/dev/null | head -1 || echo "version unknown")
         print_success "git-cliff installed ($gc_version)"
     else
-        print_warning "git-cliff not installed -- required for cut-release skill"
+        print_warning "git-cliff not installed -- required for the release skill"
         echo "   Install from: https://github.com/orhun/git-cliff/releases"
     fi
 

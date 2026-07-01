@@ -184,7 +184,7 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 - `docs/reference/service-map.md` - All services in one table
 - `docs/developer/agent-pitfalls.md` - Common agent mistakes and corrections
 - `.opencode/skills/add-service/SKILL.md` - Guided workflow for adding a service
-- `.opencode/skills/cut-release/SKILL.md` - Guided workflow for cutting a release
+- `.opencode/skills/release/SKILL.md` - Guided workflow for cutting a release
 - `.opencode/rules/workflow.md` - Workflow constraints
 
 ---
