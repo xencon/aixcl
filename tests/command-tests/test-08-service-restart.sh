@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 11: Service Restart
+# Test 08: Service Restart
 # Tests restarting a service
 
 set -e
@@ -8,10 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 
-log_test_start "test-11-service-restart"
+log_test_start "test-08-service-restart"
 
 # Capture state before test
-BACKUP_DIR=$(capture_state "test-11-service-restart")
+BACKUP_DIR=$(capture_state "test-08-service-restart")
 export BACKUP_DIR
 
 # Cleanup function

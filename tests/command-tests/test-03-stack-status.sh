@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 02: Stack Status
+# Test 03: Stack Status
 # Tests stack status command output and correctness.
 # Regression tests for: https://github.com/xencon/aixcl/issues/1377
 
@@ -8,7 +8,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 
-log_test_start "test-02-stack-status"
+log_test_start "test-03-stack-status"
 
 # Test: Stack status command exits cleanly
 assert_command_success "${SCRIPT_DIR}/aixcl stack status" "Stack status command succeeds"

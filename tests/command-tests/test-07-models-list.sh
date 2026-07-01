@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 10: Models List
+# Test 07: Models List
 # Tests listing models
 
 set -e
@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 
-log_test_start "test-10-models-list"
+log_test_start "test-07-models-list"
 
 # Check if stack is running
 if "${SCRIPT_DIR}/aixcl" stack status 2>/dev/null | grep -q "running"; then

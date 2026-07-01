@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 06: Engine Auto
+# Test 05: Engine Auto
 # Tests auto-detecting optimal engine
 
 set -e
@@ -8,10 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 
-log_test_start "test-06-engine-auto"
+log_test_start "test-05-engine-auto"
 
 # Capture state before test
-BACKUP_DIR=$(capture_state "test-06-engine-auto")
+BACKUP_DIR=$(capture_state "test-05-engine-auto")
 export BACKUP_DIR
 
 # Cleanup function

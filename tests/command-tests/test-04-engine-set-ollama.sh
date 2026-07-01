@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Test 04: Engine Set - vLLM
-# Tests setting engine to vLLM (skips if no GPU)
+# Test 04: Engine Set - Ollama
+# Tests setting engine to ollama
 
 set -e
 
@@ -8,16 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 
-log_test_start "test-04-engine-set-vllm"
-
-# Skip if no GPU
-if ! has_nvidia_gpu; then
-    log_test_skip "No NVIDIA GPU detected - vLLM requires GPU"
-    exit 0
-fi
+log_test_start "test-04-engine-set-ollama"
 
 # Capture state before test
-BACKUP_DIR=$(capture_state "test-04-engine-set-vllm")
+BACKUP_DIR=$(capture_state "test-03-engine-set-ollama")
 export BACKUP_DIR
 
 # Cleanup function
@@ -33,9 +27,14 @@ if [[ ! -f "${SCRIPT_DIR}/.env" ]]; then
 fi
 
 # Test: Engine set command works
-assert_command_success "${SCRIPT_DIR}/aixcl engine set vllm" "Engine set to vllm"
+assert_command_success "${SCRIPT_DIR}/aixcl engine set ollama" "Engine set to ollama"
 
 # Test: .env is updated
-assert_env_equals "INFERENCE_ENGINE" "vllm"
+assert_env_equals "INFERENCE_ENGINE" "ollama"
 
-log_test_pass "Engine set to vllm correctly"
+# Test: opencode.json models are cleared (if it exists)
+if [[ -f "${SCRIPT_DIR}/opencode.json" ]]; then
+    log_info "Note: opencode.json models should be cleared (verified manually)"
+fi
+
+log_test_pass "Engine set to ollama correctly"
