@@ -273,62 +273,6 @@ services:
       timeout: 10s
       retries: 3
 
-  vllm:
-    image: docker.io/vllm/vllm-openai:v0.22.1
-    container_name: vllm
-    pull_policy: missing
-    tty: true
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - aixcl-hf-cache:/home/vllm/.cache/huggingface
-      - ../scripts/runtime/vllm-entrypoint.sh:/vllm-entrypoint.sh:ro
-    environment:
-      - VLLM_ALLOW_LONG_MAX_MODEL_LEN=${VLLM_ALLOW_LONG_MAX_MODEL_LEN:-1}
-      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
-      - CUDA_LAUNCH_BLOCKING=0
-      - VLLM_CUDA_GRAPH_CAPTURE=${VLLM_CUDA_GRAPH_CAPTURE:-0}
-      - HF_HOME=/home/vllm/.cache/huggingface
-      - TRANSFORMERS_CACHE=/home/vllm/.cache/huggingface
-      - HOME=/home/vllm
-      - VLLM_MODEL=${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}
-    entrypoint: ["/vllm-entrypoint.sh"]
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    security_opt:
-      - no-new-privileges:true
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 180s
-
-  llamacpp:
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b9585
-    container_name: llamacpp
-    pull_policy: missing
-    user: "1000:1000"
-    volumes:
-      - aixcl-llamacpp-data:/models
-      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
-    tty: true
-    network_mode: host
-    restart: unless-stopped
-    environment:
-      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
-    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
-    command: ["--host", "0.0.0.0", "--port", "11434"]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:11434/v1/models || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.10.1
     container_name: open-webui
@@ -591,12 +535,6 @@ services:
 
 volumes:
   aixcl-ollama-data:
-    external: true
-  aixcl-hf-cache:
-    external: true
-  aixcl-vllm-data:
-    external: true
-  aixcl-llamacpp-data:
     external: true
   aixcl-open-webui-main:
     external: true

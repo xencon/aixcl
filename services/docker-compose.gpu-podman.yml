@@ -8,14 +8,6 @@ services:
     devices:
       - nvidia.com/gpu=all
 
-  vllm:
-    devices:
-      - nvidia.com/gpu=all
-
-  llamacpp:
-    devices:
-      - nvidia.com/gpu=all
-
   nvidia-gpu-exporter:
     devices:
       - nvidia.com/gpu=all

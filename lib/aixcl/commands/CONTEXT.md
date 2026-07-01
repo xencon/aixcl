@@ -8,7 +8,7 @@ directory in the codebase.
 | File | Command | Key behaviour notes |
 |------|---------|-------------------|
 | `app.sh` | `./aixcl app` | App lifecycle (start, stop, build, status). Uses `_app_resolve_start_order()` (Kahn's topological sort) to honour `depends_on` in manifests -- do not bypass by iterating services sequentially. |
-| `engine.sh` | `./aixcl engine` | Inference engine selection: Ollama, vLLM, llama.cpp. |
+| `engine.sh` | `./aixcl engine` | Inference engine selection: Ollama. |
 | `models.sh` | `./aixcl models` | Model management (add, list, remove). |
 | `stack.sh` | `./aixcl stack` | Platform stack lifecycle. Checks `VAULT_TOKEN` env var before GPG decrypt -- this is the CI/agent escape hatch; set it to skip GPG entirely. |
 | `utils.sh` | `./aixcl utils` | Environment check and utility commands. |

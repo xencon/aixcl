@@ -15,32 +15,6 @@ is_model_installed() {
             "${DOCKER_BIN:-docker}" exec "$container" ollama list 2>/dev/null | awk '{print $1}' | grep -qE "^${model_with_tag}$"
             return $?
             ;;
-        vllm)
-            # vLLM uses HF cache. Check for models--org--repo directory
-            local hf_path
-            hf_path="models--$(echo "$model" | sed 's/\//--/g')"
-            "${DOCKER_BIN:-docker}" exec "$container" ls "/root/.cache/huggingface/hub/$hf_path" >/dev/null 2>&1
-            return $?
-            ;;
-        llamacpp)
-            # llama.cpp uses a flat models directory. Check if file exists in volume on host
-            local llamacpp_volume="services_llamacpp-data"
-            local volume_path
-            volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
-            if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
-                local model_filename="$model"
-                [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
-                [ -f "${volume_path}/${model_filename}" ] && return 0
-            fi
-            # Fallback: check via container if volume path not available
-            if [ -n "$container" ]; then
-                local model_filename="$model"
-                [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
-                "${DOCKER_BIN:-docker}" exec "$container" ls "/models/${model_filename}" >/dev/null 2>&1
-                return $?
-            fi
-            return 1
-            ;;
     esac
     return 1
 }
@@ -76,14 +50,9 @@ function add() {
     # Check if model already exists
     if is_model_installed "$model" "$engine" "$container"; then
         echo "[x] Model '$model' is already installed for $engine."
-        
-        # Still update config for vLLM/llama.cpp as they are single-model engines
-        if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
-            echo "   Updating configuration to use existing model..."
-        fi
     else
         echo "Adding model: $model (Engine: $engine)"
-        
+
         # Download logic based on engine
         if [ "$engine" = "ollama" ]; then
             if [ -z "$container" ]; then
@@ -113,161 +82,13 @@ function add() {
                     return 1
                 fi
             fi
-        elif [ "$engine" = "vllm" ]; then
-            if [ -z "$container" ]; then
-                echo "Error: $engine container is not running. Please start the services first."
-                return 1
-            fi
-            echo "   Downloading model from Hugging Face for vLLM..."
-            # vLLM container doesn't have hf CLI, download on host instead
-            # Host cache is shared with container via ~/.cache/huggingface
-            if command -v hf >/dev/null 2>&1; then
-                # Download to host cache (vLLM container will pick it up)
-                if hf download "$model"; then
-                    echo "[x] Successfully downloaded model: $model"
-                    echo "   vLLM will load the model on next restart"
-                else
-                    echo "[ ] Failed to download model: $model"
-                    return 1
-                fi
-            else
-                echo "[ ] 'hf' command not found on host"
-                echo "   Install huggingface-hub: pip install huggingface-hub[cli]"
-                return 1
-            fi
-        elif [ "$engine" = "llamacpp" ]; then
-            # For llama.cpp, download to volume first, then the container will pick it up
-            # Format: org/repo/model.gguf
-            if [[ "$model" =~ ^([^/]+/[^/]+)/(.+\.gguf)$ ]]; then
-                local repo="${BASH_REMATCH[1]}"
-                local filename="${BASH_REMATCH[2]}"
-                echo "   Downloading $filename from $repo..."
-                
-                # For llama.cpp, we need to download the GGUF file to the Docker volume
-                # Since Docker volumes may not be directly accessible on the host filesystem,
-                # we download to a temp location and use docker run to copy to the volume
-                local llamacpp_volume="services_llamacpp-data"
-                local temp_dir="/tmp/aixcl-downloads-$$"
-                local downloaded_file="${temp_dir}/${filename}"
-                
-                # Create temp directory
-                mkdir -p "$temp_dir"
-                
-                echo "   Downloading to temporary location..."
-                
-                # Download using available method
-                local download_success=false
-                
-                # Try hf first
-                if command -v hf >/dev/null 2>&1; then
-                    if hf download "$repo" "$filename" --local-dir "$temp_dir"; then
-                        download_success=true
-                    fi
-                fi
-                
-                # Fall back to Python script
-                if [ "$download_success" = false ] && [ -f "${SCRIPT_DIR}/scripts/download-hf-model.py" ] && python3 -c "import huggingface_hub" 2>/dev/null; then
-                    echo "   Attempting download with Python fallback..."
-                    if python3 "${SCRIPT_DIR}/scripts/download-hf-model.py" "$repo" "$filename" --local-dir "$temp_dir" > /dev/null 2>&1; then
-                        download_success=true
-                        echo "   [x] Python download successful"
-                    else
-                        echo "   [ ] Python download failed"
-                    fi
-                fi
-                
-                # Last resort: curl
-                if [ "$download_success" = false ]; then
-                    echo "   Using curl to download..."
-                    if curl -L "https://huggingface.co/$repo/resolve/main/$filename" -o "$downloaded_file" --progress-bar 2>/dev/null; then
-                        download_success=true
-                    fi
-                fi
-                
-                if [ "$download_success" = false ]; then
-                    rm -rf "$temp_dir"
-                    echo "[ ] Failed to download model: $model"
-                    echo "   Install huggingface-hub: pip install huggingface-hub"
-                    return 1
-                fi
-                
-                # Now copy to Docker volume using docker run
-                echo "   Copying to Docker volume..."
-                if ${DOCKER_BIN:-docker} run --rm \
-                    -v "${llamacpp_volume}:/models" \
-                    -v "${temp_dir}:/source:ro" \
-                    alpine:latest \
-                    cp "/source/${filename}" "/models/"; then
-                    
-                    echo "[x] Successfully downloaded and copied model: $filename"
-                    rm -rf "$temp_dir"
-                else
-                    echo "[ ] Failed to copy model to Docker volume"
-                    rm -rf "$temp_dir"
-                    return 1
-                fi
-            else
-                echo "[ ] Invalid model format for llama.cpp. Expected: username/repo/model.gguf"
-                echo "   Example: bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf"
-                return 1
-            fi
         fi
-    fi
-
-    # Update configuration for vLLM and llama.cpp
-    if [[ "$engine" == "vllm" || "$engine" == "llamacpp" ]]; then
-        local compose_file="${SERVICES_DIR:-services}/docker-compose.yml"
-        if [ ! -f "$compose_file" ]; then
-             echo "[ ] Error: $compose_file not found."
-             return 1
-        fi
-        
-        echo "   Updating $engine configuration in $compose_file to use model: $model"
-        if [[ "$engine" == "vllm" ]]; then
-            # Build vLLM command with optional enforce-eager flag
-            # Update VLLM_MODEL in .env file
-            local env_file="${SCRIPT_DIR}/.env"
-            if [ -f "$env_file" ]; then
-                if grep -qE "^[[:space:]]*#?VLLM_MODEL=" "$env_file"; then
-                    sed -i "s/^[[:space:]]*#*VLLM_MODEL=.*/VLLM_MODEL=$model/" "$env_file"
-                else
-                    echo "VLLM_MODEL=$model" >> "$env_file"
-                fi
-            fi
-            echo "   Updated VLLM_MODEL in .env to: $model"
-        elif [[ "$engine" == "llamacpp" ]]; then
-            # Update llamacpp model via environment variable
-            local model_filename="$model"
-            [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
-            
-            # Update the environment variable in .env file
-            local env_file="${SCRIPT_DIR}/.env"
-            if [ -f "$env_file" ]; then
-                if grep -qE "^[[:space:]]*#?INFERENCE_MODEL=" "$env_file"; then
-                    # Update existing variable (including commented ones)
-                    sed -i "s/^[[:space:]]*#*INFERENCE_MODEL=.*/INFERENCE_MODEL=$model_filename/" "$env_file"
-                else
-                    # Add new variable
-                    echo "INFERENCE_MODEL=$model_filename" >> "$env_file"
-                fi
-                echo "[x] Configuration updated in .env. Restarting llamacpp container..."
-                # Restart the container to pick up the new model
-                ${DOCKER_BIN:-docker} restart llamacpp 2>/dev/null || true
-            else
-                echo "   .env file not found. Please set INFERENCE_MODEL=$model_filename manually."
-            fi
-        fi
-        echo "[x] Configuration updated. Please restart the stack to apply changes: $0 stack restart"
     fi
 
     # Sync opencode.json if it exists
     local opencode_config="${SCRIPT_DIR}/opencode.json"
     if [ -f "$opencode_config" ]; then
-        # For llama.cpp, extract just the filename for the model key
         local opencode_model_key="$model"
-        if [[ "$engine" == "llamacpp" ]]; then
-            [[ "$model" =~ /([^/]+)$ ]] && opencode_model_key="${BASH_REMATCH[1]}"
-        fi
         echo "   Synchronizing $opencode_config with model: $opencode_model_key"
         if command -v jq >/dev/null 2>&1; then
             local temp_json
@@ -309,11 +130,11 @@ function remove() {
     fi
 
     echo "Removing model: $model"
-    
+
     local engine="${INFERENCE_ENGINE:-ollama}"
     local container
     container=$(get_engine_container "$engine")
-    
+
     if [ "$engine" = "ollama" ]; then
         if [ -z "$container" ]; then
             echo "Error: $engine container is not running. Please start the services first."
@@ -325,34 +146,6 @@ function remove() {
             echo "[ ] Failed to remove model: $model"
             return 1
         fi
-    elif [[ "$engine" == "vllm" ]]; then
-        if [ -z "$container" ]; then
-            echo "Error: $engine container is not running. Please start the services first."
-            return 1
-        fi
-        # vLLM cache is usually in /root/.cache/huggingface/hub/models--USER--REPO
-        local cache_dir
-        cache_dir="models--${model//\//--}"
-        echo "   Attempting to remove model from vLLM cache..."
-        if "${DOCKER_BIN:-docker}" exec "$container" rm -rf "/root/.cache/huggingface/hub/$cache_dir"; then
-            echo "[x] Successfully removed model files for: $model"
-        else
-            echo "[ ] Failed to remove model files for: $model"
-            return 1
-        fi
-    elif [[ "$engine" == "llamacpp" ]]; then
-        if [ -z "$container" ]; then
-            echo "Error: $engine container is not running. Please start the services first."
-            return 1
-        fi
-        local model_filename="$model"
-        [[ "$model" =~ /([^/]+)$ ]] && model_filename="${BASH_REMATCH[1]}"
-        if "${DOCKER_BIN:-docker}" exec "$container" rm -f "/models/$model_filename"; then
-            echo "[x] Successfully removed model file: $model_filename"
-        else
-            echo "[ ] Failed to remove model file: $model_filename"
-            return 1
-        fi
     else
         echo "   Model management for $engine is not fully automated yet."
     fi
@@ -361,10 +154,10 @@ function remove() {
 function list() {
     local engine="${INFERENCE_ENGINE:-ollama}"
     echo "Listing installed models for $engine..."
-    
+
     local container
     container=$(get_engine_container "$engine")
-    
+
     if [ -z "$container" ]; then
         echo "Error: $engine container is not running. Please start the services first."
         return 1
@@ -372,39 +165,6 @@ function list() {
 
     if [ "$engine" = "ollama" ]; then
         "${DOCKER_BIN:-docker}" exec "$container" ollama list
-    elif [ "$engine" = "vllm" ]; then
-        # Show currently loaded model via API
-        local url
-        url="http://127.0.0.1:11434/v1/models"
-        echo "Currently loaded model (API):"
-        curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "   Could not retrieve loaded model via API."
-        
-        # Show cached models on disk
-        echo ""
-        echo "Cached models on disk:"
-        "${DOCKER_BIN:-docker}" exec "$container" find /root/.cache/huggingface/hub -maxdepth 1 -name "models--*" 2>/dev/null | sed 's|.*/models--||;s|--|/|g' | sort -u || echo "   No cached models found."
-    elif [ "$engine" = "llamacpp" ]; then
-        # Show currently loaded model via API (if container is running)
-        if [ -n "$container" ]; then
-            local url
-            url="http://127.0.0.1:11434/v1/models"
-            echo "Currently loaded model (API):"
-            curl -s "$url" | grep -oP '"id":\s*"\K[^"]+' | sort -u || echo "   Could not retrieve loaded model via API."
-            echo ""
-        fi
-        
-        # Show files in /models volume (check directly via volume mount)
-        echo "Available GGUF files in volume:"
-        local llamacpp_volume="services_llamacpp-data"
-        local volume_path
-        volume_path=$(${DOCKER_BIN:-docker} volume inspect -f '{{ .Mountpoint }}' "$llamacpp_volume" 2>/dev/null || echo "")
-        if [ -n "$volume_path" ] && [ -d "$volume_path" ]; then
-            find "$volume_path" -name "*.gguf" -exec basename {} \; 2>/dev/null | sort -u || echo "   No GGUF files found in volume."
-        elif [ -n "$container" ]; then
-            "${DOCKER_BIN:-docker}" exec "$container" find /models -name "*.gguf" -printf "%f\n" 2>/dev/null | sort -u || echo "   No GGUF files found in volume."
-        else
-            echo "   Cannot access volume. Start llamacpp service to view available models."
-        fi
     else
         echo "   Model listing for $engine is not fully supported yet."
     fi

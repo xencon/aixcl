@@ -62,8 +62,6 @@ load_env_file() {
 ALL_SERVICES=(
     "engine"
     "ollama"
-    "vllm"
-    "llamacpp"
     "open-webui"
     "postgres"
     "pgadmin"

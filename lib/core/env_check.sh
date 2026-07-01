@@ -259,18 +259,6 @@ check_env() {
         print_info ".env file not found (will be created on first start)"
     fi
 
-    # Check hf for llama.cpp and vLLM model downloads
-    echo -e "\nChecking model download tools..."
-    if command -v hf &> /dev/null; then
-        print_success "hf is available (for llama.cpp and vLLM models)"
-    else
-        print_warning "hf not found"
-        echo "   Required for downloading models when using llama.cpp or vLLM engines"
-        echo "   Install with: pip install huggingface-hub[cli]"
-        echo "   Or: pip3 install huggingface-hub[cli]"
-        echo "   Note: Ollama engine doesn't require hf"
-    fi
-
     # Check developer tooling (warnings only -- does not block stack)
     echo -e "\nChecking developer tooling..."
 

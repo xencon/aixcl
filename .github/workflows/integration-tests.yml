@@ -54,8 +54,6 @@ jobs:
           OLLAMA_KEEP_ALIVE=1800
           OLLAMA_NUM_GPU=1
           OLLAMA_NUM_THREAD=8
-          VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
-          VLLM_CUDA_GRAPH_CAPTURE=0
           EOF
 
           # Validate main compose file
@@ -84,12 +82,10 @@ jobs:
           # Test engine set commands
           chmod +x ./aixcl
 
-          # Test each engine
-          for engine in ollama vllm llamacpp; do
-            ./aixcl engine set $engine
-            grep -q "INFERENCE_ENGINE=$engine" .env || exit 1
-            echo "✓ Engine $engine configured"
-          done
+          # Test the supported engine
+          ./aixcl engine set ollama
+          grep -q "INFERENCE_ENGINE=ollama" .env || exit 1
+          echo "✓ Engine ollama configured"
 
           # Test auto-detect
           ./aixcl engine auto

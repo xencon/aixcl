@@ -37,7 +37,7 @@ COMMANDS
               Show logs for all services (last 100 lines then follow), or for one
               service with optional line count n (default 50, range 1-10000),
               then follow. Use 'engine' as svc to see logs for the active
-              inference engine (ollama, vllm, or llamacpp).
+              inference engine (ollama).
 
         stack init
                Generate .env file, admin credentials, and Vault secrets (one-time).
@@ -49,7 +49,7 @@ COMMANDS
               Control individual service
 
               Runtime Core Services (always enabled):
-              $INFERENCE_ENGINE (e.g., ollama, vllm, llamacpp)
+              $INFERENCE_ENGINE (e.g., ollama)
 
               Operational Services (profile-dependent):
               open-webui, postgres, pgadmin, prometheus, grafana,
@@ -68,7 +68,7 @@ COMMANDS
        engine <set|auto> [engine]
                Configure the active inference engine.
 
-               set     Manually assign an engine (ollama, vllm, llamacpp)
+               set     Manually assign an engine (ollama)
                auto    Auto-detect optimal engine based on hardware
 
        utils check-env
@@ -128,7 +128,7 @@ ENVIRONMENT
 
        INFERENCE_ENGINE
               The core backend running inference. Default: ollama.
-              Supported options: ollama, vllm, llamacpp.
+              Supported options: ollama.
 
        POSTGRES_USER
               PostgreSQL username
@@ -157,7 +157,7 @@ ARCHITECTURE
 
        Runtime Core (Strict)
               Always enabled, required for AIXCL to function:
-              - Inference Engine: LLM inference engine (Ollama, vLLM, llama.cpp)
+              - Inference Engine: LLM inference engine (Ollama)
               - OpenCode: VS Code plugin for IDE integration
 
        Operational Services (Guided)

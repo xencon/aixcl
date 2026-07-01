@@ -8,7 +8,7 @@ Profiles define **which operational services are enabled** alongside the **alway
 
 The runtime core consists of one component:
 
-- **Inference Engine** (e.g., Ollama, vLLM, llama.cpp) - LLM inference engine (Docker-managed service)
+- **Inference Engine** (Ollama) - LLM inference engine (Docker-managed service)
 
 The Inference Engine exposes an OpenAI-compatible API. AI coding clients (OpenCode, Claude Code, Cursor, or any compatible tool) connect to this API. Clients are not part of the runtime core and are not Docker-managed; they are configured separately in their respective tool directories (`.opencode/`, `.claude/`).
 
