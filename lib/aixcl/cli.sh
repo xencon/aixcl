@@ -50,6 +50,18 @@ COMMANDS
         prune                                           Clean Docker resources (keeps images)
         prune --all                                     Full wipe including images
 
+    checks <action>
+        all                                             Run every local CI check with summary
+        paths                                           Documentation links and stale paths
+        agents                                          .claude/.opencode mirror parity
+        elisions                                        AI-elision placeholders, mass deletions
+        generated                                       Tracked generated files
+        ascii                                           Non-ASCII punctuation in markdown
+        yaml                                            yamllint over the repository
+        compose                                         Compose file validation
+        env                                             Environment prerequisites
+        pr-refs <file>                                  Issue/PR body reference style
+
     vault <action>
         start                                           Start Vault container
         stop                                            Stop Vault container
