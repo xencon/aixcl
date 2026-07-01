@@ -7,23 +7,23 @@ Read this if you are starting a session or if something unexpected happened.
 
 ### Pitfall: Pushing to the wrong remote
 
-**What happens:** `git push origin issue-<N>/...` is blocked or pushes to the
-wrong repository.
+**What happens:** An agent tries to push directly to the canonical repository
+(`xencon/aixcl`) instead of the personal fork, and is blocked by branch protection.
 
-**Why:** `origin` is the upstream repository (`xencon/aixcl`). Direct pushes
-to `origin` are blocked by branch protection. Feature branches go to the
-personal fork (`sbadakhc/aixcl`), which is the `fork` remote.
+**Why:** `origin` is the personal fork (`sbadakhc/aixcl`). Feature branches go
+to `origin`. The canonical repository (`xencon/aixcl`) is the `upstream` remote --
+PRs target it but direct pushes are blocked by branch protection.
 
 **Fix:**
 ```bash
-git remote -v                          # Check what remotes exist
-git push fork issue-<N>/<description>  # Always push to fork
-gh pr create --repo xencon/aixcl ...   # PR targets origin
+git remote -v                              # Check what remotes exist
+git push origin issue-<N>/<description>   # Push to personal fork
+gh pr create --repo xencon/aixcl ...      # PR targets upstream
 ```
 
-If `fork` remote is missing:
+If `upstream` remote is missing:
 ```bash
-git remote add fork git@github.com:sbadakhc/aixcl.git
+git remote add upstream git@github.com:xencon/aixcl.git
 ```
 
 Use SSH, not HTTPS -- HTTPS push is blocked for repositories containing
