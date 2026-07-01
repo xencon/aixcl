@@ -33,7 +33,7 @@ Do **not** attempt to generalize or abstract the runtime core.
 
 The following component **always** forms the AIXCL runtime core:
 
-- **Inference Engine** (e.g., Ollama, vLLM, llama.cpp) - LLM inference engine (Docker-managed service)
+- **Inference Engine** (Ollama) - LLM inference engine (Docker-managed service)
 
 This component is:
 - Always enabled

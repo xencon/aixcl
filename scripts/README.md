@@ -14,16 +14,13 @@ scripts/
 +-- exporters/        # Metrics exporters
 +-- hooks/            # Git hooks
 +-- runtime/          # Container entrypoint scripts
-|   +-- configure-openwebui-direct-connections.sh
 |   +-- grafana-entrypoint.sh
-|   +-- llamacpp-entrypoint.sh
 |   +-- ollama-entrypoint.sh
 |   +-- openwebui-entrypoint.sh
 |   +-- openwebui-vault-entrypoint.sh
 |   +-- pgadmin-entrypoint.sh
 |   +-- postgres-exporter-entrypoint.sh
-|   +-- postgres-secret-entrypoint.sh
-|   `-- vllm-entrypoint.sh
+|   `-- postgres-secret-entrypoint.sh
 +-- security/         # Security checks
 +-- utils/            # Setup and utility scripts
 |   +-- init-volumes.sh

@@ -19,7 +19,7 @@ ERRORS=0
 echo "Checking services/docker-compose.yml..."
 
 # Verify external volumes are declared
-for volume in aixcl-ollama-data aixcl-hf-cache aixcl-llamacpp-data aixcl-pgdata; do
+for volume in aixcl-ollama-data aixcl-pgdata; do
   if ! grep -q "^  ${volume}:" services/docker-compose.yml; then
     echo -e "${RED}[✗]${NC} Volume ${volume} not declared in volumes section"
     ERRORS=$((ERRORS + 1))
@@ -42,14 +42,6 @@ if [ -f "services/docker-compose.gpu.yml" ]; then
   else
     echo -e "${GREEN}[✓]${NC} GPU compose uses external volumes from base"
   fi
-  
-  # Check that llamacpp has required configuration
-  if grep -A20 "^  llamacpp:" services/docker-compose.gpu.yml | grep -q "entrypoint:"; then
-    echo -e "${GREEN}[✓]${NC} llamacpp GPU config has entrypoint"
-  else
-    echo -e "${RED}[✗]${NC} llamacpp GPU config missing entrypoint"
-    ERRORS=$((ERRORS + 1))
-  fi
 fi
 
 # Check devcontainer compose
@@ -57,7 +49,7 @@ echo ""
 echo "Checking .devcontainer/docker-compose.dev.yml..."
 
 if [ -f ".devcontainer/docker-compose.dev.yml" ]; then
-  for volume in aixcl-ollama-data aixcl-hf-cache aixcl-llamacpp-data aixcl-pgdata; do
+  for volume in aixcl-ollama-data aixcl-pgdata; do
     if ! grep -q "${volume}:" .devcontainer/docker-compose.dev.yml; then
       echo -e "${RED}[✗]${NC} Devcontainer missing volume ${volume}"
       ERRORS=$((ERRORS + 1))
@@ -65,7 +57,7 @@ if [ -f ".devcontainer/docker-compose.dev.yml" ]; then
       echo -e "${GREEN}[✓]${NC} Devcontainer has volume ${volume}"
     fi
   done
-  
+
   # Check volumes are marked as external (look within first 30 lines after volumes:)
   if grep -A30 "^volumes:" .devcontainer/docker-compose.dev.yml | grep -q "external: true"; then
     echo -e "${GREEN}[✓]${NC} Devcontainer volumes are external"

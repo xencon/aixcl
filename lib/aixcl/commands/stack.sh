@@ -539,47 +539,6 @@ function start() {
         fi
     fi
 
-    # Check if llamacpp engine is selected and verify model exists
-    # This prevents container restart loops when no model is configured
-    if [ "${INFERENCE_ENGINE:-ollama}" = "llamacpp" ]; then
-        echo "Checking llamacpp model configuration..."
-        local llama_model="${INFERENCE_MODEL:-}"
-
-        if [ -z "$llama_model" ]; then
-            echo "[ ] Error: No model configured for llamacpp engine"
-            echo "   INFERENCE_MODEL is not set in .env file"
-            echo ""
-            echo "   To add a model, run:"
-            echo "      ./aixcl models add <path/to/model.gguf>"
-            echo ""
-            echo "   Example:"
-            echo "      ./aixcl models add Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf"
-            echo ""
-            exit 1
-        fi
-
-        # Check if model file exists in the llamacpp-data volume
-        local model_basename
-        model_basename=$(basename "$llama_model")
-
-        # Check if llamacpp-data volume exists (Docker named volume)
-        if "${DOCKER_BIN:-docker}" volume ls --format "{{.Name}}" | grep -q "^services_llamacpp-data$"; then
-            # Check if model exists in the Docker volume
-            if ! "${DOCKER_BIN:-docker}" run --rm -v "services_llamacpp-data:/models" alpine test -f "/models/${model_basename}" 2>/dev/null; then
-                echo "[ ] Error: Model file not found: ${model_basename}"
-                echo "   Model configured: ${llama_model}"
-                echo ""
-                echo "   The model must be downloaded before starting the stack."
-                echo "   To add the model, run:"
-                echo "      ./aixcl models add ${llama_model}"
-                echo ""
-                exit 1
-            fi
-        fi
-
-        echo "[x] Llamacpp model verified: ${model_basename}"
-    fi
-
     # Pre-create logs directory with correct ownership to prevent root-owned directories
     # Docker creates host directories for bind mounts using the container's user (root)
     # which causes permission issues. By pre-creating with current user, we avoid this.
@@ -1266,7 +1225,7 @@ function stop_service() {
         log_error "Service name is required"
         log_info "Usage: $0 service stop <service-name>"
         echo ""
-        log_info "Runtime Core Services (always enabled): ${INFERENCE_ENGINE:-ollama} (supported: ollama, vllm, llamacpp)"
+        log_info "Runtime Core Services (always enabled): ${INFERENCE_ENGINE:-ollama} (supported: ollama)"
         log_info "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
         log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
@@ -1458,7 +1417,7 @@ function logs() {
         log_error "Unknown container '$service_name'"
         echo ""
         log_info "Runtime Core Services (Active: ${INFERENCE_ENGINE:-ollama}):"
-        log_info "  engine (ollama, vllm, llamacpp)"
+        log_info "  engine (ollama)"
         echo ""
         log_info "Operational Services:"
         log_info "  ${ALL_SERVICES[*]}"
@@ -1670,39 +1629,7 @@ function status() {
 
     # Runtime Core
     echo "Runtime Core"
-    local active_engine
-    active_engine="${INFERENCE_ENGINE:-ollama}"
-
-    # Define engines and their health check URLs
-    local engines=("ollama" "vllm" "llamacpp")
-    local names=("Ollama" "vLLM" "llama.cpp")
-    local urls=(
-        "http://127.0.0.1:11434/api/version"
-        "http://127.0.0.1:11434/v1/models"
-        "http://127.0.0.1:11434/v1/models"
-    )
-
-    for i in "${!engines[@]}"; do
-        local engine
-        engine="${engines[$i]}"
-
-        # Only show the active engine (the one that SHOULD be running in the current profile)
-        if [ "$engine" != "$active_engine" ]; then
-            continue
-        fi
-
-        local name
-        name="${names[$i]}"
-        local url
-        url="${urls[$i]}"
-        local suffix=""
-
-        if [ "$engine" = "$active_engine" ]; then
-            suffix=" (Active Engine)"
-        fi
-
-        check_service_status "$name$suffix" "$engine" "curl" "$url"
-    done
+    check_service_status "Ollama (Active Engine)" "ollama" "curl" "http://127.0.0.1:11434/api/version"
 
     echo ""
 

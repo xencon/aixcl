@@ -99,7 +99,7 @@ get_test_duration() {
 assert_command_success() {
     local cmd="$1"
     local description="${2:-Command: $cmd}"
-    
+
     log_info "Executing: $cmd"
     if eval "$cmd" > /tmp/test_output.log 2>&1; then
         log_success "$description"
@@ -117,7 +117,7 @@ assert_command_success() {
 assert_command_fail() {
     local cmd="$1"
     local description="${2:-Command should fail: $cmd}"
-    
+
     log_info "Executing (expecting failure): $cmd"
     if eval "$cmd" > /tmp/test_output.log 2>&1; then
         log_error "$description"
@@ -185,7 +185,7 @@ assert_env_equals() {
     local var="$1"
     local expected="$2"
     local file="${SCRIPT_DIR}/.env"
-    
+
     if [[ -f "$file" ]]; then
         local actual
         actual=$(grep "^${var}=" "$file" | cut -d'=' -f2- || echo "")
@@ -217,7 +217,7 @@ assert_container_healthy() {
     local container="$1"
     local status
     status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
-    
+
     if [[ "$status" == "healthy" ]]; then
         log_success "Container healthy: $container"
         return 0
@@ -230,7 +230,7 @@ assert_container_healthy() {
 assert_api_responds() {
     local url="$1"
     local timeout="${2:-30}"
-    
+
     log_info "Checking API: $url (timeout: ${timeout}s)"
     if curl -sf "$url" --max-time "$timeout" > /dev/null 2>&1; then
         log_success "API responds: $url"
@@ -256,20 +256,10 @@ assert_port_listening() {
 # Utility Functions
 # ============================================================================
 
-has_nvidia_gpu() {
-    if command -v nvidia-smi > /dev/null 2>&1 && nvidia-smi > /dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 get_engine_container() {
     local engine="$1"
     case "$engine" in
         ollama) echo "ollama" ;;
-        vllm) echo "vllm" ;;
-        llamacpp) echo "llamacpp" ;;
         *) echo "" ;;
     esac
 }
@@ -278,7 +268,7 @@ wait_for_container() {
     local container="$1"
     local max_wait="${2:-60}"
     local waited=0
-    
+
     log_info "Waiting for container: $container (max ${max_wait}s)"
     while [[ $waited -lt $max_wait ]]; do
         if docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
@@ -298,7 +288,7 @@ wait_for_container_healthy() {
     local container="$1"
     local max_wait="${2:-120}"
     local waited=0
-    
+
     log_info "Waiting for container healthy: $container (max ${max_wait}s)"
     while [[ $waited -lt $max_wait ]]; do
         # Check if container exists first
@@ -306,16 +296,16 @@ wait_for_container_healthy() {
             ((waited++))
             continue
         fi
-        
+
         # Check health status
         local health_status
         health_status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "none")
-        
+
         if [[ "$health_status" == "healthy" ]]; then
             log_success "Container healthy: $container (ready after ${waited}s)"
             return 0
         fi
-        
+
         # If no healthcheck configured, check if running
         if [[ "$health_status" == "none" ]]; then
             local state
@@ -325,7 +315,7 @@ wait_for_container_healthy() {
                 return 0
             fi
         fi
-        
+
         ((waited++))
     done
     log_error "Timeout waiting for container healthy: $container"
@@ -366,7 +356,7 @@ print_summary() {
     echo -e "${RED}Failed:  $TESTS_FAILED${NC}"
     echo -e "${YELLOW}Skipped: $TESTS_SKIPPED${NC}"
     echo ""
-    
+
     if [[ $TESTS_FAILED -eq 0 ]]; then
         echo -e "${GREEN}✅ All tests passed!${NC}"
         return 0
@@ -382,12 +372,12 @@ generate_report() {
     local end_time
     end_time=$(date +%s)
     local total_duration=$((end_time - start_time))
-    
+
     cat > "$report_file" << EOF
 # AIXCL Platform Test Results
 
-**Generated**: $(date -Iseconds)  
-**Total Duration**: ${total_duration}s  
+**Generated**: $(date -Iseconds)
+**Total Duration**: ${total_duration}s
 **Status**: $(if [[ $TESTS_FAILED -eq 0 ]]; then echo "✅ PASSED"; else echo "❌ FAILED"; fi)
 
 ## Summary
@@ -409,7 +399,7 @@ EOF
         IFS='|' read -r status test message duration <<< "$result"
         echo "| $status | $test | $message | $duration |" >> "$report_file"
     done
-    
+
     {
         echo ""
         echo "---"
@@ -425,7 +415,7 @@ export -f assert_file_exists assert_file_contains
 export -f assert_string_contains assert_string_not_contains
 export -f assert_env_equals assert_container_running
 export -f assert_container_healthy assert_api_responds assert_port_listening
-export -f has_nvidia_gpu get_engine_container wait_for_container wait_for_api
+export -f get_engine_container wait_for_container wait_for_api
 export -f print_summary generate_report
 
 export SCRIPT_DIR AIXCL_BIN

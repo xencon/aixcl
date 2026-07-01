@@ -30,54 +30,6 @@ services:
         usermod -aG video,render "$OLLAMA_USER" 2>/dev/null || true
         exec su - "$OLLAMA_USER" -c "exec ollama serve"
 
-  vllm:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    # Docker-in-Docker constraint: bind-mounted entrypoint scripts are unavailable
-    # in DinD environments, so the primary entrypoint logic is inlined here.
-    # PARITY REQUIREMENT: keep this block in sync with
-    # scripts/runtime/vllm-entrypoint.sh when that file changes.
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        VLLM_HOME="/home/vllm"
-        mkdir -p "$VLLM_HOME/.cache/huggingface"
-        if [ -w "$VLLM_HOME" ]; then
-            chown -R "$(id -u):$(id -g)" "$VLLM_HOME/.cache" 2>/dev/null || true
-        fi
-        exec python3 -m vllm.entrypoints.openai.api_server \
-            --host 0.0.0.0 \
-            --port 11434 \
-            --model "${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}" \
-            --trust-remote-code
-    environment:
-      - VLLM_MODEL=${VLLM_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct}
-
-  llamacpp:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    # Keep the entrypoint script for GPU mode - it handles model detection and startup
-    volumes:
-      - aixcl-llamacpp-data:/models
-      - ../scripts/runtime/llamacpp-entrypoint.sh:/usr/local/bin/llamacpp-entrypoint.sh:ro
-    environment:
-      - INFERENCE_MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf}
-      # Enable GPU support for llama.cpp via CUDA environment variables
-      - CUDA_VISIBLE_DEVICES=all
-      - NVIDIA_VISIBLE_DEVICES=all
-    entrypoint: ["/usr/local/bin/llamacpp-entrypoint.sh"]
-    command: ["--host", "0.0.0.0", "--port", "11434"]
-
   nvidia-gpu-exporter:
     deploy:
       resources:

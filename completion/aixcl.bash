@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Bash completion script for aixcl
-# 
+#
 # This script provides command completion for the aixcl command-line tool.
 # It offers suggestions for commands and model names when using the add/remove commands.
 #
@@ -30,16 +30,16 @@ _get_ollama_models() {
 _aixcl_complete() {
     local cur prev words cword
     COMPREPLY=()
-    
+
     # Disable default filename completion to prevent showing files/directories like "tests"
     compopt -o default 2>/dev/null || true
-    
+
     # Get current word and previous word
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
-    
+
     # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
     local commands="app stack service models engine utils vault help restart"
 
@@ -64,27 +64,27 @@ _aixcl_complete() {
     # Service categorization per AIXCL governance model (docs/architecture/governance/00_invariants.md)
     # Runtime Core (Strict): Always enabled, required for AIXCL to function
     # Note: OpenCode is a VS Code plugin, not a containerized service
-    local runtime_core_services="ollama vllm llamacpp"
-    
+    local runtime_core_services="ollama"
+
     # Operational Services (Guided): Profile-dependent, support/observe runtime
     # - Persistence: postgres, pgadmin
     # - Observability: prometheus, grafana, loki, cadvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter
     # - UI: open-webui
     local operational_services="open-webui postgres pgadmin prometheus grafana cadvisor node-exporter postgres-exporter nvidia-gpu-exporter loki"
-    
+
     # Combined list of all services (for backward compatibility and general completion)
     # Includes 'engine' alias for convenience
     local services="$runtime_core_services $operational_services engine"
-    
+
     # Valid profiles (must match VALID_PROFILES in lib/cli/profile.sh)
     local profiles="bld sys"
-    
+
     # If we're completing the first argument (right after the command)
     if (( cword == 1 )); then
         mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
         return 0
     fi
-    
+
     # Handle subcommands
     case "$prev" in
         'stack')
@@ -182,7 +182,7 @@ _aixcl_complete() {
             ;;
         'set')
             if (( cword >= 2 )) && [[ "${words[cword-2]}" == "engine" ]]; then
-                local engines="ollama vllm llamacpp"
+                local engines="ollama"
                 mapfile -t COMPREPLY < <(compgen -W "$engines" -- "$cur")
                 return 0
             fi
@@ -305,13 +305,13 @@ _aixcl_complete() {
             fi
             ;;
     esac
-    
+
     # If we reach here and COMPREPLY is empty, explicitly prevent filename completion
     if [ ${#COMPREPLY[@]} -eq 0 ]; then
         COMPREPLY=()
         return 0
     fi
-    
+
     return 0
 }
 

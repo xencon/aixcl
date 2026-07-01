@@ -19,7 +19,7 @@ COMMANDS
         init                                            Initialize .env and credentials
 
     engine <action> [<engine>]
-        set {ollama|vllm|llamacpp}                      Set inference engine
+        set {ollama}                                    Set inference engine
         auto                                            Auto-detect optimal engine
 
     models <action> [<name>...]
@@ -80,28 +80,28 @@ EOF
 function install_completion() {
     echo "Installing bash completion for aixcl..."
     echo "Cleaning up any existing completion files..."
-    
+
     # Get the script directory (already set globally)
     # SCRIPT_DIR and COMPLETION_SCRIPT are already defined at script startup
-    
+
     if [[ ! -f "$COMPLETION_SCRIPT" ]]; then
         echo "Error: Completion script not found at $COMPLETION_SCRIPT"
         exit 1
     fi
-    
+
     # Clean up existing completion files
     local cleanup_dirs=(
         "$HOME/.local/share/bash-completion/completions"
         "/etc/bash_completion.d"
     )
-    
+
     for dir in "${cleanup_dirs[@]}"; do
         if [[ -f "$dir/aixcl" ]]; then
             echo "Removing existing completion file: $dir/aixcl"
             rm -f "$dir/aixcl"
         fi
     done
-    
+
     # Clean up .bashrc - remove any old aixcl completion references
     if [[ -f "$HOME/.bashrc" ]]; then
         echo "Cleaning up .bashrc..."
@@ -110,7 +110,7 @@ function install_completion() {
         # Remove the entire completion block using sed
         # Pattern: from "Added by aixcl installer" through the next standalone "fi"
         sed '/Added by aixcl installer/,/^[[:space:]]*fi[[:space:]]*$/d' "$HOME/.bashrc" > "$temp_bashrc" || cp "$HOME/.bashrc" "$temp_bashrc"
-        
+
         # Also remove any broken if/fi pairs where if contains aixcl but source was already removed
         # This handles the case where only "if ... then" and "fi" remain
         awk '
@@ -149,7 +149,7 @@ function install_completion() {
             }
         ' "$temp_bashrc" > "${temp_bashrc}.2" || cp "$temp_bashrc" "${temp_bashrc}.2"
         mv "${temp_bashrc}.2" "$temp_bashrc"
-        
+
         # Only replace if we actually removed something or if file is different
         if ! cmp -s "$HOME/.bashrc" "$temp_bashrc"; then
             cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$(date +%s)" 2>/dev/null || true
@@ -159,7 +159,7 @@ function install_completion() {
             rm -f "$temp_bashrc"
         fi
     fi
-    
+
     # Determine the appropriate completion directory
     if [[ -d "/etc/bash_completion.d" ]] && [[ -w "/etc/bash_completion.d" ]]; then
         # System-wide installation (requires write permission)
@@ -172,11 +172,11 @@ function install_completion() {
         COMPLETION_DIR="$HOME/.local/share/bash-completion/completions"
         mkdir -p "$COMPLETION_DIR"
     fi
-    
+
     # Copy the completion script
     cp "$COMPLETION_SCRIPT" "$COMPLETION_DIR/aixcl"
     chmod +x "$COMPLETION_DIR/aixcl"
-    
+
     echo "[x] Bash completion installed to $COMPLETION_DIR/aixcl"
     echo ""
     echo "To use it immediately in this shell, run:"

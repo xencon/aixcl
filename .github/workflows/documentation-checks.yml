@@ -117,14 +117,6 @@ jobs:
           OLLAMA_KEEP_ALIVE=1800
           OLLAMA_NUM_GPU=1
           OLLAMA_NUM_THREAD=8
-          INFERENCE_MODEL=Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
-
-          # vLLM configuration
-          VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
-          VLLM_CUDA_GRAPH_CAPTURE=0
-          VLLM_MODEL=Qwen/Qwen2.5-Coder-0.5B-Instruct
-          VLLM_GPU_MEMORY_UTILIZATION=0.8
-          VLLM_MAX_MODEL_LEN=32768
           EOF
 
       - name: Validate main compose file

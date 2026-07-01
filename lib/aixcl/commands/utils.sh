@@ -7,7 +7,7 @@ function needs_rebuild() {
     # Currently no local-build services remain in the stack.
     # The service parameter is kept for API compatibility.
     case "$service" in
-        open-webui|ollama|vllm|llamacpp)
+        open-webui|ollama)
             # These are all remote images now, no local builds
             return 1
             ;;

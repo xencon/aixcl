@@ -14,9 +14,6 @@ NC='\033[0m' # No Color
 # List of AIXCL external volumes
 VOLUMES=(
   "aixcl-ollama-data"
-  "aixcl-hf-cache"
-  "aixcl-vllm-data"
-  "aixcl-llamacpp-data"
   "aixcl-open-webui-main"
   "aixcl-open-webui-data"
   "aixcl-pgdata"
