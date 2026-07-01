@@ -100,3 +100,129 @@ EOF
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Inference API base URL |
+
+## Non-Containerized Apps
+
+Because the platform uses `network_mode: host`, all services are reachable on
+localhost from any process running on the host -- including native Python scripts,
+Node services, and Go binaries that are not yet Dockerized. No special configuration
+is required to reach the inference API or the database during local development.
+
+### Inference API (no Docker needed)
+
+```python
+import openai
+
+client = openai.OpenAI(
+    base_url="http://localhost:11434/v1",
+    api_key="unused",  # Ollama requires a non-empty value; content is ignored
+)
+
+response = client.chat.completions.create(
+    model="qwen2.5-coder:0.5b",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(response.choices[0].message.content)
+```
+
+### Database access
+
+Retrieve credentials for local development, then connect using any standard client:
+
+```bash
+./aixcl app secrets my-app
+# Prints db-password and any other provisioned secrets
+```
+
+```python
+import psycopg2, subprocess, json
+
+# Read the provisioned password
+pw = subprocess.check_output(
+    ["./aixcl", "app", "secrets", "my-app", "--json"],
+    text=True,
+)
+creds = json.loads(pw)
+
+conn = psycopg2.connect(
+    host="localhost", port=5432,
+    dbname="my_app", user="my_app",
+    password=creds["db-password"],
+)
+```
+
+### Registering a non-Dockerized app
+
+A non-Dockerized app can still declare a `prometheus` scrape target and register
+itself so the CLI tracks it. Create a minimal `app.yaml` alongside your code:
+
+```yaml
+app:
+  name: "my-app"
+  version: "0.1.0"
+
+# No services block needed for a native process
+
+prometheus:
+  targets:
+    - "localhost:9000"   # port your app exposes /metrics on
+  labels:
+    app: "my-app"
+    job: "my-app-service"
+```
+
+Register the directory:
+
+```bash
+./aixcl app register /path/to/my-app
+./aixcl app provision my-app   # creates Vault secrets and Postgres DB
+```
+
+Start your process manually and Prometheus will discover its metrics endpoint
+within 30 seconds.
+
+### Minimal Dockerfile for containerizing later
+
+When you are ready to containerize, use these patterns as a starting point:
+
+**Python (FastAPI)**
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 9000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9000"]
+```
+
+**Node.js**
+
+```dockerfile
+FROM node:20-slim
+WORKDIR /app
+COPY package*.json .
+RUN npm ci --omit=dev
+COPY . .
+EXPOSE 9000
+CMD ["node", "server.js"]
+```
+
+Mount the platform secrets volume to read provisioned credentials at runtime:
+
+```yaml
+# in your app docker-compose.yml
+volumes:
+  my-secrets:
+    name: aixcl-app-my-app-secrets
+    external: true
+
+services:
+  my-app-service:
+    ...
+    volumes:
+      - my-secrets:/run/secrets:ro
+```
+
+Secrets are then available as files: `/run/secrets/my-app-db-password`, etc.

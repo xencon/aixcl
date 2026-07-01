@@ -1,0 +1,54 @@
+# Prometheus alert rules for this application.
+# Place this file at apps/<name>/prometheus/alert-rules.yml.
+# The platform copies it to prometheus/app-alerts/<name>.yml on app start
+# and removes it on app stop/remove.
+#
+# Customize the metric names and thresholds to match your app's instrumentation.
+# The `app` label value must match the `app` label in your prometheus block (app.yaml).
+#
+# Reference: https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
+
+groups:
+  - name: my-app-alerts
+    rules:
+
+      # App is unreachable -- Prometheus cannot scrape the /metrics endpoint.
+      - alert: AppDown
+        expr: up{app="my-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          app: my-app
+        annotations:
+          summary: "App is down"
+          description: "{{ $labels.app }} has been unreachable for more than 1 minute."
+
+      # High HTTP error rate -- more than 5% of requests are returning 5xx.
+      # Requires http_requests_total{app=..., status=~"5.."} counter.
+      - alert: AppHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{app="my-app", status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{app="my-app"}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          app: my-app
+        annotations:
+          summary: "High error rate"
+          description: "{{ $labels.app }} error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      # High p95 latency -- 95th percentile response time exceeds 2 seconds.
+      # Requires http_request_duration_seconds histogram.
+      - alert: AppHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{app="my-app"}[5m])) by (le)
+          ) > 2
+        for: 2m
+        labels:
+          severity: warning
+          app: my-app
+        annotations:
+          summary: "High p95 latency"
+          description: "{{ $labels.app }} p95 latency is {{ $value | humanizeDuration }} over the last 5 minutes."

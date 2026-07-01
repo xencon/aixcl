@@ -567,6 +567,9 @@ app_cmd_start() {
         _app_wire_grafana "$app_name"
     fi
 
+    # Wire Prometheus alert rules if present (no manifest flag needed -- file presence is the signal)
+    _app_wire_alerts "$app_name"
+
     echo ""
 }
 
@@ -615,6 +618,12 @@ app_cmd_stop() {
     local prom_file="${SCRIPT_DIR}/prometheus/file_sd/${app_name}.json"
     if [ -f "$prom_file" ]; then
         rm -f "$prom_file"
+    fi
+
+    # Remove alert rules if present
+    local alert_file="${SCRIPT_DIR}/prometheus/app-alerts/${app_name}.yml"
+    if [ -f "$alert_file" ]; then
+        rm -f "$alert_file"
     fi
 }
 
@@ -886,13 +895,19 @@ app_cmd_remove() {
         rm -f "$prom_file"
     fi
 
-    # 3a. Remove Grafana dashboard files if present (handle both lowercase and uppercase app names)
+    # 3a. Remove alert rules if present
+    local alert_file="${SCRIPT_DIR}/prometheus/app-alerts/${app_name}.yml"
+    if [ -f "$alert_file" ]; then
+        rm -f "$alert_file"
+    fi
+
+    # 3b. Remove Grafana dashboard files if present (handle both lowercase and uppercase app names)
     local grafana_dash="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/${app_name}"
     if [ -d "$grafana_dash" ]; then
         rm -rf "$grafana_dash"
     fi
 
-    # 3b. Handle uppercase app name variant (e.g., ftso -> FTSO for display names)
+    # 3c. Handle uppercase app name variant
     local grafana_dash_upper
     grafana_dash_upper="${SCRIPT_DIR}/grafana/provisioning/dashboards/apps/$(echo "$app_name" | tr '[:lower:]' '[:upper:]')"
     if [ -d "$grafana_dash_upper" ] && [ "$grafana_dash_upper" != "$grafana_dash" ]; then
@@ -1267,6 +1282,23 @@ _app_generate_prometheus_targets() {
 EOF
 
     echo "  ${ICON_SUCCESS:-[x]} Prometheus targets"
+}
+
+# Copy alert rules from app into prometheus/app-alerts/ so Prometheus picks them up.
+# Looks for <app_dir>/prometheus/alert-rules.yml; no-ops silently if absent.
+_app_wire_alerts() {
+    local app_name="${1:-}"
+    local app_dir
+    app_dir="$(_app_resolve_dir "$app_name" 2>/dev/null)" || app_dir="${SCRIPT_DIR}/apps/${app_name}"
+    local src="${app_dir}/prometheus/alert-rules.yml"
+    local dst_dir="${SCRIPT_DIR}/prometheus/app-alerts"
+    local dst="${dst_dir}/${app_name}.yml"
+
+    [ -f "$src" ] || return 0
+
+    mkdir -p "$dst_dir"
+    cp -f "$src" "$dst"
+    echo "  ${ICON_SUCCESS:-[x]} Prometheus alert rules"
 }
 
 # Copy Grafana dashboards from app into platform provisioning
