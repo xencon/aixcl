@@ -4,6 +4,46 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.43] - 2026-07-01
+
+### Summary
+
+Release v1.1.43 -- Agentic orientation, app alert wiring, and component updates. Fixes agent-pitfalls remote naming, adds Prometheus alert rules scaffolding for apps, adds optional Loki push to the LLM tracing wrapper, introduces a check-agent-id-block script, and updates 13 platform components.
+
+### Added
+
+- [x] **Prometheus Alert Rules Wiring for Apps**: `_app_wire_alerts()` function in `lib/aixcl/commands/app.sh` copies `apps/<name>/prometheus/alert-rules.yml` to `prometheus/app-alerts/<name>.yml` on start and removes it on stop/remove. Platform now loads `app-alerts/*.yml` via `rule_files` in `prometheus/prometheus.yml`. Starter template at `etc/app-scaffold/prometheus/alert-rules.yml` with three example alerts (AppDown, AppHighErrorRate, AppHighLatency). Closes #1630.
+- [x] **Agent ID Block Check Script**: New `scripts/checks/check-agent-id-block.sh` validates that agent-authored PR bodies and issue comments include the required identification block (AGENTS.md section 9.5). Referenced in both `workflow-guard` skill mirrors. Closes #1630.
+- [x] **Optional Loki Push in LLM Tracer**: `scripts/utils/trace-llm-call.sh` now pushes the latest trace entry to Loki when `LOKI_ENABLED=true`. Push is best-effort -- failures are suppressed so the JSON-lines trace file remains the reliable primary store. Closes #1630.
+- [x] **Starter Grafana App Dashboard**: New `etc/app-scaffold/grafana/dashboards/app-overview.json` provides a four-panel starter dashboard (request rate, error rate, latency percentiles, LLM calls) templated on an `$app` variable. Closes #1630.
+- [x] **check-updates Skill**: New skill for auditing platform component versions against upstream releases. Closes #1605.
+
+### Changed
+
+- [x] **Open WebUI v0.9.6 -> v0.10.1**: Closes #1595.
+- [x] **Ollama 0.30.7 -> 0.31.1**: Closes #1592.
+- [x] **Grafana 13.0.2 -> 13.0.3**: Closes #1597.
+- [x] **Loki 3.7.2 -> 3.7.3**: Closes #1596.
+- [x] **Alertmanager v0.32.2 -> v0.33.0**: Closes #1594.
+- [x] **NVIDIA GPU Exporter 1.4.1 -> 1.5.0**: Closes #1598.
+- [x] **Vault 2.0.2 -> 2.0.3**: Closes #1590.
+- [x] **Postgres Exporter v0.19.1 -> v0.20.0**: Closes #1601.
+- [x] **cAdvisor v0.55.1 -> v0.60.3**: Closes #1599.
+- [x] **gitleaks v8.21.2 -> v8.30.1**: Closes #1603.
+- [x] **yamllint v1.35.1 -> v1.38.0**: Closes #1602.
+- [x] **pre-commit-hooks v5.0.0 -> v6.0.0**: Closes #1600.
+- [x] **docker/setup-buildx-action v4 -> v4.1.0**: SHA-pinned in all CI workflows. Closes #1604.
+
+### Fixed
+
+- [x] **Revert vLLM and llama.cpp to Known-Good Tags**: vLLM v0.24.0 and llama.cpp b9851 were demoted after failing validation; reverted to v0.22.1 and b9585 respectively. Closes #1622.
+
+### Documentation
+
+- [x] **Fix Agent-Pitfalls Remote Naming**: `docs/developer/agent-pitfalls.md` had origin and upstream reversed -- corrected to match the actual two-remote fork layout (origin=personal fork, upstream=canonical). Closes #1630.
+- [x] **Agentic Orientation Gaps Closed**: `etc/app-scaffold/app.yaml` now includes a `provision` block; `docs/user/apps.md` replaces dead FTSO section with generic scaffold workflow; `docs/developer/adding-apps.md` adds Grafana integration, alert rules, and log integration sections; `docs/developer/app-builder-guide.md` adds non-containerised app patterns. Closes #1630.
+- [x] **Fix Broken Link in adding-services.md**: Updated stale reference from `../operations/security.md` (deleted) to `../operations/security-runbook.md`. Closes #1630.
+
 ## [v1.1.42] - 2026-06-30
 
 ### Summary
