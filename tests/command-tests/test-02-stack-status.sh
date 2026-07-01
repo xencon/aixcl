@@ -30,7 +30,7 @@ if echo "$STATUS_OUTPUT" | grep -q "Status: Running"; then
     log_info "Stack is running -- asserting bootstrap container health"
 
     for bootstrap in \
-        "Vault Agent Bootstrap (PostgreSQL)" \
+        "Vault Agent Bootstrap (Postgres)" \
         "Vault Agent Bootstrap (Open WebUI)" \
         "Vault Agent Bootstrap (pgAdmin)" \
         "Vault Agent Bootstrap (Grafana)"; do
