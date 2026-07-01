@@ -320,6 +320,71 @@ To verify targets are detected:
 
 Dashboards listed in the `grafana` block of the manifest are copied into `grafana/provisioning/dashboards/apps/<app>/` when the app starts (a dedicated subdirectory avoids UID collisions with platform dashboards). Grafana's provisioner picks up changes on its scan interval; restart Grafana to force a reload.
 
+A starter dashboard template is available at `etc/app-scaffold/grafana/dashboards/app-overview.json`. Copy it into your app directory and reference it in the `grafana` block:
+
+```yaml
+grafana:
+  dashboards:
+    - "grafana/dashboards/app-overview.json"
+```
+
+## Log Integration
+
+Container logs do **not** flow to Loki automatically. The platform runs Loki as a log store but does not include Promtail or a Docker log driver plugin, so no automatic log shipping is configured.
+
+### Options
+
+**Option 1 -- Docker Loki log driver (recommended for containerized apps)**
+
+Install the Grafana Loki Docker driver plugin once per host:
+
+```bash
+docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+```
+
+Then add a `logging` block to your service in `docker-compose.yml`:
+
+```yaml
+services:
+  my-app-service:
+    image: my-app:latest
+    network_mode: host
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://localhost:3100/loki/api/v1/push"
+        loki-external-labels: "app=my-app,job=my-app-service"
+```
+
+Logs are then queryable in Grafana under Explore -> Loki using `{app="my-app"}`.
+
+**Option 2 -- Push logs from application code**
+
+Send structured log lines directly to the Loki push API:
+
+```bash
+curl -s -X POST http://localhost:3100/loki/api/v1/push \
+  -H "Content-Type: application/json" \
+  -d '{
+    "streams": [{
+      "stream": {"app": "my-app", "level": "info"},
+      "values": [["'"$(date +%s%N)"'", "your log message here"]]
+    }]
+  }'
+```
+
+Most logging libraries (Python structlog, Winston, etc.) have Loki appenders that handle this automatically.
+
+**Option 3 -- Query stdout via `docker logs`**
+
+For local development without Loki integration, query container logs directly:
+
+```bash
+docker logs my-app-service --follow
+# Or via the CLI wrapper:
+./aixcl stack logs
+```
+
 ## Lifecycle and Isolation
 
 - Applications run under `network_mode: host` alongside the platform
