@@ -37,8 +37,6 @@ grep "image:" services/docker-compose.yml | grep -v "#" | \
 | Ollama | `ollama/ollama:<tag>` | hub.docker.com |
 | Vault | `hashicorp/vault:<tag>` | hub.docker.com |
 | PostgreSQL | `library/postgres:<tag>` | hub.docker.com |
-| vLLM | `vllm/vllm-openai:<tag>` | hub.docker.com |
-| llama.cpp | `ghcr.io/ggml-org/llama.cpp:<tag>` | ghcr.io |
 | Open WebUI | `ghcr.io/open-webui/open-webui:<tag>` | ghcr.io (GitHub releases) |
 | pgAdmin 4 | `dpage/pgadmin4:<tag>` | hub.docker.com |
 | Prometheus | `prom/prometheus:<tag>` | GitHub releases |
@@ -102,8 +100,6 @@ for repo in \
   "ollama/ollama" \
   "open-webui/open-webui" \
   "google/cadvisor" \
-  "vllm-project/vllm" \
-  "ggml-org/llama.cpp" \
   "grafana/loki" \
   "prometheus/prometheus" \
   "prometheus/alertmanager" \

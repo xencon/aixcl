@@ -48,7 +48,7 @@ Profile-specific configuration files. These define the services and settings for
 ## Usage
 
 The main `.env` file in the project root is used for:
-- Inference engine selection (ollama, vllm, llamacpp)
+- Inference engine selection (ollama)
 - Database credentials
 - API keys and secrets
 - Default profile selection

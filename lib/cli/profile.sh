@@ -18,9 +18,9 @@ _PROFILE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC2034
 VALID_PROFILES=(bld sys)
 
-# Engine detection
+# Engine detection (Ollama is the only supported engine)
 INFERENCE_ENGINE=${INFERENCE_ENGINE:-ollama}
-if [[ "$INFERENCE_ENGINE" != "ollama" && "$INFERENCE_ENGINE" != "vllm" && "$INFERENCE_ENGINE" != "llamacpp" ]]; then
+if [[ "$INFERENCE_ENGINE" != "ollama" ]]; then
     INFERENCE_ENGINE="ollama"
 fi
 
@@ -100,14 +100,14 @@ get_profile_services_for_profile() {
     local profile="$1"
     # Ensure INFERENCE_ENGINE has a default value before sourcing the env file
     INFERENCE_ENGINE="${INFERENCE_ENGINE:-ollama}"
-    
+
     local env_services
     env_services="$(_load_profile_services "$profile")"
     if [ -n "$env_services" ]; then
         echo "$env_services"
         return 0
     fi
-    
+
     # Fallback: hard-coded lists if env file is missing or PROFILE_SERVICES is empty.
     local engine="${INFERENCE_ENGINE:-ollama}"
     case "$profile" in
@@ -163,17 +163,17 @@ get_profile_services() {
     local profile="$1"
     local services
     services=$(get_profile_services_for_profile "$profile")
-    
+
     if [[ -z "$services" ]]; then
         return 1
     fi
-    
+
     # Exclude GPU exporter if NVIDIA Container Toolkit is not available
     # (even if hardware exists, we need the toolkit for container GPU access)
     if ! has_nvidia_container_toolkit; then
         services=$(echo "$services" | sed 's/nvidia-gpu-exporter//g' | xargs)
     fi
-    
+
     echo "$services"
 }
 
@@ -202,16 +202,16 @@ list_profiles() {
 # Print detailed information about a profile
 print_profile_info() {
     local profile="$1"
-    
+
     if ! is_valid_profile "$profile"; then
         echo "Error: Invalid profile: $profile" >&2
         return 1
     fi
-    
+
     # Get current runtime core service (respects INFERENCE_ENGINE from .env)
     local current_engine
     current_engine=$(get_runtime_core_services)
-    
+
     echo ""
     echo "Profile: $profile"
     echo "=================="
@@ -226,7 +226,7 @@ print_profile_info() {
         if [ "$service" = "$current_engine" ]; then
             is_core=true
         fi
-        
+
         if [ "$is_core" = true ]; then
             echo "  - $service (runtime core)"
         else
@@ -242,4 +242,3 @@ print_profile_info() {
 export -f is_valid_profile get_profile_description get_profile_services
 export -f get_profile_db_storage_enabled list_profiles print_profile_info
 export -f get_profile_services_for_profile get_runtime_core_services _load_profile_services _get_vault_bootstrap_agents
-

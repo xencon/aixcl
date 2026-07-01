@@ -9,15 +9,12 @@ via volume mounts defined in `services/docker-compose.yml`.
 | File | Service | Notes |
 |------|---------|-------|
 | `ollama-entrypoint.sh` | `ollama` | Sets permissions, switches to ubuntu user, starts Ollama. |
-| `llamacpp-entrypoint.sh` | `llamacpp` | llama.cpp server startup. |
-| `vllm-entrypoint.sh` | `vllm` | vLLM server startup. |
 | `grafana-entrypoint.sh` | `grafana` | Waits for Prometheus, then starts Grafana. |
 | `openwebui-entrypoint.sh` | `openwebui` | Standard OpenWebUI startup. |
 | `openwebui-vault-entrypoint.sh` | `openwebui` (vault profile) | Fetches credentials from Vault before starting OpenWebUI. |
 | `pgadmin-entrypoint.sh` | `pgadmin` | Configures pgAdmin servers.json, starts pgAdmin. |
 | `postgres-exporter-entrypoint.sh` | `postgres-exporter` | Waits for postgres, starts exporter. |
 | `postgres-secret-entrypoint.sh` | `postgres` | Injects secrets from Docker secrets into postgres env. |
-| `configure-openwebui-direct-connections.sh` | (utility) | Configures OpenWebUI to connect directly to inference engine. |
 
 ## Key Constraints
 

@@ -160,8 +160,8 @@ log_test_pass "Test completed successfully"
 Skip tests conditionally:
 
 ```bash
-if ! has_nvidia_gpu; then
-    log_test_skip "No GPU - vLLM requires GPU"
+if ! command -v jq > /dev/null 2>&1; then
+    log_test_skip "jq not installed"
     exit 0
 fi
 ```
