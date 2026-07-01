@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 01: Stack Start
+# Test 02: Stack Start
 # Tests starting the stack with sys profile
 
 set -e
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 
-log_test_start "test-01-stack-start"
+log_test_start "test-02-stack-start"
 
 # Capture state before test
 BACKUP_DIR=$(capture_state "test-01-stack-start")

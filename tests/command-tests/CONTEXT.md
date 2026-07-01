@@ -8,21 +8,14 @@ MUST run in sequence -- stack state carries forward between tests.
 | File | What it does | Requires |
 |------|-------------|---------|
 | `test-00-preflight.sh` | Environment check, prerequisites | Nothing (safe to run standalone) |
-| `test-01-stack-start.sh` | Starts the full platform stack | Passing preflight |
-| `test-02-stack-status.sh` | Validates stack health | Running stack |
-| `test-03-engine-set-ollama.sh` | Sets engine to Ollama | Running stack |
-| `test-04-engine-set-vllm.sh` | Sets engine to vLLM | Running stack |
-| `test-05-engine-set-llamacpp.sh` | Sets engine to llama.cpp | Running stack |
-| `test-06-engine-auto.sh` | Engine auto-detection | Running stack |
-| `test-07-models-add-ollama.sh` | Adds a model via Ollama | Ollama engine active |
-| `test-08-models-add-vllm.sh` | Adds a model via vLLM | vLLM engine active |
-| `test-09-models-add-llamacpp.sh` | Adds a model via llama.cpp | llama.cpp engine active |
-| `test-10-models-list.sh` | Lists available models | Models added |
-| `test-11-service-restart.sh` | Service restart behaviour | Running stack |
-| `test-13-opencode-prompts.sh` | OpenCode prompt testing | Running stack |
-| `test-14-opencode-vllm.sh` | OpenCode with vLLM | vLLM active |
-| `test-15-opencode-llamacpp.sh` | OpenCode with llama.cpp | llama.cpp active |
-| `test-16-engine-model-integration.sh` | Engine/model integration | Running stack |
+| `test-01-stack-token-reload.sh` | Vault token reload behaviour | Nothing (safe to run standalone) |
+| `test-02-stack-start.sh` | Starts the full platform stack | Passing preflight |
+| `test-03-stack-status.sh` | Validates stack health | Running stack |
+| `test-04-engine-set-ollama.sh` | Sets engine to Ollama | Running stack |
+| `test-05-engine-auto.sh` | Engine auto-detection | Running stack |
+| `test-06-models-add-ollama.sh` | Adds a model via Ollama | Ollama engine active |
+| `test-07-models-list.sh` | Lists available models | Models added |
+| `test-08-service-restart.sh` | Service restart behaviour | Running stack |
 | `test-99-stack-stop.sh` | Stops the stack, cleanup | Running stack |
 
 ## Running Tests

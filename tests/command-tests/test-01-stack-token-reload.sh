@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 00a: Stack VAULT_TOKEN reload behaviour
+# Test 01: Stack VAULT_TOKEN reload behaviour
 # Verifies that _load_vault_token_for_stack --force bypasses a stale VAULT_TOKEN
 # env var and reads from disk instead.  Does NOT require a running stack.
 # Regression test for: https://github.com/xencon/aixcl/issues/1376
@@ -9,7 +9,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 
-log_test_start "test-00a-stack-token-reload"
+log_test_start "test-01-stack-token-reload"
 
 # ---------------------------------------------------------------------------
 # Source only the function under test.

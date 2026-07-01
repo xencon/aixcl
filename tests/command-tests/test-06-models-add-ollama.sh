@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test 07: Models Add - Ollama
+# Test 06: Models Add - Ollama
 # Tests adding a model via ollama
 
 set -e
@@ -8,10 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 source "${SCRIPT_DIR}/tests/lib/state-capture.sh"
 
-log_test_start "test-07-models-add-ollama"
+log_test_start "test-06-models-add-ollama"
 
 # Capture state before test
-BACKUP_DIR=$(capture_state "test-07-models-add-ollama")
+BACKUP_DIR=$(capture_state "test-06-models-add-ollama")
 export BACKUP_DIR
 
 # Cleanup function - runs on exit
