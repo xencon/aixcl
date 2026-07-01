@@ -69,6 +69,8 @@ source "${SCRIPT_DIR}/lib/aixcl/commands/engine.sh"
 source "${SCRIPT_DIR}/lib/aixcl/commands/models.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/commands/stack.sh"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/aixcl/commands/checks.sh"
 
 # Vault command module
 # shellcheck disable=SC1091

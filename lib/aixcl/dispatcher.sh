@@ -37,6 +37,10 @@ function main() {
             shift
             utils_cmd "$@"
             ;;
+        checks)
+            shift
+            checks_cmd "$@"
+            ;;
         stack)
             shift
             stack_cmd "$@"
