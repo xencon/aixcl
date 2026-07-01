@@ -4,6 +4,20 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.1.45] - 2026-07-01
+
+### Summary
+
+Release v1.1.45 -- Complete extraction of the vLLM and llama.cpp engines in favor of Ollama-only inference, plus a CI fix for intentional mass rewrites.
+
+### Changed
+
+- [x] **vLLM and llama.cpp extraction**: Removed both demoted engines from services, CLI library, configuration, tests, CI workflows, documentation, and skills. Ollama is now the sole runtime core engine per explicit maintainer decision, and governance invariants updated to match. GGUF/HuggingFace model downloads are preserved where Ollama consumes them (`./aixcl models add hf.co/<user>/<repo>`). The `engine` command is retained with ollama as the only valid option. Stale `.env` files referencing removed engines degrade gracefully to ollama. Closes #1648.
+
+### Fixed
+
+- [x] **CI mass-deletion bypass**: `check-ai-elisions.sh` in `--range` mode (CI) now honors an `AIXCL_ALLOW_MASS_DELETE` token in a commit message within the range, so intentional large rewrites can pass CI. Local env var bypass and the placeholder-text check are unchanged. Closes #1650.
+
 ## [v1.1.44] - 2026-07-01
 
 ### Summary
