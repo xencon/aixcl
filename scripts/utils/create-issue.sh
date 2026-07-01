@@ -3,6 +3,7 @@
 # Usage: ./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:cli" "<github-username>"
 #
 # Benefits over manual gh issue create:
+# - Targets the canonical repo regardless of which clone you run from
 # - Uses /tmp for body files (never touches repo)
 # - Always uses --body-file (no backtick injection risk)
 # - Always sets --assignee (no PR validation race condition)
@@ -11,6 +12,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../.. && pwd)"
+
+# Canonical repository issues are filed against (override for forks of the fork)
+UPSTREAM_REPO="${AIXCL_UPSTREAM_REPO:-xencon/aixcl}"
 
 # Arguments
 TITLE="${1:-}"
@@ -69,6 +73,7 @@ echo "  Assignee: $ASSIGNEE"
 
 # Create the issue
 gh issue create \
+    --repo "$UPSTREAM_REPO" \
     --title "$TITLE" \
     --body-file "$BODY_FILE" \
     ${LABELS:+--label "$LABELS"} \
