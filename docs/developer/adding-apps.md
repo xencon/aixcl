@@ -328,6 +328,26 @@ grafana:
     - "grafana/dashboards/app-overview.json"
 ```
 
+## Prometheus Alert Rules
+
+Place a file at `apps/<name>/prometheus/alert-rules.yml` and the platform will
+copy it into `prometheus/app-alerts/<name>.yml` on `./aixcl app start`. Prometheus
+loads all files matching `app-alerts/*.yml` automatically (no platform restart needed).
+The file is removed on `./aixcl app stop` and `./aixcl app remove`.
+
+A starter template with three common alerts (app down, high error rate, high latency)
+is available at `etc/app-scaffold/prometheus/alert-rules.yml`. Copy it to your app:
+
+```bash
+mkdir -p apps/my-app/prometheus
+cp etc/app-scaffold/prometheus/alert-rules.yml apps/my-app/prometheus/
+# Edit the file -- replace "my-app" with your app name and adjust thresholds
+```
+
+Alerts route to Alertmanager at `localhost:9093` using the platform's existing
+`prometheus/alertmanager.yml` configuration. To add a notification channel
+(Slack, PagerDuty, email) edit that file.
+
 ## Log Integration
 
 Container logs do **not** flow to Loki automatically. The platform runs Loki as a log store but does not include Promtail or a Docker log driver plugin, so no automatic log shipping is configured.

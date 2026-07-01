@@ -44,6 +44,10 @@ Validates that all actions comply with the Issue-First development workflow befo
 - [ ] PR has assignee set
 - [ ] PR has at least one `component:*` label
 - [ ] All CI checks pass (validate this with @verify agent)
+- [ ] Agent identification block present in PR body (agent-authored PRs only)
+  ```bash
+  echo "$PR_BODY" | bash scripts/checks/check-agent-id-block.sh
+  ```
 
 ### 5. Security Requirements
 - [ ] Security-gate agent has scanned changes
