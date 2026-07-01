@@ -144,4 +144,4 @@ docker compose -f services/docker-compose.yml -f services/docker-compose.gpu.yml
 
 - [Profiles Documentation](../architecture/governance/02_profiles.md) - Profile definitions and service composition
 - [Service Contracts](../architecture/governance/service_contracts/) - Service dependency rules
-- [Security Hardening](../operations/security.md) - Container security controls
+- [Security Hardening](../operations/security-runbook.md) - Container security controls
