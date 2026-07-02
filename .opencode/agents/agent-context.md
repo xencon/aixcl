@@ -21,6 +21,24 @@ If you are starting a new session, read exactly these four files in order:
 
 After reading those four files you are fully oriented. Begin work.
 
+## Finding Your Work
+
+Issues queued for this agent carry the `agent:qwen` label. At session start,
+or whenever the human asks what to work on next, list the queue:
+
+```bash
+gh issue list --repo xencon/aixcl --label agent:qwen --state open
+```
+
+Rules for working the queue:
+
+- Work one issue at a time, following the Issue-First workflow (the issue
+  already exists -- start at the branch step)
+- The issue body is the task specification; if it is ambiguous, post a
+  clarifying question as an issue comment and wait rather than guessing
+- Do not pick up issues without the `agent:qwen` label unless the human
+  directs you to in the live session
+
 ## Git Remote Configuration (Fork Workflow)
 
 | Remote | URL | Purpose |
