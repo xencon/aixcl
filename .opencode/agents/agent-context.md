@@ -39,6 +39,27 @@ Rules for working the queue:
 - Do not pick up issues without the `agent:qwen` label unless the human
   directs you to in the live session
 
+Prefer the guided commands for procedural work -- they embed the correct
+sequence and its guardrails:
+
+| Command | Use when |
+|---------|----------|
+| `/next-task` | Starting work -- picks the oldest queued issue and drives the workflow |
+| `/pr-ready` | Branch is done -- validates, pushes, and opens the PR correctly |
+| `/finish-pr` | Human says a PR is merged -- verifies MERGED state before any cleanup |
+
+## Memory
+
+You have a persistent memory at `.opencode/memory/`. The index
+(`MEMORY.md`) is auto-loaded each session; read individual memory files
+only when their hook is relevant. When you learn a durable, non-obvious
+fact about this project (a convention, a trap, a correction from the
+human), save it: one fact per file, then add an index line. This
+directory is committed to a public repository -- never store secrets.
+
+Before opening a PR, invoke the `reviewer` subagent for a read-only
+self-review of your branch and fix what it finds.
+
 ## Git Remote Configuration (Fork Workflow)
 
 | Remote | URL | Purpose |
