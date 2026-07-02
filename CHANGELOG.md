@@ -4,6 +4,29 @@ All notable changes to the AIXCL project will be documented in this file.
 
 ## [Unreleased]
 
+
+## [v1.1.46] - 2026-07-02
+
+### Summary
+
+Release v1.1.46 -- CLI alignment: the developer workflow (checks, tests, releases) joins the runtime behind the single ./aixcl entry point, with skills realigned as thin guides fronting the new commands.
+
+### Added
+
+- [x] **aixcl checks command**: Single entry point for local CI parity -- paths, mirror parity, elision guard, generated files, ASCII, yamllint, compose validation, and environment, with a summary table from `checks all`. Closes #1658.
+- [x] **aixcl release command**: Release process mechanics as a CLI command (prep, tag, finish, status). Encodes the two-remote model (branches to origin, PRs and tags to upstream); GPG commits and merge decisions remain with the human operator. Closes #1659.
+- [x] **aixcl test command**: All test suites (command, workflow, lib, apps, security) behind the single entry point with --quick and --dry-run pass-through. Includes new CONTEXT.md coverage for tests/lib and scripts/utils, plus completion, manpage, and AGENTS.md updates. Closes #1662.
+- [x] **sync-mirrors.sh**: One-command .claude/.opencode skills and rules synchronization with parity verification. Closes #1661.
+
+### Changed
+
+- [x] **Skills realigned with the CLI**: cut-release renamed to release and rewritten around aixcl release (fixing a wrong-remote bug and adding announcement and cleanup steps); housekeeping fronts aixcl checks all; all skills normalized to a common structure. Closes #1661.
+
+### Fixed
+
+- [x] **Issue and PR wrapper scripts**: create-issue.sh and create-pr.sh now target the canonical repo, derive fork-aware --head, validate PR bodies before creation, and fail hard instead of prompting (non-interactive safe for agents). Closes #1660.
+
+
 ## [v1.1.45] - 2026-07-01
 
 ### Summary
