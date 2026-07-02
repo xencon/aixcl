@@ -12,7 +12,6 @@
       "*.log",
       "volumes/",
       "pgadmin-data/",
-      "tests/test-results.md",
       "tests/*.backup",
       "*.tmp",
       "*.swp",

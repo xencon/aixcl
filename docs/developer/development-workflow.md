@@ -212,7 +212,7 @@ GitHub provides native issue types that must be set for each issue. These are se
 Labels are organized into categories using prefixes:
 
 #### Component Labels (Select All That Apply)
-- `component:runtime-core` - Runtime core services (Ollama, OpenCode)
+- `component:runtime-core` - Runtime core services (Ollama)
 - `component:ollama` - Ollama LLM inference engine
 - `component:persistence` - Database and persistence services
 - `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki)
@@ -428,4 +428,3 @@ If you're unsure about the workflow, check:
 - This document (`development-workflow.md`)
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) for general contribution guidelines
 - Existing issues and PRs for examples
-
