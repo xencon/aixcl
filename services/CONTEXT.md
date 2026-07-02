@@ -63,5 +63,4 @@ Also read: `docs/developer/adding-services.md`
 - `vault/agent-config/` -- HCL configs for Vault Agent containers
 - `lib/cli/profile.sh` -- determines which services the CLI starts
 - `config/profiles/` -- profile env files
-- `docs/reference/service-map.md` -- service registry (service, profile, port, health check)
 - `docs/architecture/governance/02_profiles.md` -- profile invariants

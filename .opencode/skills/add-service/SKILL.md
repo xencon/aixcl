@@ -127,13 +127,7 @@ If the service needs custom startup logic:
 - [ ] `shellcheck --severity=warning --exclude=SC1091 scripts/runtime/<service>-entrypoint.sh` passes
 - [ ] `bash -n scripts/runtime/<service>-entrypoint.sh` passes
 
-## Step 7 -- Update the Service Map
-
-Add a row to `docs/reference/service-map.md` for the new service.
-
-- [ ] Service map updated
-
-## Step 8 -- Run Validation
+## Step 7 -- Run Validation
 
 ```bash
 docker compose -f services/docker-compose.yml config > /dev/null
@@ -144,7 +138,7 @@ bash scripts/checks/check-paths.sh
 
 - [ ] All validation passes
 
-## Step 9 -- Commit and PR
+## Step 8 -- Commit and PR
 
 ```bash
 git add services/docker-compose.yml config/profiles/ docs/ scripts/runtime/
@@ -153,7 +147,7 @@ git commit -m "feat: add <service-name> service
 - Add compose service definition with host networking
 - Register in <profile> profile
 - Add entrypoint script
-- Update service map and profile documentation
+- Update profile documentation
 
 Fixes #<issue-number>"
 ```
