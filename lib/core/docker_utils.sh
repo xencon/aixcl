@@ -154,6 +154,20 @@ run_compose() {
                 next
             }
         }
+        # -- Stateful: suppress podman run command echoes --------------------
+        # On fresh container creation podman-compose echoes the full
+        # "podman run ..." command. For services with inline entrypoint
+        # scripts (e.g. the GPU ollama privilege-drop block) that echo
+        # spans many lines. Skip until a result-style line appears
+        # (container ID, WARN, Error, or the next podman command).
+        /^podman run/ { inrun=1; next }
+        inrun == 1 {
+            if ($0 ~ /^(podman |Error|WARN|exit code:)/ || ($0 ~ /^[0-9a-f]+$/ && length($0) == 64)) {
+                inrun=0
+            } else {
+                next
+            }
+        }
         # -- Stateful: benign name-collision fallback -----------------------
         # "Error: ... name already in use" + "podman start NAME" + bare NAME
         # is podman-compose reusing an existing container. Self-healing noise.
@@ -194,7 +208,6 @@ run_compose() {
         /^[[:space:]]*\][,[:space:]]*$/ { next }
         # -- podman-compose chatter ------------------------------------------
         /^[[:space:]]*\*\* / { next }
-        /^podman run/ { next }
         /^\[.podman/ { next }
         /^exit code:/ { next }
         /^podman volume/ { next }
