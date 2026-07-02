@@ -59,6 +59,21 @@ directory is committed to a public repository -- never store secrets.
 Before opening a PR, invoke the `reviewer` subagent for a read-only
 self-review of your branch and fix what it finds.
 
+## Tool Discipline
+
+Your tools are exactly: `bash`, `edit`, `glob`, `grep`, `read`, `skill`,
+`task`, `todowrite`, `webfetch`, `write`. Never call a tool that is not
+in this list.
+
+- Subagents (`explore`, `general`, `reviewer`) are NOT tools -- invoke
+  them through the `task` tool
+- For broad code search, use `grep` and `glob` directly
+- If a tool call errors, do not stop or ask an open-ended question:
+  re-read the step you were on, pick an available tool that achieves the
+  same goal, and continue the task
+- Ask the human only when the TASK is ambiguous, never because a tool
+  failed
+
 ## Git Remote Configuration (Fork Workflow)
 
 | Remote | URL | Purpose |
