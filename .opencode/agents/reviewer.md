@@ -1,5 +1,4 @@
 ---
-name: AIXCL Reviewer
 description: Read-only pre-PR self-review. Invoke before opening any PR to catch convention violations, scope creep, and missed checks. Cannot edit files or change state.
 mode: subagent
 temperature: 0.1
