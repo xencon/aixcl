@@ -16,19 +16,22 @@ services:
     # PARITY REQUIREMENT: keep this block in sync with
     # scripts/runtime/ollama-entrypoint.sh when that file changes.
     entrypoint: ["/bin/sh", "-c"]
+    # NOTE: $$ escapes compose interpolation -- these are shell variables that
+    # must survive into the container. Unescaped $VAR is interpolated against
+    # the HOST environment at config time and collapses to empty strings.
     command:
       - |
         OLLAMA_USER="ubuntu"
         OLLAMA_UID="1000"
         OLLAMA_HOME="/home/ubuntu"
-        OLLAMA_DATA="$OLLAMA_HOME/.ollama"
-        if ! id "$OLLAMA_USER" >/dev/null 2>&1; then
-            useradd -m -u "$OLLAMA_UID" "$OLLAMA_USER"
+        OLLAMA_DATA="$$OLLAMA_HOME/.ollama"
+        if ! id "$$OLLAMA_USER" >/dev/null 2>&1; then
+            useradd -m -u "$$OLLAMA_UID" "$$OLLAMA_USER"
         fi
-        mkdir -p "$OLLAMA_DATA"
-        chown -R "$OLLAMA_USER:$OLLAMA_USER" "$OLLAMA_HOME"
-        usermod -aG video,render "$OLLAMA_USER" 2>/dev/null || true
-        exec su - "$OLLAMA_USER" -c "exec ollama serve"
+        mkdir -p "$$OLLAMA_DATA"
+        chown -R "$$OLLAMA_USER:$$OLLAMA_USER" "$$OLLAMA_HOME"
+        usermod -aG video,render "$$OLLAMA_USER" 2>/dev/null || true
+        exec su - "$$OLLAMA_USER" -c "exec ollama serve"
 
   nvidia-gpu-exporter:
     deploy:
