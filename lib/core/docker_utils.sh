@@ -163,6 +163,15 @@ run_compose() {
             if ($0 == pending_start) { pending_start=""; next }
             pending_start=""
         }
+        # -- Stateful: teardown command echoes ------------------------------
+        # podman-compose echoes "podman stop -t N NAME" / "podman rm NAME"
+        # and podman prints NAME on success. Suppress both; a failed
+        # stop/rm prints an Error line instead of NAME, which passes through.
+        /^podman (stop -t [0-9]+|rm) [A-Za-z0-9._-]+$/ { pending_teardown=$NF; next }
+        pending_teardown != "" {
+            if ($0 == pending_teardown) { pending_teardown=""; next }
+            pending_teardown=""
+        }
         # -- Image pull noise -> concise progress ---------------------------
         /^podman pull / { print "  Pulling " $3; next }
         /^Trying to pull / { next }

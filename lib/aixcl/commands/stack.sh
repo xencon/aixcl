@@ -1033,15 +1033,21 @@ function stop() {
     # Allow down to fail (containers may not exist) - we check status after
     run_compose down --remove-orphans || true
 
-    echo "Waiting for containers to stop..."
-    for i in {1..30}; do
+    # Single-line timer (same style as the startup health-wait and Vault
+    # settle timers) until all profile containers are gone.
+    local st_attempt=0
+    local st_max=30  # 60 seconds at 2s intervals
+    while [ $st_attempt -lt $st_max ]; do
         if ! "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -qE "$CONTAINER_NAME|$all_services_pattern"; then
+            [ $st_attempt -gt 0 ] && echo ""
             _print_stopped_status "$profile"
             return 0
         fi
-        echo "Waiting for services to stop... ($i/15)"
+        printf "  Waiting for containers to stop... (%ds/%ds)\r" "$((st_attempt * 2))" "$((st_max * 2))"
         sleep 2
+        st_attempt=$((st_attempt + 1))
     done
+    echo ""
 
     echo "Warning: Services did not stop gracefully. Forcing shutdown..."
     # NOTE: deliberately no -v here. Volume removal is a destructive,
