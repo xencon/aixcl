@@ -10,11 +10,15 @@ metadata:
 
 # Skill: check-updates
 
+## Purpose
+
 Audit every versioned component in the AIXCL platform and produce an
 actionable update report. For each outdated component, open a GitHub issue
 and apply the update following the issue-first workflow.
 
-Run this skill before a release cycle or after a long gap between releases.
+## When to Run
+
+Before a release cycle or after a long gap between releases.
 
 ---
 

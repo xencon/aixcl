@@ -1,95 +1,46 @@
 ---
 name: housekeeping
 description: Comprehensive repository health check covering hygiene, security, and code quality
-version: 1.1
+version: 2.0
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "1.1"
+  version: "2.0"
 ---
 
 # Skill: housekeeping
 
-Run this skill periodically or before a release to catch accumulated debt
-across the repository. Each check is independent -- a failure in one does
-not block the others. Work through them in order and record findings.
+## Purpose
 
-## Pre-Flight
+Catch accumulated debt across the repository: broken links, mirror drift,
+stale branches, permission problems, secrets, unpinned images, and shell
+regressions. The mechanical checks run through `./aixcl checks all`; this
+skill adds the checks that need GitHub state or human judgment.
 
-```bash
-# Confirm tooling available
-command -v gh && echo "gh: ok" || echo "gh: not found -- skip checks 4b, 5"
-command -v shellcheck && echo "shellcheck: ok" || echo "shellcheck: not found -- skip check 11"
-command -v gitleaks && echo "gitleaks: ok" || echo "gitleaks: not found -- fallback to grep patterns"
-```
+## When to Run
+
+Periodically, or before a release. Each check is independent -- a failure in
+one does not block the others.
+
+## Preconditions
 
 - [ ] On branch `dev` or a dedicated housekeeping branch
 - [ ] `gh` authenticated (`gh auth status`)
 - [ ] No uncommitted changes that would pollute diff checks
 
----
+## Steps
 
-## Check 1 -- Lean Policy (Dated Docs and Reports)
-
-Flag any file with a date pattern in its name or under `docs/operations/` or
-`docs/reference/` that has not been modified within 7 days. Operations reports
-must be current; stale ones should be deleted, not archived.
+### Step 1 -- Mechanical Sweep
 
 ```bash
-# Files with date patterns in name (e.g. 2024-01-15-report.md)
-find docs/ -name "*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*" -not -path "*/.git/*"
-
-# Files in operations or reference dirs not touched in 7 days
-find docs/operations/ docs/reference/ -name "*.md" -mtime +7 -not -path "*/.git/*" 2>/dev/null
+./aixcl checks all
 ```
 
-- [ ] No dated-name files found, or flagged ones deleted
-- [ ] No stale operations/reference docs older than 7 days, or flagged ones deleted
+Covers: documentation paths, mirror parity, elision guard, generated and
+dated files (lean policy), ASCII markdown, yamllint, compose validation,
+and environment prerequisites. Fix anything red before continuing.
 
----
-
-## Check 2 -- Mirror Parity (.claude/ vs .opencode/)
-
-Rules and skills must be byte-identical between `.claude/` and `.opencode/`.
-Any diff is a bug.
-
-```bash
-bash scripts/checks/check-agents.sh
-```
-
-If `check-agents.sh` is unavailable, verify manually:
-
-```bash
-for f in ci-checks.md formatting.md security.md workflow.md discussions.md; do
-  diff ".claude/rules/$f" ".opencode/rules/$f" && echo "$f: ok" || echo "$f: MISMATCH"
-done
-for skill in add-service cut-release workflow-guard housekeeping; do
-  diff ".claude/skills/$skill/SKILL.md" ".opencode/skills/$skill/SKILL.md" 2>/dev/null \
-    && echo "$skill: ok" || echo "$skill: MISMATCH or missing"
-done
-```
-
-- [ ] All rules files match
-- [ ] All skill files match
-
----
-
-## Check 3 -- Broken Relative Links
-
-```bash
-bash scripts/checks/check-paths.sh
-```
-
-- [ ] No broken relative links reported
-
----
-
-## Check 4 -- Branch Hygiene (Merged Branches and Fork Sync)
-
-List remote branches already merged into `dev` that have not been deleted,
-and check whether the personal fork is in sync with upstream. Fork drift
-accumulates quickly with frequent releases -- catch it here before it causes
-merge conflicts on the next branch.
+### Step 2 -- Branch Hygiene (Merged Branches and Fork Sync)
 
 ```bash
 git fetch --prune origin 2>/dev/null; git fetch --prune upstream 2>/dev/null || true
@@ -112,9 +63,7 @@ fi
 - [ ] No merged remote branches outstanding, or owner notified to delete
 - [ ] `origin/dev` is in sync with `upstream/dev`, or sync performed
 
----
-
-## Check 5 -- Issue and PR Hygiene (requires `gh`)
+### Step 3 -- Issue and PR Hygiene
 
 Open issues missing a required `component:*` label:
 
@@ -136,35 +85,17 @@ gh pr list --repo xencon/aixcl --state open --limit 100 \
 - [ ] All open issues have at least one `component:*` label, or flagged for triage
 - [ ] All open PRs have an assignee, or flagged for triage
 
----
-
-## Check 6 -- Pre-Commit Sanity (ASCII, CRLF, Elision)
-
-Run as a whole-repo sweep, not just staged files.
+### Step 4 -- Line Endings
 
 ```bash
-# Non-ASCII punctuation in markdown
-grep -rlP "[\x{2013}\x{2014}\x{2018}\x{2019}\x{201C}\x{201D}\x{2026}\x{00A0}]" \
-  --include="*.md" --exclude-dir=.git . 2>/dev/null \
-  && echo "FAIL: non-ASCII punctuation found" || echo "ok: ASCII clean"
-
-# CRLF line endings
 grep -rlP "\r\n" --include="*.md" --include="*.sh" --include="*.yml" \
   --exclude-dir=.git . 2>/dev/null \
   && echo "FAIL: CRLF line endings found" || echo "ok: LF only"
-
-# Elision check on all committed files (not just staged)
-./scripts/checks/check-ai-elisions.sh 2>/dev/null || \
-  ./scripts/checks/check-ai-elisions.sh --staged
 ```
 
-- [ ] No non-ASCII punctuation in markdown files
 - [ ] No CRLF line endings
-- [ ] No AI elision placeholder text
 
----
-
-## Check 7 -- Generated Env File Integrity (Duplicate Keys)
+### Step 5 -- Generated Env File Integrity (Duplicate Keys)
 
 Duplicate keys in `.env.*` or `*.env` files indicate an append bug (e.g. a
 setup script running multiple times and stacking entries instead of rewriting).
@@ -184,9 +115,7 @@ done
 
 - [ ] No duplicate keys found in any env file
 
----
-
-## Check 8 -- File Permissions (Sensitive Files)
+### Step 6 -- File Permissions (Sensitive Files)
 
 Runtime env files must not be world-readable or world-writable. Expected
 mode: `600` (owner read/write only). Tracked config files in
@@ -214,19 +143,15 @@ find . \( -name ".env" -o -name ".env.*" -o -name "*.key" \
 - [ ] Files under `vault/` or `security/` paths checked specifically
 - [ ] Note: to check whether a file is tracked in git, use `git ls-files --error-unmatch <file>` -- plain `git ls-files <file>` exits 0 even when the file is not tracked, making `&& echo TRACKED` a false positive.
 
----
-
-## Check 9 -- Secret Scanning
+### Step 7 -- Secret Scanning
 
 Scan tracked files for common secret patterns. If `gitleaks` is installed,
 prefer it. Otherwise use grep patterns as a baseline.
 
 ```bash
-# Preferred: gitleaks (if available)
 if command -v gitleaks > /dev/null 2>&1; then
   gitleaks detect --source . --no-git 2>&1 | tail -20
 else
-  # Baseline grep patterns for common secret formats
   grep -rEn \
     "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|glpat-[A-Za-z0-9_\-]{20,}|sk-[A-Za-z0-9]{40,}|xoxb-[A-Za-z0-9\-]+|VAULT_TOKEN=[A-Za-z0-9.\-]{20,})" \
     --include="*.md" --include="*.yml" --include="*.yaml" \
@@ -240,15 +165,9 @@ fi
 - [ ] If gitleaks not installed, note it as a tooling gap
 - [ ] Note: `--no-git` scans ALL files on disk, including gitignored runtime files (e.g. `pgadmin-servers.json`). Findings in gitignored runtime files belong in the `.gitleaks.toml` `paths` allowlist, not the `commits` allowlist.
 
----
-
-## Check 10 -- Docker Image Pin Hygiene
-
-All images in compose files must be pinned to a specific version tag.
-`latest` or untagged images are a reproducibility and supply chain risk.
+### Step 8 -- Docker Image Pin Hygiene
 
 ```bash
-# Flag :latest tags and bare image names with no tag (no colon after final slash)
 grep -hn "image:" services/docker-compose*.yml | grep -v "#" | \
   grep -E "image:\s+(\S+:latest\s*$|\S*/[^:]+\s*$|[^/:]+\s*$)" \
   && echo "FAIL: unpinned image tags found above" || echo "ok: all images pinned"
@@ -256,12 +175,7 @@ grep -hn "image:" services/docker-compose*.yml | grep -v "#" | \
 
 - [ ] All images in all compose files use pinned version tags (no `latest`, no bare image names)
 
----
-
-## Check 11 -- Shellcheck Sweep (All Scripts)
-
-Run shellcheck across the entire repo, not just staged files. This catches
-regressions in scripts nobody has recently touched.
+### Step 9 -- Shellcheck Sweep (All Scripts)
 
 ```bash
 issues=$(find . -name "*.sh" -not -path "./.git/*" \
@@ -276,12 +190,7 @@ fi
 
 - [ ] No shellcheck warnings or errors at severity `warning` or above
 
----
-
-## Check 12 -- UPSTREAM-ISSUES.md Staleness
-
-If `UPSTREAM-ISSUES.md` exists, entries older than 7 days with no
-corresponding upstream issue filed should be promoted or removed.
+### Step 10 -- UPSTREAM-ISSUES.md Staleness
 
 ```bash
 if [ -f UPSTREAM-ISSUES.md ]; then
@@ -297,26 +206,32 @@ fi
 - [ ] No entries older than 7 days without a corresponding upstream issue
 - [ ] Entries that have been filed upstream are removed from the file
 
----
+## Verification
 
-## Summary
-
-After running all checks, record findings:
+Record findings after all steps:
 
 ```
-Check 1  -- Lean policy:         [ ] clean  [ ] items found
-Check 2  -- Mirror parity:       [ ] clean  [ ] mismatch
-Check 3  -- Broken links:        [ ] clean  [ ] broken
-Check 4  -- Branch hygiene:      [ ] clean  [ ] stale branches / fork drift
-Check 5  -- Issue/PR hygiene:    [ ] clean  [ ] missing labels/assignees
-Check 6  -- Pre-commit sanity:   [ ] clean  [ ] failures
-Check 7  -- Env file integrity:  [ ] clean  [ ] duplicates
-Check 8  -- File permissions:    [ ] clean  [ ] overexposed
-Check 9  -- Secret scanning:     [ ] clean  [ ] matches
-Check 10 -- Image pin hygiene:   [ ] clean  [ ] unpinned
-Check 11 -- Shellcheck sweep:    [ ] clean  [ ] warnings
-Check 12 -- UPSTREAM-ISSUES.md:  [ ] clean  [ ] stale entries
+Step 1  -- Mechanical sweep (aixcl checks all):  [ ] clean  [ ] failures
+Step 2  -- Branch hygiene:                       [ ] clean  [ ] stale branches / fork drift
+Step 3  -- Issue/PR hygiene:                     [ ] clean  [ ] missing labels/assignees
+Step 4  -- Line endings:                         [ ] clean  [ ] CRLF found
+Step 5  -- Env file integrity:                   [ ] clean  [ ] duplicates
+Step 6  -- File permissions:                     [ ] clean  [ ] overexposed
+Step 7  -- Secret scanning:                      [ ] clean  [ ] matches
+Step 8  -- Image pin hygiene:                    [ ] clean  [ ] unpinned
+Step 9  -- Shellcheck sweep:                     [ ] clean  [ ] warnings
+Step 10 -- UPSTREAM-ISSUES.md:                   [ ] clean  [ ] stale entries
 ```
 
 Any `items found` result should become a follow-up issue before the next
-release. Critical findings from checks 8 and 9 should be treated as P1.
+release. Critical findings from steps 6 and 7 should be treated as P1.
+
+## Common Mistakes
+
+- Fixing findings directly on `dev` -- use a housekeeping branch and the
+  issue-first workflow (or the documented override) for anything beyond
+  branch deletion and fork sync
+- Treating a gitleaks finding in a gitignored runtime file as a repo leak --
+  allowlist the path in `.gitleaks.toml` instead
+- Deleting a remote branch that has an open PR -- check the PR state is
+  MERGED first (a closed PR is not a merged PR)

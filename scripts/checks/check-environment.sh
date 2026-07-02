@@ -311,7 +311,7 @@ check_git_cliff() {
     info "Checking git-cliff (changelog generation)..."
 
     if ! command -v git-cliff &>/dev/null; then
-        warn "git-cliff not installed -- required for cut-release skill"
+        warn "git-cliff not installed -- required for the release skill"
         info "Install from: https://github.com/orhun/git-cliff/releases"
         return
     fi

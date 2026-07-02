@@ -50,6 +50,26 @@ COMMANDS
         prune                                           Clean Docker resources (keeps images)
         prune --all                                     Full wipe including images
 
+    checks <action>
+        all                                             Run every local CI check with summary
+        paths                                           Documentation links and stale paths
+        agents                                          .claude/.opencode mirror parity
+        elisions                                        AI-elision placeholders, mass deletions
+        generated                                       Tracked generated files
+        ascii                                           Non-ASCII punctuation in markdown
+        yaml                                            yamllint over the repository
+        compose                                         Compose file validation
+        env                                             Environment prerequisites
+        pr-refs <file>                                  Issue/PR body reference style
+
+    test <suite> [--quick|--dry-run]
+        all                                             Run every test suite
+        command                                         CLI command validation tests
+        workflow                                        README Quick Start workflow test
+        lib                                             Shell library unit tests
+        apps                                            App layer API tests
+        security                                        Security tests
+
     vault <action>
         start                                           Start Vault container
         stop                                            Stop Vault container
@@ -61,6 +81,12 @@ COMMANDS
         passwords                                       View bootstrap passwords
         rotate                                          Trigger credential rotation
         logs [n]                                        View Vault logs
+
+    release <action>
+        prep                                            Draft changelog, create issue and branch
+        tag                                             Tag merged release, verify publication
+        finish                                          Sync dev, close issues, clean up
+        status                                          Show release cycle state
 
     restart                                             Shortcut for stack restart
 

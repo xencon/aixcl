@@ -222,4 +222,4 @@ NEXT="v1.1.$((PATCH + 1))"
 echo "Current: $CURRENT  Next: $NEXT"
 ```
 
-See `.claude/skills/cut-release/SKILL.md` for the full release workflow.
+See `.claude/skills/release/SKILL.md` for the full release workflow.

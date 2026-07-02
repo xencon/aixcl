@@ -37,6 +37,14 @@ function main() {
             shift
             utils_cmd "$@"
             ;;
+        checks)
+            shift
+            checks_cmd "$@"
+            ;;
+        test)
+            shift
+            test_cmd "$@"
+            ;;
         stack)
             shift
             stack_cmd "$@"
@@ -44,6 +52,10 @@ function main() {
         vault)
             shift
             cmd_vault "$@"
+            ;;
+        release)
+            shift
+            release_cmd "$@"
             ;;
         app)
             shift

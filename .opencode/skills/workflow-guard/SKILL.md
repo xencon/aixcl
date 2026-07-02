@@ -9,9 +9,17 @@ metadata:
   version: "1.1"
 ---
 
-# Workflow Guard Skill
+# Skill: workflow-guard
 
-Validates that all actions comply with the Issue-First development workflow before execution.
+## Purpose
+
+Validates that all actions comply with the Issue-First development workflow
+before execution.
+
+## When to Run
+
+Before starting any code change, fix, or feature -- and again before
+creating a PR.
 
 ## Validation Steps
 
