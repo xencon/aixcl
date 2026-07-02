@@ -22,13 +22,8 @@
   },
   "instructions": [
     "AGENTS.md",
-    "DEVELOPMENT.md",
     ".opencode/rules/*.md",
-    ".opencode/memory/MEMORY.md",
-    "docs/architecture/governance/00_invariants.md",
-    "docs/architecture/governance/01_ai_guidance.md",
-    "docs/architecture/governance/02_profiles.md",
-    "docs/developer/development-workflow.md"
+    ".opencode/memory/MEMORY.md"
   ],
   "default_agent": "agent-context",
   "permission": {
