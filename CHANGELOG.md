@@ -5,6 +5,21 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.47] - 2026-07-02
+
+### Summary
+
+Release v1.1.47 -- Clean vanilla deployment: stack start now shows concise, error-free output with accurate health timing, and the GPU Ollama entrypoint correctly drops privileges.
+
+### Fixed
+
+- [x] **GPU Ollama entrypoint interpolation**: Compose interpolated the inline entrypoint variables against the host environment, collapsing them to empty strings -- Ollama silently ran as root. Variables are now $$-escaped and Ollama drops to the ubuntu user as designed, verified under both docker compose and podman-compose. Closes #1674.
+- [x] **Startup output noise**: The compose output filter now suppresses merged-command dumps, image pull blob lines (one Pulling line per image), bare container IDs, and the benign podman-compose name-collision/start-fallback pairs; genuine errors still pass through. Closes #1674.
+- [x] **Health-wait timing and status rendering**: The health-wait loop matched only Docker's status format and exited instantly under Podman, printing a red 15/19 on a successful start. It now matches both engines, scopes to profile services, and waits up to 5 minutes with live progress. Curl status captures no longer double the 000 failure code, and services inside their healthcheck start window render as amber starting-up instead of red unhealthy. Closes #1674.
+- [x] **Phase-2 Vault init**: Exit code is captured correctly (previously lost in a pipe) and output is reduced to warnings and errors plus a one-line result. Closes #1674.
+
+
+
 ## [v1.1.46] - 2026-07-02
 
 ### Summary
