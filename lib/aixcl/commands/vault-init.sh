@@ -845,17 +845,30 @@ vault_wipe_and_reinit() {
     # Clear any stale artefacts so operator init starts clean
     rm -f "$VAULT_KEYS_FILE" "$VAULT_TOKEN_FILE"
 
-    # Restart vault via compose so it picks up a fresh empty volume
+    # Recreate the data volume -- it is declared external in the compose
+    # file, so compose will not create it and `up` fails without this.
+    log_info "Recreating vault data volume (aixcl-vault-data)..."
+    if ! "$docker_bin" volume create aixcl-vault-data > /dev/null; then
+        log_error "Failed to recreate aixcl-vault-data volume."
+        return 1
+    fi
+
+    # Restart vault via compose so it picks up the fresh empty volume.
+    # Run from the repo root with the stack project name (-p aixcl) so the
+    # container lands in the same compose project as the rest of the stack,
+    # and surface compose output on failure instead of discarding it.
     log_info "Restarting vault container..."
     local compose_file="${SCRIPT_DIR}/services/docker-compose.yml"
-    if [ -f "$compose_file" ]; then
-        "$docker_bin" compose -f "$compose_file" up -d vault 2>/dev/null || {
-            log_error "Failed to restart vault container via compose."
-            log_error "  Run: ./aixcl stack start --profile sys"
-            return 1
-        }
-    else
+    if [ ! -f "$compose_file" ]; then
         log_error "Compose file not found at ${compose_file}"
+        return 1
+    fi
+    local compose_out
+    if ! compose_out=$(cd "${SCRIPT_DIR}" && \
+            "$docker_bin" compose -p aixcl -f "$compose_file" up -d vault 2>&1); then
+        log_error "Failed to restart vault container via compose."
+        log_error "  ${compose_out}"
+        log_error "  Run: ./aixcl stack start --profile sys"
         return 1
     fi
 

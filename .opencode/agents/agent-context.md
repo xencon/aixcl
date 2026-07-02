@@ -181,7 +181,6 @@ When halting due to insufficient evidence, missing requirements, or conflicts:
 - `docs/architecture/governance/01_ai_guidance.md` - AI behavioral guidance
 - `docs/architecture/governance/02_profiles.md` - Profile definitions
 - `docs/architecture/decisions/` - Architectural decision records
-- `docs/reference/service-map.md` - All services in one table
 - `docs/developer/agent-pitfalls.md` - Common agent mistakes and corrections
 - `.opencode/skills/add-service/SKILL.md` - Guided workflow for adding a service
 - `.opencode/skills/release/SKILL.md` - Guided workflow for cutting a release
