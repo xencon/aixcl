@@ -62,7 +62,7 @@ sudo cp /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
 curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz -C /tmp
 sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
 
-# git-cliff 2.x -- changelog generation (required for cut-release skill)
+# git-cliff 2.x -- changelog generation (required for the release skill)
 curl -sSL https://github.com/orhun/git-cliff/releases/download/v2.13.1/git-cliff-2.13.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /tmp
 sudo mv /tmp/git-cliff-2.13.1-x86_64-unknown-linux-gnu/git-cliff /usr/local/bin/git-cliff
 ```

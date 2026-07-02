@@ -1,13 +1,24 @@
 ---
 name: add-service
 description: Guided checklist for safely adding a new platform service to AIXCL, preserving all invariants
-version: 1.0
+version: 1.1
+compatibility: OpenCode, Claude Code
+metadata:
+  category: platform
+  version: "1.1"
 ---
 
 # Skill: add-service
 
-Use this skill when adding a new service to the AIXCL platform stack. It walks
-through every required change in the correct order and flags invariant risks.
+## Purpose
+
+Add a new operational service to the AIXCL platform stack, walking through
+every required change in the correct order and flagging invariant risks.
+
+## When to Run
+
+When a new operational service (monitoring, logging, automation, UI) is
+being added to the stack.
 
 ## Pre-Flight Checks
 
