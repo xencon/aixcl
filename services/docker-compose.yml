@@ -278,7 +278,7 @@ services:
       retries: 3
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.10.1
+    image: ghcr.io/open-webui/open-webui:v0.10.2
     container_name: open-webui
     pull_policy: missing
     user: "0:0"
