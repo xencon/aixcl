@@ -106,7 +106,7 @@ set_compose_cmd() {
 
     COMPOSE_CMD=("${cmd[@]}" -p "aixcl" "${files[@]}")
     COMPOSE_WORKDIR="${SERVICES_DIR}"
-    
+
     # Set and export DOCKER_SOCK for use in docker-compose files
     DOCKER_SOCK=$(get_docker_sock)
     export DOCKER_SOCK
@@ -132,13 +132,46 @@ run_compose() {
     if [ -n "${ENABLE_DB_STORAGE:-}" ]; then
         export ENABLE_DB_STORAGE
     fi
-    
-    # Run compose command and filter output in real-time
-    # Only show lines that look like actual status messages or errors
-    # Suppress: JSON fragments, flag lines (-e, -v, --), command traces, "** merged:**" header
+
+    # Run compose command and filter output in real-time.
+    # Only show lines that look like actual status messages or errors.
+    # Suppress: JSON fragments, flag lines, command traces, merged-command
+    # dumps, image pull blob noise, bare container IDs, and the benign
+    # podman-compose create/start fallback pair (name collision on an
+    # existing container followed by a successful "podman start"). Real
+    # errors do not match these narrow patterns and always pass through.
     (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@" 2>&1) | \
     awk '
-        # Skip lines that are clearly JSON or command flags
+        # -- Stateful: suppress merged-command dumps ------------------------
+        # podman-compose echoes "** merged:" followed by the merged command
+        # content (which can be a multi-line inline script). Skip until a
+        # result-style line appears, then fall through to normal rules.
+        /^[[:space:]]*\*\* merged:/ { inmerged=1; next }
+        inmerged == 1 {
+            if ($0 ~ /^(podman |Error|exit code:)/ || ($0 ~ /^[0-9a-f]+$/ && length($0) == 64)) {
+                inmerged=0
+            } else {
+                next
+            }
+        }
+        # -- Stateful: benign name-collision fallback -----------------------
+        # "Error: ... name already in use" + "podman start NAME" + bare NAME
+        # is podman-compose reusing an existing container. Self-healing noise.
+        /^Error: creating container storage: the container name .* is already in use/ { next }
+        /^podman start [A-Za-z0-9._-]+$/ { pending_start=$3; next }
+        pending_start != "" {
+            if ($0 == pending_start) { pending_start=""; next }
+            pending_start=""
+        }
+        # -- Image pull noise -> concise progress ---------------------------
+        /^podman pull / { print "  Pulling " $3; next }
+        /^Trying to pull / { next }
+        /^Getting image source signatures/ { next }
+        /^Copying (blob|config) / { next }
+        /^Writing manifest to image destination/ { next }
+        # -- Bare container IDs (create/start results) ----------------------
+        /^[0-9a-f]+$/ && length($0) == 64 { next }
+        # -- JSON fragments and command flags -------------------------------
         /^[[:space:]]*-[ev][[:space:]]/ { next }
         /^[[:space:]]*--/ { next }
         /^[[:space:]]*\{/ { next }
@@ -150,20 +183,19 @@ run_compose() {
         /^[[:space:]]*,[[:space:]]*$/ { next }
         /^[[:space:]]*\}[,[:space:]]*$/ { next }
         /^[[:space:]]*\][,[:space:]]*$/ { next }
-        /^\*\* / { next }
+        # -- podman-compose chatter ------------------------------------------
+        /^[[:space:]]*\*\* / { next }
         /^podman run/ { next }
         /^\[.podman/ { next }
         /^exit code:/ { next }
         /^podman volume/ { next }
-        /^\*\* merged:/ { next }
-        /^\*\* excluding:/ { next }
         /^recreating:/ { next }
         /^podman-compose version:/ { next }
         /^using podman version:/ { next }
         # Print everything else
         { print }
     '
-    
+
     return ${PIPESTATUS[0]:-0}
 }
 
@@ -179,5 +211,3 @@ get_engine_container() {
     local engine="$1"
     ${DOCKER_BIN:-docker} ps --format "{{.Names}}" 2>/dev/null | grep -E "^${engine}$|_[0-9a-f]+_${engine}$|^[0-9a-f]+_${engine}$" 2>/dev/null | head -1 || true
 }
-
-

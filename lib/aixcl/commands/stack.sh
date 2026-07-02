@@ -789,6 +789,8 @@ function start() {
                     local _base="${_agent%-bootstrap}"
                     local _script="bootstrap-password-${_base#vault-agent-}.sh"
                     "$_bin" rm -f "$_agent" >/dev/null 2>&1 || true
+                    # Suppress the container ID on stdout; real errors still
+                    # surface on stderr
                     "$_bin" run -d --name "$_agent" --restart on-failure \
                         --network host \
                         --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
@@ -798,7 +800,8 @@ function start() {
                         --env "VAULT_TOKEN=${_vtoken}" \
                         -v "${SCRIPT_DIR}/scripts/vault/${_script}:/usr/local/bin/${_script}:ro" \
                         -v aixcl-vault-secrets:/run/secrets \
-                        docker.io/hashicorp/vault:2.0.2 "/usr/local/bin/${_script}"
+                        docker.io/hashicorp/vault:2.0.2 "/usr/local/bin/${_script}" > /dev/null
+                    echo "  Started ${_agent}"
                 done
                 # Start non-bootstrap vault agents via compose
                 run_compose up -d --no-deps \
@@ -865,7 +868,21 @@ function start() {
                         ensure_databases
                         echo ""
                         echo "Configuring Vault database engine (phase 2)..."
-                        bash "$vault_init_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" || true
+                        # Capture exit code correctly (a pipe would lose it) and
+                        # show only warnings/errors -- phase 1 already printed the
+                        # full init banner; repeating it here is pure noise.
+                        local _p2_log
+                        local _p2_exit=0
+                        _p2_log=$(mktemp)
+                        bash "$vault_init_script" > "$_p2_log" 2>&1 || _p2_exit=$?
+                        grep -E "\[WARN\]|\[ERROR\]" "$_p2_log" || true
+                        rm -f "$_p2_log"
+                        if [ "$_p2_exit" -ne 0 ]; then
+                            echo "[ ] Warning: Vault database engine configuration failed (exit ${_p2_exit})."
+                            echo "   Dynamic DB credentials may be unavailable. Run: ./aixcl vault init"
+                        else
+                            echo "[x] Vault database engine configured (dynamic credentials ready)"
+                        fi
                     fi
                 fi
 
@@ -932,20 +949,33 @@ function start() {
         fi
 
         # Wait for all services to pass their health checks before printing final status.
-        # Open WebUI and pgAdmin can take 60-120s after Vault init.
+        # Open WebUI, pgAdmin, Grafana, and Loki can take 2-3 minutes after Vault init.
+        # NOTE: Podman reports "(starting)" while Docker reports "(health: starting)" --
+        # match both, and scope to this profile's containers so unrelated containers
+        # on the host cannot stall the wait.
         local hw_attempt=0
-        local hw_max=36  # 3 minutes at 5s intervals
-        echo "Waiting for all services to be healthy..."
+        local hw_max=60  # 5 minutes at 5s intervals
+        local _svc_name_re
+        _svc_name_re=$(IFS='|'; echo "${profile_services[*]}")
+        echo "Waiting for all services to pass health checks..."
         while [ $hw_attempt -lt $hw_max ]; do
             local still_starting
-            still_starting=$("${DOCKER_BIN:-podman}" ps --format "{{.Status}}" 2>/dev/null | grep -cE "\(health: starting\)|\(unhealthy\)" || true)
+            still_starting=$("${DOCKER_BIN:-podman}" ps --format "{{.Names}} {{.Status}}" 2>/dev/null | \
+                grep -E "^(${_svc_name_re}) " | \
+                grep -cE "\((health: )?starting\)|\(unhealthy\)" || true)
             if [ "${still_starting:-0}" -eq 0 ]; then
+                printf "  All services report healthy.%20s\n" ""
                 break
             fi
-            printf "  %d service(s) still starting... (%ds/%ds)\r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))"
+            printf "  %d service(s) still starting... (%ds/%ds)  \r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))"
             sleep 5
             hw_attempt=$((hw_attempt + 1))
         done
+        if [ $hw_attempt -ge $hw_max ]; then
+            echo ""
+            echo "  Note: some services are still starting after $((hw_max * 5))s."
+            echo "  The status below may show them as starting -- re-check shortly with: ./aixcl stack status"
+        fi
         echo ""
         echo "Stack start complete. Waiting for all services to settle..."
         echo ""
@@ -1531,12 +1561,12 @@ function status() {
         if [ "$container_running" = "true" ] && [ -n "$health_check_type" ] && [ "$health_check_type" != "one-shot" ]; then
             case "$health_check_type" in
                 curl)
-                    health_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$health_check_arg" 2>/dev/null || echo "000")
+                    health_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$health_check_arg" 2>/dev/null)
                     if [ "$health_result" = "404" ] || [ "$health_result" = "000" ]; then
                         local base_url="${health_check_arg%/health}"
                         base_url="${base_url%/}"
                         local root_result
-                        root_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$base_url/" 2>/dev/null || echo "000")
+                        root_result=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 3 "$base_url/" 2>/dev/null)
                         if [ "$root_result" = "200" ] || [ "$root_result" = "302" ] || [ "$root_result" = "307" ]; then
                             health_result="$root_result"
                         fi
@@ -1557,6 +1587,11 @@ function status() {
                     fi
                     ;;
             esac
+
+            # curl emits its own 000 on connection failure; normalize empty
+            # results and any doubled fallback (000000) to the single sentinel
+            [ -z "$health_result" ] && health_result="000"
+            case "$health_result" in 000*) health_result="000" ;; esac
         fi
 
         # Determine final display status and health
@@ -1581,8 +1616,17 @@ function status() {
                     display_status="${ICON_WARNING:-⚠️}"
                     health_status=" (starting up)"
                 else
-                    display_status="${ICON_ERROR:-❌}"
-                    health_status=" (unhealthy)"
+                    # Endpoint responded with an error -- but a container still
+                    # inside its healthcheck start window is starting, not failed
+                    local _container_health
+                    _container_health=$("${DOCKER_BIN:-docker}" inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$container_name" 2>/dev/null)
+                    if [ "$_container_health" = "starting" ]; then
+                        display_status="${ICON_WARNING:-⚠️}"
+                        health_status=" (starting up)"
+                    else
+                        display_status="${ICON_ERROR:-❌}"
+                        health_status=" (unhealthy)"
+                    fi
                 fi
             fi
         fi
@@ -1638,7 +1682,7 @@ function status() {
 
     # Security
     # shellcheck disable=SC2034
-    VAULT_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8200/v1/sys/health 2>/dev/null || echo "000")
+    VAULT_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8200/v1/sys/health 2>/dev/null)
     check_operational_service "Vault" "vault" "vault" "status_var" "VAULT_STATUS"
 
     # UI
@@ -1654,34 +1698,34 @@ function status() {
     check_operational_service "PostgreSQL" "postgres" "postgres" "pg_isready" "$postgres_user"
 
     # shellcheck disable=SC2034
-    PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5050 2>/dev/null || echo "000")
+    PGADMIN_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5050 2>/dev/null)
     check_operational_service "pgAdmin" "pgadmin" "pgadmin" "status_var" "PGADMIN_STATUS"
 
     # Observability
     # shellcheck disable=SC2034
-    PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy 2>/dev/null || echo "000")
+    PROMETHEUS_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy 2>/dev/null)
     check_operational_service "Prometheus" "prometheus" "prometheus" "status_var" "PROMETHEUS_STATUS"
 
     # shellcheck disable=SC2034
-    GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || echo "000")
+    GRAFANA_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null)
     check_operational_service "Grafana" "grafana" "grafana" "status_var" "GRAFANA_STATUS"
 
     # shellcheck disable=SC2034
-    CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8081/metrics 2>/dev/null || echo "000")
+    CADVISOR_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8081/metrics 2>/dev/null)
     check_operational_service "cAdvisor" "cadvisor" "cadvisor" "status_var" "CADVISOR_STATUS"
 
     # shellcheck disable=SC2034
-    NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9100/metrics 2>/dev/null || echo "000")
+    NODE_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9100/metrics 2>/dev/null)
     check_operational_service "Node Exporter" "node-exporter" "node-exporter" "status_var" "NODE_EXPORTER_STATUS"
 
     # shellcheck disable=SC2034
-    POSTSRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9187/metrics 2>/dev/null || echo "000")
+    POSTSRES_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9187/metrics 2>/dev/null)
     check_operational_service "Postgres Exporter" "postgres-exporter" "postgres-exporter" "status_var" "POSTSRES_EXPORTER_STATUS"
 
     if is_operational_in_profile "nvidia-gpu-exporter"; then
         if "${DOCKER_BIN:-docker}" ps --format "{{.Names}}" | grep -q "^nvidia-gpu-exporter$"; then
             # shellcheck disable=SC2034
-            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9445/metrics 2>/dev/null || echo "000")
+            NVIDIA_GPU_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9445/metrics 2>/dev/null)
             check_service_status "NVIDIA GPU Exporter" "nvidia-gpu-exporter" "status_var" "NVIDIA_GPU_EXPORTER_STATUS"
         else
             echo "  ${ICON_ERROR:-❌} NVIDIA GPU Exporter"
@@ -1691,12 +1735,12 @@ function status() {
 
     # Loki
     # shellcheck disable=SC2034
-    LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null || echo "000")
+    LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null)
     check_operational_service "Loki" "loki" "loki" "status_var" "LOKI_STATUS"
 
     # Alertmanager
     # shellcheck disable=SC2034
-    ALERTMANAGER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9093/-/healthy 2>/dev/null || echo "000")
+    ALERTMANAGER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9093/-/healthy 2>/dev/null)
     check_operational_service "Alertmanager" "alertmanager" "alertmanager" "status_var" "ALERTMANAGER_STATUS"
 
     # Vault Agents (sidecars -- no HTTP endpoints, check container running only)
