@@ -41,7 +41,7 @@ _aixcl_complete() {
     cword=$COMP_CWORD
 
     # List of all possible commands (must stay in sync with lib/aixcl/dispatcher.sh)
-    local commands="app stack service models engine utils vault help restart"
+    local commands="app stack service models engine utils checks test release vault help restart"
 
     # Application names: built-in (apps/*/app.yaml) plus externally registered apps
     _aixcl_app_names() {
@@ -195,6 +195,21 @@ _aixcl_complete() {
         'utils')
             local utils_actions="check-env bash-completion prune"
             mapfile -t COMPREPLY < <(compgen -W "$utils_actions" -- "$cur")
+            return 0
+            ;;
+        'checks')
+            local checks_actions="all paths agents elisions generated ascii yaml compose env pr-refs"
+            mapfile -t COMPREPLY < <(compgen -W "$checks_actions" -- "$cur")
+            return 0
+            ;;
+        'test')
+            local test_suites="all command workflow lib apps security"
+            mapfile -t COMPREPLY < <(compgen -W "$test_suites" -- "$cur")
+            return 0
+            ;;
+        'release')
+            local release_actions="prep tag finish status"
+            mapfile -t COMPREPLY < <(compgen -W "$release_actions" -- "$cur")
             return 0
             ;;
         'prune')
