@@ -5,6 +5,22 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.48] - 2026-07-02
+
+### Summary
+
+Release v1.1.48 -- Clean shutdown output to match the v1.1.47 startup cleanup, a working Vault split-state recovery path, and stale documentation removal.
+
+### Fixed
+
+- [x] **Stack Stop Output**: `stack stop` no longer prints two lines of podman-compose noise per container; the shutdown shows a single-line wait timer (matching the startup style) followed by the stopped-status block. Genuine stop errors still pass through the output filter. Closes #1682.
+- [x] **Vault Wipe-and-Reinit**: the split-state recovery path now recreates the `aixcl-vault-data` volume before restarting Vault (compose never creates external volumes, so the restart always failed), surfaces compose errors instead of discarding stderr, and uses the `aixcl` compose project name. Closes #1686.
+
+### Documentation
+
+- [x] **Stale Docs Removed**: deleted `docs/operations/model-recommendations.md` (still described three inference engines), `docs/operations/security.md`, and `docs/reference/service-map.md` per the lean repository policy, with all dangling references fixed across `docs/README.md`, `services/CONTEXT.md`, agent context, and the add-service skill mirrors. Closes #1684.
+
+
 ## [v1.1.47] - 2026-07-02
 
 ### Summary
