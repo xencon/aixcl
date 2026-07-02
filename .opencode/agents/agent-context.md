@@ -1,5 +1,4 @@
 ---
-name: AIXCL Context Agent
 description: Primary agent for AIXCL development with full project context, governance rules, and Issue-First workflow enforcement
 mode: primary
 ---

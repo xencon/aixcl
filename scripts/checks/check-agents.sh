@@ -59,9 +59,14 @@ check_agents() {
             local frontmatter
             frontmatter=$(awk '/^---$/{flag=1; next} /^---$/{flag=0} flag' "$agent_file")
 
-            # Check required fields
-            if ! echo "$frontmatter" | grep -q "^name:"; then
-                error "$basename: Missing 'name' field in frontmatter"
+            # Check required fields.
+            # NOTE: 'name' must NOT be present -- OpenCode uses it to
+            # override the filename-derived agent identifier, which breaks
+            # every reference to the agent (command agent fields,
+            # default_agent in opencode.json). Identifiers come from
+            # filenames only. See issue #1703.
+            if echo "$frontmatter" | grep -q "^name:"; then
+                error "$basename: 'name' field present in frontmatter (overrides the filename-derived agent id; remove it)"
             fi
             if ! echo "$frontmatter" | grep -q "^description:"; then
                 error "$basename: Missing 'description' field in frontmatter"
