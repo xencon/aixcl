@@ -74,6 +74,12 @@ COMMANDS
         rotate                                          Trigger credential rotation
         logs [n]                                        View Vault logs
 
+    release <action>
+        prep                                            Draft changelog, create issue and branch
+        tag                                             Tag merged release, verify publication
+        finish                                          Sync dev, close issues, clean up
+        status                                          Show release cycle state
+
     restart                                             Shortcut for stack restart
 
 PROFILES

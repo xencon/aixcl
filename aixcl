@@ -80,6 +80,10 @@ source "${SCRIPT_DIR}/lib/aixcl/commands/vault.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/commands/app.sh"
 
+# Release process command module (developer workflow tooling)
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/aixcl/commands/release.sh"
+
 # Dispatcher (must be last - contains main function)
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/aixcl/dispatcher.sh"

@@ -49,6 +49,10 @@ function main() {
             shift
             cmd_vault "$@"
             ;;
+        release)
+            shift
+            release_cmd "$@"
+            ;;
         app)
             shift
             app_cmd "$@"
