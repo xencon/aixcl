@@ -9,12 +9,13 @@ CHECKS_FAILED=()
 CHECKS_SKIPPED=()
 
 _checks_usage() {
-    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|yaml|compose|env|pr-refs <file>}"
+    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|yaml|compose|env|pr-refs <file>}"
     echo "  all              Run every check below (continues on failure, prints summary)"
     echo "  paths            Documentation relative links and stale path patterns"
     echo "  agents           .claude/ vs .opencode/ rules and skills mirror parity"
     echo "  elisions         AI-elision placeholders and suspicious mass deletions"
     echo "  generated        Tracked generated files and stale artifacts"
+    echo "  pins             Container image references pinned (compose + shell code)"
     echo "  ascii            Non-ASCII punctuation in markdown files"
     echo "  yaml             yamllint over the repository"
     echo "  compose          docker compose config validation (main + overrides)"
@@ -140,6 +141,9 @@ function checks_cmd() {
         elisions)
             bash "${checks_dir}/check-ai-elisions.sh" "$@"
             ;;
+        pins)
+            bash "${checks_dir}/check-image-pins.sh"
+            ;;
         generated)
             bash "${checks_dir}/check-generated-files.sh"
             ;;
@@ -177,6 +181,7 @@ function checks_cmd() {
             _check_run "elisions" bash "${checks_dir}/check-ai-elisions.sh" || true
             _check_run "generated" bash "${checks_dir}/check-generated-files.sh" || true
             _check_run "ascii" _check_ascii || true
+            _check_run "pins" bash "${checks_dir}/check-image-pins.sh" || true
 
             if command -v yamllint > /dev/null 2>&1; then
                 _check_run "yaml" yamllint -c "${SCRIPT_DIR}/.yamllint.yml" "${SCRIPT_DIR}" || true
