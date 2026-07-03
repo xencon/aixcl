@@ -409,7 +409,7 @@ verify_setup() {
   fi
 
   # Test basic container operation
-  if podman run --rm alpine:latest echo "test" >/dev/null 2>&1; then
+  if podman run --rm docker.io/library/alpine:3.24.1 echo "test" >/dev/null 2>&1; then
     log_info "${ICON_SUCCESS:-✅} Test container ran successfully"
   else
     log_error "${ICON_ERROR:-❌} Test container failed"
