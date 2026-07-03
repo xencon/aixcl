@@ -475,7 +475,7 @@ function start() {
                 --user "${current_uid}:${current_gid}" \
                 -v "${env_backup_volume}:/backup:ro" \
                 -v "${SCRIPT_DIR}:/target" \
-                alpine sh -c "test -f /backup/.env && cp /backup/.env /target/.env && chmod 600 /target/.env" >/dev/null 2>&1; then
+                docker.io/library/alpine:3.24.1 sh -c "test -f /backup/.env && cp /backup/.env /target/.env && chmod 600 /target/.env" >/dev/null 2>&1; then
                 if [ -f "$env_file" ]; then
                     # Fix ownership and permissions if file was created by root
                     if [ -O "$env_file" ] || [ -w "$env_file" ]; then

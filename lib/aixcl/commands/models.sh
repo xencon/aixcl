@@ -9,9 +9,11 @@ is_model_installed() {
 
     case "$engine" in
         ollama)
-            # Ollama list shows models. We need to match the name exactly, or with :latest if missing tag
+            # Ollama list shows models. Match the name exactly, or with the
+            # default tag appended when the name carries none.
+            # (pin-waiver: ollama MODEL tags are not container images)
             local model_with_tag="$model"
-            [[ ! "$model" =~ : ]] && model_with_tag="${model}:latest"
+            [[ ! "$model" =~ : ]] && model_with_tag="${model}:latest"  # pin-waiver: ollama model tag
             "${DOCKER_BIN:-docker}" exec "$container" ollama list 2>/dev/null | awk '{print $1}' | grep -qE "^${model_with_tag}$"
             return $?
             ;;

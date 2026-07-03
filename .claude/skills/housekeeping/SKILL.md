@@ -165,15 +165,19 @@ fi
 - [ ] If gitleaks not installed, note it as a tooling gap
 - [ ] Note: `--no-git` scans ALL files on disk, including gitignored runtime files (e.g. `pgadmin-servers.json`). Findings in gitignored runtime files belong in the `.gitleaks.toml` `paths` allowlist, not the `commits` allowlist.
 
-### Step 8 -- Docker Image Pin Hygiene
+### Step 8 -- Container Image Pin Hygiene
+
+Covers compose files AND shell code under `lib/` and `scripts/` -- four
+unpinned alpine references hid in shell code because the old sweep only
+scanned compose (issue #1726). Legitimate `:latest` uses (locally built
+`localhost/` images, ollama model tags) are exempted via `localhost/`
+detection or an inline `pin-waiver:` comment.
 
 ```bash
-grep -hn "image:" services/docker-compose*.yml | grep -v "#" | \
-  grep -E "image:\s+(\S+:latest\s*$|\S*/[^:]+\s*$|[^/:]+\s*$)" \
-  && echo "FAIL: unpinned image tags found above" || echo "ok: all images pinned"
+./aixcl checks pins
 ```
 
-- [ ] All images in all compose files use pinned version tags (no `latest`, no bare image names)
+- [ ] All container image references are pinned (no `latest`, no bare image names), or carry an explicit `pin-waiver:` comment with a reason
 
 ### Step 9 -- Shellcheck Sweep (All Scripts)
 

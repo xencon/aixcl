@@ -69,6 +69,6 @@ gh pr create \
 shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path "./.git/*")
 
 # Individual checks
-./aixcl checks paths        # or: agents, elisions, generated, ascii, yaml, compose, env
+./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, yaml, compose, env
 ./aixcl checks pr-refs <body-file>
 ```

@@ -137,7 +137,7 @@ _app_provision_render_secret() {
     local filename="$2"
     "${DOCKER_BIN:-docker}" run --rm -i --network none \
         -v "${volume}:/secrets" \
-        docker.io/library/alpine:latest \
+        docker.io/library/alpine:3.24.1 \
         sh -c "umask 077 && cat > /secrets/${filename}"
 }
 

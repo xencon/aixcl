@@ -1027,7 +1027,7 @@ EOF
 
     # Write Dockerfile stub
     cat > "${app_dir}/docker/Dockerfile" << 'EOF'
-FROM alpine:latest
+FROM docker.io/library/alpine:3.24.1
 
 # TODO: Add your application here
 
