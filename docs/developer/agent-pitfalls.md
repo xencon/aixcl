@@ -223,3 +223,98 @@ echo "Current: $CURRENT  Next: $NEXT"
 ```
 
 See `.claude/skills/release/SKILL.md` for the full release workflow.
+
+---
+
+## GPG Pitfalls
+
+### Pitfall: GPG signing is human-only
+
+**What happens:** Agent attempts to commit with a GPG signature but fails because
+the agent has no TTY available for pinentry. The commit may appear to succeed due
+to cached passphrase in gpg-agent, but cannot be reliably automated.
+
+**Why:** The working pattern is: agent stages changes and provides the exact
+`git commit` command; the human runs it. An agent-invoked commit CAN succeed if
+the gpg-agent passphrase cache is warm from a recent human commit, but must never
+be relied on.
+
+**Fix:** Agent-staged changes should be followed by human verification:
+```bash
+# Agent staging commands:
+git add <files>
+# Then provide exact command for human to run:
+git commit -m "chore: update"
+```
+
+---
+
+## Pre-commit Pitfalls
+
+### Pitfall: Pre-commit hook re-staging
+
+**What happens:** When a commit fails on trailing-whitespace or end-of-file fixers,
+the hook has already fixed the files in the working tree -- the staged copy is
+the stale, unfixed version. Retrying with `--no-verify` commits that stale
+content and skips every other hook.
+
+**Why:** Pre-commit hooks modify the working tree with automatic fixes before
+rejection. Files that had such fixes applied must be re-staged with `git add`
+rather than bypassing validation.
+
+**Fix:** After auto-fix failures, use:
+```bash
+# Re-stage affected files and retry without --no-verify
+git add <affected files>
+git commit -m "your message here"
+```
+
+---
+
+## PR Pitfalls
+
+### Pitfall: Closed vs merged PRs
+
+**What happens:** A human says "PR merged" but it was only closed, not merged.
+The agent proceeds to delete the branch or close the issue prematurely.
+The agent does not verify PR state.
+
+**Why:** GitHub distinguishes between MERGED and CLOSED state. When a PR is
+closed without merging (e.g., via a "wip" or cancel workflow), it still appears
+as if it was merged to a human who didn't check the actual Git state.
+
+**Fix:** Always check the PR state before deleting branches or closing issues:
+```bash
+gh pr view <N> --json state   # Should show MERGED, not CLOSED
+```
+
+If a branch was deleted prematurely:
+```bash
+git log --all --oneline | grep "<commit subject>"   # find the orphaned SHA
+git branch <branch-name> <sha>                      # recreate the branch
+git push origin <branch-name>                       # restore it on the fork
+gh pr reopen <N> --repo xencon/aixcl                # reopen the PR
+```
+
+---
+
+### Pitfall: Force-push race on open PRs
+
+**What happens:** After force-pushing a PR branch, GitHub may merge the pre-push
+commit instead of the latest commit if confirmation isn't obtained.
+
+**Why:** Force-pushes change the branch history. If a human merges before checking
+the current HEAD OID in the PR against the local repository to confirm they match,
+the pre-push commit gets merged instead of the intended changes.
+
+**Fix:** After force-pushing, verify consistency:
+```bash
+# Confirm your local commit matches PR HEAD
+LOCAL_HEAD=$(git rev-parse HEAD)
+PR_HEAD=$(gh pr view <N> --json headRefOid --jq '.headRefOid')
+if [ "$LOCAL_HEAD" = "$PR_HEAD" ]; then
+    echo "Local and PR HEAD match - safe to merge"
+else
+    echo "Mismatch! Local:$LOCAL_HEAD PR:$PR_HEAD"
+fi
+```
