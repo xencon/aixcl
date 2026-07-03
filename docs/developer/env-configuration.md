@@ -27,7 +27,8 @@ ENABLE_OLLAMA_API=true       # Enable Ollama-specific features
 
 **Key Variables**:
 - `OLLAMA_HOST`: Bind address (default `0.0.0.0:11434`)
-- `OLLAMA_NUM_PARALLEL`: Parallel request slots
+- `OLLAMA_CONTEXT_LENGTH`: Model context window in tokens (default 32768; Ollama's own 4096 default truncates agent instruction payloads). NOTE: Ollama 0.31.x and earlier ignore this variable -- create a derived model instead: `printf "FROM <model>\nPARAMETER num_ctx 32768\n" | ollama create <model>-32k -f -` and point clients at the `-32k` variant.
+- `OLLAMA_NUM_PARALLEL`: Parallel request slots (KV-cache memory scales as context length x slots)
 - `OLLAMA_MAX_LOADED_MODELS`: Concurrently loaded model limit
 - `OLLAMA_KEEP_ALIVE`: Model unload timeout in seconds
 

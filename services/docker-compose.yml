@@ -26,7 +26,11 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
       # Performance tuning for parallel model queries (configured via .env)
-      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-8}
+      # NOTE: KV-cache memory scales as context length x parallel slots.
+      # Defaults are sized for a single coding agent with a large
+      # instruction payload (Ollama's own 4096 default truncates it).
+      - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-32768}
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-2}
       - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-3}
       - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-1800}
       - OLLAMA_NUM_GPU=${OLLAMA_NUM_GPU:-1}
@@ -274,7 +278,7 @@ services:
       retries: 3
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.10.1
+    image: ghcr.io/open-webui/open-webui:v0.10.2
     container_name: open-webui
     pull_policy: missing
     user: "0:0"

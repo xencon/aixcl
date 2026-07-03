@@ -124,6 +124,8 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 - Priority: `P1`, `P2`, `P3`
 - Profile: `profile:bld`, `profile:sys`
 - Category: `Fix`, `Enhancement`, `Refactor`, `Maintenance`
+- Agent queue: `agent:qwen` (issues queued for a named agent; the agent
+  discovers its work by listing open issues with its label)
 
 ### Lean Repository Policy
 

@@ -47,12 +47,27 @@ _check_skip() {
 
 _check_ascii() {
     # Mirror of the bash-ci.yml ASCII markdown check
-    local matches
-    matches=$(grep -rlP "[\x{2013}\x{2014}\x{2018}\x{2019}\x{201C}\x{201D}\x{2026}\x{00A0}]" \
-        --include="*.md" --exclude-dir=.git "${SCRIPT_DIR}" 2>/dev/null || true)
-    if [ -n "$matches" ]; then
-        echo "Non-ASCII punctuation found in:"
-        echo "$matches"
+    # Only check git-tracked markdown files to avoid gitignored third-party files (like node_modules)
+    local file
+    local found_issues=false
+
+    # Iterate over only tracked markdown files. Paths from git ls-files are
+    # repo-root relative, so anchor them to SCRIPT_DIR or the check passes
+    # vacuously when run from another working directory.
+    while IFS= read -r -d '' file; do
+        if [ -f "${SCRIPT_DIR}/${file}" ]; then
+            # Check for non-ASCII punctuation in each tracked file
+            if grep -qP "[\x{2013}\x{2014}\x{2018}\x{2019}\x{201C}\x{201D}\x{2026}\x{00A0}]" "${SCRIPT_DIR}/${file}" 2>/dev/null; then
+                if [ "$found_issues" = false ]; then
+                    echo "Non-ASCII punctuation found in:"
+                    found_issues=true
+                fi
+                echo "  $file"
+            fi
+        fi
+    done < <(git -C "${SCRIPT_DIR}" ls-files "*.md" | tr '\n' '\0')
+
+    if [ "$found_issues" = true ]; then
         return 1
     fi
     echo "All markdown files use ASCII-only punctuation"

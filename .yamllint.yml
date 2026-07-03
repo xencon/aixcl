@@ -1,5 +1,11 @@
 extends: default
 
+# Local sweeps run yamllint over the whole working tree; keep third-party
+# and generated trees out (CI checks out tracked files only, so no change).
+ignore: |
+  node_modules/
+  .git/
+
 rules:
   line-length:
     max: 160

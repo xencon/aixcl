@@ -7,7 +7,7 @@
 
 ## Text
 - Use plain ASCII. No Unicode checkmarks, no emoji.
-  - **Exception**: Release notes may use `✅` (green checkmark) for visual checkbox indicators in GitHub release pages, where markdown `- [x]` does not render interactively.
+  - **Exception**: Release notes may use the green checkmark emoji (U+2705) for visual checkbox indicators in GitHub release pages, where markdown `- [x]` does not render interactively.
 - Use markdown checkboxes: `- [x]` for completed, `- [ ]` for incomplete (for issues, PRs, and documentation)
 - Use Unix line endings (LF) -- CRLF is rejected by CI
 
@@ -24,6 +24,7 @@ in lib/) so non-UTF-8 terminals degrade gracefully.
 **Priority** (optional): `P1`, `P2`, `P3`
 **Profile** (optional): `profile:bld`, `profile:sys`
 **Category** (optional): `Fix`, `Enhancement`, `Refactor`, `Maintenance`
+**Agent queue** (optional): `agent:qwen` -- marks an issue as queued for a named agent
 
 ## Commits
 - Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
