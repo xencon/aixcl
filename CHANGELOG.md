@@ -5,6 +5,21 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.50] - 2026-07-03
+
+### Summary
+
+Release v1.1.50 -- Supply-chain hardening: every container image reference in the repository is now pinned, and a new check makes unpinned references anywhere in compose or shell code a CI failure.
+
+### Added
+
+- [x] **Image Pin Check**: new `./aixcl checks pins` (included in `checks all` and the housekeeping skill) sweeps compose files plus shell code under lib/ and scripts/ for `:latest`, untagged `FROM` lines in generated Dockerfile templates, and untagged registry references. Locally built `localhost/` images and explicitly annotated `pin-waiver:` cases are exempt. Closes #1728.
+
+### Fixed
+
+- [x] **Unpinned Alpine References**: four shell code paths (app provisioning, the generated app Dockerfile template, the env-restore helper, and the rootless setup smoke test) pulled `alpine:latest` or bare `alpine`; all are pinned to `docker.io/library/alpine:3.24.1`. These were invisible to the previous compose-only pin sweep. Closes #1726.
+
+
 ## [v1.1.49] - 2026-07-03
 
 ### Summary
