@@ -60,6 +60,7 @@
       "git commit*--no-verify*": "deny",
       "git commit*--no-gpg-sign*": "deny",
       "gh pr merge*": "deny",
+      "gh pr create*": "deny",
       "gh release*": "deny",
       "./aixcl release tag*": "deny",
       "./aixcl utils prune*": "deny"
