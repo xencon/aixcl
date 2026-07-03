@@ -198,7 +198,7 @@ _aixcl_complete() {
             return 0
             ;;
         'checks')
-            local checks_actions="all paths agents elisions generated ascii yaml compose env pr-refs"
+            local checks_actions="all paths agents elisions generated ascii pins yaml compose env pr-refs"
             mapfile -t COMPREPLY < <(compgen -W "$checks_actions" -- "$cur")
             return 0
             ;;
