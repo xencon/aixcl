@@ -5,6 +5,38 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.49] - 2026-07-03
+
+### Summary
+
+Release v1.1.49 -- Junior agent onboarding: a work queue, guided commands with mechanical procedure rails, persistent agent memory, and the Ollama context fix that makes local agents viable -- plus an OpenWebUI security update.
+
+### Added
+
+- [x] **Agent Work Queue**: new `agent:qwen` label marks issues queued for a named agent; the OpenCode agent definition instructs the agent to discover its work by listing open issues with its label. Closes #1696.
+- [x] **Agent Tooling**: guided commands (`/next-task`, `/pr-ready`, `/finish-pr`) with shell-injected live state, a persistent memory system built on the OpenCode instructions array, a read-only reviewer subagent, and permission guardrails denying upstream pushes, PR merges, release tagging, and unverified commits. Closes #1701.
+- [x] **Procedure Rails**: `/pr-ready` gained a hard gate that stops when the branch has no signed commit ahead of dev; `/next-task` serves only the single oldest queued issue; `git commit --no-gpg-sign` is denied. Closes #1714.
+- [x] **PR Path Enforcement**: raw `gh pr create` is denied so `scripts/utils/create-pr.sh` (correct base, creation-time assignee and labels) is the only PR path; the agent's real identity and body-file rules live in its seed memory. Closes #1718.
+
+### Changed
+
+- [x] **OpenWebUI v0.10.2**: image pin bump carrying upstream access-control security fixes; verified live (healthy container, clean migrations, version endpoint confirmed). Closes #1711.
+- [x] **Legacy Modes Removed**: deleted `.opencode/modes/` (registered as phantom agents in the OpenCode agent list) and cleaned stale `/mode planning` references from CLAUDE.md and lib/cli/CONTEXT.md. Closes #1716.
+
+### Fixed
+
+- [x] **Ollama Context Truncation**: models loaded at Ollama's 4096-token default while the agent instruction payload was ~20k tokens, silently truncating the entire operating contract. Compose now sets `OLLAMA_CONTEXT_LENGTH=32768` (with `OLLAMA_NUM_PARALLEL` lowered 8 to 2), the instruction payload was slimmed to ~9.6k tokens, and the Ollama 0.31.x workaround (derived model with `PARAMETER num_ctx`) is documented. Closes #1707.
+- [x] **OpenCode Agent Resolution**: `name` frontmatter fields overrode filename-derived agent identifiers, breaking every reference including `default_agent`; fields removed, phantom README agent deleted, and `check-agents.sh` now errors when `name` is present. Closes #1703.
+- [x] **ASCII Check Scope**: `./aixcl checks ascii` scanned gitignored third-party files (e.g. `.opencode/node_modules`); it now iterates only git-tracked markdown, anchored to the repo root, and yamllint gained a matching ignore list. Closes #1699.
+- [x] **Startup Output Leak**: fresh container creation echoed multi-line inline entrypoint scripts (the GPU ollama privilege-drop block) into `stack start` output; the `run_compose` filter now suppresses the full `podman run` echo while passing WARN and Error lines through. Closes #1694.
+
+### Documentation
+
+- [x] **Agent Pitfalls**: four new entries -- GPG signing is human-only, pre-commit re-staging, closed-vs-merged PR verification, and the force-push race -- authored by the junior agent from its own review history. Closes #1697.
+- [x] **Stale References**: `component:runtime-core` no longer describes OpenCode as a runtime core service, and the dead `tests/test-results.md` watcher entry is gone from the OpenCode config template. Closes #1698.
+- [x] **Tool Discipline**: the OpenCode agent definition enumerates available tools, routes subagents through the `task` tool, and instructs continuing past tool errors instead of stopping. Closes #1705.
+
+
 ## [v1.1.48] - 2026-07-02
 
 ### Summary
