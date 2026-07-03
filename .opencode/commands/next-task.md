@@ -3,15 +3,17 @@ description: Pick up the next issue from the agent:qwen work queue
 agent: agent-context
 ---
 
-Here is your current work queue:
+Your next task -- this is the only issue you are assigned; there is no
+choice to make. If the line below is empty, report that the queue is empty
+and stop:
 
-!`gh issue list --repo xencon/aixcl --label agent:qwen --state open --json number,title,labels,createdAt --jq '.[] | "#\(.number) [\(.labels | map(.name) | join(","))] \(.title)"'`
+!`gh issue list --repo xencon/aixcl --label agent:qwen --state open --json number,title,labels --jq 'sort_by(.number) | .[0] // empty | "#\(.number) [\(.labels | map(.name) | join(","))] \(.title)"'`
 
-And your current git state:
+Your current git state:
 
 !`git status --short --branch`
 
-Pick the OLDEST issue in the queue (lowest number) and work it end to end:
+Work the issue above end to end:
 
 1. Read the issue body in full: `gh issue view <N> --repo xencon/aixcl`
 2. If the working tree is not clean or you are not on `dev`, stop and report instead of proceeding
