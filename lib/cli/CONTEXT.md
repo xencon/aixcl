@@ -11,8 +11,7 @@ build on -- changes here affect the entire CLI.
 
 ## Agent Guidance
 
-**IMPORTANT:** Use plan mode (`/mode planning` in Claude Code) before making
-architectural changes to `profile.sh`. This is explicitly required by `CLAUDE.md`.
+**IMPORTANT:** Use plan mode (in Claude Code) before making architectural changes to `profile.sh`. This is a general best practice for making impactful changes.
 
 **You MAY:**
 - Add helper functions used by profile loading
