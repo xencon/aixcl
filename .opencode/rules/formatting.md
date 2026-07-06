@@ -19,12 +19,10 @@ provided every glyph has an ASCII fallback (the `${ICON_*:-[x]}` pattern
 in lib/) so non-UTF-8 terminals degrade gracefully.
 
 ## Labels
-**Issue Types** (select exactly one): `Bug`, `Feature`, `Task`
-**Component Labels** (required): `component:runtime-core`, `component:ollama`, `component:persistence`, `component:observability`, `component:ui`, `component:cli`, `component:infrastructure`, `component:testing`
-**Priority** (optional): `P1`, `P2`, `P3`
-**Profile** (optional): `profile:bld`, `profile:sys`
-**Category** (optional): `Fix`, `Enhancement`, `Refactor`, `Maintenance`
-**Agent queue** (optional): `agent:qwen` -- marks an issue as queued for a named agent
+The label taxonomy is defined once, in **AGENTS.md Section 3 (Label
+Taxonomy)** -- that list is canonical; do not restate or extend it here.
+In short: exactly one type label, at least one `component:*` label,
+optional priority/profile/category/agent-queue labels.
 
 ## Commits
 - Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`

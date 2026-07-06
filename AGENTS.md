@@ -1,11 +1,11 @@
 | field | value |
 |-------|-------|
 | file | AGENTS.md |
-| version | 2.1 |
+| version | 2.2 |
 | purpose | agent_contract |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-06-14 |
+| last_updated | 2026-07-06 |
 
 # AGENTS.md
 
@@ -24,7 +24,9 @@ If you are starting a new session in this repository, read exactly these four do
 
 You do NOT need to read `.claude/rules/` or `.opencode/rules/` separately -- they are
 subsets of the above and loaded automatically by your tool. You do NOT need to read
-`.opencode/agents/agent-context.md` -- it is a thin pointer back to this file.
+`.opencode/agents/agent-context.md` -- it carries only OpenCode-agent-specific
+operational guidance (work queue, tool list, memory) and defers to this file for
+all policy.
 
 After reading those four files you are fully oriented. Begin work.
 
@@ -222,10 +224,7 @@ In exceptional situations, a human operator may explicitly authorize the agent t
 
 **Commit Format:** `[OVERRIDE] type: Brief description`
 
-### What DOES NOT Qualify
-
-- "Just do it" without context
-- Vague urgency
+**Does NOT qualify:** "just do it" without context, or vague urgency.
 
 ## 9. Human in the Loop Checklist Policy
 
@@ -256,28 +255,16 @@ Use plain ASCII only. Place the block at the end of the comment or PR body, afte
 ---
 ```
 
-### Required fields
+Field meanings: `Agent` = YOUR OWN tool name and model (never copy an
+example's identity); `Date` = posting date (YYYY-MM-DD); `Method` = what
+the agent did (e.g. read-only repository scan); `Scope` = files, issues,
+or context the agent had access to; `Confirmation` = `yes` if code or
+file changes were made, `no` if read-only.
 
-| Field | Value |
-|-------|-------|
-| `Agent` | Tool name and model, e.g. `Claude Code (claude-sonnet-4-6)` or `OpenCode (ollama-cloud/kimi-k2.7-code)` |
-| `Date` | Date the interaction was posted, in `YYYY-MM-DD` format |
-| `Method` | Brief description of what the agent did, e.g. `read-only issue review and repository scan` |
-| `Scope` | Files, directories, issues, or context the agent had access to when forming the comment |
-| `Confirmation` | `yes` if the agent made code or file changes; `no` if it was read-only |
-
-### When the block is required
-
-- Agent-authored issue comments
-- Agent-authored PR descriptions
-- Agent-authored PR review comments
-- Agent-authored issue bodies (when the agent creates issues under human direction)
-
-### When the block is not required
-
-- Commit messages (conventional commit format takes precedence)
-- Internal tool outputs not posted to GitHub
-- Human-authored content
+**Required on:** every agent-authored issue body, issue comment, PR
+description, and PR review comment.
+**Not required on:** commit messages (conventional format takes
+precedence), internal tool output, human-authored content.
 
 ## 10. Quick References
 

@@ -9,8 +9,8 @@ workflow, and Discussions.
 | File | What it constrains |
 |------|-------------------|
 | `ci-checks.md` | Pre-commit checklist, elision guard, CI workflow summary, ShellCheck flags |
-| `formatting.md` | Title formats (no colons), ASCII mandate, label taxonomy, commit types |
-| `security.md` | Runtime core invariants, safe vs prohibited areas for agents |
+| `formatting.md` | Title formats (no colons), ASCII mandate, commit types; labels point to AGENTS.md |
+| `security.md` | Invariants and escalation summary; canonical text is AGENTS.md Sections 3-4 and 7 |
 | `workflow.md` | Issue-first step-by-step, branch strategy, PR requirements |
 | `discussions.md` | GitHub Discussions policy -- secret handling, untrusted-input treatment, advisory-only status |
 
