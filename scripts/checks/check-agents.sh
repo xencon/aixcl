@@ -76,12 +76,17 @@ check_agents() {
             fi
         fi
 
-        # Check for references to core docs (optional but recommended)
-        if ! grep -q "docs/developer/development-workflow.md" "$agent_file"; then
-            warn "$basename: Missing reference to docs/developer/development-workflow.md"
-        fi
-        if ! grep -q "docs/architecture/governance/01_ai_guidance.md" "$agent_file"; then
-            warn "$basename: Missing reference to docs/architecture/governance/01_ai_guidance.md"
+        # Check for references to core docs (optional but recommended).
+        # Files that defer to AGENTS.md inherit its cold-start reading
+        # list (Section 0), which names both documents, so duplicate
+        # references are not required there (see issue #1751).
+        if ! grep -q "AGENTS.md" "$agent_file"; then
+            if ! grep -q "docs/developer/development-workflow.md" "$agent_file"; then
+                warn "$basename: Missing reference to docs/developer/development-workflow.md"
+            fi
+            if ! grep -q "docs/architecture/governance/01_ai_guidance.md" "$agent_file"; then
+                warn "$basename: Missing reference to docs/architecture/governance/01_ai_guidance.md"
+            fi
         fi
     done
 }
