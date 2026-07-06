@@ -71,4 +71,18 @@ shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path 
 # Individual checks
 ./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, yaml, compose, env
 ./aixcl checks pr-refs <body-file>
+./aixcl checks pr-ready <pr-number>
 ```
+
+## Merge Gate (MANDATORY before any PR merge)
+
+Before merging a PR -- including when the human says "merge it" -- run:
+
+```bash
+./aixcl checks pr-ready <pr-number>
+```
+
+It validates the PR and its linked issue in one pass: title formats, assignee,
+label taxonomy (exact case), zero unticked checkboxes on both bodies, body
+reference style, and all CI checks green. Merge only on exit 0. If a checkbox
+is legitimately unmet, resolve or surface it -- never merge past the gate.
