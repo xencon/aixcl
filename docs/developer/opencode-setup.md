@@ -20,61 +20,39 @@ The `agent-context` agent and governance rules load automatically from `opencode
 
 ## Configuration (`opencode.json`)
 
-AIXCL does not hardcode a default `model`. You must connect to a provider via `/connect` before starting work. The project provides a local provider (`aixcl-local`) for on-device inference, but you can also use any cloud provider.
+The repo-root `opencode.json` is **gitignored runtime config**. The canonical template is `config/opencode.json.example` -- do not restate its contents anywhere (including this doc); read the template itself. Set it up with:
 
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "instructions": [
-    "AGENTS.md",
-    "DEVELOPMENT.md",
-    ".opencode/rules/*.md",
-    "docs/architecture/governance/00_invariants.md",
-    "docs/architecture/governance/01_ai_guidance.md",
-    "docs/architecture/governance/02_profiles.md",
-    "docs/developer/development-workflow.md"
-  ],
-  "default_agent": "agent-context",
-  "permission": {
-    "edit": "ask",
-    "bash": {
-      "*": "ask",
-      "git status*": "allow",
-      "git diff*": "allow",
-      "git log*": "allow",
-      "git add*": "allow",
-      "ls*": "allow",
-      "cat*": "allow",
-      "grep*": "allow",
-      "gh repo*": "allow",
-      "gh issue*": "allow",
-      "git commit*": "ask",
-      "git push*": "ask",
-      "rm -rf*": "deny",
-      "git push --force*": "deny",
-      "./scripts/checks/check-agents.sh*": "allow"
-    },
-    "webfetch": "ask",
-    "skill": "allow"
-  },
-  "provider": {
-    "aixcl-local": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "AIXCL",
-      "options": {
-        "baseURL": "http://localhost:11434/v1"
-      },
-      "models": {
-        "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
-          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct"
-        }
-      }
-    }
-  }
-}
+```bash
+cp config/opencode.json.example opencode.json
 ```
 
-**Note:** No `model` or `small_model` is set. OpenCode uses whatever provider you connect to via `/connect`.
+Every durable config change goes to BOTH files: edit the template (tracked, reviewed) and apply the same change to your local copy.
+
+Key facts (see the template for the full source of truth):
+
+- `instructions` auto-loads `AGENTS.md`, `.opencode/rules/*.md`, and `.opencode/memory/MEMORY.md` into every session. Keep this set lean -- it costs context tokens every session.
+- No `model` is pinned in the template. Connect via `/connect`, or use `./aixcl models add <name>` which syncs the local `opencode.json`.
+- `snapshot: true` enables OpenCode's undo layer. Be aware it has been observed rolling back working-tree edits around compaction events.
+
+### Permission Guardrails
+
+Permissions follow deny/ask/allow patterns (last match wins). The default for `bash` and `edit` is `ask`; read-only inspection commands are allowlisted. The **deny set** is the security boundary humans should audit -- these are hard-blocked for the local agent:
+
+| Denied pattern | Why |
+|----------------|-----|
+| `rm -rf*` | Destructive filesystem operation |
+| `git push --force*` | Destroys remote history |
+| `git push upstream*` | Never push to the canonical repo directly -- PRs only |
+| `git reset --hard*` | Destroys local work |
+| `git commit*--no-verify*` | Bypasses pre-commit checks |
+| `git commit*--no-gpg-sign*` | Bypasses the signing requirement |
+| `gh pr merge*` | Merging is a human (or supervising-agent) decision |
+| `gh pr create*` | PRs must go through `scripts/utils/create-pr.sh` (validation, labels, assignee) |
+| `gh release*` | Releases are human-driven |
+| `./aixcl release tag*` | Tagging is human-driven |
+| `./aixcl utils prune*` | Destructive cleanup |
+
+If a change to this table is proposed, treat it as a `[SECURITY]` change: update `config/opencode.json.example` and this table in the same PR, with explicit maintainer approval.
 
 ## Extending OpenCode
 

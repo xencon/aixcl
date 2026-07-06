@@ -16,14 +16,9 @@ It complements `AGENTS.md` (the operating contract) and `.opencode/rules/` (beha
 
 ## 1. Before starting any task
 
-Read the following documents before beginning work:
+Read the four cold-start documents in the order given in **AGENTS.md Section 0** -- that list is canonical and is deliberately not repeated here. For the complete step-by-step workflow beyond this file, see `docs/developer/development-workflow.md`.
 
-1. `AGENTS.md` -- agent operating contract and authority hierarchy
-2. `DEVELOPMENT.md` -- workflow rules, issue and PR templates
-3. `docs/developer/development-workflow.md` -- full workflow guide
-4. `docs/architecture/governance/` -- platform invariants and service contracts
-
-**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent -> **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
+**VALIDATION REQUIRED:** If any document referenced by AGENTS.md Section 0 is absent -> **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
 
 ---
 
@@ -190,9 +185,18 @@ canonical repo; forks follow these adaptations:
 - **Capturing upstream defects:** platform problems discovered during
   fork work are recorded in `UPSTREAM-ISSUES.md` at the repository root
   -- one entry per candidate ticket with severity and suggested labels.
-  This file is working inventory, exempt from the dated-reports lean
-  policy. When an entry is filed as a real issue upstream, delete it
-  from the file (the issue tracker takes over).
+  The file is created on demand (it does not exist when the inventory is
+  empty) and is exempt from the dated-reports lean policy. When an entry
+  is filed as a real issue upstream, delete it from the file (the issue
+  tracker takes over). Entry format:
+
+  ```markdown
+  ## <short title>
+  - Severity: P1 | P2 | P3
+  - Suggested labels: <type>, component:<name>
+  - Observed: <what happened, where, how to reproduce>
+  - Proposed fix: <one line, optional>
+  ```
 - **Before proposing fork work upstream:** scrub anything fork-specific
   (local tokens, machine paths, app experiments), squash exploratory
   history, and reference or create the upstream issue per the standard
@@ -225,9 +229,9 @@ Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
 Commits pushed to `main` and `dev` **must be GPG-signed by the human
 operator**. Honest scoping of this rule:
 
-- CI does **not** currently verify signatures; enforcement is by
-  maintainer discipline and branch protection. (Adding signature
-  verification to CI is a tracked enhancement.)
+- CI reports unsigned commits on pushes to `main`/`dev`
+  (`commit-signature-check.yml`) but the check is **non-blocking**;
+  enforcement is by maintainer discipline.
 - Agents running without a TTY cannot complete GPG pinentry. An agent
   asked to push signed commits must surface that limitation and hand the
   push to the operator -- never disable signing or bypass the requirement

@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Developer-facing AI interaction layer. OpenCode is a VS Code extension/plugin that connects to the Inference Engine via the OpenAI-compatible API for AI-powered code assistance.
+Developer-facing AI interaction layer. OpenCode is a terminal-based (TUI) AI coding agent that connects to the Inference Engine via the OpenAI-compatible API for AI-powered code assistance.
 
 AIXCL is client-agnostic above the API layer. OpenCode is one documented client; other MCP-compatible or OpenAI-API-compatible clients (e.g. Claude Code, Cursor) are equally valid. This contract documents how OpenCode integrates, not that it is required.
 
@@ -15,8 +15,8 @@ AIXCL is client-agnostic above the API layer. OpenCode is one documented client;
 
 ## Exposes
 
-- VS Code extension interface for AI-powered code assistance
-- Developer interaction layer (via OpenCode plugin in IDE)
+- Terminal (TUI) interface for AI-powered code assistance
+- Developer interaction layer (agents, commands, and skills under `.opencode/`)
 
 ## Must Not Depend On
 
