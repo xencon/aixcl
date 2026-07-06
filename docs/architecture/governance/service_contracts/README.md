@@ -13,7 +13,7 @@ Purpose:
 ## Contract Scope
 
 - Name
-- Category (runtime | bld)
+- Category (Runtime Core | Operational Services | Supported AI Coding Client)
 - Purpose
 - Depends On
 - Exposes
@@ -24,6 +24,7 @@ Purpose:
 
 ## Enforcement
 
-- Runtime: strict
-- Ops: guiding
+- Runtime Core: Strict
+- Operational Services: Guided
+- Supported AI Coding Clients: Advisory
 - Violations require explicit maintainer approval
