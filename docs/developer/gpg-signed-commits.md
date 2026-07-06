@@ -8,8 +8,10 @@ All commits to the `main` and `dev` branches must be cryptographically signed us
 
 - **Proof of Authorship**: Cryptographic verification of who made changes
 - **Code Integrity**: Tamper-evident commit history
-- **Compliance**: Meets SOC 2 / ISO 27001 requirements
+- **Compliance**: Supports SOC 2 / ISO 27001 compliance objectives
 - **Security**: Protection against compromised GitHub credentials
+
+**Honest scoping of enforcement**: CI reports unsigned commits on pushes to `main` and `dev` via `.github/workflows/commit-signature-check.yml`, but the check is **non-blocking** -- enforcement is by maintainer discipline. Agents cannot complete GPG pinentry (no TTY) and must hand commits to the human operator rather than bypass signing; see `docs/developer/agent-pitfalls.md`.
 
 ### Scope: Human Developers Only
 
@@ -124,16 +126,15 @@ Signed commits display a "Verified" badge on GitHub:
 
 - **Green "Verified"**: Signature valid and trusted
 - **Unverified**: Signature present but key not added to GitHub
-- **No badge**: Commit not signed (will be rejected)
+- **No badge**: Commit not signed (reported as a non-blocking CI warning on `main`/`dev`)
 
-### Branch Protection
+### Enforcement Status
 
-Repository settings enforce signed commits:
-
-```
-Settings > Branches > Branch protection rules
-[x] Require signed commits
-```
+There is currently NO hard rejection of unsigned commits. The
+`commit-signature-check.yml` workflow reports unsigned commits in a push
+to `main` or `dev` as warnings and always exits 0. Adding blocking
+enforcement (branch protection "require signed commits") is a maintainer
+decision, not a documented current state.
 
 ## Emergency Procedures
 
@@ -171,28 +172,18 @@ In emergencies, repository admins can:
 
 **Note**: This requires explicit admin approval and should be logged.
 
-## CI/CD Integration
+## Agents and Automation
 
-### GitHub Actions
+There is **no bot GPG key** in this repository, and CI does not create
+signed commits. AI agents running without a TTY cannot complete GPG
+pinentry: the correct behavior is to stage the changes, provide the exact
+`git commit` command, and hand signing to the human operator -- never
+disable signing, never use `--no-gpg-sign`, never use `--no-verify`.
 
-Automated commits (version bumps, changelog) should use a bot key:
-
-```yaml
-- name: Import GPG key
-  uses: crazy-max/ghaction-import-gpg@v5
-  with:
-    gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-    passphrase: ${{ secrets.GPG_PASSPHRASE }}
-    git_user_signingkey: true
-    git_commit_gpgsign: true
-```
-
-### Bot Signing
-
-Repository has a bot GPG key for automated commits:
-- Key ID: Available in repository secrets
-- Used by: GitHub Actions only
-- Scope: Changelog updates, version bumps
+If automated signing is ever introduced (bot key in CI), it requires a
+separate key with a distinct bot identity, storage in a secret vault, and
+an audit trail -- treat it as a `[SECURITY]`-flagged change requiring
+explicit maintainer approval.
 
 ## Troubleshooting
 

@@ -185,9 +185,18 @@ canonical repo; forks follow these adaptations:
 - **Capturing upstream defects:** platform problems discovered during
   fork work are recorded in `UPSTREAM-ISSUES.md` at the repository root
   -- one entry per candidate ticket with severity and suggested labels.
-  This file is working inventory, exempt from the dated-reports lean
-  policy. When an entry is filed as a real issue upstream, delete it
-  from the file (the issue tracker takes over).
+  The file is created on demand (it does not exist when the inventory is
+  empty) and is exempt from the dated-reports lean policy. When an entry
+  is filed as a real issue upstream, delete it from the file (the issue
+  tracker takes over). Entry format:
+
+  ```markdown
+  ## <short title>
+  - Severity: P1 | P2 | P3
+  - Suggested labels: <type>, component:<name>
+  - Observed: <what happened, where, how to reproduce>
+  - Proposed fix: <one line, optional>
+  ```
 - **Before proposing fork work upstream:** scrub anything fork-specific
   (local tokens, machine paths, app experiments), squash exploratory
   history, and reference or create the upstream issue per the standard
@@ -220,9 +229,9 @@ Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
 Commits pushed to `main` and `dev` **must be GPG-signed by the human
 operator**. Honest scoping of this rule:
 
-- CI does **not** currently verify signatures; enforcement is by
-  maintainer discipline and branch protection. (Adding signature
-  verification to CI is a tracked enhancement.)
+- CI reports unsigned commits on pushes to `main`/`dev`
+  (`commit-signature-check.yml`) but the check is **non-blocking**;
+  enforcement is by maintainer discipline.
 - Agents running without a TTY cannot complete GPG pinentry. An agent
   asked to push signed commits must surface that limitation and hand the
   push to the operator -- never disable signing or bypass the requirement
