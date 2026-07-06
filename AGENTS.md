@@ -281,6 +281,19 @@ Use plain ASCII only. Place the block at the end of the comment or PR body, afte
 
 ## 10. Quick References
 
+### Per-Directory Documentation
+
+- `CONTEXT.md` -- agent-facing directory contract: what the directory
+  contains, what agents MAY and MUST NOT do there. Read it before editing
+  files in a directory that has one.
+- `README.md` -- human-facing overview; used at the repository root and
+  top-level directories only (`config/`, `lib/`, `scripts/`, `tests/`,
+  `docs/`).
+- Not every directory has a `CONTEXT.md`. Absence means no constraints
+  beyond this contract apply -- read the code.
+- `docs/README.md` is the complete index of `docs/`; update it in the
+  same PR that adds, moves, or removes a doc.
+
 ### Tool Usage
 
 - Prefer actually running commands over printing them

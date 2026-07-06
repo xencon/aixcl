@@ -16,14 +16,9 @@ It complements `AGENTS.md` (the operating contract) and `.opencode/rules/` (beha
 
 ## 1. Before starting any task
 
-Read the following documents before beginning work:
+Read the four cold-start documents in the order given in **AGENTS.md Section 0** -- that list is canonical and is deliberately not repeated here. For the complete step-by-step workflow beyond this file, see `docs/developer/development-workflow.md`.
 
-1. `AGENTS.md` -- agent operating contract and authority hierarchy
-2. `DEVELOPMENT.md` -- workflow rules, issue and PR templates
-3. `docs/developer/development-workflow.md` -- full workflow guide
-4. `docs/architecture/governance/` -- platform invariants and service contracts
-
-**VALIDATION REQUIRED:** If any documents in #3 or #4 are absent -> **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
+**VALIDATION REQUIRED:** If any document referenced by AGENTS.md Section 0 is absent -> **HALT** and ask the human operator directly, per AGENTS.md Section 7 (do not create issues unilaterally). Await human clarification before proceeding.
 
 ---
 
