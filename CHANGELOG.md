@@ -5,6 +5,25 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.51] - 2026-07-06
+
+### Summary
+
+Release v1.1.51 -- Documentation optimized for agentic use: complete navigation, single-source policy, codified naming conventions, and hardened security guardrails; verified by a live agent smoke test with an ~11 percent smaller cold-start context.
+
+### Documentation
+
+- [x] **Docs Index and Cold-Start Navigation**: docs/README.md is now a complete audience-based index (adds docs/security/, all five ADRs, and six previously unindexed developer docs) with a same-PR update rule; AGENTS.md Section 0 is the single cold-start reading list and DEVELOPMENT.md defers to it; the CONTEXT.md vs README.md per-directory convention is documented, three high-traffic CONTEXT.md files added, and the deprecated QUICKSTART.md tombstone deleted. Closes #1736.
+- [x] **Single-Source Policy Dedup**: rules/security.md and rules/formatting.md (both mirrors) now point at canonical AGENTS.md instead of restating it; agent-context.md slimmed from 244 to 76 lines, removing two policy defects (inverted push/PR remotes, OpenCode listed as fixed core runtime); finish-pr converged to one procedure across command surfaces. Auto-loaded agent payload reduced 17 percent. Closes #1737.
+- [x] **Naming Conventions and Doc Currency**: ai-file-naming.md rewritten (kebab-case for new docs, existing numbered series keep their style, frontmatter only where a tool consumes it) and no longer instructs adding the `name:` field that breaks OpenCode agent dispatch; UPSTREAM-ISSUES.md entry template embedded in DEVELOPMENT.md; stale service-contract and GPG-enforcement claims corrected against live state. Closes #1738.
+- [x] **Security Guardrails Hardened**: general Untrusted Input rules added to rules/security.md (both mirrors) covering web content, Discussions, non-collaborator issue/PR bodies, and echoed tool output; opencode-setup.md now points at the canonical config template and documents the full permission deny table with rationale; the release template's U+2705 ASCII exception carries an explicit inline waiver. Closes #1739.
+
+### Fixed
+
+- [x] **Pre-Commit ASCII Hook False Positive**: the no-non-ascii-punctuation pygrep hook compiled its Unicode character class as a byte regex, matching the shared 0xe2 lead byte of any U+2xxx character and rejecting the documented U+2705 release-notes exception; the pattern is now the exact UTF-8 byte sequences matching CI's check. Closes #1739.
+
+
+
 ## [v1.1.50] - 2026-07-03
 
 ### Summary
