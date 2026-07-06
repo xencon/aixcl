@@ -141,5 +141,8 @@ export/
 .security/
 
 # Generated app integration files (written by ./aixcl app start)
+# The apps dashboard directory itself is tracked (via .gitkeep) so the
+# Grafana provisioner path always exists; only its contents are generated.
 prometheus/file_sd/
-grafana/provisioning/dashboards/apps/
+grafana/provisioning/dashboards/apps/*
+!grafana/provisioning/dashboards/apps/.gitkeep
