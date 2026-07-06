@@ -14,7 +14,9 @@
 # Severity: Warning
 
 # High Disk Usage Alert
-# Query: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
+# Query: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"}
+#         - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"})
+#         / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
 # Threshold: 85% for 5 minutes
 # Severity: Warning
 
@@ -29,4 +31,3 @@
 # Severity: Warning
 
 # These alerts are implemented in prometheus/alerts.yml under the aixcl_system group
-
