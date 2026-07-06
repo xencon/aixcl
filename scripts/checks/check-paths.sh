@@ -104,7 +104,16 @@ check_hardcoded_usernames() {
 
     local username_pattern="sbadakhc"
     local occurrences
-    occurrences=$(grep -rn "$username_pattern" --include="*.md" . 2>/dev/null | grep -v ".git/" | grep -v "CODEOWNERS" || true)
+    # Exclusions (see issue #1756): CHANGELOG.md is a historical record,
+    # and the fork repo slug (sbadakhc/aixcl) documents real infrastructure
+    # (remote URLs, fork layout) rather than an assignee that should be a
+    # placeholder. Everything else stays strict.
+    occurrences=$(grep -rn "$username_pattern" --include="*.md" . 2>/dev/null \
+        | grep -v ".git/" \
+        | grep -v "CODEOWNERS" \
+        | grep -v "^\./CHANGELOG\.md:" \
+        | grep -v "sbadakhc/aixcl" \
+        || true)
 
     if [[ -n "$occurrences" ]]; then
         warn "Found hardcoded username (should use <assignee> placeholder):"
