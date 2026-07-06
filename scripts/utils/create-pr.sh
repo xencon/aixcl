@@ -75,7 +75,7 @@ trap 'rm -f "$BODY_FILE"' EXIT
 
 if [[ -f "$TEMPLATE_FILE" ]]; then
     # Replace placeholder with actual issue reference
-    sed "s/#<ISSUE_NUMBER>/${ISSUE_NUM}/g" "$TEMPLATE_FILE" > "$BODY_FILE"
+    sed "s/#<ISSUE_NUMBER>/#${ISSUE_NUM}/g" "$TEMPLATE_FILE" > "$BODY_FILE"
     # Append any additional body content if provided
     if [[ -n "$BODY" ]]; then
         echo "" >> "$BODY_FILE"
