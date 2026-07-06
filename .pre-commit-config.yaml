@@ -35,7 +35,12 @@ repos:
         name: No non-ASCII punctuation in markdown
         language: pygrep
         types: [markdown]
-        entry: "[–—‘’“”… ]"
+        # Byte-level UTF-8 sequences for U+2013/2014/2018/2019/201C/201D/2026
+        # and U+00A0 -- the same set CI's check-ascii-markdown job matches.
+        # pygrep compiles the pattern against bytes, so a literal character
+        # class would match the shared 0xe2 lead byte of unrelated characters
+        # (false positive on the documented U+2705 release-notes exception).
+        entry: '\xe2\x80[\x93\x94\x98\x99\x9c\x9d\xa6]|\xc2\xa0'
         args: ['--multiline']
 
       - id: check-ai-elisions

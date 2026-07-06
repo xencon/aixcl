@@ -4,6 +4,13 @@ description: Canonical source of truth for GitHub release formatting
 version: 3.0
 ---
 
+<!--
+  ASCII exception (intentional): the U+2705 green checkmarks below are the
+  documented release-notes exception in .claude/rules/formatting.md --
+  GitHub release pages do not render "- [x]" checkboxes interactively.
+  Do not add any other non-ASCII characters to this file.
+-->
+
 ## AIXCL vX.Y.Z
 
 **One-line summary describing this release.**
