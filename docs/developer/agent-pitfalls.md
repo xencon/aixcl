@@ -64,7 +64,7 @@ does not satisfy the check.
 **Fix:** Always use:
 ```bash
 gh pr create \
-  --assignee sbadakhc \
+  --assignee <assignee> \
   --label "component:<name>"
 ```
 
