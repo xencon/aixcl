@@ -117,7 +117,7 @@ EOF
     assignee=$(_release_assignee)
     issue_url=$(gh issue create --repo "$RELEASE_UPSTREAM_REPO" \
         --title "[TASK] Release ${RELEASE_NEXT}" \
-        --body "$(printf '## Task Summary\n\nCut release %s.\n\n### Deliverables\n\n- [ ] CHANGELOG.md updated\n- [ ] PR merged to main\n- [ ] Tag %s pushed to upstream\n- [ ] GitHub release published\n- [ ] dev synced with main\n\n## Human in the Loop\n\nThe agent is responsible for completing all deliverables. The human is responsible for completing the verification checklist.' "$RELEASE_NEXT" "$RELEASE_NEXT")" \
+        --body "$(printf '## Task Summary\n\nCut release %s.\n\n### Deliverables\n\n- [ ] CHANGELOG.md updated\n- [ ] PR merged to main (post-merge)\n- [ ] Tag %s pushed to upstream (post-merge)\n- [ ] GitHub release published (post-merge)\n- [ ] dev synced with main (post-merge)\n\n## Human in the Loop\n\nThe agent is responsible for completing all deliverables. The human is responsible for completing the verification checklist.' "$RELEASE_NEXT" "$RELEASE_NEXT")" \
         --assignee "$assignee" \
         --label "Task,component:infrastructure,Maintenance")
     issue_num="${issue_url##*/}"

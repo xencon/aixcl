@@ -86,3 +86,9 @@ It validates the PR and its linked issue in one pass: title formats, assignee,
 label taxonomy (exact case), zero unticked checkboxes on both bodies, body
 reference style, and all CI checks green. Merge only on exit 0. If a checkbox
 is legitimately unmet, resolve or surface it -- never merge past the gate.
+
+Exception: an unticked box whose text contains `(post-merge)` is reported
+as informational, not blocking. `./aixcl release prep` stamps this marker
+on release-lifecycle deliverables (tag pushed, release published, dev
+synced) that can only become true after the release PR merges. Tick each
+one as its step completes.
