@@ -5,6 +5,21 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.53] - 2026-07-07
+
+### Summary
+
+Release v1.1.53 -- Ollama model telemetry lands on the platform dashboard via a new json-exporter service, and the pr-ready merge gate learns to pass release-lifecycle checklists without manual exceptions.
+
+### Added
+
+- [x] **Ollama Model Telemetry**: new json-exporter operational service (pinned prometheuscommunity/json-exporter:v0.7.0, hardened) converts Ollama's /api/ps and /api/tags JSON into per-model Prometheus gauges; the platform dashboard AI row gains Models Loaded (honest zero when idle), Models Available, and a Loaded Model Memory panel charting total vs VRAM bytes per model. Registered in both profiles, the service registry, stack status, and docs. Closes #1768.
+
+### Fixed
+
+- [x] **Post-Merge Boxes Exempt from Merge Gate**: `./aixcl checks pr-ready` reports unticked checkboxes marked `(post-merge)` as informational instead of blocking, and `release prep` stamps the marker on release-lifecycle deliverables (tag pushed, release published, dev synced) that cannot be true before the release PR merges; documented in both rules mirrors and proven live on its own PR. Closes #1778.
+
+
 ## [v1.1.52] - 2026-07-07
 
 ### Summary
