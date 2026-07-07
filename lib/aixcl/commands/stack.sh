@@ -1744,6 +1744,11 @@ function status() {
     BLACKBOX_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9115/metrics 2>/dev/null)
     check_operational_service "Blackbox Exporter" "blackbox-exporter" "blackbox-exporter" "status_var" "BLACKBOX_EXPORTER_STATUS"
 
+    # JSON Exporter (Ollama model telemetry)
+    # shellcheck disable=SC2034
+    JSON_EXPORTER_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7979/metrics 2>/dev/null)
+    check_operational_service "JSON Exporter" "json-exporter" "json-exporter" "status_var" "JSON_EXPORTER_STATUS"
+
     # Loki
     # shellcheck disable=SC2034
     LOKI_STATUS=$(curl --connect-timeout 2 -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready 2>/dev/null)

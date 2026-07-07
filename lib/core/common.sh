@@ -73,6 +73,7 @@ ALL_SERVICES=(
     "postgres-exporter"
     "nvidia-gpu-exporter"
     "blackbox-exporter"
+    "json-exporter"
     "loki"
     "vault"
     "vault-agent-postgres"
