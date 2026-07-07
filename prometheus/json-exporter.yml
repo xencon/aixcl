@@ -1,0 +1,28 @@
+# JSON Exporter Configuration for AIXCL
+# Modules used by the 'ollama-models-loaded' and 'ollama-models-available'
+# scrape jobs in prometheus.yml. Ollama exposes no native /metrics endpoint;
+# these modules turn its JSON API into Prometheus gauges (see issue #1768).
+
+modules:
+  ollama_ps:
+    metrics:
+      - name: ollama_loaded_model
+        type: object
+        path: '{.models[*]}'
+        help: Model currently loaded in Ollama (from /api/ps)
+        labels:
+          model: '{.name}'
+        values:
+          size_bytes: '{.size}'
+          size_vram_bytes: '{.size_vram}'
+
+  ollama_tags:
+    metrics:
+      - name: ollama_available_model
+        type: object
+        path: '{.models[*]}'
+        help: Model available in the local Ollama library (from /api/tags)
+        labels:
+          model: '{.name}'
+        values:
+          size_bytes: '{.size}'

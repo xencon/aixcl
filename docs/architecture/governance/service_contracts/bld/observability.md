@@ -15,6 +15,7 @@ Provides metrics, logs, and dashboards for runtime observation. Includes Prometh
 - postgres-exporter database metrics (port 9187)
 - nvidia-gpu-exporter GPU metrics (port 9445, if GPU available)
 - blackbox-exporter HTTP probes (port 9115)
+- json-exporter Ollama model telemetry (port 7979)
 
 ## Must Not Depend On
 - Runtime control paths

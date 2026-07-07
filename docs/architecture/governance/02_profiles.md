@@ -40,6 +40,7 @@ The Inference Engine exposes an OpenAI-compatible API. AI coding clients (OpenCo
 - postgres-exporter (database metrics)
 - nvidia-gpu-exporter (GPU metrics, if GPU available)
 - blackbox-exporter (HTTP health probes for Ollama and Open WebUI)
+- json-exporter (Ollama model telemetry from its JSON API)
 - Alertmanager (alert routing)
 
 **Excludes**:
@@ -56,7 +57,7 @@ The Inference Engine exposes an OpenAI-compatible API. AI coding clients (OpenCo
 **Includes**:
 - Runtime core: Inference Engine
 - Vault (dynamic secrets management)
-- All bld services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, blackbox-exporter, Alertmanager
+- All bld services: Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, blackbox-exporter, json-exporter, Alertmanager
 - Open WebUI (web interface for model interaction)
 - pgAdmin (database administration UI)
 

@@ -546,6 +546,31 @@ services:
       timeout: 10s
       retries: 3
 
+  json-exporter:
+    image: docker.io/prometheuscommunity/json-exporter:v0.7.0
+    container_name: json-exporter
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
+    volumes:
+      - ../prometheus/json-exporter.yml:/config.yml:ro
+    command:
+      - '--config.file=/config.yml'
+      - '--web.listen-address=127.0.0.1:7979'
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      # json-exporter has no /-/healthy endpoint (unlike other prom exporters)
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:7979/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   loki:
     image: docker.io/grafana/loki:3.7.3
     container_name: loki

@@ -6,7 +6,7 @@ For installation and quick start, see [README.md](/README.md).
 
 | Profile | Purpose | Services |
 |---------|---------|----------|
-| **bld** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, blackbox-exporter, Alertmanager |
+| **bld** | Monitoring | Ollama, Vault, PostgreSQL, Prometheus, Grafana, Loki, cAdvisor, node-exporter, postgres-exporter, nvidia-gpu-exporter, blackbox-exporter, json-exporter, Alertmanager |
 | **sys** | Full stack | bld + Open WebUI, pgAdmin |
 
 Deprecated (not supported):
