@@ -60,7 +60,10 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} - node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) / node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
+              expr: >-
+                (node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} -
+                node_filesystem_avail_bytes{fstype!="tmpfs",mountpoint="/"}) /
+                node_filesystem_size_bytes{fstype!="tmpfs",mountpoint="/"} * 100 > 85
               intervalMs: 1000
               maxDataPoints: 43200
         noDataState: OK
@@ -292,7 +295,10 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} * 100 > 80) and (container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} > 0)
+              expr: >-
+                (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} /
+                container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} * 100 > 80) and
+                (container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"} > 0)
               intervalMs: 1000
               maxDataPoints: 43200
         noDataState: OK
@@ -384,7 +390,10 @@ groups:
               to: 0
             datasourceUid: loki
             model:
-              expr: sum(rate({compose_project="services", compose_service!~"grafana|loki|cadvisor|prometheus|node-exporter"} |~ "(?i)(error|exception|fatal|panic)" [5m]))
+              expr: >-
+                sum(rate({compose_project="services",
+                compose_service!~"grafana|loki|cadvisor|prometheus|node-exporter"} |~
+                "(?i)(error|exception|fatal|panic)" [5m]))
               intervalMs: 1000
               maxDataPoints: 43200
           - refId: B
@@ -431,7 +440,10 @@ groups:
               to: 0
             datasourceUid: loki
             model:
-              expr: sum(count_over_time({compose_project="services", compose_service!~"grafana|loki|cadvisor|prometheus|node-exporter"} |~ "(?i)(out of memory|oom|database connection failed|connection refused)" [5m]))
+              expr: >-
+                sum(count_over_time({compose_project="services",
+                compose_service!~"grafana|loki|cadvisor|prometheus|node-exporter"} |~
+                "(?i)(out of memory|oom|database connection failed|connection refused)" [5m]))
               intervalMs: 1000
               maxDataPoints: 43200
           - refId: B
@@ -467,4 +479,3 @@ groups:
         annotations:
           description: Critical errors (OOM, database connection failures) detected in logs
           summary: Critical errors detected in container logs
-

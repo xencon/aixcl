@@ -1,0 +1,12 @@
+# Blackbox Exporter Configuration for AIXCL
+# HTTP probe modules used by the 'blackbox-http' scrape job in prometheus.yml.
+# Ollama and Open WebUI expose no native /metrics endpoint; the platform
+# dashboard derives their UP/DOWN state from probe_success.
+
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: "ip4"
+      follow_redirects: true

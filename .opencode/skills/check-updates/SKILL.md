@@ -214,7 +214,7 @@ gh issue create --repo xencon/aixcl \
 - [ ] Version updated in \`.pre-commit-config.yaml\` (if pre-commit hook)
 - [ ] Stack starts cleanly after update (\`./aixcl stack start --profile sys\`)
 - [ ] \`./aixcl stack status\` shows all services healthy" \
-  --assignee sbadakhc \
+  --assignee <assignee> \
   --label "Task,component:infrastructure,Maintenance"
 ```
 
@@ -309,7 +309,7 @@ gh pr create \
   --base dev \
   --title "Update <component> from <old> to <new> (#<N>)" \
   --body "$(cat /tmp/update-pr-body.md)" \
-  --assignee sbadakhc \
+  --assignee <assignee> \
   --label "Task,component:infrastructure,Maintenance"
 ```
 

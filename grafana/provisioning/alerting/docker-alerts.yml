@@ -20,9 +20,9 @@
 # Severity: Warning
 
 # High Container Memory Usage Alert
-# Query: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"} / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
+# Query: (container_memory_usage_bytes{name=~"ollama|open-webui|postgres|pgadmin"}
+#         / container_spec_memory_limit_bytes{name=~"ollama|open-webui|postgres|pgadmin"}) * 100 > 80
 # Threshold: > 80% memory for 5 minutes
 # Severity: Warning
 
 # These alerts are implemented in prometheus/alerts.yml under the aixcl_docker group
-
