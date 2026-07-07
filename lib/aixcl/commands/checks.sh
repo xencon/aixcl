@@ -9,7 +9,7 @@ CHECKS_FAILED=()
 CHECKS_SKIPPED=()
 
 _checks_usage() {
-    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|yaml|compose|env|pr-refs <file>}"
+    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|yaml|compose|env|pr-refs <file>|pr-ready <pr>}"
     echo "  all              Run every check below (continues on failure, prints summary)"
     echo "  paths            Documentation relative links and stale path patterns"
     echo "  agents           .claude/ vs .opencode/ rules and skills mirror parity"
@@ -21,6 +21,7 @@ _checks_usage() {
     echo "  compose          docker compose config validation (main + overrides)"
     echo "  env              Environment prerequisites (same as utils check-env)"
     echo "  pr-refs <file>   Issue/PR body reference style (one reference per line)"
+    echo "  pr-ready <pr>    Merge-readiness gate: checkboxes, format, labels, CI state"
 }
 
 _check_run() {
@@ -170,6 +171,14 @@ function checks_cmd() {
                 return 1
             fi
             bash "${checks_dir}/check-pr-references.sh" < "$body_file"
+            ;;
+        pr-ready)
+            local pr_number="${1:-}"
+            if [ -z "$pr_number" ]; then
+                echo "Usage: $0 checks pr-ready <pr-number> [owner/repo]"
+                return 1
+            fi
+            bash "${checks_dir}/check-pr-ready.sh" "$@"
             ;;
         all)
             CHECKS_PASSED=()
