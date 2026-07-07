@@ -70,7 +70,14 @@ _taxonomy_label() {
 _report_unchecked() {
     local body="$1" context="$2" line
     while IFS= read -r line; do
-        error "$context has an unticked checkbox: $line"
+        # Boxes marked "(post-merge)" track release-lifecycle steps (tag,
+        # publish, sync) that can only become true after the PR merges --
+        # release prep stamps them; they inform but never block (issue #1778).
+        if [[ "$line" == *"(post-merge)"* ]]; then
+            info "$context post-merge item (not blocking): $line"
+        else
+            error "$context has an unticked checkbox: $line"
+        fi
     done < <(echo "$body" | grep -E '^\s*- \[ \]' || true)
 }
 
