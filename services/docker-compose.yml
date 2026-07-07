@@ -522,6 +522,30 @@ services:
     # GPU resources are configured in docker-compose.gpu.yml when available
     # This service will gracefully fail on systems without NVIDIA GPUs
 
+  blackbox-exporter:
+    image: docker.io/prom/blackbox-exporter:v0.28.0
+    container_name: blackbox-exporter
+    pull_policy: missing
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
+    volumes:
+      - ../prometheus/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+      - '--web.listen-address=127.0.0.1:9115'
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9115/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   loki:
     image: docker.io/grafana/loki:3.7.3
     container_name: loki

@@ -14,6 +14,7 @@ Provides metrics, logs, and dashboards for runtime observation. Includes Prometh
 - node-exporter host metrics (port 9100)
 - postgres-exporter database metrics (port 9187)
 - nvidia-gpu-exporter GPU metrics (port 9445, if GPU available)
+- blackbox-exporter HTTP probes (port 9115)
 
 ## Must Not Depend On
 - Runtime control paths

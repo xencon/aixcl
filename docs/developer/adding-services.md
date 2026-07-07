@@ -50,10 +50,10 @@ get_profile_services_for_profile() {
     
     case "$profile" in
         bld)
-            echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+            echo "$engine vault postgres prometheus grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter blackbox-exporter NEW-SERVICE"
             ;;
         sys)
-            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter NEW-SERVICE"
+            echo "$engine vault open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter blackbox-exporter NEW-SERVICE"
             ;;
     esac
 }
@@ -121,7 +121,7 @@ Before submitting a PR, verify:
 **lib/cli/profile.sh (sys profile):**
 ```bash
         sys)
-            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter"
+            echo "$engine open-webui postgres pgadmin prometheus alertmanager grafana loki cadvisor node-exporter postgres-exporter nvidia-gpu-exporter blackbox-exporter"
             ;;
 ```
 
