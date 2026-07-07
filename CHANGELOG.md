@@ -5,6 +5,35 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.52] - 2026-07-07
+
+### Summary
+
+Release v1.1.52 -- Observability repaired and merges gated: the platform dashboard is fully live via a new blackbox exporter probing Ollama and Open WebUI, a mandatory pr-ready merge gate lands in the CLI, and five CI/tooling defects are fixed.
+
+### Added
+
+- [x] **PR Merge-Readiness Gate**: new `./aixcl checks pr-ready <pr>` command validates PR state, title format, assignee, component and taxonomy labels, unticked checkboxes on the PR and its linked issue, body reference style, and CI status before any merge; documented as mandatory in both rules mirrors and used to gate every merge in this cycle, including its own. Closes #1762.
+
+### Changed
+
+- [x] **Dependabot Buildx Bump**: docker/setup-buildx-action raised from 4.1.0 to 4.2.0 in CI workflows; reconciled from main into dev ahead of this release. Closes #1770.
+- [x] **Models Loaded Placeholder Removed**: the platform dashboard stat whose query was the constant `0` is gone; the AI Platform row is rebalanced to a symmetric 2x2 GPU grid, and real Ollama model telemetry is tracked in #1768. Closes #1767.
+- [x] **Yamllint Line-Length Wraps**: Grafana provisioning YAML wrapped under the 160-character limit using folded scalars with byte-identical parsed values. Closes #1752.
+
+### Fixed
+
+- [x] **Platform Dashboard Panels Live**: Ollama and Open WebUI health stats are now driven by `probe_success` from a new hardened blackbox-exporter operational service (pinned prom/blackbox-exporter:v0.28.0, registered in both profiles, stack status, and Prometheus scrape config), and the GPU Utilization query uses the correct exporter metric name. Closes #1765.
+- [x] **Apps Dashboard Directory Ships**: `grafana/provisioning/dashboards/apps/` is tracked via .gitkeep so the Grafana provisioner path always exists at container start; generated dashboard contents remain git-ignored. Closes #1760.
+- [x] **create-pr.sh Issue References**: the PR template substitution keeps the leading hash, so `Fixes #N` references stay linked. Closes #1758.
+- [x] **Username Scan Exclusions**: the hardcoded-username check excludes CHANGELOG.md history and the fork repository slug, which document real infrastructure rather than assignees. Closes #1756.
+- [x] **Agent-Context Reference Check Relaxed**: files that defer to AGENTS.md inherit its cold-start reading list and are exempt from duplicate doc-reference warnings. Closes #1751.
+
+### Documentation
+
+- [x] **Assignee Placeholder**: the hardcoded maintainer username is replaced with an `<assignee>` placeholder in the check-updates skill mirrors and agent-pitfalls guide. Closes #1750.
+
+
 ## [v1.1.51] - 2026-07-06
 
 ### Summary
