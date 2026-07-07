@@ -319,7 +319,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "ollama_up",
+          "expr": "probe_success{service=\"ollama\"}",
           "refId": "A"
         }
       ],
@@ -386,7 +386,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "openwebui_up",
+          "expr": "probe_success{service=\"open-webui\"}",
           "refId": "A"
         }
       ],
@@ -854,7 +854,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "nvidia_smi_utilization_gpu",
+          "expr": "nvidia_smi_utilization_gpu_ratio * 100",
           "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
