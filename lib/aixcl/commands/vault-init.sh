@@ -124,11 +124,13 @@ check_artefact_token() {
     local check
     local retries=10
     while [ $retries -gt 0 ]; do
+        # Extract the token accessor, never .data.id -- for lookup-self,
+        # .data.id is the plaintext token itself and must not be logged.
         check=$(curl -sf "${VAULT_ADDR}/v1/auth/token/lookup-self" \
             -H "X-Vault-Token: ${VAULT_TOKEN}" 2>/dev/null \
-            | jq -r '.data.id // empty' 2>/dev/null || true)
+            | jq -r '.data.accessor // empty' 2>/dev/null || true)
         if [ -n "$check" ]; then
-            log_info "  [ok] Vault token authenticates (id: ${check})"
+            log_info "  [ok] Vault token authenticates (accessor: ${check})"
             return 0
         fi
         log_verbose "Vault token check failed — retrying... ($retries left)"
