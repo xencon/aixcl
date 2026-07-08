@@ -140,7 +140,17 @@ run_compose() {
     # podman-compose create/start fallback pair (name collision on an
     # existing container followed by a successful "podman start"). Real
     # errors do not match these narrow patterns and always pass through.
-    (cd "${COMPOSE_WORKDIR}" && "${COMPOSE_CMD[@]}" "$@" 2>&1) | \
+    # VAULT_TOKEN is scrubbed from the compose environment on purpose.
+    # podman-compose hashes the fully-interpolated compose model and
+    # force-recreates every container in scope (dependencies included,
+    # regardless of --no-deps) whenever any existing container's hash label
+    # differs from the current model. stack start exports VAULT_TOKEN midway
+    # through its phased bring-up, so letting compose interpolate it changes
+    # the project hash between phases and tears down running services --
+    # including Vault itself, which then reseals (issue #1788). Containers
+    # that need the token (vault agents) receive it via direct container
+    # runs in stack.sh instead.
+    (cd "${COMPOSE_WORKDIR}" && env -u VAULT_TOKEN "${COMPOSE_CMD[@]}" "$@" 2>&1) | \
     awk '
         # -- Stateful: suppress merged-command dumps ------------------------
         # podman-compose echoes "** merged:" followed by the merged command
