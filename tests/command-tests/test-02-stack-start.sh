@@ -34,6 +34,23 @@ log_info "Setting engine to ollama..."
 # Test: Stack starts successfully
 assert_command_success "${SCRIPT_DIR}/aixcl stack start --profile sys" "Stack starts with sys profile"
 
+# Regression #1788: the phased bring-up must not recreate running containers.
+# podman-compose force-recreates a service's whole dependency closure when the
+# compose model hash changes mid-start; these signatures indicate that storm.
+# /tmp/test_output.log still holds the stack start output captured above.
+START_OUTPUT=$(cat /tmp/test_output.log 2>/dev/null || true)
+assert_string_not_contains "$START_OUTPUT" "is already in use" \
+    "No container name collisions during phased start"
+assert_string_not_contains "$START_OUTPUT" "has dependent containers" \
+    "No dependent-container removal failures during phased start"
+UNSEAL_COUNT=$(grep -c "Vault unsealed successfully" /tmp/test_output.log 2>/dev/null || true)
+if [ "${UNSEAL_COUNT:-0}" -le 1 ]; then
+    log_success "Vault unsealed at most once during start (count: ${UNSEAL_COUNT:-0})"
+else
+    log_error "Vault resealed during start (unseal count: ${UNSEAL_COUNT})"
+    exit 1
+fi
+
 # Test: Core containers are running
 wait_for_container "ollama"
 wait_for_container "postgres"
