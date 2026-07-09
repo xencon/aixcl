@@ -24,5 +24,10 @@ usermod -aG video,render "$OLLAMA_USER" 2>/dev/null || true
 
 echo "Starting Ollama as $OLLAMA_USER user..."
 
-# Switch to ubuntu user and execute ollama
-exec su - "$OLLAMA_USER" -c "exec ollama serve"
+# Switch to the ollama user and exec ollama directly so PID 1 receives
+# SIGTERM (su as PID 1 swallows signals, forcing a SIGKILL at the stop
+# timeout). setpriv ships with util-linux in the base image;
+# --init-groups picks up the video/render groups added above, and unlike
+# 'su -' it preserves the container environment (OLLAMA_HOST, tuning vars).
+exec setpriv --reuid "$OLLAMA_UID" --regid "$OLLAMA_UID" --init-groups \
+    env HOME="$OLLAMA_HOME" USER="$OLLAMA_USER" LOGNAME="$OLLAMA_USER" ollama serve

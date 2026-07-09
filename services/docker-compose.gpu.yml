@@ -31,7 +31,8 @@ services:
         mkdir -p "$$OLLAMA_DATA"
         chown -R "$$OLLAMA_USER:$$OLLAMA_USER" "$$OLLAMA_HOME"
         usermod -aG video,render "$$OLLAMA_USER" 2>/dev/null || true
-        exec su - "$$OLLAMA_USER" -c "exec ollama serve"
+        exec setpriv --reuid "$$OLLAMA_UID" --regid "$$OLLAMA_UID" --init-groups \
+            env HOME="$$OLLAMA_HOME" USER="$$OLLAMA_USER" LOGNAME="$$OLLAMA_USER" ollama serve
 
   nvidia-gpu-exporter:
     deploy:
