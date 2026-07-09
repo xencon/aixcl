@@ -424,6 +424,10 @@ function start() {
         exit 1
     fi
 
+    # Serialize whole-stack lifecycle operations (issue #1802): a second
+    # concurrent start would corrupt Vault bootstrap state mid-flight.
+    acquire_stack_lock "stack start" || exit 1
+
     # Save profile to .env file if it was specified via command line (and differs from .env)
     if [ "$profile_specified" = true ]; then
         local env_file="${SCRIPT_DIR}/.env"
@@ -1059,6 +1063,10 @@ function start() {
 function stop() {
     [ "${AIXCL_VERBOSE:-0}" = "1" ] && echo "Stopping Docker Compose deployment..."
 
+    # Serialize with other stack lifecycle operations (issue #1802). No-op
+    # when the lock is already held by this run (restart, utils prune).
+    acquire_stack_lock "stack stop" || return 1
+
     # Get current profile from .env file
     local profile=""
     local env_file="${SCRIPT_DIR}/.env"
@@ -1266,6 +1274,9 @@ function restart() {
     fi
 
     echo "Restarting services with profile: $profile..."
+    # Hold the lock across the whole stop+start window (issue #1802); the
+    # inner stop/start acquisitions are no-ops via reentrancy.
+    acquire_stack_lock "stack restart" || exit 1
     stop
     sleep 5
     start --profile "$profile"
