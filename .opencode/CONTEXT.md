@@ -20,14 +20,14 @@ notes) inside those two directories, or they register as a bogus
 
 | File | Mode | Purpose |
 |------|------|---------|
-| `agents/agent-context.md` | primary | Worker for the `agent:qwen` issue queue -- operational guidance, tool discipline, memory conventions |
+| `agents/agent-context.md` | primary | Worker for the `agent` issue queue -- operational guidance, tool discipline, memory conventions |
 | `agents/reviewer.md` | subagent | Read-only reviewer: `edit` denied, inspection-only bash allowlist |
 
 ## Commands
 
 | File | Command | Purpose |
 |------|---------|---------|
-| `commands/next-task.md` | `/next-task` | Injects the single oldest open `agent:qwen` issue as the one and only work item |
+| `commands/next-task.md` | `/next-task` | Injects the single oldest open `agent` issue as the one and only work item |
 | `commands/pr-ready.md` | `/pr-ready` | Gates PR creation on verified signed commits ahead of `upstream/dev`; hands the commit to the human if none exist |
 | `commands/finish-pr.md` | `/finish-pr` | Verifies a PR is actually MERGED before branch cleanup and issue close |
 
