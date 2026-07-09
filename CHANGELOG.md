@@ -5,6 +5,19 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.55] - 2026-07-09
+
+### Summary
+
+Release v1.1.55 -- Concurrent stack operations can no longer corrupt each other: whole-stack lifecycle commands now serialize on a per-user lock, so a second overlapping run refuses cleanly instead of destroying the first run's Vault bootstrap state.
+
+### Fixed
+
+- [x] **Stack Lifecycle Lock**: two concurrent `stack start` runs raced each other's Vault KV artifact clearing and sidecar `rm -f`/`run` management, leaving crash-looping bootstrap agents and a degraded stack. `stack start/stop/restart` and `utils prune`/`prune --all` now acquire a PID-file lock keyed to the invoking user (flock was rejected after testing showed the held fd leaks into conmon behind detached containers); a second invocation exits non-zero naming the in-progress run's PID, command, and start time. Stale locks from SIGKILLed runs self-heal via a liveness check, and EXIT/INT/TERM traps release the lock on normal completion, Ctrl-C, and SIGTERM. Closes #1802.
+
+
+
+
 ## [v1.1.54] - 2026-07-09
 
 ### Summary

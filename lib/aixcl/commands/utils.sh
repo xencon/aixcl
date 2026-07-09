@@ -21,6 +21,11 @@ function needs_rebuild() {
 function prune() {
     local docker_cmd="${DOCKER_BIN:-podman}"
 
+    # Serialize with stack lifecycle operations (issue #1802); the child
+    # `./aixcl stack stop` below inherits the held-lock marker and skips
+    # re-acquisition.
+    acquire_stack_lock "utils prune" || return 1
+
     echo "Pruning AIXCL stack (volumes and state, images kept)..."
     echo ""
 
@@ -98,6 +103,10 @@ function prune_all() {
         return 0
     fi
     echo ""
+
+    # Acquired after confirmation so the lock is not held during the
+    # interactive prompt (issue #1802).
+    acquire_stack_lock "utils prune --all" || return 1
 
     echo "Stopping stack gracefully..."
     ./aixcl stack stop 2>/dev/null || true
