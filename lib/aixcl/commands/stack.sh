@@ -761,11 +761,14 @@ function start() {
                 local _vtoken="${VAULT_TOKEN}"
                 local _bin="${DOCKER_BIN:-podman}"
                 # Single source for the Vault image used by direct container
-                # runs. Must match the pin in services/docker-compose.yml --
-                # agents and helpers must run the same Vault version as the
-                # server (the previous hardcoded 2.0.2 had drifted from the
-                # compose pin).
-                local _vault_image="docker.io/hashicorp/vault:2.0.3"
+                # runs: derive it from the compose pin at runtime so agents
+                # and helpers can never drift from the server version again
+                # (a previous hardcoded 2.0.2 had drifted from the compose
+                # pin). The fallback is only used if the grep fails.
+                local _vault_image
+                _vault_image=$(grep -m1 -oE 'docker\.io/hashicorp/vault:[0-9][0-9.]*' \
+                    "${SERVICES_DIR:-${SCRIPT_DIR}/services}/docker-compose.yml" 2>/dev/null || true)
+                _vault_image="${_vault_image:-docker.io/hashicorp/vault:2.0.3}"
 
                 # Ensure the shared secrets volume is writable by the image's
                 # non-root runtime user (uid 100, gid 1000) regardless of
@@ -1013,7 +1016,7 @@ function start() {
                 printf "  All services report healthy.%20s\n" ""
                 break
             fi
-            printf "  %d service(s) still starting... (%ds/%ds)  \r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))"
+            printf "  %d service(s) still starting... (%ds/%ds)%10s\r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))" ""
             sleep 5
             hw_attempt=$((hw_attempt + 1))
         done
@@ -1039,7 +1042,7 @@ function start() {
             if [ -f "$vault_unseal_script" ]; then
                 bash "$vault_unseal_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" || true
             fi
-            printf "  Waiting for Vault to settle... (%ds/%ds)\r" "$((vault_settle * 5))" "$((vault_settle_max * 5))"
+            printf "  Waiting for Vault to settle... (%ds/%ds)%10s\r" "$((vault_settle * 5))" "$((vault_settle_max * 5))" ""
             sleep 5
             vault_settle=$((vault_settle + 1))
         done
@@ -1089,7 +1092,7 @@ function stop() {
             _print_stopped_status "$profile"
             return 0
         fi
-        printf "  Waiting for containers to stop... (%ds/%ds)\r" "$((st_attempt * 2))" "$((st_max * 2))"
+        printf "  Waiting for containers to stop... (%ds/%ds)%10s\r" "$((st_attempt * 2))" "$((st_max * 2))" ""
         sleep 2
         st_attempt=$((st_attempt + 1))
     done

@@ -25,9 +25,12 @@ source "${SCRIPT_DIR}/lib/core/service_utils.sh"
 
 # Load environment variables from .env file (before docker_utils validates COMPOSE_FILE)
 if ! load_env_file ".env"; then
-    if [ "${1:-}" != "stack" ] || [ "${2:-}" != "start" ]; then
+    # stack init is the documented first-run path and stack start creates
+    # .env itself -- warning during either would be noise (or, worse, point
+    # the user away from the command they are already running).
+    if [ "${1:-}" != "stack" ] || { [ "${2:-}" != "start" ] && [ "${2:-}" != "init" ]; }; then
         echo "   Warning: .env file not found. AIXCL will use default values."
-        echo "   Run './aixcl stack start' to initialize the environment."
+        echo "   Run './aixcl stack init' to initialize the environment."
         echo ""
     fi
 fi
