@@ -5,6 +5,25 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.54] - 2026-07-09
+
+### Summary
+
+Release v1.1.54 -- First-run experience repaired end to end: a vanilla clone-to-running deployment no longer logs the Vault root token, no longer storms through container recreations during phased start, and stops Ollama gracefully instead of waiting out the kill timeout.
+
+### Changed
+
+- [x] **Recreation Storm Regression Test**: test-02-stack-start now fails if a stack start emits "name already in use" or "has dependent containers" errors, or unseals Vault more than once -- the observable symptoms of a compose recreation storm. Addresses #1788.
+
+### Fixed
+
+- [x] **Vault Root Token No Longer Logged**: vault-init logged the plaintext root token during artefact verification because lookup-self returns the token itself as `.data.id`; the check now extracts and logs the audit-safe token accessor instead. Operators of existing installs should rotate the root token. Closes #1787.
+- [x] **Compose Recreation Storm on Phased Start**: `VAULT_TOKEN` in the compose process environment changed podman-compose's interpolated config hash between start phases, forcing scoped down/up cycles that recreated healthy containers, double-unsealed Vault, and spewed "name already in use" errors; the token is now excluded from the compose environment and the two Vault agent sidecars are run directly. Closes #1788.
+- [x] **First-Run UX Polish**: the missing-.env warning now points at `./aixcl stack init` and stays quiet while init/start run; progress lines pad to end of line so shrinking counters leave no residue; the Vault sidecar image is derived from the compose pin instead of three hardcoded copies; and the Ollama entrypoint drops privileges with setpriv instead of `su -`, so PID 1 receives SIGTERM (graceful stop in under 1s instead of the 10s SIGKILL timeout) and compose-provided tuning variables reach the engine. Closes #1792.
+
+
+
+
 ## [v1.1.53] - 2026-07-07
 
 ### Summary

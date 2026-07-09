@@ -597,8 +597,11 @@ function start() {
     echo "Setting ENABLE_DB_STORAGE=${ENABLE_DB_STORAGE} for profile: $profile"
 
     # On warm start (token file already exists from a previous init), pre-load the
-    # Vault token so bootstrap agents start with it from the first compose up.
-    # On first boot the file won't exist yet; bootstrap agents are excluded from the
+    # Vault token so vault-init and the direct agent container runs below can use
+    # it without a second GPG prompt. Compose never sees the token: run_compose
+    # scrubs VAULT_TOKEN so the compose model hash stays stable across the phased
+    # bring-up (see lib/core/docker_utils.sh and issue #1788).
+    # On first boot the file won't exist yet; vault agents are excluded from the
     # initial bring-up and started explicitly after vault-init runs below.
     local _vault_token_file="${SCRIPT_DIR}/.security/vault-root-token.gpg"
     if [ -f "$_vault_token_file" ]; then
@@ -741,10 +744,11 @@ function start() {
                 echo "Vault initialization complete."
 
                 # Decrypt the token vault-init just wrote.
-                # This is the authoritative token delivery path for bootstrap agents.
+                # This is the authoritative token delivery path for vault agents.
                 # --force ensures a stale VAULT_TOKEN in the shell env is replaced
-                # by the newly generated token, which run_compose then passes into
-                # containers via VAULT_TOKEN: ${VAULT_TOKEN:-} in docker-compose.yml.
+                # by the newly generated token. The token reaches agent containers
+                # only via the direct container runs below -- run_compose scrubs
+                # VAULT_TOKEN so the compose model hash stays stable (see #1788).
                 if ! _load_vault_token_for_stack --force; then
                     echo "[ ] Error: Could not load Vault token after init — bootstrap agents cannot start."
                     echo "   Run: ./aixcl vault init"
@@ -756,6 +760,15 @@ function start() {
                 echo "Starting Vault bootstrap agents..."
                 local _vtoken="${VAULT_TOKEN}"
                 local _bin="${DOCKER_BIN:-podman}"
+                # Single source for the Vault image used by direct container
+                # runs: derive it from the compose pin at runtime so agents
+                # and helpers can never drift from the server version again
+                # (a previous hardcoded 2.0.2 had drifted from the compose
+                # pin). The fallback is only used if the grep fails.
+                local _vault_image
+                _vault_image=$(grep -m1 -oE 'docker\.io/hashicorp/vault:[0-9][0-9.]*' \
+                    "${SERVICES_DIR:-${SCRIPT_DIR}/services}/docker-compose.yml" 2>/dev/null || true)
+                _vault_image="${_vault_image:-docker.io/hashicorp/vault:2.0.3}"
 
                 # Ensure the shared secrets volume is writable by the image's
                 # non-root runtime user (uid 100, gid 1000) regardless of
@@ -771,12 +784,14 @@ function start() {
                 # --network none: this one-shot container only touches a
                 # volume, it never needs network access.
                 "$_bin" run --rm --network none --user 0:0 -v aixcl-vault-secrets:/run/secrets \
-                    docker.io/hashicorp/vault:2.0.2 chown -R 100:1000 /run/secrets \
+                    "$_vault_image" chown -R 100:1000 /run/secrets \
                     >/dev/null 2>&1 || true
 
                 # Force-recreate bootstrap agents with explicit VAULT_TOKEN.
-                # podman-compose 1.0.6 does not interpolate exported shell variables
-                # into compose environment blocks — pass the token directly via podman run.
+                # The token is passed via direct container runs, never through
+                # compose: interpolating it into the compose model changes the
+                # podman-compose project hash mid-start and triggers a forced
+                # recreate of running services (see #1788 and run_compose).
                 # The agent list is derived from compose service names so adding a new
                 # bootstrap agent only requires a change in services/docker-compose.yml.
                 # NOTE: --replace is Podman-only (unsupported by plain Docker), so any
@@ -800,13 +815,47 @@ function start() {
                         --env "VAULT_TOKEN=${_vtoken}" \
                         -v "${SCRIPT_DIR}/scripts/vault/${_script}:/usr/local/bin/${_script}:ro" \
                         -v aixcl-vault-secrets:/run/secrets \
-                        docker.io/hashicorp/vault:2.0.2 "/usr/local/bin/${_script}" > /dev/null
+                        "$_vault_image" "/usr/local/bin/${_script}" > /dev/null
                     echo "  Started ${_agent}"
                 done
-                # Start non-bootstrap vault agents via compose
-                run_compose up -d --no-deps \
-                    vault-agent-postgres \
-                    vault-agent-openwebui 2>/dev/null || true
+
+                # Start the long-running sidecar agents the same way. Their
+                # compose definitions remain in services/docker-compose.yml
+                # (used by `stack stop` and status), but starting them through
+                # compose would require VAULT_TOKEN in the compose model --
+                # exactly the hash instability that recreates running services
+                # (see #1788). Flags mirror the compose definitions.
+                echo "Starting Vault sidecar agents..."
+                local _sidecar
+                for _sidecar in vault-agent-postgres vault-agent-openwebui; do
+                    local _sc_script _sc_args
+                    case "$_sidecar" in
+                        vault-agent-postgres)
+                            _sc_script="vault-agent.sh"
+                            _sc_args="postgres"
+                            ;;
+                        vault-agent-openwebui)
+                            _sc_script="vault-agent-openwebui.sh"
+                            _sc_args=""
+                            ;;
+                    esac
+                    "$_bin" rm -f "$_sidecar" >/dev/null 2>&1 || true
+                    # shellcheck disable=SC2086  # _sc_args is deliberately word-split
+                    if "$_bin" run -d --name "$_sidecar" --restart unless-stopped \
+                        --network host \
+                        --cap-drop ALL --cap-add SETUID --cap-add SETGID \
+                        --tmpfs /vault/file:noexec,nosuid,size=1m \
+                        --tmpfs /vault/logs:noexec,nosuid,size=1m \
+                        --env VAULT_ADDR=http://127.0.0.1:8200 \
+                        --env "VAULT_TOKEN=${_vtoken}" \
+                        -v "${SCRIPT_DIR}/vault/agent-config:/etc/vault:ro" \
+                        -v "${SCRIPT_DIR}/scripts/vault/${_sc_script}:/usr/local/bin/${_sc_script}:ro" \
+                        "$_vault_image" "/usr/local/bin/${_sc_script}" ${_sc_args} > /dev/null; then
+                        echo "  Started ${_sidecar}"
+                    else
+                        echo "  Warning: failed to start ${_sidecar}"
+                    fi
+                done
 
                 # Wait for postgres-password to appear in the shared secrets volume
                 echo "Waiting for bootstrap secrets to be written..."
@@ -816,7 +865,7 @@ function start() {
                     local _pw
                     _pw=$("$_docker_bin" run --rm \
                         -v aixcl-vault-secrets:/s \
-                        docker.io/hashicorp/vault:2.0.2 \
+                        "$_vault_image" \
                         sh -c "cat /s/postgres-password 2>/dev/null" 2>/dev/null || true)
                     if [ -n "$_pw" ]; then
                         echo "Bootstrap secrets ready."
@@ -967,7 +1016,7 @@ function start() {
                 printf "  All services report healthy.%20s\n" ""
                 break
             fi
-            printf "  %d service(s) still starting... (%ds/%ds)  \r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))"
+            printf "  %d service(s) still starting... (%ds/%ds)%10s\r" "$still_starting" "$((hw_attempt * 5))" "$((hw_max * 5))" ""
             sleep 5
             hw_attempt=$((hw_attempt + 1))
         done
@@ -993,7 +1042,7 @@ function start() {
             if [ -f "$vault_unseal_script" ]; then
                 bash "$vault_unseal_script" 2>&1 | grep -E "\[INFO\]|\[WARN\]|\[ERROR\]" || true
             fi
-            printf "  Waiting for Vault to settle... (%ds/%ds)\r" "$((vault_settle * 5))" "$((vault_settle_max * 5))"
+            printf "  Waiting for Vault to settle... (%ds/%ds)%10s\r" "$((vault_settle * 5))" "$((vault_settle_max * 5))" ""
             sleep 5
             vault_settle=$((vault_settle + 1))
         done
@@ -1043,7 +1092,7 @@ function stop() {
             _print_stopped_status "$profile"
             return 0
         fi
-        printf "  Waiting for containers to stop... (%ds/%ds)\r" "$((st_attempt * 2))" "$((st_max * 2))"
+        printf "  Waiting for containers to stop... (%ds/%ds)%10s\r" "$((st_attempt * 2))" "$((st_max * 2))" ""
         sleep 2
         st_attempt=$((st_attempt + 1))
     done
