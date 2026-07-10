@@ -409,9 +409,9 @@ services:
     command: []
     cap_drop:
       - ALL
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
+    cap_add:
+      - SETUID
+      - SETGID
     deploy:
       resources:
         limits:
