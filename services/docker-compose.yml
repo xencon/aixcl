@@ -409,8 +409,6 @@ services:
     command: []
     cap_drop:
       - ALL
-    security_opt:
-      - no-new-privileges:true
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=100m
@@ -453,8 +451,6 @@ services:
     cap_add:
       - SETUID
       - SETGID
-    security_opt:
-      - no-new-privileges:true
     deploy:
       resources:
         limits:
