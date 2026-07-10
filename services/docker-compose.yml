@@ -446,19 +446,6 @@ services:
       - ../pgadmin-servers.json:/pgadmin4/servers.json
       - ../scripts/runtime/pgadmin-entrypoint.sh:/usr/local/bin/pgadmin-entrypoint.sh:ro
       - aixcl-vault-secrets:/run/secrets:ro
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     restart: unless-stopped
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
