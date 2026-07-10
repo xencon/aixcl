@@ -5,6 +5,25 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.56] - 2026-07-10
+
+### Summary
+
+Release v1.1.56 -- Container security hardening (resource limits, capability drops, non-root transitions) applied across the stack while preserving the runtime core invariant; Ollama inference engine remains fully runnable.
+
+### Fixed
+
+- [x] **Container security hardening**: Added CPU/memory/pids limits to all 23 services; `cap_drop: ALL` + minimal `cap_add` on open-webui/pgadmin; `no-new-privileges:true` on runtime core and UI services; `read_only: true` + `tmpfs` on vault/loki; cadvisor removed from sys profile (retained in bld).
+- [x] **Runtime core entrypoint compatibility**: Removed `read_only` + `tmpfs /tmp:noexec` from ollama (conflicted with entrypoint chown on rootfs); removed `read_only` + `tmpfs` from open-webui (blocked setpriv user transition); removed `no-new-privileges` from open-webui/pgadmin (blocked setuid transition). All retain `no-new-privileges` on runtime core.
+- [x] **Stack status - curl failure handling**: Fixed `set -e` exit on curl failures in `aixcl stack status`; all 19 services in sys profile now report correctly.
+- [x] **Agent queue label rename**: `agent-qwen` renamed to `agent` for consistency.
+
+### Documentation
+
+- [x] **Agent queue label**: Renamed `agent-qwen` to `agent` in documentation and workflow.
+
+
+
 ## [v1.1.55] - 2026-07-09
 
 ### Summary
