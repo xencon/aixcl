@@ -50,9 +50,6 @@ services:
           memory: 2G
     security_opt:
       - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
