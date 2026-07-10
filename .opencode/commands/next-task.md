@@ -1,5 +1,5 @@
 ---
-description: Pick up the next issue from the agent:qwen work queue
+description: Pick up the next issue from the agent work queue
 agent: agent-context
 ---
 
@@ -7,7 +7,7 @@ Your next task -- this is the only issue you are assigned; there is no
 choice to make. If the line below is empty, report that the queue is empty
 and stop:
 
-!`gh issue list --repo xencon/aixcl --label agent:qwen --state open --json number,title,labels --jq 'sort_by(.number) | .[0] // empty | "#\(.number) [\(.labels | map(.name) | join(","))] \(.title)"'`
+!`gh issue list --repo xencon/aixcl --label agent --state open --json number,title,labels --jq 'sort_by(.number) | .[0] // empty | "#\(.number) [\(.labels | map(.name) | join(","))] \(.title)"'`
 
 Your current git state:
 
