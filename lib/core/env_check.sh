@@ -7,6 +7,32 @@ source "${BASH_SOURCE%/*}/common.sh"
 # shellcheck disable=SC1091
 source "${BASH_SOURCE%/*}/color.sh"
 
+# Classify a container's PID 1 user for the UID audit (#1822).
+# Allowlist: containers where PID 1 legitimately runs as root. Keep this
+# list short and each entry justified; anything else on root gets a warning.
+_uid_audit_verdict() {
+    local name="$1"
+    local user="$2"
+    local allowlist=(
+        "cadvisor"              # needs CAP_SYS_PTRACE for host-wide metrics
+        "nvidia-gpu-exporter"   # needs direct GPU device access
+    )
+
+    if [ "$user" != "0" ] && [ "$user" != "root" ]; then
+        echo "ok"
+        return 0
+    fi
+
+    local entry
+    for entry in "${allowlist[@]}"; do
+        if [ "$name" = "$entry" ]; then
+            echo "intentional-root"
+            return 0
+        fi
+    done
+    echo "unexpected-root"
+}
+
 check_env() {
     echo "Checking environment dependencies..."
     local missing_deps=0
@@ -303,6 +329,53 @@ check_env() {
     else
         print_warning "yamllint not installed -- YAML validation runs CI-only until installed"
         echo "   Install: pip install yamllint==1.35.1  or  sudo apt-get install yamllint"
+    fi
+
+    # Per-container UID audit (#1822): report the user PID 1 ACTUALLY runs
+    # as (via the process table), not the image's configured user --
+    # entrypoints that fail to drop privileges (the #1674 interpolation
+    # bug) only show up in the live process table.
+    echo -e "\nChecking container users..."
+    local audit_bin=""
+    if command -v podman &> /dev/null && podman info &> /dev/null; then
+        audit_bin="podman"
+    elif command -v docker &> /dev/null && ${DOCKER_BIN:-docker} info &> /dev/null; then
+        audit_bin="${DOCKER_BIN:-docker}"
+    fi
+
+    local audit_names=""
+    if [ -n "$audit_bin" ]; then
+        audit_names=$($audit_bin ps --format '{{.Names}}' 2>/dev/null || true)
+    fi
+
+    if [ -z "$audit_names" ]; then
+        print_info "Stack is not running (container UID audit skipped)"
+    else
+        local cname cuser verdict
+        while IFS= read -r cname; do
+            [ -z "$cname" ] && continue
+            if [ "$audit_bin" = "podman" ]; then
+                cuser=$(podman top "$cname" user 2>/dev/null | sed -n '2p')
+            else
+                cuser=$($audit_bin top "$cname" 2>/dev/null | awk 'NR==2 {print $1}')
+            fi
+            if [ -z "$cuser" ]; then
+                print_warning "$cname: could not determine PID 1 user"
+                continue
+            fi
+            verdict=$(_uid_audit_verdict "$cname" "$cuser")
+            case "$verdict" in
+                ok)
+                    print_success "$cname runs as non-root ($cuser)"
+                    ;;
+                intentional-root)
+                    print_info "$cname runs as root (known-intentional; see allowlist in lib/core/env_check.sh)"
+                    ;;
+                unexpected-root)
+                    print_warning "$cname runs as root (unexpected -- investigate)"
+                    ;;
+            esac
+        done <<< "$audit_names"
     fi
 
     if [ $missing_deps -eq 1 ]; then
