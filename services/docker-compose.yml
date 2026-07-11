@@ -15,7 +15,7 @@
 
 services:
   ollama:
-    image: docker.io/ollama/ollama:0.31.1
+    image: docker.io/ollama/ollama:0.31.2
     container_name: ollama
     pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
@@ -378,6 +378,8 @@ services:
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
       - aixcl-vault-secrets:/run/secrets:ro
     environment:
+      - OPENWEBUI_USER_ID=1000
+      - OPENWEBUI_GROUP_ID=1000
       - DATA_DIR=/app/data
       - STATIC_DIR=/app/backend/data/static
       # NOTE: No DATABASE_URL here — entrypoint constructs it from /run/secrets/postgres-password
@@ -450,7 +452,7 @@ services:
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
-    image: docker.io/prom/prometheus:v3.12.0
+    image: docker.io/prom/prometheus:v3.13.1
     container_name: prometheus
     pull_policy: missing
     cap_drop:
@@ -488,7 +490,7 @@ services:
       retries: 3
 
   alertmanager:
-    image: docker.io/prom/alertmanager:v0.33.0
+    image: docker.io/prom/alertmanager:v0.33.1
     container_name: alertmanager
     pull_policy: missing
     cap_drop:
@@ -522,7 +524,7 @@ services:
       retries: 3
 
   grafana:
-    image: docker.io/grafana/grafana:13.0.3
+    image: docker.io/grafana/grafana:13.1.0
     container_name: grafana
     pull_policy: missing
     cap_drop:
@@ -561,17 +563,22 @@ services:
       retries: 3
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.60.3
+    image: ghcr.io/google/cadvisor:v0.60.5
     container_name: cadvisor
     pull_policy: missing
     volumes:
       - /:/rootfs:ro
       - /sys:/sys:ro
       - /dev/disk/:/dev/disk:ro
+    # Runs as root by necessity (host-wide metrics; allowlisted in
+    # lib/core/env_check.sh) but with all capabilities dropped except
+    # SYS_PTRACE, mirroring the blackbox-exporter pattern (#1827)
+    cap_drop:
+      - ALL
     cap_add:
       - SYS_PTRACE
     security_opt:
-      - seccomp=unconfined
+      - no-new-privileges:true
     devices:
       - /dev/kmsg
     network_mode: host
@@ -589,7 +596,7 @@ services:
       - '--docker_only=true'
 
   node-exporter:
-    image: docker.io/prom/node-exporter:v1.11.1
+    image: docker.io/prom/node-exporter:v1.12.0
     container_name: node-exporter
     pull_policy: missing
     user: "65534:65534"  # node-exporter user (official image default) - avoids 'nobody' ambiguity
@@ -621,7 +628,7 @@ services:
           memory: 64M
 
   postgres-exporter:
-    image: docker.io/prometheuscommunity/postgres-exporter:v0.20.0
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.20.1
     container_name: postgres-exporter
     pull_policy: missing
     user: "65534:65534"  # postgres-exporter user (official image default) - avoids 'nobody' ambiguity
@@ -657,7 +664,7 @@ services:
           memory: 64M
 
   nvidia-gpu-exporter:
-    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.5.0
+    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.10.0
     container_name: nvidia-gpu-exporter
     pull_policy: missing
     cap_drop:
