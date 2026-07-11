@@ -5,6 +5,19 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.59] - 2026-07-11
+
+### Summary
+
+Release v1.1.59 -- Documentation consistency release: stale runtime-core claims corrected across governance docs after the client-agnosticism change, dead Vault credential guidance fixed in the README, and agent-identity names replaced with role-based wording.
+
+### Documentation
+
+- [x] **Stale runtime-core and Vault token references swept**: 01_ai_guidance.md and usage.md no longer claim OpenCode is part of the fixed core runtime (core is the Inference Engine; clients are non-exclusive); 00_invariants.md describes OpenCode as a terminal TUI agent, matching its service contract; 02_profiles.md sys enumeration includes PostgreSQL; README Vault UI login points at the GPG-encrypted root token instead of the unset VAULT_DEV_TOKEN env var (#1855).
+- [x] **Agent-identity names neutralized**: The release skill mirror pair and .opencode memory files use role-based wording ("the other agent", "OpenCode agent") instead of naming specific agents; Ollama/HF model tags and CHANGELOG history intentionally unchanged (#1856).
+
+
+
 ## [v1.1.58] - 2026-07-11
 
 ### Summary
