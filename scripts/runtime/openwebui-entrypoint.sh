@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Open WebUI Non-Root Entrypoint
 # Reads all credentials from Vault-mounted secrets; no hardcoded defaults.
+# UID/GID configurable via USER_ID/GROUP_ID (default 5051 to avoid pgAdmin UID 5050
+# and work correctly in rootless Podman subordinate UID mapping).
 
 set -euo pipefail
 
-# Default user/group IDs
-USER_ID="${USER_ID:-1000}"
-GROUP_ID="${GROUP_ID:-1000}"
+# Default user/group IDs (1000 maps correctly in rootless Podman user namespace)
+# Using OPENWEBUI_ prefix to avoid conflict with upstream image's default USER_ID/GROUP_ID=1000
+USER_ID="${OPENWEBUI_USER_ID:-${USER_ID:-1000}}"
+GROUP_ID="${OPENWEBUI_GROUP_ID:-${GROUP_ID:-1000}}"
 
 echo "=== Open WebUI Non-Root Entrypoint ==="
 echo "Target UID: $USER_ID"

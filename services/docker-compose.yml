@@ -378,6 +378,8 @@ services:
       - ../scripts/runtime/openwebui-entrypoint.sh:/usr/local/bin/openwebui-entrypoint.sh:ro
       - aixcl-vault-secrets:/run/secrets:ro
     environment:
+      - OPENWEBUI_USER_ID=1000
+      - OPENWEBUI_GROUP_ID=1000
       - DATA_DIR=/app/data
       - STATIC_DIR=/app/backend/data/static
       # NOTE: No DATABASE_URL here — entrypoint constructs it from /run/secrets/postgres-password
