@@ -5,6 +5,32 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.57] - 2026-07-11
+
+### Summary
+
+Release v1.1.57 -- Agent-platform efficiency and least-privilege sweep: per-session agent instruction payload cut 11%, a new container UID audit in check-env that caught and fixed a surplus-root exporter on its first run, and in-flight issue resumption for the agent work queue.
+
+### Added
+
+- [x] **Per-container UID audit in check-env**: `./aixcl utils check-env` now reports the user each container's PID 1 actually runs as (read from the process table, not the image config), with a justified allowlist (cadvisor, nvidia-gpu-exporter), a warning on unexpected root, and a graceful skip when the stack is down. Unit-tested including the root-ollama regression case (#1674).
+- [x] **Agent queue resumes in-flight issues**: `/next-task` now injects open `issue-<N>/` PRs alongside the queue issue and follows an explicit resume path (no duplicate branches or PRs; act on review comments) instead of assuming every task is a fresh start.
+
+### Changed
+
+- [x] **Rules files slimmed to deltas**: The security/workflow/formatting files in `.claude/rules/` and `.opencode/rules/` now carry only content absent from AGENTS.md/DEVELOPMENT.md, cutting the auto-loaded per-session agent payload by 441 words (11%) with no policy loss; CONTEXT.md descriptions updated to match.
+
+### Fixed
+
+- [x] **pgadmin cap restrictions removed**: The pgAdmin entrypoint starts postfix and executes python3, which the capability hardening broke into a restart loop; cap restrictions and resource limits removed for pgadmin only (hotfixed on main 2026-07-10, reconciled to dev via sync PR).
+- [x] **blackbox-exporter runs as nobody**: Found by the new UID audit on its first production run; the image's root default exists only for ICMP probes, which this HTTP-only deployment (with `cap_drop: ALL`) cannot use anyway.
+
+### Documentation
+
+- [x] **Session guardrails in CLAUDE.md**: Four recurring correction points codified into always-loaded session context: GPG hand-off, stack operations on explicit request only, sequential patch-bump releases with no CI shortcuts, and fork-sync base verification.
+
+
+
 ## [v1.1.56] - 2026-07-10
 
 ### Summary
