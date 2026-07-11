@@ -5,6 +5,29 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.58] - 2026-07-11
+
+### Summary
+
+Release v1.1.58 -- Observability stack refresh and continued least-privilege work: seven monitoring services updated in one batch, Ollama bumped to 0.31.2, the Open WebUI rootless Podman permission failure fixed, and cAdvisor reduced to a single capability.
+
+### Changed
+
+- [x] **Observability stack batch update**: Seven services bumped in one pass -- cadvisor v0.60.5, prometheus v3.13.1, alertmanager v0.33.1, grafana 13.1.0, node-exporter v1.12.0, postgres-exporter v0.20.1, nvidia-gpu-exporter 1.10.0. All patch/minor bumps with no breaking changes in upstream release notes (#1840).
+- [x] **Ollama 0.31.1 to 0.31.2**: Inference engine patch bump; inference verified post-update (#1839).
+- [x] **cAdvisor capability tightening**: `cap_drop: ALL` keeping only `SYS_PTRACE`, default seccomp profile restored (previously `unconfined`), and `no-new-privileges` added, mirroring the blackbox-exporter pattern. cAdvisor stays root by necessity for host-wide metrics; verified live with no metric regression against a 24h Prometheus baseline (#1847).
+- [x] **gitleaks install instructions updated**: README.md install snippet moved from v8.21.2 to v8.30.1 (#1841).
+
+### Fixed
+
+- [x] **Open WebUI rootless Podman permissions**: Volume writes failed under rootless Podman because the upstream `USER_ID`/`GROUP_ID` defaults collide with subordinate UID mapping; entrypoint now uses prefixed `OPENWEBUI_USER_ID`/`OPENWEBUI_GROUP_ID` (default 1000) following the proven pgAdmin pattern. Also corrects the nvidia-gpu-exporter tag (`v1.10.0` to `1.10.0`) and adds cadvisor to the sys profile per the profiles contract (#1845).
+
+### Documentation
+
+- [x] **Security hardening lessons in agent memory**: Lessons from the v1.1.56/v1.1.57 hardening cycle (entrypoint compatibility limits, UID audit findings) landed as a durable agent memory file (#1837).
+
+
+
 ## [v1.1.57] - 2026-07-11
 
 ### Summary
