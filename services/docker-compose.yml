@@ -657,7 +657,7 @@ services:
           memory: 64M
 
   nvidia-gpu-exporter:
-    image: docker.io/utkuozdemir/nvidia_gpu_exporter:v1.10.0
+    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.10.0
     container_name: nvidia-gpu-exporter
     pull_policy: missing
     cap_drop:
