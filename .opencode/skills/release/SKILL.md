@@ -68,7 +68,7 @@ mutation {
 ```
 
 - [ ] This agent has posted its retrospective (what landed, what was deferred, open concerns)
-- [ ] Kimi has posted its retrospective, or confirmed nothing material to add
+- [ ] The other agent has posted its retrospective, or confirmed nothing material to add
 - [ ] Human has reviewed and confirmed readiness to proceed
 
 Each agent post must include the standard agent identification block

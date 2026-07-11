@@ -10,8 +10,9 @@ Its purpose is to prevent well-intentioned but harmful changes and to preserve a
 
 AIXCL is an **opinionated AI development distribution** with a **fixed core runtime**:
 
-- Ollama
-- OpenCode
+- Ollama (Inference Engine)
+
+AI coding clients (OpenCode, Claude Code, or any OpenAI-API-compatible tool) sit above the API layer and are not part of the runtime core -- the platform is client-agnostic (see `00_invariants.md`).
 
 Do **not** attempt to generalize or abstract the runtime core.
 

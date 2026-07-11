@@ -46,7 +46,8 @@ Deprecated (not supported):
 
 AIXCL separates **Runtime Core** (always enabled) from **Operational Services** (profile-dependent).
 
-- **Runtime Core**: Inference Engine + OpenCode (VS Code plugin)
+- **Runtime Core**: Inference Engine (Ollama)
 - **Operational Services**: PostgreSQL, Open WebUI, monitoring stack
+- **AI Coding Clients**: OpenCode, Claude Code, or any OpenAI-API-compatible tool -- clients connect above the API layer and are not part of the runtime core
 
 See [`architecture/governance/`](../architecture/governance/) for invariants and service contracts.

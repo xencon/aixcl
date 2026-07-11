@@ -50,7 +50,7 @@ pgAdmin requires **no capability restrictions** (`cap_drop: ALL` breaks it) beca
 - Runtime core entrypoint compatibility fixes
 - Stack status curl failure handling
 - pgAdmin postfix compatibility
-- Agent queue label: `agent-qwen` -> `agent`
+- Agent queue label renamed to `agent` (previously model-specific)
 
 ## Files Modified
 
