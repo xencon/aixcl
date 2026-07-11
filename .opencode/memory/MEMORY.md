@@ -18,3 +18,4 @@ Read a memory file only when its hook is relevant to the current task
 ## Memories
 
 - [Working conventions](working-conventions.md) -- GPG is human-only, verify MERGED before cleanup, mirror parity, /tmp for scratch files
+- [Security hardening lessons](security-hardening-lessons.md) -- container hardening findings: entrypoint compatibility, pgadmin exception, status CLI bug, verification protocol
