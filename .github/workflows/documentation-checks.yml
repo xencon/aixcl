@@ -44,6 +44,19 @@ jobs:
           chmod +x ./scripts/checks/check-generated-files.sh
           ./scripts/checks/check-generated-files.sh
 
+  check-profiles:
+    name: Check Profile Contract Reconciliation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.0
+
+      - name: Run profile reconciliation check
+        run: |
+          chmod +x ./scripts/checks/check-profiles.sh
+          ./scripts/checks/check-profiles.sh
+
   check-markdown-links:
     name: Check Markdown Links
     runs-on: ubuntu-latest

@@ -37,8 +37,9 @@ one does not block the others.
 ```
 
 Covers: documentation paths, mirror parity, elision guard, generated and
-dated files (lean policy), ASCII markdown, yamllint, compose validation,
-and environment prerequisites. Fix anything red before continuing.
+dated files (lean policy), ASCII markdown, image pins, profile-vs-contract
+reconciliation, yamllint, compose validation, and environment
+prerequisites. Fix anything red before continuing.
 
 ### Step 2 -- Branch Hygiene (Merged Branches and Fork Sync)
 

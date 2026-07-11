@@ -56,20 +56,21 @@ gh pr create \
 | bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown, check-ai-elisions |
 | quick-tests.yml | Push to dev (.sh files) | Security tests, bash -n, ./aixcl help |
 | security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review |
-| documentation-checks.yml | PR + push | check-paths.sh, check-generated-files.sh, yamllint, compose validate |
+| documentation-checks.yml | PR + push | check-paths.sh, check-generated-files.sh, check-profiles.sh, yamllint, compose validate |
 | codeql.yml | PR + push | GitHub Actions workflow security (actions language only) |
 
 ## Running Checks Locally
 ```bash
 # Full pre-PR check (paths, mirror parity, elisions, generated files,
-# ASCII, yamllint, compose validation, environment)
+# ASCII, pins, profile reconciliation, yamllint, compose validation,
+# environment)
 ./aixcl checks all
 
 # Shellcheck sweep (not part of checks all -- run before shell changes)
 shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path "./.git/*")
 
 # Individual checks
-./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, yaml, compose, env
+./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, profiles, yaml, compose, env
 ./aixcl checks pr-refs <body-file>
 ./aixcl checks pr-ready <pr-number>
 ```
