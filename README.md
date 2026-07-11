@@ -179,7 +179,7 @@ curl http://localhost:11434/v1/chat/completions \
 | Open WebUI | http://localhost:8080 | Username: `admin`, Password: `./aixcl vault credentials` |
 | pgAdmin | http://localhost:5050 | Email: `admin@example.com`, Password: `./aixcl vault credentials` |
 | Grafana | http://localhost:3000 | Username: `admin`, Password: `./aixcl vault credentials` |
-| Vault UI | http://localhost:8200 | Token: `VAULT_DEV_TOKEN` env var |
+| Vault UI | http://localhost:8200 | Method: Token; decrypt the root token: `gpg -d .security/vault-root-token.gpg` |
 | Prometheus | http://localhost:9090 | No auth (localhost only) |
 | Loki | http://localhost:3100 | API only -- use Grafana for log browsing |
 | Alertmanager | http://localhost:9093 | No auth (localhost only) |
