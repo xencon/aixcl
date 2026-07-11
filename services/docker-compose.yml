@@ -570,10 +570,15 @@ services:
       - /:/rootfs:ro
       - /sys:/sys:ro
       - /dev/disk/:/dev/disk:ro
+    # Runs as root by necessity (host-wide metrics; allowlisted in
+    # lib/core/env_check.sh) but with all capabilities dropped except
+    # SYS_PTRACE, mirroring the blackbox-exporter pattern (#1827)
+    cap_drop:
+      - ALL
     cap_add:
       - SYS_PTRACE
     security_opt:
-      - seccomp=unconfined
+      - no-new-privileges:true
     devices:
       - /dev/kmsg
     network_mode: host
