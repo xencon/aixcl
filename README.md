@@ -58,8 +58,8 @@ sudo apt-get install -y yamllint
 curl -sSL https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz | tar -xJ -C /tmp
 sudo cp /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
 
-# gitleaks 8.21.2+ -- secret scanning (runs in pre-commit and CI)
-curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz -C /tmp
+# gitleaks 8.30.1+ -- secret scanning (runs in pre-commit and CI)
+curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz -C /tmp
 sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
 
 # git-cliff 2.x -- changelog generation (required for the release skill)
