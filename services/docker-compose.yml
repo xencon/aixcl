@@ -682,6 +682,9 @@ services:
     image: docker.io/prom/blackbox-exporter:v0.28.0
     container_name: blackbox-exporter
     pull_policy: missing
+    # Image defaults to root only for ICMP probes; our config is HTTP-only
+    # and cap_drop ALL removes NET_RAW anyway (#1827)
+    user: "nobody"
     cap_drop:
       - ALL
     security_opt:

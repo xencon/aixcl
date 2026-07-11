@@ -9,9 +9,9 @@ workflow, and Discussions.
 | File | What it constrains |
 |------|-------------------|
 | `ci-checks.md` | Pre-commit checklist, elision guard, CI workflow summary, ShellCheck flags |
-| `formatting.md` | Title formats (no colons), ASCII mandate, commit types; labels point to AGENTS.md |
-| `security.md` | Invariants and escalation summary (canonical text is AGENTS.md Sections 3-4 and 7); general untrusted-input rules |
-| `workflow.md` | Issue-first step-by-step, branch strategy, PR requirements |
+| `formatting.md` | ASCII scope + terminal exception, PR/issue body no-hard-wrap rule, lazy-loading pointers |
+| `security.md` | Untrusted-input rules (general + Discussions cross-ref); invariants/escalation point to AGENTS.md |
+| `workflow.md` | Pointer to AGENTS.md/DEVELOPMENT.md for issue-first workflow and branch strategy |
 | `discussions.md` | GitHub Discussions policy -- secret handling, untrusted-input treatment, advisory-only status |
 
 ## Mirror Parity -- CRITICAL
