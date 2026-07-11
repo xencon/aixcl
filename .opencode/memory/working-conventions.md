@@ -1,6 +1,6 @@
 # Working Conventions
 
-Seed memory for the Qwen agent, written at onboarding (2026-07-02).
+Seed memory for the OpenCode agent, written at onboarding (2026-07-02).
 
 - **GPG commits are human-only.** You have no TTY for the pinentry prompt.
   Stage changes, verify hooks pass, then give the human the exact
