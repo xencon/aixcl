@@ -9,7 +9,7 @@ CHECKS_FAILED=()
 CHECKS_SKIPPED=()
 
 _checks_usage() {
-    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|profiles|yaml|compose|env|pr-refs <file>|pr-ready <pr>}"
+    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|profiles|obfuscation|yaml|compose|env|pr-refs <file>|pr-ready <pr>}"
     echo "  all              Run every check below (continues on failure, prints summary)"
     echo "  paths            Documentation relative links and stale path patterns"
     echo "  agents           .claude/ vs .opencode/ rules and skills mirror parity"
@@ -17,6 +17,7 @@ _checks_usage() {
     echo "  generated        Tracked generated files and stale artifacts"
     echo "  pins             Container image references pinned (compose + shell code)"
     echo "  profiles         Profile configs match the 02_profiles.md contract"
+    echo "  obfuscation      Shell obfuscation/injection patterns (unwaivered eval, pipe-to-shell)"
     echo "  ascii            Non-ASCII punctuation in markdown files"
     echo "  yaml             yamllint over the repository"
     echo "  compose          docker compose config validation (main + overrides)"
@@ -149,6 +150,9 @@ function checks_cmd() {
         profiles)
             bash "${checks_dir}/check-profiles.sh"
             ;;
+        obfuscation)
+            bash "${checks_dir}/check-obfuscation.sh"
+            ;;
         generated)
             bash "${checks_dir}/check-generated-files.sh"
             ;;
@@ -196,6 +200,7 @@ function checks_cmd() {
             _check_run "ascii" _check_ascii || true
             _check_run "pins" bash "${checks_dir}/check-image-pins.sh" || true
             _check_run "profiles" bash "${checks_dir}/check-profiles.sh" || true
+            _check_run "obfuscation" bash "${checks_dir}/check-obfuscation.sh" || true
 
             if command -v yamllint > /dev/null 2>&1; then
                 _check_run "yaml" yamllint -c "${SCRIPT_DIR}/.yamllint.yml" "${SCRIPT_DIR}" || true

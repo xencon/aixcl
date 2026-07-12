@@ -55,3 +55,15 @@ jobs:
           gitleaks version
       - name: Run gitleaks
         run: gitleaks detect --source . --config .gitleaks.toml --verbose
+
+  obfuscation:
+    name: Shell Obfuscation Patterns
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.0
+      - name: Run obfuscation pattern check
+        run: |
+          chmod +x ./scripts/checks/check-obfuscation.sh
+          ./scripts/checks/check-obfuscation.sh

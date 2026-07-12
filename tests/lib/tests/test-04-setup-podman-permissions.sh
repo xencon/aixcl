@@ -28,6 +28,8 @@ log_step() { :; }
 log_info() { :; }
 
 func_def="$(sed -n '/^setup_volume_permissions()/,/^}/p' "$SETUP_SCRIPT")"
+# eval-waiver: loads a function definition extracted from the repo's own
+# setup script so the test can exercise it in isolation
 eval "$func_def"
 
 export PROJECT_ROOT="$TMPDIR_ROOT"
