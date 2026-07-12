@@ -479,3 +479,59 @@ groups:
         annotations:
           description: Critical errors (OOM, database connection failures) detected in logs
           summary: Critical errors detected in container logs
+
+  # Availability alerts -- direct Grafana-visible fix for the class of
+  # failure where a scrape target silently disappears (#1845, #1867)
+  - name: aixcl-availability
+    interval: 30s
+    orgId: 1
+    folder: AIXCL
+    rules:
+      - uid: availability-target-down
+        title: Scrape Target Down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              # nvidia-gpu excluded to mirror prometheus/alerts.yml, which
+              # covers it separately with GPUUnavailable (GPU is optional)
+              expr: up{job!~"nvidia-gpu"}
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              conditions:
+                - type: query
+                  evaluator:
+                    type: lt
+                    params: [1]
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - type: query
+                  evaluator:
+                    type: lt
+                    params: [1]
+        noDataState: OK
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: Prometheus scrape target {{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes
+          summary: Scrape target down -- {{ $labels.service }}
