@@ -150,13 +150,18 @@ _app_compose_cmd() {
     return 0
 }
 
+# Resolve a service's name from its manifest index
+# Note: `_app_load_manifest` must be run before calling this.
+_app_service_name() {
+    local varname="APP_SERVICE_${1}_NAME"
+    echo "${!varname:-}"
+}
+
 # Resolve whether a service has `built: true` in its manifest
 # Note: `_app_load_manifest` must be run before calling this.
 _app_service_needs_build() {
-    local index="$1"
-    local built_val
-    # Use indirect expansion for names like APP_SERVICE_0_BUILT
-    built_val="$(eval "echo \${APP_SERVICE_${index}_BUILT:-}" 2>/dev/null || true)"
+    local varname="APP_SERVICE_${1}_BUILT"
+    local built_val="${!varname:-}"
     [ "$built_val" = "True" ] || [ "$built_val" = "true" ] || [ "$built_val" = "1" ]
 }
 
@@ -173,49 +178,48 @@ _app_warn_skipped_build() {
 }
 
 _app_service_healthcheck_type() {
-    local index="$1"
-    eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_TYPE:-}" 2>/dev/null || true
+    local varname="APP_SERVICE_${1}_HEALTHCHECK_TYPE"
+    echo "${!varname:-}"
 }
 
 _app_service_healthcheck_url() {
-    local index="$1"
-    eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_URL:-}" 2>/dev/null || true
+    local varname="APP_SERVICE_${1}_HEALTHCHECK_URL"
+    echo "${!varname:-}"
 }
 
 _app_service_healthcheck_command() {
-    local index="$1"
-    eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_COMMAND:-}" 2>/dev/null || true
+    local varname="APP_SERVICE_${1}_HEALTHCHECK_COMMAND"
+    echo "${!varname:-}"
 }
 
 _app_service_healthcheck_interval() {
-    local index="$1"
-    eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_INTERVAL:-10}" 2>/dev/null || true
+    local varname="APP_SERVICE_${1}_HEALTHCHECK_INTERVAL"
+    echo "${!varname:-10}"
 }
 
 _app_service_healthcheck_timeout() {
-    local index="$1"
-    eval "echo \${APP_SERVICE_${index}_HEALTHCHECK_STARTUP_TIMEOUT:-30}" 2>/dev/null || true
+    local varname="APP_SERVICE_${1}_HEALTHCHECK_STARTUP_TIMEOUT"
+    echo "${!varname:-30}"
 }
 
 _app_service_container_name() {
     local index="$1"
-    local cn
-    cn="$(eval "echo \${APP_SERVICE_${index}_CONTAINER_NAME:-}" 2>/dev/null || true)"
+    local varname="APP_SERVICE_${index}_CONTAINER_NAME"
+    local cn="${!varname:-}"
     if [ -z "$cn" ]; then
-        cn="$(eval "echo \${APP_SERVICE_${index}_NAME:-}" 2>/dev/null || true)"
+        cn="$(_app_service_name "$index")"
     fi
     echo "$cn"
 }
 
 _app_service_build_context() {
-    local index="$1"
-    eval "echo \${APP_SERVICE_${index}_BUILD_CONTEXT:-}" 2>/dev/null || true
+    local varname="APP_SERVICE_${1}_BUILD_CONTEXT"
+    echo "${!varname:-}"
 }
 
 _app_service_build_dockerfile() {
-    local index="$1"
-    local df
-    df="$(eval "echo \${APP_SERVICE_${index}_BUILD_DOCKERFILE:-}" 2>/dev/null || true)"
+    local varname="APP_SERVICE_${1}_BUILD_DOCKERFILE"
+    local df="${!varname:-}"
     [ -n "$df" ] && echo "$df" || echo "Dockerfile"
 }
 
@@ -225,8 +229,8 @@ _app_service_depends_on() {
     local deps=()
     local i=0
     while true; do
-        local dep
-        dep="$(eval "echo \${APP_SERVICE_${index}_DEPENDS_ON_${i}:-}" 2>/dev/null || true)"
+        local varname="APP_SERVICE_${index}_DEPENDS_ON_${i}"
+        local dep="${!varname:-}"
         if [ -z "$dep" ]; then
             break
         fi
@@ -248,7 +252,7 @@ _app_resolve_start_order() {
     local -a names svc_deps indeg done_flag
 
     for ((i = 0; i < svc_count; i++)); do
-        names[i]="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+        names[i]="$(_app_service_name "$i")"
         svc_deps[i]=""
         indeg[i]=0
         done_flag[i]=0
@@ -472,7 +476,7 @@ app_cmd_start() {
     local started=0
     for i in $start_order; do
         local svc_name svc_container health_type
-        svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+        svc_name="$(_app_service_name "$i")"
         svc_container="$(_app_service_container_name $i)"
         if [ -z "$svc_name" ] || [ -z "$svc_container" ]; then
             echo "  [ ] Service ${i} has no name or container_name" >&2
@@ -668,7 +672,7 @@ app_cmd_status() {
     svc_count="$(_app_service_count)"
     for i in $(seq 0 "$((svc_count - 1))"); do
         local svc_name svc_container htype display_status health_status is_healthy
-        svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+        svc_name="$(_app_service_name "$i")"
         svc_container="$(_app_service_container_name "$i")"
         [ -z "$svc_container" ] && continue
 
@@ -739,7 +743,7 @@ app_cmd_build() {
     for i in $(seq 0 "$((svc_count - 1))"); do
         if _app_service_needs_build "$i"; then
             local svc_name svc_container build_ctx df
-            svc_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+            svc_name="$(_app_service_name "$i")"
             svc_container="$(_app_service_container_name "$i")"
             build_ctx="$(_app_service_build_context "$i")"
             df="$(_app_service_build_dockerfile "$i")"
@@ -763,7 +767,7 @@ app_cmd_build() {
             fi
         else
             local skip_name
-            skip_name="$(eval "echo \${APP_SERVICE_${i}_NAME:-}" 2>/dev/null || true)"
+            skip_name="$(_app_service_name "$i")"
             _app_warn_skipped_build "$i" "${skip_name:-service ${i}}"
         fi
     done
@@ -1224,7 +1228,8 @@ _app_generate_prometheus_targets() {
     local i=0
     while true; do
         local t
-        t="$(eval "echo \${APP_PROMETHEUS_TARGETS_${i}:-}" 2>/dev/null || true)"
+        varname="APP_PROMETHEUS_TARGETS_${i}"
+        t="${!varname:-}"
         if [ -z "$t" ]; then
             break
         fi
@@ -1248,7 +1253,8 @@ _app_generate_prometheus_targets() {
         while IFS= read -r key; do
             [ -z "$key" ] && continue
             local val
-            val="$(eval "echo \${APP_PROMETHEUS_LABELS_${key}:-}" 2>/dev/null || true)"
+            varname="APP_PROMETHEUS_LABELS_${key}"
+            val="${!varname:-}"
             [ -n "$val" ] && labels="${labels}, \"$(echo "$key" | tr '[:upper:]' '[:lower:]')\": \"${val}\""
         done <<< "$label_keys"
     fi

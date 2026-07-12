@@ -101,6 +101,8 @@ assert_command_success() {
     local description="${2:-Command: $cmd}"
 
     log_info "Executing: $cmd"
+    # eval-waiver: runs a test-authored command string from the repo's own
+    # test files; no external input reaches eval
     if eval "$cmd" > /tmp/test_output.log 2>&1; then
         log_success "$description"
         return 0
@@ -119,6 +121,8 @@ assert_command_fail() {
     local description="${2:-Command should fail: $cmd}"
 
     log_info "Executing (expecting failure): $cmd"
+    # eval-waiver: runs a test-authored command string from the repo's own
+    # test files; no external input reaches eval
     if eval "$cmd" > /tmp/test_output.log 2>&1; then
         log_error "$description"
         return 1

@@ -5,6 +5,28 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.60] - 2026-07-12
+
+### Summary
+
+Release v1.1.60 -- Detection and hardening release: alert state is now visible in Grafana, two new reconciliation checks guard profile contracts and shell obfuscation patterns (both caught real drift on their first run), and the app layer's eval sites are gone.
+
+### Added
+
+- [x] **Alert state surfaced in Grafana**: Alertmanager datasource makes Prometheus-evaluated alerts browsable in Grafana's Alerting UI; a Grafana-managed Scrape Target Down rule (up < 1 for 2m) covers the vanishing-exporter failure class directly; a Firing Alerts panel tops the system-overview dashboard. Closes the visibility gap behind the missed cadvisor profile drop (#1867).
+- [x] **Profile-vs-contract reconciliation check**: `./aixcl checks profiles` diffs PROFILE_SERVICES in config/profiles/*.env against the 02_profiles.md enumerations both ways, in checks all and CI. Found real drift on its first run: bld documented Alertmanager but did not carry it -- fixed in the same PR (#1865).
+- [x] **Shell obfuscation pattern check**: `./aixcl checks obfuscation` scans tracked shell code for pipe-to-shell, base64-to-shell, ANSI-C escapes, quote-split expansion, and eval without an inline eval-waiver justification; runs in checks all (11 checks) and a security.yml CI job (#1870).
+
+### Changed
+
+- [x] **App-layer eval sites removed**: all 18 eval-echo dynamic variable reads in lib/aixcl/commands/app.sh (plus one in app_provision.sh) converted to bash indirect expansion; the two remaining parser evals apply shell-quoted parser output and carry verified eval-waiver comments (#1869).
+
+### Documentation
+
+- [x] **Checks suite references updated**: housekeeping skill coverage list and the scripts README checks/ tree brought current with the new checks (#1865).
+
+
+
 ## [v1.1.59] - 2026-07-11
 
 ### Summary

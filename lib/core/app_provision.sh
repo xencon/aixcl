@@ -51,8 +51,8 @@ _app_provision_generate_secret() {
 _app_provision_secret_names() {
     local i=0
     while true; do
-        local name
-        name="$(eval "echo \${APP_PROVISION_SECRETS_${i}:-}" 2>/dev/null || true)"
+        local varname="APP_PROVISION_SECRETS_${i}"
+        local name="${!varname:-}"
         if [ -z "$name" ]; then
             break
         fi

@@ -19,6 +19,34 @@
   "links": [],
   "panels": [
     {
+      "id": 10,
+      "type": "alertlist",
+      "title": "Firing Alerts",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "alertName": "",
+        "dashboardAlerts": false,
+        "groupBy": [],
+        "groupMode": "default",
+        "maxItems": 20,
+        "sortOrder": 1,
+        "stateFilter": {
+          "error": true,
+          "firing": true,
+          "noData": false,
+          "normal": false,
+          "pending": true
+        },
+        "viewMode": "list",
+        "folder": null
+      }
+    },
+    {
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
@@ -68,12 +96,15 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 6
       },
       "id": 1,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -142,12 +173,15 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 6
       },
       "id": 2,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -216,12 +250,15 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 14
       },
       "id": 3,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -286,12 +323,15 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 14
       },
       "id": 4,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -369,12 +409,15 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 16
+        "y": 22
       },
       "id": 5,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -449,12 +492,15 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 16
+        "y": 22
       },
       "id": 6,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -528,12 +574,15 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 16
+        "y": 22
       },
       "id": 7,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -592,14 +641,16 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "id": 8,
       "options": {
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "showThresholdLabels": false,
@@ -663,12 +714,15 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 30
       },
       "id": 9,
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull"],
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
           "displayMode": "table",
           "placement": "bottom"
         },
@@ -696,7 +750,11 @@
   "refresh": "30s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["aixcl", "system", "node-exporter"],
+  "tags": [
+    "aixcl",
+    "system",
+    "node-exporter"
+  ],
   "templating": {
     "list": []
   },
@@ -710,4 +768,3 @@
   "uid": "aixcl-system",
   "version": 1
 }
-

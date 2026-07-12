@@ -7,9 +7,16 @@ This directory contains scripts used by AIXCL, Docker Compose, and GitHub Action
 ```
 scripts/
 +-- checks/           # CI validation scripts
+|   +-- check-agent-id-block.sh
 |   +-- check-agents.sh
+|   +-- check-ai-elisions.sh
+|   +-- check-environment.sh
 |   +-- check-generated-files.sh
-|   `-- check-paths.sh
+|   +-- check-image-pins.sh
+|   +-- check-paths.sh
+|   +-- check-pr-ready.sh
+|   +-- check-pr-references.sh
+|   `-- check-profiles.sh
 +-- db/               # Database management
 +-- exporters/        # Metrics exporters
 +-- hooks/            # Git hooks
