@@ -5,6 +5,25 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.61] - 2026-07-14
+
+### Summary
+
+Release v1.1.61 -- Maintenance release: two GitHub Actions dependency bumps and an issue-authoring rail that validates custom issue bodies at creation time instead of at the merge gate.
+
+### Added
+
+- [x] **Issue body validation in create-issue.sh**: the wrapper accepts an optional body file and pipes it through the reference-style check before creation (same rail create-pr.sh already had); ci-checks.md gained an Issue Authoring section covering reference style and post-merge checkbox markers, in both rules mirrors (#1883).
+
+### Changed
+
+- [x] **softprops/action-gh-release 3.0.1 to 3.0.2**: Dependabot workflow-action patch bump, merged to main and reconciled to dev (#1881).
+- [x] **lycheeverse/lychee-action 2.8.0 to 2.9.0**: Dependabot workflow-action minor bump, same reconciliation (#1881).
+
+
+
+
+
 ## [v1.1.60] - 2026-07-12
 
 ### Summary
