@@ -48,6 +48,21 @@ gh pr create \
 - Body references: one issue/PR reference per list item -- no comma-packing (enforced by CI: `validate-pr-body-references` job in `pr-validation.yml`)
 - Check locally before pushing: `echo "$BODY" | bash scripts/checks/check-pr-references.sh`
 
+## Issue Authoring (same rules, checked later)
+
+Issue bodies are held to the same reference style as PR bodies -- the
+`pr-ready` merge gate validates them, so a violation written at issue
+creation surfaces as a merge blocker weeks later. Author to the rules
+up front:
+
+- One issue/PR reference per list item; slash-packed pairs (`#1/#2`)
+  count as comma-packing
+- Checkboxes that can only become true AFTER the PR merges (tag pushed,
+  branches synced, release published) must carry a `(post-merge)` suffix
+  -- the gate reports those as informational instead of blocking
+- Use `./scripts/utils/create-issue.sh "[TASK] Title" task <labels> <assignee> <body-file>`
+  for custom bodies -- it runs the reference check before creation
+
 ## CI Workflows Summary
 
 | Workflow | Trigger | Key Checks |
