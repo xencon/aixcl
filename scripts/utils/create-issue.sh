@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # create-issue.sh — Safe issue creation wrapper
-# Usage: ./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:cli" "<github-username>"
+# Usage: ./scripts/utils/create-issue.sh "[TASK] Title" "task" "component:cli" "<github-username>" [body-file]
 #
 # Benefits over manual gh issue create:
 # - Targets the canonical repo regardless of which clone you run from
@@ -8,6 +8,9 @@
 # - Always uses --body-file (no backtick injection risk)
 # - Always sets --assignee (no PR validation race condition)
 # - Validates issue type prefix before creation
+# - With a body-file argument, validates reference style (one issue/PR
+#   reference per list item) before creation -- the same rule the
+#   pr-ready merge gate enforces on issue bodies later (#1883)
 
 set -euo pipefail
 
@@ -21,11 +24,18 @@ TITLE="${1:-}"
 TYPE="${2:-task}"        # bug, feature, task
 LABELS="${3:-}"
 ASSIGNEE="${4:-${GITHUB_USER:-}}"
+CUSTOM_BODY="${5:-}"     # optional: path to a ready-made body file
 
 # Validate
 if [[ -z "$TITLE" ]]; then
-    echo "Usage: $0 \"[TYPE] Title\" [type] [labels] [assignee]"
+    echo "Usage: $0 \"[TYPE] Title\" [type] [labels] [assignee] [body-file]"
     echo "  type: bug | feature | task"
+    echo "  body-file: optional ready-made body (validated, replaces the template)"
+    exit 1
+fi
+
+if [[ -n "$CUSTOM_BODY" ]] && [[ ! -f "$CUSTOM_BODY" ]]; then
+    echo "ERROR: Body file not found: $CUSTOM_BODY"
     exit 1
 fi
 
@@ -52,8 +62,20 @@ esac
 BODY_FILE="$(mktemp /tmp/aixcl-issue-XXXXXX.md)"
 trap 'rm -f "$BODY_FILE"' EXIT
 
-# Read template and strip frontmatter
-if [[ -f "$TEMPLATE_FILE" ]]; then
+if [[ -n "$CUSTOM_BODY" ]]; then
+    # Custom body: validate reference style before anything reaches GitHub.
+    # The pr-ready gate applies this same check to issue bodies at merge
+    # time; catching it here saves a round-trip (#1883).
+    if [[ -f "${SCRIPT_DIR}/scripts/checks/check-pr-references.sh" ]]; then
+        if ! bash "${SCRIPT_DIR}/scripts/checks/check-pr-references.sh" < "$CUSTOM_BODY"; then
+            echo "ERROR: Body failed reference style check (one reference per list item)"
+            echo "  Reminder: checkboxes only satisfiable after a merge need a '(post-merge)' suffix."
+            exit 1
+        fi
+    fi
+    cp "$CUSTOM_BODY" "$BODY_FILE"
+elif [[ -f "$TEMPLATE_FILE" ]]; then
+    # Read template and strip frontmatter
     sed '1,/^---$/d' "$TEMPLATE_FILE" > "$BODY_FILE"
 else
     cat > "$BODY_FILE" << 'EOF'
