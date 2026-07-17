@@ -7,6 +7,8 @@
 # - Uses /tmp for body files (never touches repo)
 # - Always uses --body-file (no backtick injection risk)
 # - Always sets --assignee (no PR validation race condition)
+# - Applies the taxonomy type label (Bug/Feature/Task) from the type
+#   argument, deduplicated against caller-supplied labels (#1893)
 # - Validates issue type prefix before creation
 # - With a body-file argument, validates reference style (one issue/PR
 #   reference per list item) before creation -- the same rule the
@@ -49,14 +51,21 @@ if [[ -z "$ASSIGNEE" ]]; then
     exit 1
 fi
 
-# Select template
+# Select template and taxonomy type label
 TEMPLATE_FILE=""
+TYPE_LABEL=""
 case "$TYPE" in
-    bug)      TEMPLATE_FILE="${SCRIPT_DIR}/.github/ISSUE_TEMPLATE/bug_report.md" ;;
-    feature)  TEMPLATE_FILE="${SCRIPT_DIR}/.github/ISSUE_TEMPLATE/feature_request.md" ;;
-    task)     TEMPLATE_FILE="${SCRIPT_DIR}/.github/ISSUE_TEMPLATE/task.md" ;;
+    bug)      TEMPLATE_FILE="${SCRIPT_DIR}/.github/ISSUE_TEMPLATE/bug_report.md";      TYPE_LABEL="Bug" ;;
+    feature)  TEMPLATE_FILE="${SCRIPT_DIR}/.github/ISSUE_TEMPLATE/feature_request.md"; TYPE_LABEL="Feature" ;;
+    task)     TEMPLATE_FILE="${SCRIPT_DIR}/.github/ISSUE_TEMPLATE/task.md";            TYPE_LABEL="Task" ;;
     *)        echo "ERROR: Unknown type '$TYPE'. Use: bug, feature, task"; exit 1 ;;
 esac
+
+# The taxonomy requires exactly one type label (Bug/Feature/Task); the
+# pr-ready merge gate blocks on its absence. Add it unless already given.
+if [[ ",${LABELS}," != *",${TYPE_LABEL},"* ]]; then
+    LABELS="${LABELS:+${LABELS},}${TYPE_LABEL}"
+fi
 
 # Create body file in /tmp
 BODY_FILE="$(mktemp /tmp/aixcl-issue-XXXXXX.md)"
