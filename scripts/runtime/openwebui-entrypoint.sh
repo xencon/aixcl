@@ -77,13 +77,22 @@ if [ "$(id -u)" = "0" ]; then
         useradd -u "$USER_ID" -g "$GROUP_ID" -o -m -s /bin/bash webui 2>/dev/null || true
     fi
 
-    # Data directories are written to after privileges drop: a failed chown
-    # here guarantees a later crash, so fail fast instead of hiding it.
+    # Create missing directories BEFORE chowning their parents: on a fresh
+    # volume the parent is still root-owned so mkdir needs no extra
+    # capability, and the recursive chown below covers the new children.
+    # Root has no CAP_DAC_OVERRIDE here, so it cannot mkdir inside a
+    # directory already owned by $USER_ID -- that case is deferred to the
+    # non-root phase, which owns the parent by then.
     for dir in /app/backend/data /app/data /app/backend/data/static; do
         if [ ! -d "$dir" ]; then
             echo "Creating directory $dir"
-            mkdir -p "$dir"
+            mkdir -p "$dir" || echo "[WARN] mkdir $dir failed as root; deferring to non-root phase"
         fi
+    done
+
+    # Data directories are written to after privileges drop: a failed chown
+    # here guarantees a later crash, so fail fast instead of hiding it.
+    for dir in /app/backend/data /app/data; do
         echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
         if ! chown -R "$USER_ID:$GROUP_ID" "$dir"; then
             echo "[ERROR] chown of $dir failed -- container likely lacks CAP_CHOWN (check cap_add in docker-compose.yml)"
@@ -121,10 +130,18 @@ CURRENT_GID="$(id -g)"
 echo "Running as user: $CURRENT_UID:$CURRENT_GID"
 
 DATA_DIR="/app/backend/data"
-if [ ! -d "$DATA_DIR" ]; then
-    echo "Error: Data directory $DATA_DIR does not exist"
-    exit 1
-fi
+
+# Ensure data directories exist now that this user owns the parents; the
+# root phase cannot create children inside an already-chowned directory
+# (no CAP_DAC_OVERRIDE).
+for dir in "$DATA_DIR" /app/data "$DATA_DIR/static"; do
+    if [ ! -d "$dir" ]; then
+        if ! mkdir -p "$dir"; then
+            echo "[ERROR] cannot create $dir as UID $CURRENT_UID -- volume ownership is wrong (root-phase chown failed?)"
+            exit 1
+        fi
+    fi
+done
 
 echo "Data directory: $DATA_DIR"
 
