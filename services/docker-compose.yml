@@ -414,6 +414,10 @@ services:
     cap_add:
       - SETUID
       - SETGID
+      # CHOWN/FOWNER: entrypoint root phase must chown/chmod freshly
+      # created volumes to UID 1000 before dropping privileges
+      - CHOWN
+      - FOWNER
     deploy:
       resources:
         limits:
