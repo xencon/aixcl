@@ -77,24 +77,26 @@ if [ "$(id -u)" = "0" ]; then
         useradd -u "$USER_ID" -g "$GROUP_ID" -o -m -s /bin/bash webui 2>/dev/null || true
     fi
 
+    # Data directories are written to after privileges drop: a failed chown
+    # here guarantees a later crash, so fail fast instead of hiding it.
     for dir in /app/backend/data /app/data /app/backend/data/static; do
-        if [ -d "$dir" ]; then
-            echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
-            chown -R "$USER_ID:$GROUP_ID" "$dir" 2>/dev/null || true
-            chmod 755 "$dir" 2>/dev/null || true
-        else
+        if [ ! -d "$dir" ]; then
             echo "Creating directory $dir"
-            mkdir -p "$dir" 2>/dev/null || true
-            chown -R "$USER_ID:$GROUP_ID" "$dir" 2>/dev/null || true
-            chmod 755 "$dir" 2>/dev/null || true
+            mkdir -p "$dir"
         fi
+        echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
+        if ! chown -R "$USER_ID:$GROUP_ID" "$dir"; then
+            echo "[ERROR] chown of $dir failed -- container likely lacks CAP_CHOWN (check cap_add in docker-compose.yml)"
+            exit 1
+        fi
+        chmod 755 "$dir"
     done
 
     for dir in /app/backend/open_webui /app/backend/open_webui/static; do
         if [ -d "$dir" ]; then
             echo "Setting ownership of $dir to $USER_ID:$GROUP_ID"
-            chown -R "$USER_ID:$GROUP_ID" "$dir" 2>/dev/null || true
-            chmod 755 "$dir" 2>/dev/null || true
+            chown -R "$USER_ID:$GROUP_ID" "$dir" || echo "[WARN] chown of $dir failed; static asset writes may not work"
+            chmod 755 "$dir" || true
         fi
     done
 
