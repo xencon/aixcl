@@ -5,6 +5,20 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.62] - 2026-07-17
+
+### Summary
+
+Release v1.1.62 -- Bugfix release: Open WebUI starts healthy again on a cleanly initialised stack (the hardening capability set had silently broken its volume permission setup), and create-issue.sh now applies the taxonomy type label it always claimed to.
+
+### Fixed
+
+- [x] **Open WebUI crash-loop on clean init**: the cap_drop ALL hardening set had removed CAP_CHOWN, so the entrypoint's root-phase chown of fresh volumes failed silently and the non-root process could not write .webui_secret_key; CHOWN and FOWNER are restored in services/docker-compose.yml, and the entrypoint now fails fast with a clear error on data-directory chown failures instead of hiding them (#1891).
+- [x] **create-issue.sh missing type label**: the wrapper used its type argument only to select a template, leaving issues without the required Bug/Feature/Task label until the pr-ready gate blocked the linked PR; the label is now derived from the type and passed at creation, deduplicated against caller-supplied labels (#1893).
+
+
+
+
 ## [v1.1.61] - 2026-07-14
 
 ### Summary
