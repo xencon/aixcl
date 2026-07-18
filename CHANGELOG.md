@@ -5,6 +5,19 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.63] - 2026-07-18
+
+### Summary
+
+Release v1.1.63 -- Follow-up bugfix: completes the v1.1.62 Open WebUI clean-init repair by fixing a directory-creation ordering bug the previous fix introduced, verified end to end with a full podman reset and clean initialisation to 21/21 healthy.
+
+### Fixed
+
+- [x] **Open WebUI entrypoint mkdir ordering on brand-new volumes**: the v1.1.62 fix chowned the data directory to the target UID before creating the missing static subdirectory, and container root without CAP_DAC_OVERRIDE cannot mkdir inside a directory it no longer owns, so genuinely empty volumes still crash-looped; the root phase now creates missing directories before chowning parents (warning and deferring when it cannot), and the non-root phase guarantees them after privileges drop -- capability set unchanged (#1901).
+
+
+
+
 ## [v1.1.62] - 2026-07-17
 
 ### Summary
