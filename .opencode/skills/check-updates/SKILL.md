@@ -1,7 +1,6 @@
 ---
 name: check-updates
 description: Audit all versioned platform components and manage the update process following issue-first workflow
-version: 1.0
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance

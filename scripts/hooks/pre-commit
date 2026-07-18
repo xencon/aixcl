@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
-# Pre-commit hook: run shellcheck on staged shell scripts
-# Mirrors CI settings: --severity=warning --exclude=SC1091
+# Pre-commit hook: elision guard + shellcheck on staged shell scripts
+# Mirrors CI settings: check-ai-elisions (bash-ci.yml) and the
+# security.yml lint flags --severity=warning --exclude=SC1091
 
 set -euo pipefail
+
+# Elision guard: block AI-truncated files and unexplained mass deletions.
+# Intentional large rewrites: AIXCL_ALLOW_MASS_DELETE=1 git commit ...
+if [ -x scripts/checks/check-ai-elisions.sh ]; then
+    if ! scripts/checks/check-ai-elisions.sh --staged; then
+        echo ""
+        echo "check-ai-elisions failed. Fix the findings above before committing."
+        echo "To skip (not recommended): git commit --no-verify"
+        exit 1
+    fi
+fi
 
 SHELLCHECK=$(command -v shellcheck 2>/dev/null \
     || command -v /home/linuxbrew/.linuxbrew/bin/shellcheck 2>/dev/null \

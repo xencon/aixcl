@@ -1,7 +1,6 @@
 ---
 name: workflow-guard
 description: Validates Issue-First workflow compliance before execution
-license: MIT
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow

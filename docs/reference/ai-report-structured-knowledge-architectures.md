@@ -18,6 +18,8 @@ references:
 
 # AI-Generated Research Report: Structured Knowledge Architectures for LLM-Assisted Software Engineering
 
+> Durable reference document. This is background research, not a dated operations report, and is exempt from the 30-day currency expectation in the AGENTS.md Lean Repository Policy (Section 3). Delete it only when its recommendations are fully superseded.
+
 ## Executive Summary
 
 This comprehensive research evaluates whether structured knowledge architectures -- harnesses, knowledge maps, structured repositories, knowledge graphs, ontologies, and context management systems -- improve software engineering outcomes when using Large Language Models (LLMs).

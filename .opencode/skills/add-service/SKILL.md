@@ -1,7 +1,6 @@
 ---
 name: add-service
 description: Guided checklist for safely adding a new platform service to AIXCL, preserving all invariants
-version: 1.1
 compatibility: OpenCode, Claude Code
 metadata:
   category: platform
