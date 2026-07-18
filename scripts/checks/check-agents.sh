@@ -172,6 +172,38 @@ check_rules_parity() {
     fi
 }
 
+# Print a markdown file's body with any leading YAML frontmatter removed.
+strip_frontmatter() {
+    awk 'NR==1 && /^---$/ {fm=1; next} fm && /^---$/ {fm=0; next} !fm' "$1"
+}
+
+# Check that commands present in BOTH tool directories carry the same body.
+# Command sets are intentionally tool-specific (a file on only one side is
+# fine), but a shared command must not drift: only frontmatter may differ
+# per tool (e.g. the OpenCode 'agent:' field). See issue #1910.
+check_commands_parity() {
+    local claude_cmds=".claude/commands"
+    local opencode_cmds=".opencode/commands"
+
+    if [[ ! -d "$claude_cmds" ]] || [[ ! -d "$opencode_cmds" ]]; then
+        return 0
+    fi
+
+    info "Checking shared-command parity: $claude_cmds <-> $opencode_cmds"
+
+    local cmd_file basename
+    for cmd_file in "$claude_cmds"/*.md; do
+        [[ -e "$cmd_file" ]] || continue
+        basename=$(basename "$cmd_file")
+        [[ -f "$opencode_cmds/$basename" ]] || continue
+        if ! diff -q \
+            <(strip_frontmatter "$cmd_file") \
+            <(strip_frontmatter "$opencode_cmds/$basename") >/dev/null; then
+            error "commands parity: $basename body differs between $claude_cmds and $opencode_cmds (frontmatter may differ; bodies must match)"
+        fi
+    done
+}
+
 # Check AI report files
 check_reports() {
     local reports_dir="docs/reference"
@@ -203,6 +235,7 @@ main() {
     check_agents
     check_skills
     check_rules_parity
+    check_commands_parity
     check_reports
 
     echo ""

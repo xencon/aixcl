@@ -1,7 +1,6 @@
 ---
 name: housekeeping
 description: Comprehensive repository health check covering hygiene, security, and code quality
-version: 2.0
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance

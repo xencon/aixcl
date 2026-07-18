@@ -5,6 +5,18 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.64] - 2026-07-18
+
+### Summary
+
+Release v1.1.64 -- Documentation and tooling release: a full consistency sweep of the agentic file estate (docs, skills, rules, commands, check scripts) with no runtime changes, closing a mirror-parity blind spot and removing guidance that contradicted the operating contract.
+
+### Documentation
+
+- [x] **Agentic file consistency sweep**: fixed stale version cross-references in AGENTS.md and DEVELOPMENT.md headers; normalized SKILL.md frontmatter across all five skills on both mirror sides and gated the release skill behind explicit operator invocation (disable-model-invocation); added a shared-command body-parity check to scripts/checks/check-agents.sh so commands present in both .claude/commands and .opencode/commands cannot drift silently; completed the CI workflows table in both ci-checks.md mirrors to all 12 workflows; rewrote docs/developer/development-workflow.md to remove the forbidden two-step gh pr edit pattern and point label guidance at the canonical AGENTS.md taxonomy; marked the structured-knowledge report as durable reference; brought scripts/hooks/pre-commit to elision-guard parity with the pre-commit framework config; and removed a dead ai/skills special case from scripts/checks/check-paths.sh (#1910).
+
+
+
 ## [v1.1.63] - 2026-07-18
 
 ### Summary

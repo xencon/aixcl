@@ -65,6 +65,8 @@ up front:
 
 ## CI Workflows Summary
 
+All 12 workflows:
+
 | Workflow | Trigger | Key Checks |
 |----------|---------|------------|
 | pr-validation.yml | PR open/edit | Title format, assignee, component label, body reference style |
@@ -73,6 +75,12 @@ up front:
 | security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review, gitleaks, shell obfuscation patterns |
 | documentation-checks.yml | PR + push | check-paths.sh, check-generated-files.sh, check-profiles.sh, yamllint, compose validate |
 | codeql.yml | PR + push | GitHub Actions workflow security (actions language only) |
+| check-opencode.yml | PR touching .opencode paths | check-agents.sh (agent/skill/rules/commands parity) |
+| integration-tests.yml | PR + push (main/dev) | Compose validation, engine and stack configuration tests |
+| dependency-review.yml | PR to main/dev | GitHub dependency review action |
+| commit-signature-check.yml | Push to main/dev | GPG signature presence (reporting only, non-blocking) |
+| close-linked-issues.yml | PR to dev closed | Closes issues linked from the merged PR body |
+| release.yml | Tag push (v*) + manual dispatch | Builds and publishes the GitHub release |
 
 ## Running Checks Locally
 ```bash
