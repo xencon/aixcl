@@ -57,4 +57,4 @@ goes to BOTH files (edit the template, apply locally).
 - `AGENTS.md` -- operating contract (loaded via the `instructions` array)
 - `config/opencode.json.example` -- provider, model, permissions, instructions
 - `docs/developer/opencode-setup.md` -- human setup guide
-- `.claude/` -- Claude Code counterpart (rules/skills mirrored; commands tool-specific)
+- `.claude/` -- Claude Code counterpart (rules/skills mirrored; command sets tool-specific, but commands present on both sides must share the same body -- enforced by `check-agents.sh`)

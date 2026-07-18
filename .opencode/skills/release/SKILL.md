@@ -1,8 +1,8 @@
 ---
 name: release
 description: Guided workflow for cutting an AIXCL release, fronting the aixcl release command
-version: 2.0
 compatibility: OpenCode, Claude Code
+disable-model-invocation: true
 metadata:
   category: workflow
   version: "2.0"

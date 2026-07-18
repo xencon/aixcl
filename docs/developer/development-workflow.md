@@ -21,12 +21,17 @@ We follow an **Issue-First Development** workflow:
 - Discussion happens before implementation
 - Work is traceable and organized
 
-**Using GitHub CLI:**
+**Use the wrapper script** (validates the title prefix, applies the
+taxonomy type label, always sets the assignee, and checks reference
+style in custom bodies):
+
 ```bash
-# Note: GitHub CLI doesn't support setting issue type directly
-# Set the type in GitHub UI, then add labels:
-gh issue create --title "Brief description" --body "Detailed description of the problem or feature" --label "component:cli" --assignee <your-github-username>
+./scripts/utils/create-issue.sh "[TASK] Brief description" task "component:cli" <your-github-username> [body-file]
 ```
+
+If you must use raw `gh issue create`, always pass `--label` (including
+the type label from the AGENTS.md Label Taxonomy) and `--assignee` at
+creation time, and use `--body-file` rather than inline `--body`.
 
 **Best Practices:**
 - Use clear, descriptive titles
@@ -91,15 +96,19 @@ See [GPG-Signed Commits Guide](./gpg-signed-commits.md) for complete documentati
 
 ### 4. Push and Create Pull Request
 
-Push your branch and create a PR:
+Push your branch and create a PR with the wrapper script, which sets
+the assignee and labels at creation time:
 
 ```bash
 git push -u origin <branch-name>
-gh pr create --title "Title referencing issue" --body "Description linking to issue #<number>"
-
-# Always assign yourself and add matching labels to the PR
-gh pr edit <number> --add-assignee <your-github-username> --add-label "component:cli"
+./scripts/utils/create-pr.sh
 ```
+
+**Never** set the assignee or labels in a second step (`gh pr edit`
+after `gh pr create`). The PR validation workflow fires on the
+`opened` event; a PR created without assignee and labels fails
+validation permanently. See DEVELOPMENT.md Section 5 for the raw
+`gh pr create` fallback with `--assignee` and `--label` flags.
 
 **PR Best Practices:**
 - Title should reference the issue without colon: `"Fix Issue title (#<number>)"`
@@ -195,86 +204,11 @@ The human sees `[ ]` on verification items and ticks them during code review. Th
 
 ## Label Guidelines
 
-**GitHub Issue Types and Labels are required for all issues.** GitHub has native issue types that are separate from labels. Both help organize issues, track work, and make it easier to find related issues.
+**The label taxonomy is defined once, in AGENTS.md Section 3 (Label Taxonomy) -- that section is canonical; do not invent labels outside it.**
 
-### GitHub Issue Types (Required - Select One)
+In summary: exactly one type label (`Bug`, `Feature`, `Task`), at least one `component:*` label (required), optional priority (`P1`-`P3`), optional profile (`profile:bld`, `profile:sys`), and optional category (`Fix`, `Enhancement`, `Refactor`, `Maintenance`).
 
-GitHub provides native issue types that must be set for each issue. These are separate from labels:
-
-- **Bug** - An unexpected problem or behavior
-- **Feature** - A request, idea, or new functionality
-- **Task** - A specific piece of work
-
-**Note:** You cannot create custom issue types in GitHub. Use labels for additional categorization (see below).
-
-### Label Categories
-
-Labels are organized into categories using prefixes:
-
-#### Component Labels (Select All That Apply)
-- `component:runtime-core` - Runtime core services (Ollama)
-- `component:ollama` - Ollama LLM inference engine
-- `component:persistence` - Database and persistence services
-- `component:observability` - Monitoring and observability (Prometheus, Grafana, Loki)
-- `component:ui` - User interface components (Open WebUI)
-- `component:cli` - Command-line interface and tooling
-- `component:infrastructure` - Infrastructure and deployment (Docker, profiles, configuration)
-- `component:testing` - Tests and test infrastructure
-
-#### Priority Labels (Optional - Select One)
-- `P1` - High priority issue requiring immediate attention
-- `P2` - Medium priority issue
-- `P3` - Low priority issue
-
-#### Profile Labels (Select All That Apply)
-- `profile:bld` - Affects bld profile (observability-focused)
-- `profile:sys` - Affects sys profile (full deployment)
-
-#### Category Labels (Select All That Apply)
-- `Fix` - A fix for a bug or issue (use with Bug issue type)
-- `Enhancement` - Improvement to existing functionality (use with Feature issue type)
-- `Refactor` - Code refactoring without changing functionality (use with Task issue type)
-- `Maintenance` - Maintenance tasks and housekeeping (use with Task issue type)
-- `documentation` - Improvements or additions to documentation (GitHub default)
-
-**Note:** "Task" is an issue type, not a label. Use the Task issue type for tasks, refactoring, and maintenance work. Do not create a "Task" label as it's redundant with the issue type.
-
-#### Other Labels
-- `dependencies` - Dependency updates and management
-- `good first issue` - Good for newcomers
-- `help wanted` - Extra attention is needed
-- `question` - Further information is requested
-
-### How to Add Labels
-
-**When creating an issue:**
-```bash
-# Add labels during creation (set issue type in GitHub UI)
-gh issue create --title "Title" --body "Description" --label "component:cli,P1"
-
-# Or add labels after creation
-gh issue edit <number> --add-label "component:cli"
-```
-
-**Note:** GitHub CLI doesn't support setting the issue type (Bug/Feature/Task) directly. Set the type in the GitHub web interface, then use CLI for labels.
-
-**Issue Type and Label Selection Guidelines:**
-1. **Always select one GitHub issue type** - Bug, Feature, or Task (set via GitHub's Type field)
-   - **Note:** "Task" is an issue type only, not a label. Do not create or use a "Task" label.
-2. **Select relevant component labels** - Helps identify which part of the system is affected
-3. **Select category labels if applicable** - Fix, Enhancement, Refactor, Maintenance for additional context
-4. **Select priority if applicable** - Helps prioritize work
-5. **Select profile labels if issue is profile-specific** - Helps identify deployment impact
-6. **Use other labels as appropriate** - `good first issue`, `help wanted`, etc.
-
-**Examples:**
-- Bug in CLI: Type: **Bug**, Labels: `component:cli`
-- New feature for observability: Type: **Feature**, Labels: `component:observability`
-- Fix for database issue: Type: **Bug**, Labels: `Fix,component:persistence`
-- Task for infrastructure: Type: **Task**, Labels: `component:infrastructure`
-- Enhancement affecting all profiles: Type: **Feature**, Labels: `Enhancement,profile:bld,profile:sys`
-- High priority bug: Type: **Bug**, Labels: `component:runtime-core,P1`
-- Dependency update: Type: **Task**, Labels: `dependencies,Maintenance`
+`./scripts/utils/create-issue.sh` applies the type label automatically from its type argument. Labels applied by GitHub automation (e.g. `dependencies` on Dependabot PRs) are tolerated but never added by hand.
 
 ### Checking Available Labels
 
@@ -349,13 +283,12 @@ See [opencode-setup.md](./opencode-setup.md) for installation and configuration 
 
 ```
 Follow the development workflow documented in this document:
-1. Always create an issue first using 'gh issue create' with appropriate labels and assignee
+1. Always create an issue first using './scripts/utils/create-issue.sh' with appropriate labels and assignee
 2. Read the template file first before composing any issue or PR body
 3. Use /tmp for all generated body files and drafts (never commit generated artifacts)
 4. Create a branch with format 'issue-<number>/<description>' from dev
 5. Make changes and commit with conventional commit format
-6. Push branch and create PR that references the issue
-7. Assign the PR and add matching labels to it
+6. Push branch and create PR with './scripts/utils/create-pr.sh' (assignee and labels are set at creation time, never via a later 'gh pr edit')
 8. Use plain text formatting (markdown checkboxes - [x], not Unicode)
 9. Reference the issue number in commits and PRs
 10. Add labels to issues (type, component, priority, profile as applicable)
@@ -367,32 +300,22 @@ Follow the development workflow documented in this document:
 ## Quick Reference Commands
 
 ```bash
-# Create issue with labels and assignee (set issue type in GitHub UI)
-# Note: Both issue and PR titles should NOT include colon (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
-gh issue create --title "Fix CLI error handling" --body "Description" --label "component:cli,P1" --assignee <your-github-username>
-
-# Or add labels/assignee after creation
-gh issue edit <number> --add-label "component:cli" --add-assignee <your-github-username>
+# Create issue (validates title, applies type label, sets assignee)
+# Note: No colons in issue or PR titles (e.g., "Fix CLI error handling" not "Fix: CLI error handling")
+./scripts/utils/create-issue.sh "[BUG] Fix CLI error handling" bug "component:cli,P1" <your-github-username>
 
 # Create branch
 git checkout -b issue-<number>/<description>
 
 # Commit
-git add .
+git add <files>
 git commit -m "type: Description
 
 Fixes #<number>"
 
-# Push and create PR
+# Push and create PR (assignee and labels set at creation time)
 git push -u origin issue-<number>/<description>
-gh pr create --title "Fix Title (#<number>)" --body "Fixes #<number>
-
-## Changes
-- [x] Change 1
-- [x] Change 2"
-
-# Assign and label the PR (matching the issue labels)
-gh pr edit <number> --add-assignee <your-github-username> --add-label "component:cli,P1"
+./scripts/utils/create-pr.sh
 ```
 
 ## Why This Workflow?
@@ -405,22 +328,20 @@ gh pr edit <number> --add-assignee <your-github-username> --add-label "component
 
 ## Checking Agent and Skill Files
 
-When creating or modifying Agent files (`.opencode/agents/agent-*.md`), or Agent reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+When creating or modifying agent files (`.opencode/agents/agent-*.md`), skills, rules, commands, or agent reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
 ./scripts/checks/check-agents.sh
 ```
 
 This script validates:
-- Naming conventions (`agent-*.md`, `ai-report-*.md`)
-- Skill files (`skill-*.md`) if `.opencode/skills/` directory exists
-- Required YAML frontmatter fields (`name`, `description`, `role: system`)
-- Required sections (Purpose, Canonical references, Global rules, Tool usage, Workflow steps, Safety/governance)
-- References to core documentation (`development-workflow.md`, `01_ai_guidance.md`)
+- Agent naming convention (`agent-*.md`) and frontmatter (`description` required, `name` forbidden -- it overrides the filename-derived agent id)
+- `SKILL.md` frontmatter (`name` and `description` required)
+- Byte-identical mirror parity between `.claude/rules/` and `.opencode/rules/`, and between `.claude/skills/` and `.opencode/skills/`
+- Body parity for commands present in both `.claude/commands/` and `.opencode/commands/` (frontmatter may differ per tool)
+- AI report naming convention (`ai-report-*.md`)
 
-The same checks run automatically in CI on pull requests that touch agent, skill, or report files.
-
-**Note**: Custom skills in `.opencode/skills/` are optional. The directory only exists if skills are actually defined.
+The same checks run automatically in CI on pull requests that touch these paths (`check-opencode.yml`).
 
 ## Questions?
 

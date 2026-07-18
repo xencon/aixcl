@@ -5,7 +5,7 @@
 | purpose | agent_contract |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-07-06 |
+| last_updated | 2026-07-18 |
 
 # AGENTS.md
 

@@ -125,7 +125,6 @@ check_hardcoded_usernames() {
 check_directory_references() {
     info "Checking directory references..."
 
-    # Only check directories that SHOULD exist (not optional ones like ai/skills)
     local dirs_to_check=(
         ".opencode/agents"   # Should exist
     )
@@ -138,12 +137,6 @@ check_directory_references() {
             fi
         fi
     done
-
-    # ai/skills is optional - check it's documented as such
-    if [[ ! -d "ai/skills" ]]; then
-        # This is expected - it's documented as optional
-        info "Directory ai/skills does not exist (documented as optional)"
-    fi
 }
 
 # Main execution
