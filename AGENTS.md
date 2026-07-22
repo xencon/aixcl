@@ -1,11 +1,11 @@
 | field | value |
 |-------|-------|
 | file | AGENTS.md |
-| version | 2.2 |
+| version | 2.3 |
 | purpose | agent_contract |
 | priority | critical |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-07-18 |
+| last_updated | 2026-07-22 |
 
 # AGENTS.md
 
@@ -126,8 +126,9 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 - Priority: `P1`, `P2`, `P3`
 - Profile: `profile:bld`, `profile:sys`
 - Category: `Fix`, `Enhancement`, `Refactor`, `Maintenance`
-- Agent queue: `agent` (issues queued for agent execution; an agent
-  discovers its work by listing open issues with this label)
+- Agent delegation: `agent` (issues delegated to a peer agent -- e.g.
+  the OpenCode agent -- for execution; the agent discovers delegated
+  work by listing open issues with this label)
 
 ### Lean Repository Policy
 

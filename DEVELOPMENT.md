@@ -3,7 +3,7 @@
 | field         | value                                                                      |
 |---------------|----------------------------------------------------------------------------|
 | file          | DEVELOPMENT.md                                                             |
-| version       | 2.1 (tracks workflow evolution; subordinate to AGENTS.md v2.2)             |
+| version       | 2.1 (tracks workflow evolution; subordinate to AGENTS.md v2.3)             |
 | scope         | all agents                                                                 |
 | priority      | high                                                                       |
 | compatibility | OpenCode, Claude Code, Cursor, Copilot, any MCP-compatible agent           |
