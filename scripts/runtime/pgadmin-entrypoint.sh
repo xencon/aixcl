@@ -22,35 +22,50 @@ if [ "$IS_FIRST_START" = false ]; then
     # Still need to set up directories and permissions
     USER_ID="${PGADMIN_USER_ID:-5050}"
     GROUP_ID="${PGADMIN_GROUP_ID:-5050}"
-    
+
     if [ "$(id -u)" = "0" ]; then
         echo "Running as root — setting up permissions for restart..."
-        
+
         mkdir -p /var/lib/pgadmin/sessions /var/lib/pgadmin/storage
-        
+
         if ! getent group pgadmin >/dev/null 2>&1; then
             groupadd -g "$GROUP_ID" pgadmin 2>/dev/null || groupadd pgadmin 2>/dev/null || true
         fi
-        
+
         if ! id pgadmin >/dev/null 2>&1; then
             useradd -u "$USER_ID" -g "$GROUP_ID" -s /bin/false -M pgadmin 2>/dev/null || true
         fi
-        
-        chown -R "$USER_ID:$GROUP_ID" /var/lib/pgadmin 2>/dev/null || true
-        chown -R "$USER_ID:$GROUP_ID" /var/log/pgadmin 2>/dev/null || true
-        chown "$USER_ID:$GROUP_ID" /pgadmin4/servers.json 2>/dev/null || true
-        chmod +x /entrypoint.sh 2>/dev/null || true
-        
-        # Stop postfix if running
+
+        # su below requires the pgadmin user; creation failure is fatal, so
+        # verify the outcome instead of silencing it
+        if ! id pgadmin >/dev/null 2>&1; then
+            echo "[ERROR] pgadmin user could not be created — cannot drop privileges (check SETUID/SETGID caps and a writable /etc/passwd)"
+            exit 1
+        fi
+
+        # Data volume ownership is REQUIRED: pgAdmin crashes after the
+        # privilege drop if it cannot write /var/lib/pgadmin
+        if ! chown -R "$USER_ID:$GROUP_ID" /var/lib/pgadmin; then
+            echo "[ERROR] chown of /var/lib/pgadmin failed — container likely lacks CAP_CHOWN"
+            exit 1
+        fi
+        chown -R "$USER_ID:$GROUP_ID" /var/log/pgadmin \
+            || echo "[WARN] chown of /var/log/pgadmin failed (host bind mount); log writes may fail"
+        chown "$USER_ID:$GROUP_ID" /pgadmin4/servers.json \
+            || echo "[WARN] chown of /pgadmin4/servers.json failed (single-file bind mount); server list may not load"
+        chmod +x /entrypoint.sh \
+            || echo "[WARN] chmod +x /entrypoint.sh failed; assuming image default permissions"
+
+        # Stop postfix if running (pkill no-match is the normal case, not a failure)
         if [ -f /usr/libexec/postfix/master ]; then
             pkill -f "postfix/master" 2>/dev/null || true
         fi
-        
+
         echo "Switching to pgadmin user (UID: $USER_ID)..."
         export PGADMIN_LISTEN_PORT PGADMIN_LISTEN_ADDRESS PGADMIN_SERVER_JSON_FILE PGADMIN_REPLACE_SERVERS_ON_STARTUP
         exec su -m -s /bin/bash pgadmin -c 'exec /usr/local/bin/pgadmin-entrypoint.sh'
     fi
-    
+
     # Non-root restart: just start
     echo "Running as user: $(id -u):$(id -g)"
     echo "Starting pgAdmin (restart) — admin credentials unchanged"
@@ -115,26 +130,42 @@ chmod 600 /var/lib/pgadmin/.pgadmin-passwd /var/lib/pgadmin/.pg-connect-passwd
 # --- Root setup block (only on first start) ---
 if [ "$(id -u)" = "0" ]; then
     echo "Running as root — setting up permissions for first start..."
-    
+
     mkdir -p /var/lib/pgadmin/sessions /var/lib/pgadmin/storage
-    
+
     if ! getent group pgadmin >/dev/null 2>&1; then
         groupadd -g "${PGADMIN_GROUP_ID:-5050}" pgadmin 2>/dev/null || groupadd pgadmin 2>/dev/null || true
     fi
-    
+
     if ! id pgadmin >/dev/null 2>&1; then
         useradd -u "${PGADMIN_USER_ID:-5050}" -g "${PGADMIN_GROUP_ID:-5050}" -s /bin/false -M pgadmin 2>/dev/null || true
     fi
-    
-    chown -R "${PGADMIN_USER_ID:-5050}:${PGADMIN_GROUP_ID:-5050}" /var/lib/pgadmin 2>/dev/null || true
-    chown -R "${PGADMIN_USER_ID:-5050}:${PGADMIN_GROUP_ID:-5050}" /var/log/pgadmin 2>/dev/null || true
-    chown "${PGADMIN_USER_ID:-5050}:${PGADMIN_GROUP_ID:-5050}" /pgadmin4/servers.json 2>/dev/null || true
-    chmod +x /entrypoint.sh 2>/dev/null || true
-    
+
+    # su below requires the pgadmin user; creation failure is fatal, so
+    # verify the outcome instead of silencing it
+    if ! id pgadmin >/dev/null 2>&1; then
+        echo "[ERROR] pgadmin user could not be created — cannot drop privileges (check SETUID/SETGID caps and a writable /etc/passwd)"
+        exit 1
+    fi
+
+    # Data volume ownership is REQUIRED: pgAdmin crashes after the
+    # privilege drop if it cannot write /var/lib/pgadmin
+    if ! chown -R "${PGADMIN_USER_ID:-5050}:${PGADMIN_GROUP_ID:-5050}" /var/lib/pgadmin; then
+        echo "[ERROR] chown of /var/lib/pgadmin failed — container likely lacks CAP_CHOWN"
+        exit 1
+    fi
+    chown -R "${PGADMIN_USER_ID:-5050}:${PGADMIN_GROUP_ID:-5050}" /var/log/pgadmin \
+        || echo "[WARN] chown of /var/log/pgadmin failed (host bind mount); log writes may fail"
+    chown "${PGADMIN_USER_ID:-5050}:${PGADMIN_GROUP_ID:-5050}" /pgadmin4/servers.json \
+        || echo "[WARN] chown of /pgadmin4/servers.json failed (single-file bind mount); server list may not load"
+    chmod +x /entrypoint.sh \
+        || echo "[WARN] chmod +x /entrypoint.sh failed; assuming image default permissions"
+
+    # Stop postfix if running (pkill no-match is the normal case, not a failure)
     if [ -f /usr/libexec/postfix/master ]; then
         pkill -f "postfix/master" 2>/dev/null || true
     fi
-    
+
     # Create servers.json with Vault password
     cat > /pgadmin4/servers.json << EOF
 {
@@ -154,7 +185,7 @@ if [ "$(id -u)" = "0" ]; then
 }
 EOF
     chmod 644 /pgadmin4/servers.json
-    
+
     echo "Switching to pgadmin user (UID: ${PGADMIN_USER_ID:-5050})..."
     export PGADMIN_DEFAULT_EMAIL PGADMIN_DEFAULT_PASSWORD PGADMIN_LISTEN_PORT PGADMIN_LISTEN_ADDRESS PGADMIN_SERVER_JSON_FILE PGADMIN_REPLACE_SERVERS_ON_STARTUP
     exec su -m -s /bin/bash pgadmin -c 'exec /usr/local/bin/pgadmin-entrypoint.sh'

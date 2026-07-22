@@ -39,6 +39,13 @@ Define the service configuration:
       - /tmp:noexec,nosuid,size=50m
 ```
 
+**Capped entrypoint rules** (learned from #1891/#1901; audited in #1909). If your entrypoint does privileged filesystem work under a restricted capability set:
+
+1. **Create before chown.** Root without CAP_DAC_OVERRIDE cannot `mkdir` inside a directory it has already chowned to another UID. Create missing directories while the parent is still root-owned, then chown recursively; defer any creation that must happen later to the non-root phase, which owns the parent by then.
+2. **Fail fast on REQUIRED operations, naming the capability.** A silenced failure (`2>/dev/null || true`) on an operation the service needs (data-volume chown, privilege-drop user creation) guarantees a later crash with no cause in the logs. Fail with a message naming the likely missing capability (e.g. `container likely lacks CAP_CHOWN`).
+3. **WARN visibly on OPTIONAL operations.** Operations the service can survive without (GPU group membership, cosmetic chowns) get a visible `[WARN]` with the consequence, never a silent `|| true`.
+4. **Test against the three-scenario matrix** before merging: a truly-empty volume (clean init), a partially-initialised volume (prior failed run), and a capability-regression run (required cap withheld) that must fail loudly. Long-lived stacks mask init bugs -- a fresh volume is the only honest fixture.
+
 ### 2. `lib/cli/profile.sh`
 
 Add the service to **all applicable profile mappings** in `get_profile_services_for_profile()`:

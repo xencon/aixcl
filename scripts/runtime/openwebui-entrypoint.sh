@@ -77,6 +77,12 @@ if [ "$(id -u)" = "0" ]; then
         useradd -u "$USER_ID" -g "$GROUP_ID" -o -m -s /bin/bash webui 2>/dev/null || true
     fi
 
+    # setpriv below works with numeric IDs, so a missing user is not fatal,
+    # but surface it: HOME=/home/webui will not exist without useradd -m
+    if ! id webui >/dev/null 2>&1; then
+        echo "[WARN] webui user could not be created; continuing with numeric IDs ($USER_ID:$GROUP_ID), /home/webui may be missing"
+    fi
+
     # Create missing directories BEFORE chowning their parents: on a fresh
     # volume the parent is still root-owned so mkdir needs no extra
     # capability, and the recursive chown below covers the new children.
@@ -110,11 +116,14 @@ if [ "$(id -u)" = "0" ]; then
     done
 
     if [ -f "/app/backend/openwebui.sh" ]; then
-        chmod +x /app/backend/openwebui.sh 2>/dev/null || true
-        chown "$USER_ID:$GROUP_ID" /app/backend/openwebui.sh 2>/dev/null || true
+        chmod +x /app/backend/openwebui.sh \
+            || echo "[WARN] chmod +x /app/backend/openwebui.sh failed; launcher script may not be executable"
+        chown "$USER_ID:$GROUP_ID" /app/backend/openwebui.sh \
+            || echo "[WARN] chown of /app/backend/openwebui.sh failed (CAP_CHOWN?); launcher stays image-owned"
     fi
 
-    chown -R "$USER_ID:$GROUP_ID" /tmp 2>/dev/null || true
+    chown -R "$USER_ID:$GROUP_ID" /tmp \
+        || echo "[WARN] chown of /tmp failed; sticky-bit world-writable /tmp below is sufficient"
     chmod 1777 /tmp
 
     echo "Switching to webui user (UID: $USER_ID)..."

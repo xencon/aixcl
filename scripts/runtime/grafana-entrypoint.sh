@@ -46,7 +46,8 @@ fi
 echo "[Vault] Configuring Grafana with initial admin password..."
 GRAFANA_PASS_FILE="/tmp/grafana-admin-password"
 echo "$GRAFANA_ADMIN_PASSWORD" > "$GRAFANA_PASS_FILE"
-chown 472:472 "$GRAFANA_PASS_FILE" 2>/dev/null || true
+chown 472:472 "$GRAFANA_PASS_FILE" \
+    || echo "[WARN] chown of $GRAFANA_PASS_FILE failed (no CAP_CHOWN); continuing — chmod 600 below still applies"
 chmod 600 "$GRAFANA_PASS_FILE"
 export GF_SECURITY_ADMIN_PASSWORD__FILE="$GRAFANA_PASS_FILE"
 
