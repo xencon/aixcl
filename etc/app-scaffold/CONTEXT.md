@@ -9,7 +9,7 @@ of an existing app.
 | File | Purpose |
 |------|---------|
 | `app.yaml` | Canonical app manifest template. Shows every supported field with comments. This is the schema that `lib/core/app_parser.sh` parses. |
-| `docker-compose.yml` | Compose scaffold for app services. Shows the minimum required structure and recommended patterns. |
+| `docker-compose.yml` | Compose scaffold for app services. Shows the minimum required structure and recommended patterns, including capability hardening (`cap_drop: ALL` + a `user:` override or minimal `cap_add`) baked in as the default -- see #1925. |
 
 ## How app.yaml Maps to Shell Variables
 
@@ -31,7 +31,8 @@ See `docs/architecture/decisions/004-topological-sort-depends-on.md`.
 2. Copy `etc/app-scaffold/docker-compose.yml` to `apps/<your-app-name>/docker-compose.yml`
 3. Fill in the required fields
 4. Read `docs/developer/adding-apps.md` for the full guide (includes `depends_on`
-   semantics and `cap_drop: ALL` compatibility guidance)
+   semantics and `cap_drop: ALL` guidance -- both retrofitting an existing
+   image and hardening a new entrypoint from day one)
 
 ## Agent Guidance
 

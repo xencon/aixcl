@@ -21,3 +21,27 @@ services:
       - "9000:9000"
     environment:
       - "EXAMPLE_VAR=default"
+
+    # --- Capability hardening (default for new apps -- see
+    #     docs/developer/adding-apps.md, "Building a new app's entrypoint
+    #     hardened from day one") ---
+    #
+    # Path A -- most third-party images (no root-phase setup needed):
+    # find the image's default UID with `docker run --rm --entrypoint id
+    # <image>` and pin it below, then drop every capability.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"   # replace with your image's actual default UID:GID
+    #
+    # Path B -- your own entrypoint that does root-phase setup (chown,
+    # user creation, privilege drop): delete the `user:` line above, keep
+    # cap_drop: ALL, and add only the specific capabilities your
+    # entrypoint needs, e.g.:
+    #   cap_add:
+    #     - CHOWN
+    #     - SETUID
+    #     - SETGID
+    # Follow the create-before-chown and fail-fast/WARN rules in
+    # docs/developer/adding-services.md before writing that entrypoint.
