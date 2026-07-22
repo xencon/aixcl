@@ -256,6 +256,39 @@ docker run --rm --entrypoint id redis:7
 on startup (e.g. the Vault image, which starts as a non-root user by
 default) can use `cap_drop: ALL` without the `user:` override.
 
+### Building a new app's entrypoint hardened from day one
+
+The section above is about *retrofitting* `cap_drop: ALL` onto an
+existing third-party image whose entrypoint wasn't designed around it --
+that risk (crash-loops discovered the hard way, restart counts climbing
+into the thousands) comes from not knowing what the image's entrypoint
+needs in advance. If you are writing your *own* entrypoint for a new
+app, design it around the hardened capability set from the start
+instead: there is no existing behavior to accidentally break.
+
+`etc/app-scaffold/docker-compose.yml`'s `example-service` demonstrates
+the default pattern: `cap_drop: ALL` plus either a `user:` override (for
+images with no root-phase setup) or a minimal `cap_add` (for a custom
+entrypoint that does its own chown/user-creation before dropping
+privileges) -- see the comments in that file for both paths.
+
+If your entrypoint needs the second path, follow the capped-entrypoint
+rules in `docs/developer/adding-services.md` (learned auditing the
+platform's own hardened entrypoints in #1909):
+
+1. Create directories while still root, then `chown` -- root without
+   `CAP_DAC_OVERRIDE` cannot `mkdir` inside a directory it no longer
+   owns, so create everything the root phase needs before chowning it
+   away.
+2. Fail fast, naming the capability, on REQUIRED operations (e.g. a
+   data-volume chown your service cannot start without).
+3. WARN visibly, never silently swallow (`2>/dev/null || true`), on
+   OPTIONAL operations.
+4. Test against the three-scenario matrix before shipping: a truly-empty
+   volume, a partially-initialised volume, and a capability-withheld run
+   (which should fail loudly for required operations, or WARN-and-continue
+   for optional ones).
+
 ## External App Repos
 
 Apps do not need to live inside the platform tree. If your app source is in its

@@ -20,7 +20,7 @@ notes) inside those two directories, or they register as a bogus
 
 | File | Mode | Purpose |
 |------|------|---------|
-| `agents/agent-context.md` | primary | Worker for the `agent` issue queue -- operational guidance, tool discipline, memory conventions |
+| `agents/agent-context.md` | primary | Executes tasks delegated via the `agent` label -- a peer to Claude Code, not a supervised junior; operational guidance, tool discipline, memory conventions |
 | `agents/reviewer.md` | subagent | Read-only reviewer: `edit` denied, inspection-only bash allowlist |
 
 ## Commands

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ollama entrypoint wrapper - ensures correct permissions for Ollama data directory
 
-set -e
+set -euo pipefail
 
 # Configuration
 OLLAMA_USER="ubuntu"
@@ -15,12 +15,19 @@ if ! id "$OLLAMA_USER" &>/dev/null; then
     useradd -m -u "$OLLAMA_UID" "$OLLAMA_USER"
 fi
 
-# Ensure .ollama directory exists with correct ownership
+# Ensure .ollama directory exists with correct ownership. Model store
+# ownership is REQUIRED before the privilege drop: ollama cannot write
+# models as UID 1000 into a root-owned volume.
 mkdir -p "$OLLAMA_DATA"
-chown -R "$OLLAMA_USER:$OLLAMA_USER" "$OLLAMA_HOME"
+if ! chown -R "$OLLAMA_USER:$OLLAMA_USER" "$OLLAMA_HOME"; then
+    echo "[ERROR] chown of $OLLAMA_HOME failed — container likely lacks CAP_CHOWN"
+    exit 1
+fi
 
-# Add user to video and render groups for GPU access (if they exist)
-usermod -aG video,render "$OLLAMA_USER" 2>/dev/null || true
+# Add user to video and render groups for GPU access (optional: the
+# groups do not exist on hosts without GPU device nodes)
+usermod -aG video,render "$OLLAMA_USER" \
+    || echo "[WARN] could not add $OLLAMA_USER to video/render groups; GPU device access may be unavailable (normal on CPU-only hosts)"
 
 echo "Starting Ollama as $OLLAMA_USER user..."
 

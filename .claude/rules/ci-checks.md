@@ -69,7 +69,7 @@ All 12 workflows:
 
 | Workflow | Trigger | Key Checks |
 |----------|---------|------------|
-| pr-validation.yml | PR open/edit | Title format, assignee, component label, body reference style |
+| pr-validation.yml | PR open/edit | Title format (Dependabot exempt), assignee, component label, body reference style |
 | bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown, check-ai-elisions |
 | quick-tests.yml | Push to dev (.sh files) | Security tests, bash -n, ./aixcl help |
 | security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review, gitleaks, shell obfuscation patterns |

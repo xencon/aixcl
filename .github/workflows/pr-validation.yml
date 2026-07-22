@@ -26,8 +26,18 @@ jobs:
       - name: Check PR title format
         env:
           PR_TITLE: "${{ github.event.pull_request.title }}"
+          PR_AUTHOR: "${{ github.event.pull_request.user.login }}"
         run: |
-          echo "Checking PR title: $PR_TITLE"
+          echo "Checking PR title: $PR_TITLE (author: $PR_AUTHOR)"
+
+          # Dependabot generates its own title (a commit-message prefix colon,
+          # no issue reference since dependency bumps aren't tied to an issue)
+          # and has no way to follow this repo's convention -- exempt it
+          # rather than force a manual title rewrite on every bump PR (#1923).
+          if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
+            echo "✅ Skipping title format check for Dependabot PR"
+            exit 0
+          fi
 
           # Check for issue reference (#number)
           if ! echo "$PR_TITLE" | grep -qE '\(#[0-9]+\)$'; then

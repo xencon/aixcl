@@ -46,13 +46,20 @@ fi
 echo "[Vault] Configuring Grafana with initial admin password..."
 GRAFANA_PASS_FILE="/tmp/grafana-admin-password"
 echo "$GRAFANA_ADMIN_PASSWORD" > "$GRAFANA_PASS_FILE"
-chown 472:472 "$GRAFANA_PASS_FILE" 2>/dev/null || true
+chown 472:472 "$GRAFANA_PASS_FILE" \
+    || echo "[WARN] chown of $GRAFANA_PASS_FILE failed (no CAP_CHOWN); continuing — chmod 600 below still applies"
 chmod 600 "$GRAFANA_PASS_FILE"
 export GF_SECURITY_ADMIN_PASSWORD__FILE="$GRAFANA_PASS_FILE"
 
 # Start Grafana in background
 /run.sh &
 GRAFANA_PID=$!
+
+# Forward stop signals to Grafana. PID 1 does not get the default signal
+# disposition, so without this trap `wait` below ignores SIGTERM entirely
+# and the container only stops after the orchestrator's SIGKILL grace
+# period elapses on every first-start container (#1920).
+trap 'kill -TERM "$GRAFANA_PID" 2>/dev/null' TERM INT
 
 # Wait for Grafana to be ready
 echo "[Vault] Waiting for Grafana to be ready..."
@@ -76,6 +83,7 @@ fi
 unset GF_SECURITY_ADMIN_PASSWORD__FILE
 rm -f "$GRAFANA_PASS_FILE"
 
-# Keep Grafana running as PID 1 for clean signal handling
+# Wait for Grafana to exit; the trap above forwards a stop signal so this
+# returns promptly instead of stalling until SIGKILL.
 echo "[Vault] Grafana is running (PID: $GRAFANA_PID)"
 wait $GRAFANA_PID

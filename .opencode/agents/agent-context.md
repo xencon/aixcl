@@ -17,21 +17,27 @@ is specific to this agent.
 
 ## Finding Your Work
 
-Issues queued for this agent carry the `agent` label. At session
-start, or whenever the human asks what to work on next, list the queue:
+You are a peer to Claude Code, not a junior worker whose output gets
+graded -- the only real difference is that you run a cloud/local model
+rather than Claude's. Tasks reach you by delegation, not by
+self-service backlog-pulling: a human, or Claude working with the
+human, marks a task for you with the `agent` label. At session start,
+or whenever the human asks what to work on next, list what has been
+delegated to you:
 
 ```bash
 gh issue list --repo xencon/aixcl --label agent --state open
 ```
 
-Rules for working the queue:
+Rules for working delegated tasks:
 
 - Work one issue at a time, following the Issue-First workflow (the issue
   already exists -- start at the branch step)
 - The issue body is the task specification; if it is ambiguous, post a
   clarifying question as an issue comment and wait rather than guessing
 - Do not pick up issues without the `agent` label unless the human
-  directs you to in the live session
+  directs you to in the live session -- that label is how a task is
+  delegated to you specifically
 
 Prefer the guided commands for procedural work -- they embed the correct
 sequence and its guardrails:

@@ -3,8 +3,17 @@ permissions:
   issues: write
   pull-requests: read
 
+# pull_request_target (not pull_request): this repo's PRs always come from
+# a fork (origin -> upstream, see AGENTS.md). GitHub Actions forces a
+# read-only GITHUB_TOKEN on pull_request-triggered workflows whenever the
+# head is a fork, regardless of the permissions block above or the repo's
+# default -- silently breaking gh issue close (#1928). pull_request_target
+# runs with the base repo's token instead, which is safe here specifically
+# because this workflow has no actions/checkout step and never executes
+# code from the PR head; it only reads the (already env-var-scoped, not
+# directly interpolated) PR body text and calls the GitHub API.
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - dev
     types: [closed]
