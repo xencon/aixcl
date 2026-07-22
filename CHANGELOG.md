@@ -5,6 +5,28 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.65] - 2026-07-22
+
+### Summary
+
+Release v1.1.65 -- Security and reliability release: a full capability audit of every hardened entrypoint (pgadmin, grafana, ollama, open-webui), a plaintext-password permission fix and a minimal-capability set for pgadmin that also repairs its previously-broken postfix integration, a CI fix for Dependabot PRs, and a fork-PR token bug that had silently disabled automated issue closing since introduction.
+
+### Fixed
+
+- [x] **Capability-hardened entrypoints failed silently instead of loudly**: pgadmin, grafana, ollama, and open-webui entrypoints silenced `2>/dev/null || true` on privileged filesystem operations, masking capability regressions until a clean init; required operations now fail fast naming the missing capability, optional operations emit a visible WARN instead of hiding the failure. Verified against a 3-scenario harness (empty volume, partial volume, capability-withheld) for all four services, then confirmed live against a real clean-init purge: 21/21 healthy, zero restarts, every WARN firing as designed (#1909).
+- [x] **Grafana ignored SIGTERM on first start**: the first-start entrypoint backgrounded its process and stayed PID 1 with no signal trap, so every stop of a freshly-initialised container stalled the full SIGKILL grace period; a trap now forwards TERM/INT (measured 9.0s pre-fix vs 0.25s post-fix) (#1920).
+- [x] **pgadmin ran with no capability restrictions at all**: re-verified against the currently pinned image (the #1667 exception predates it) via a real harness -- the minimal set is `cap_add: [SETUID, SETGID, NET_BIND_SERVICE]` (sudo's internal privilege calls and a python3 file capability both need them to execute at all, independent of any actual privilege change). Also fixes postfix, which was already broken under the previous unrestricted configuration (#1921).
+- [x] **pgadmin-servers.json exposed a plaintext Postgres password world-readable on the host**: the file was `chmod 644` to work around rootless podman's UID mapping, not an oversight; now uses `podman unshare chown` to give the file the pgadmin container's actual mapped identity, so it stays `600` and the container can still read it (#1922).
+- [x] **Dependabot PRs failed the title-format CI check by design**: dependency-bump PRs have no issue reference and use a `commit-message.prefix` that adds a colon, so they could never pass and had to be merged past a red check; the title-format job now exempts `dependabot[bot]` specifically, leaving every other author's check unchanged (#1923).
+- [x] **close-linked-issues.yml silently failed to close any issue since introduction**: GitHub Actions forces a read-only token on `pull_request`-triggered workflows when the PR head is a fork, which every PR in this repo's two-remote workflow is; switched to `pull_request_target`, which resolves against the base repository's token instead (#1928).
+
+### Documentation
+
+- [x] **Reoriented OpenCode agent docs from junior to peer delegation**: reframed the OpenCode agent's documented relationship to Claude Code from a supervised junior worker to a peer running a cloud/local model, with tasks reaching it by delegation rather than self-service queue-pulling; purely a framing change, every mechanized rail (hard gates, denies) is unchanged (#1930).
+- [x] **Baked capability hardening into the BYO app scaffold template**: `etc/app-scaffold/docker-compose.yml`'s example service now demonstrates `cap_drop: ALL` as the default, with both safe patterns (a `user:` override, or a minimal `cap_add`) documented inline, scoped explicitly as greenfield guidance distinct from the existing retrofit guidance for hardening an already-shipped image (#1925).
+
+
+
 ## [v1.1.64] - 2026-07-18
 
 ### Summary
