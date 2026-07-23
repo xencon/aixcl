@@ -567,6 +567,10 @@ services:
       # NOTE: No GF_SECURITY_ADMIN_USER or GF_SECURITY_ADMIN_PASSWORD here -- Grafana
       # will prompt for first-time admin creation when neither is set.
       - GF_SERVER_HTTP_PORT=3000
+      # Preinstalled bundled plugins (elasticsearch, zipkin) try to self-update
+      # on every boot and fail under cap_drop ALL; none are used by our
+      # provisioning, and all versions stay pinned to the image (#1944)
+      - GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false
     command: []
     network_mode: host
     depends_on:
