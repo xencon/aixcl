@@ -10,7 +10,7 @@ argument-hint: <timeframe, e.g. 'last week', 'today', or blank for all>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Delegation Review
@@ -50,6 +50,17 @@ report:
 For each completed delegation: did it succeed, was it appropriately scoped
 for the delegate model, and do failures suggest the task was too complex to
 delegate?
+
+### By Provider/Model
+Entries logged before the `provider_model`/`fallback_position` fields
+existed (delegate skill pre-1.3) won't have them -- report those separately
+as "unattributed" rather than dropping them silently. For entries that do:
+- Delegations and success rate per `provider_model`
+- Distribution of `fallback_position` (how often the primary model in the
+  delegate skill's Step 2 chain actually served the request, vs falling
+  through to a fallback -- a rising fallback rate signals the primary
+  model or endpoint needs attention)
+- Whether the last-resort model (Ollama) ever fired, and why if so
 
 ## Step 3: Recommendations
 
