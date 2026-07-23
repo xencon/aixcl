@@ -438,33 +438,23 @@ services:
     container_name: pgadmin
     pull_policy: missing
     network_mode: host
-    # cap_drop: ALL + minimal cap_add (#1921, superseding #1667's "no
-    # restrictions" exception -- verified against the current pinned
-    # image, not the older one #1667 was written against):
-    #   SETUID/SETGID  -- the image's own /entrypoint.sh invokes sudo
-    #                     internally even though this container already
-    #                     runs as the non-root pgadmin user (5050); sudo's
-    #                     setresuid/setresgid calls need these to work at
-    #                     all, regardless of any actual privilege change.
+    # cap_drop: ALL + minimal cap_add (#1921, #1942). pgAdmin's bundled
+    # postfix mail relay (used only for its own self-service
+    # password-reset emails, a feature AIXCL doesn't use -- credentials
+    # are Vault-managed) is disabled outright via PGADMIN_DISABLE_POSTFIX
+    # below, since it never worked under this platform's network_mode:
+    # host invariant anyway. With postfix disabled, the image's
+    # /entrypoint.sh no longer invokes sudo at all, so SETUID/SETGID
+    # (previously added for sudo's setresuid/setresgid calls) are no
+    # longer needed. The one remaining capability:
     #   NET_BIND_SERVICE -- /usr/local/bin/python3.14 in this image has a
     #                     cap_net_bind_service file capability set. Any
     #                     binary with file capabilities set fails to exec
     #                     entirely under cap_drop: ALL (EPERM), regardless
     #                     of the port actually used (5050, unprivileged).
-    # Deliberately NOT setting security_opt: no-new-privileges here: it
-    # blocks sudo's setuid mechanism outright, which stops the bundled
-    # postfix mail relay from starting. Verified live: with these three
-    # caps and no no-new-privileges, pgAdmin boots normally AND postfix's
-    # master process starts successfully -- an improvement over the
-    # current unrestricted-capability deployment, where postfix already
-    # fails to start today regardless (its effective capability set is
-    # only cap_net_bind_service, since the entrypoint never runs a root
-    # phase under this image's non-root default user).
     cap_drop:
       - ALL
     cap_add:
-      - SETUID
-      - SETGID
       - NET_BIND_SERVICE
     environment:
       PGADMIN_LISTEN_PORT: 5050
@@ -473,6 +463,10 @@ services:
       PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
       PGADMIN_USER_ID: "5050"
       PGADMIN_GROUP_ID: "5050"
+      # Unused feature (see comment above); also never worked under
+      # network_mode: host, so disable it rather than leave it failing
+      # loudly on every boot (#1942).
+      PGADMIN_DISABLE_POSTFIX: "1"
     volumes:
       - aixcl-pgadmin-storage:/var/lib/pgadmin/storage
       - aixcl-pgadmin-main:/var/lib/pgadmin
