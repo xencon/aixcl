@@ -64,6 +64,7 @@ _taxonomy_label() {
     [[ "$label" == component:* ]] && return 0
     [[ "$label" == profile:* ]] && return 0
     [[ "$label" == agent:* ]] && return 0
+    [[ "$label" == "security" ]] && return 0
     return 1
 }
 
