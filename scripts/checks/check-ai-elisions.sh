@@ -182,9 +182,21 @@ check_mass_deletions() {
     # Range mode (CI): honor the bypass token when it is spelled out in a
     # commit message within the range. Same trust model as the env var --
     # the author must state the intent, and it stays auditable in review.
-    if [ "$MODE" = "range" ] && git log --format=%B "${RANGE_A}..${RANGE_B}" 2>/dev/null | grep -q "AIXCL_ALLOW_MASS_DELETE"; then
-        print_skip "Mass-deletion check skipped (AIXCL_ALLOW_MASS_DELETE token in commit message)"
-        return 0
+    # Capture-then-match, never `git log | grep -q`: under pipefail, grep's
+    # early exit can SIGPIPE git mid-write on large ranges and silently
+    # discard the token (#1970). A failed git log is warned, not hidden.
+    if [ "$MODE" = "range" ]; then
+        local range_messages
+        if ! range_messages="$(git log --format=%B "${RANGE_A}..${RANGE_B}" 2>&1)"; then
+            warn "token check unavailable: git log ${RANGE_A}..${RANGE_B} failed: ${range_messages}"
+            range_messages=""
+        fi
+        case "$range_messages" in
+            *AIXCL_ALLOW_MASS_DELETE*)
+                print_skip "Mass-deletion check skipped (AIXCL_ALLOW_MASS_DELETE token in commit message)"
+                return 0
+                ;;
+        esac
     fi
 
     local found=0
