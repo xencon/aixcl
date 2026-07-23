@@ -6,6 +6,7 @@
 - Command cheat sheet
 - Research method (code and history first)
 - Design validation rationale
+- Workflow guardrails (garbled bodies, critical actions)
 
 ## Repo map
 
@@ -75,3 +76,36 @@ Validate the approach (grill-with-docs) when:
 
 Afterwards, capture the decisions in the issue body. The body is the source
 of truth; comments are the history trail.
+
+## Workflow guardrails
+
+### Garbled issue bodies (backtick injection)
+
+When creating via `gh`, always use `--body-file` or a quoted HEREDOC
+(`cat << 'EOF'`) -- inline `--body` with backticks executes command
+substitution and injects shell output into the body. Detection when
+reviewing an existing issue:
+
+```bash
+gbody=$(gh issue view <number> --repo xencon/aixcl --json body -q '.body')
+if echo "$gbody" | grep -Eq '(Error:|Usage:|podman stop|^[a-f0-9]{64}$|20[0-9]{2}-[0-9]{2}-[0-9]{2}T)'; then
+  echo "REJECT: body appears garbled -- recreate with --body-file"
+fi
+```
+
+`scripts/utils/create-issue.sh` prevents this class of failure by
+construction; prefer it over raw `gh issue create`.
+
+### Critical actions requiring human approval
+
+These ALWAYS stay with the operator, regardless of momentum:
+
+1. Pushing directly to `main` or `dev` (including upstream)
+2. Merging to `main` (release merges)
+3. Any `git push --force`
+4. Bypassing or skipping required checks
+5. Changes to `.github/workflows/` (workflow file protection blocks HTTPS
+   pushes anyway) or security-relevant configuration
+
+GPG commits are always operator-signed -- stage, verify the elision check,
+hand over the full commit command.

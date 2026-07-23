@@ -10,7 +10,7 @@ argument-hint: <issue number or GitHub issue URL>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Issue Triage
