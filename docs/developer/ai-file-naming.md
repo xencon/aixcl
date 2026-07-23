@@ -41,9 +41,9 @@ Agent files:
 
 - **Location**: `.claude/skills/<name>/SKILL.md` and `.opencode/skills/<name>/SKILL.md` (byte-identical mirrors -- edit both sides)
 - **Filename pattern**: directory-based (`<name>/SKILL.md`), directory name in kebab-case
-  - Examples: `housekeeping/SKILL.md`, `cut-release/SKILL.md`
+  - Examples: `housekeeping/SKILL.md`, `release/SKILL.md`
 
-Skill files follow the [Agent Skills open standard](https://agentskills.io): keep SKILL.md lean and move bulky reference material to separate files loaded on demand (progressive disclosure).
+Skill files follow the [Agent Skills open standard](https://agentskills.io): keep SKILL.md lean and move bulky reference material to separate `references/` files loaded on demand (progressive disclosure). The catalog and authoring conventions live in `.claude/skills/CONTEXT.md` (mirrored); update it in the same PR that adds, renames, or removes a skill. Audit skill changes with the `reviewing-skills` skill before merging.
 
 ## Rules
 

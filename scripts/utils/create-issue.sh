@@ -41,8 +41,10 @@ if [[ -n "$CUSTOM_BODY" ]] && [[ ! -f "$CUSTOM_BODY" ]]; then
     exit 1
 fi
 
-if [[ ! "$TITLE" =~ ^\[(BUG|FEATURE|TASK)\]\  ]]; then
-    echo "ERROR: Title must start with [BUG], [FEATURE], or [TASK]"
+# An optional [OVERRIDE] prefix is allowed before the type tag for
+# emergency-workflow-override issues (AGENTS.md Section 8)
+if [[ ! "$TITLE" =~ ^(\[OVERRIDE\]\ )?\[(BUG|FEATURE|TASK)\]\  ]]; then
+    echo "ERROR: Title must start with [BUG], [FEATURE], or [TASK] (optionally prefixed with [OVERRIDE])"
     exit 1
 fi
 

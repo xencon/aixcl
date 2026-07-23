@@ -19,6 +19,13 @@ fi
 
 # --- On restart: just start pgAdmin with existing data ---
 if [ "$IS_FIRST_START" = false ]; then
+    # Skip the native entrypoint's servers.json re-import on restart: the
+    # server list already lives in pgadmin4.db, the import needs
+    # PGADMIN_DEFAULT_EMAIL (only read from Vault on first start, so it
+    # logs a blank-user "could not be found" error here), and an actual
+    # re-import with --replace would clobber user edits (#1945)
+    export PGADMIN_REPLACE_SERVERS_ON_STARTUP=False
+
     # Still need to set up directories and permissions
     USER_ID="${PGADMIN_USER_ID:-5050}"
     GROUP_ID="${PGADMIN_GROUP_ID:-5050}"

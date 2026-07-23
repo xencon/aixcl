@@ -167,6 +167,11 @@ function init_stack() {
     if [ ! -f "$env_file" ]; then
         if [ -f "$env_example" ]; then
             cp "$env_example" "$env_file"
+            # config/.env.example is tracked in git at mode 644; a fresh
+            # copy inherits that, leaving .env world-readable until some
+            # later service-start path happens to tighten it. Enforce 600
+            # here at creation time instead of relying on that.
+            chmod 600 "$env_file"
             echo "Created .env from config/.env.example"
         else
             echo "Error: config/.env.example not found"

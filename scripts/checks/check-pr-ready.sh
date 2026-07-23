@@ -63,7 +63,8 @@ _taxonomy_label() {
     _in_list "$label" "$PRIORITY_LABELS" && return 0
     [[ "$label" == component:* ]] && return 0
     [[ "$label" == profile:* ]] && return 0
-    [[ "$label" == agent:* ]] && return 0
+    [[ "$label" == "agent" ]] && return 0
+    [[ "$label" == "security" ]] && return 0
     return 1
 }
 
@@ -149,8 +150,10 @@ if [[ -n "$ISSUE_NUMBER" ]]; then
         ISSUE_BODY=$(jq -r '.body' <<<"$ISSUE_JSON")
 
         info "Checking issue title format..."
-        if [[ ! "$ISSUE_TITLE" =~ ^\[(BUG|FEATURE|TASK)\]\  ]]; then
-            error "Issue title must start with [BUG], [FEATURE], or [TASK]: ${ISSUE_TITLE}"
+        # An optional [OVERRIDE] prefix is allowed before the type tag for
+        # emergency-workflow-override issues (AGENTS.md Section 8)
+        if [[ ! "$ISSUE_TITLE" =~ ^(\[OVERRIDE\]\ )?\[(BUG|FEATURE|TASK)\]\  ]]; then
+            error "Issue title must start with [BUG], [FEATURE], or [TASK] (optionally prefixed with [OVERRIDE]): ${ISSUE_TITLE}"
         fi
         if [[ "$ISSUE_TITLE" == *:* ]]; then
             error "Issue title contains a colon: ${ISSUE_TITLE}"

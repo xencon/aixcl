@@ -1,11 +1,15 @@
 ---
 name: release
-description: Guided workflow for cutting an AIXCL release, fronting the aixcl release command
+description: >
+  Guided workflow for cutting an AIXCL release, fronting the aixcl release
+  command: retrospective, changelog judgment, tag, announcement, and sync.
+  Operator-gated (disable-model-invocation) -- run only when the maintainer
+  explicitly asks to cut a release.
 compatibility: OpenCode, Claude Code
 disable-model-invocation: true
 metadata:
   category: workflow
-  version: "2.0"
+  version: "2.1"
 ---
 
 # Skill: release
@@ -54,6 +58,8 @@ advisory -- the human may proceed once formal CI and review checks are
 complete, even if one agent has nothing material to add.
 
 ```bash
+# Repository and category IDs are xencon/aixcl constants; re-derive with
+# `gh api graphql` repository/discussionCategories queries if they change
 gh api graphql -f query='
 mutation {
   createDiscussion(input: {
