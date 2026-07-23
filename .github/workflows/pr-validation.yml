@@ -39,12 +39,20 @@ jobs:
             exit 0
           fi
 
-          # Check for issue reference (#number)
-          if ! echo "$PR_TITLE" | grep -qE '\(#[0-9]+\)$'; then
-            echo "❌ PR title must end with issue reference '(#<number>)'"
-            echo "Expected format: '<description> (#<number>)'"
-            echo "Current title: $PR_TITLE"
-            exit 1
+          # [OVERRIDE]-prefixed PRs carry an operator-authorized change with
+          # no issue by design (AGENTS.md Section 8) -- exempt them from the
+          # issue-reference requirement, mirroring the [OVERRIDE] exemption
+          # already applied to issue titles (#1947).
+          if echo "$PR_TITLE" | grep -qE '^\[OVERRIDE\] '; then
+            echo "✅ Skipping issue-reference check for OVERRIDE PR"
+          else
+            # Check for issue reference (#number)
+            if ! echo "$PR_TITLE" | grep -qE '\(#[0-9]+\)$'; then
+              echo "❌ PR title must end with issue reference '(#<number>)'"
+              echo "Expected format: '<description> (#<number>)'"
+              echo "Current title: $PR_TITLE"
+              exit 1
+            fi
           fi
 
           # Check for colons in title (not allowed)
