@@ -5,6 +5,38 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.66] - 2026-07-23
+
+### Summary
+
+Release v1.1.66 -- Agent tooling and log hygiene release: a skill-catalog overhaul adopting an interlocking delegation and triage methodology (seven new skills, one deprecated, all audited against vendored authoring best practices), two per-boot log-noise fixes verified live (grafana bundled-plugin self-update, pgadmin restart-path re-import), and workflow-validation fixes for the security label, OVERRIDE-prefixed titles, and the agent delegation label.
+
+### Added
+
+- [x] **reviewing-skills skill**: skill-authoring linter with a FAIL/WARN/PASS report workflow, AIXCL conventions checks (ASCII, mirror parity, no references to absent tooling), and Anthropic's authoring best-practices guide vendored for offline use; every skill in the catalog now passes with zero FAIL findings (#1951).
+- [x] **Delegation skill trio**: delegate routes mechanistic sub-tasks to the OpenCode peer via opencode run with a 3-tier safety rubric, a ~30s cost floor, and strictly sequential JSONL logging (concurrent runs skew the log); delegate-review provides analytics over the log; session-review closes the loop by surfacing missed delegation opportunities each session. Smoke-tested live end to end (#1952).
+- [x] **Dev-flow skill trio**: investigate (root-cause-first bug investigation with a no-fixing-until-complete gate), issue-triage (GitHub issue-first workflow with design-validation and CI-parity hard gates plus a consolidated triage playbook), and grill-with-docs (one-question-at-a-time plan stress-testing against invariants and existing patterns) (#1953).
+
+### Changed
+
+- [x] **housekeeping v3 and skill formatting retrofit**: housekeeping gains memory recall, a status-report-with-priorities ending, and optional sequential delegation of mechanical checks; check-updates and housekeeping bodies split into references/ per progressive disclosure; trigger-rich descriptions across the catalog; new skills CONTEXT.md catalog and directory contract (#1954).
+- [x] **workflow-guard skill deprecated**: written for a retired agent architecture and fully superseded by create-issue.sh, check-pr-ready.sh, CI, and the issue-triage skill; its garbled-body detection and critical-actions approval list moved into the triage playbook, and the delegate skill gained the ~30s cost floor (#1959).
+
+### Fixed
+
+- [x] **Grafana failed to self-update bundled plugins on every boot**: Grafana 13's preinstall_auto_update default tried to update the unused bundled elasticsearch/zipkin plugins each start and failed under cap_drop ALL, logging two ERROR entries per boot; disabled via GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false so plugin versions stay pinned to the image. Verified live: zero error-level grafana log lines on a fresh boot (#1944).
+- [x] **pgAdmin logged a blank-user servers.json re-import error on every restart**: the native entrypoint's re-import needs PGADMIN_DEFAULT_EMAIL, which the restart path never loads, producing a confirmed no-op with misleading errors; the restart path now sets PGADMIN_REPLACE_SERVERS_ON_STARTUP=False, skipping the import and preserving user edits per the entrypoint's documented contract. Verified live across a restart with the server list intact (#1945).
+- [x] **OVERRIDE-prefixed issue titles failed validation**: AGENTS.md Section 8 mandates the [OVERRIDE] prefix for emergency-override issues, but create-issue.sh and check-pr-ready.sh rejected it; both now accept an optional, narrowly scoped [OVERRIDE] prefix before the type tag (#1947).
+- [x] **Plain agent label warned as outside the taxonomy**: check-pr-ready.sh accepted the glob agent:* (which matched no real label) instead of the documented agent delegation label; now matches exactly (#1965).
+- [x] **Disable pgadmin's unused postfix mail relay**: bundled-but-unused base-image feature attempted startup every boot; disabled outright via PGADMIN_DISABLE_POSTFIX (#1942).
+
+### Documentation
+
+- [x] **security label added to the AGENTS.md taxonomy**: in real use since #1427 but undocumented, tripping an outside-taxonomy warning on every use; documented under Other Labels and accepted by check-pr-ready.sh's hardcoded list (#1946).
+- [x] **Housekeeping scratch/temp hygiene step synced from fork dev**: Step 11 covers stray /tmp harness directories, lingering podman test containers/volumes, and stale scratchpad drafts, detection-only (#1948).
+
+
+
 ## [v1.1.65] - 2026-07-22
 
 ### Summary
