@@ -129,6 +129,8 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 - Agent delegation: `agent` (issues delegated to a peer agent -- e.g.
   the OpenCode agent -- for execution; the agent discovers delegated
   work by listing open issues with this label)
+- Security: `security` (security-relevant issues and PRs: capability
+  hardening, secret handling, permission fixes, vulnerability follow-ups)
 
 ### Lean Repository Policy
 
