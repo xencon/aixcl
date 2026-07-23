@@ -1,10 +1,16 @@
 ---
 name: add-service
-description: Guided checklist for safely adding a new platform service to AIXCL, preserving all invariants
+description: >
+  Guided checklist for safely adding a new operational service to the AIXCL
+  stack, preserving all platform invariants (host networking, pinned images,
+  runtime/operational boundary, profile registration). Use when adding a
+  service to docker-compose, wiring a new container into the stack, or asked
+  to "add a service", "add <tool> to the stack", "new compose service".
+argument-hint: <service name and purpose>
 compatibility: OpenCode, Claude Code
 metadata:
   category: platform
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Skill: add-service

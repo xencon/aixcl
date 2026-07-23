@@ -1,11 +1,17 @@
 ---
 name: workflow-guard
-description: Validates Issue-First workflow compliance before execution
+description: >
+  Validates Issue-First workflow compliance before execution: issue, branch,
+  commit, PR, and security requirements. Use before starting any code change
+  and again before creating a PR. Triggers on "check workflow compliance",
+  "validate the workflow", "am I following the process", or starting work
+  without a clear issue reference.
+argument-hint: <issue or PR number to validate>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
   security_level: critical
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Skill: workflow-guard
@@ -50,17 +56,18 @@ creating a PR.
 - [ ] PR references issue: `Fixes #<number>` in body
 - [ ] PR has assignee set
 - [ ] PR has at least one `component:*` label
-- [ ] All CI checks pass (validate this with @verify agent)
+- [ ] All CI checks pass (`gh pr checks <number>`)
 - [ ] Agent identification block present in PR body (agent-authored PRs only)
   ```bash
   echo "$PR_BODY" | bash scripts/checks/check-agent-id-block.sh
   ```
 
 ### 5. Security Requirements
-- [ ] Security-gate agent has scanned changes
-- [ ] No secrets detected
-- [ ] No CRITICAL or HIGH severity vulnerabilities
-- [ ] Human approval obtained for critical actions
+- [ ] No secrets in the diff (gitleaks runs in CI; grep the staged diff for
+      token patterns before pushing)
+- [ ] No CRITICAL or HIGH severity findings from CI security workflows
+      (ShellCheck, dependency review, obfuscation patterns)
+- [ ] Human approval obtained for critical actions (see below)
 
 ## Workflow State Machine
 
@@ -127,33 +134,32 @@ gh pr view <number> --json assignees,labels,title,body
 
 If any validation step fails:
 
-1. **Log the failure** with full context
-2. **Block execution** of the action
-3. **Provide remediation** guidance
-4. **Alert human** via @security-gate agent
+1. **Stop** -- do not proceed with the blocked action
+2. **Report** the failure with full context and remediation guidance
+3. **Escalate** security concerns to the operator with a `[SECURITY]` prefix
+   (AGENTS.md Section 7); everything else per the escalation procedures
 
 ## Example Usage
 
 ```
-@orchestrator Please validate the workflow for issue #917
-
-Agent loads this skill and runs validation:
+Validate the workflow for issue #917:
 1. Check issue #917 exists [x]
-2. Check issue is assigned [x]
-3. Check branch issue-917/security-first-agentic-foundation format [x]
+2. Check issue is assigned and labeled [x]
+3. Check branch issue-917/<description> format [x]
 4. Check branch from dev [x]
 5. Check commits reference #917 [x]
-6. Check security-gate approval [x]
+6. Check no secrets or elisions in the staged diff [x]
 
 Result: All validations passed. Workflow approved.
 ```
 
 ## Integration
 
-This skill is automatically invoked by:
-- @orchestrator agent for workflow coordination
-- @security-gate agent for compliance validation
-- GitHub Actions for CI/CD enforcement
+Run this skill yourself before starting code changes and again before
+creating a PR. CI independently enforces the same rules
+(`pr-validation.yml`, `bash-ci.yml`, `security.yml`), and
+`./aixcl checks pr-ready <N>` re-validates everything at merge time --
+this skill exists to catch violations before they reach CI.
 
 ## Compliance Rules
 
@@ -172,5 +178,5 @@ Before claiming compliance, verify:
 - [ ] All AGENTS.md rules followed
 - [ ] All DEVELOPMENT.md rules followed
 - [ ] All platform invariants preserved
-- [ ] Security gate approval obtained
+- [ ] Security requirements above checked
 - [ ] Audit trail will be complete

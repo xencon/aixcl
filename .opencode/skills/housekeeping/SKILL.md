@@ -1,25 +1,31 @@
 ---
 name: housekeeping
-description: Comprehensive repository health check covering hygiene, security, and code quality
+description: >
+  Repository health check and session-startup status sweep: memory recall,
+  hygiene, security, code quality, and open-work triage, ending in a status
+  report with priorities. Use at session start, periodically, or before a
+  release. Triggers on "housekeeping", "start day", "what's the status",
+  "where did we leave off", "repo health check".
+argument-hint: <optional: 'all' or specific step numbers>
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "2.1"
+  version: "3.0"
 ---
 
 # Skill: housekeeping
 
 ## Purpose
 
-Catch accumulated debt across the repository: broken links, mirror drift,
-stale branches, permission problems, secrets, unpinned images, and shell
-regressions. The mechanical checks run through `./aixcl checks all`; this
-skill adds the checks that need GitHub state or human judgment.
+Catch accumulated debt across the repository and orient the session: broken
+links, mirror drift, stale branches, permission problems, secrets, unpinned
+images, shell regressions, and open-work state. Report findings and wait for
+direction -- take no corrective action until directed.
 
 ## When to Run
 
-Periodically, or before a release. Each check is independent -- a failure in
-one does not block the others.
+At session start, periodically, or before a release. Each check is
+independent -- a failure in one does not block the others.
 
 ## Preconditions
 
@@ -27,237 +33,116 @@ one does not block the others.
 - [ ] `gh` authenticated (`gh auth status`)
 - [ ] No uncommitted changes that would pollute diff checks
 
+## Delegation
+
+The mechanical steps (4, 5, 9, 10, 11) fit the delegate skill's tier rubric
+and may be delegated to the OpenCode peer -- strictly one at a time, per the
+delegate skill's sequential-only rule. If delegation fails, run the commands
+directly. Steps needing GitHub state or judgment (0, 2, 3, 12) stay with the
+primary agent.
+
+Command blocks for every step: [references/step-commands.md](references/step-commands.md).
+
 ## Steps
+
+### Step 0 -- Read Memory
+
+Read project memory (MEMORY.md index plus files relevant to open work). Note
+what was in progress, what was blocked, and what the last session
+recommended.
+
+- [ ] In-progress work, blockers, and last-session recommendations noted
 
 ### Step 1 -- Mechanical Sweep
 
-```bash
-./aixcl checks all
-```
+`./aixcl checks all` -- covers documentation paths, mirror parity, elision
+guard, generated and dated files (lean policy), ASCII markdown, image pins,
+profile-vs-contract reconciliation, yamllint, compose validation, and
+environment prerequisites. Fix anything red before continuing.
 
-Covers: documentation paths, mirror parity, elision guard, generated and
-dated files (lean policy), ASCII markdown, image pins, profile-vs-contract
-reconciliation, yamllint, compose validation, and environment
-prerequisites. Fix anything red before continuing.
+- [ ] All checks green
 
-### Step 2 -- Branch Hygiene (Merged Branches and Fork Sync)
+### Step 2 -- Branch Hygiene
 
-```bash
-git fetch --prune origin 2>/dev/null; git fetch --prune upstream 2>/dev/null || true
-
-# Stale merged branches
-git branch -r --merged upstream/dev 2>/dev/null \
-  | grep -v 'upstream/dev\|upstream/main\|origin/dev\|origin/main\|HEAD' \
-  || echo "ok: no stale merged remote branches"
-
-# Fork sync with upstream dev
-upstream_ahead=$(git rev-list origin/dev..upstream/dev 2>/dev/null | wc -l | tr -d ' ')
-if [ "$upstream_ahead" -gt 0 ]; then
-  echo "WARN: origin/dev is $upstream_ahead commit(s) behind upstream/dev"
-  echo "  Fix: git checkout dev && git pull upstream dev && git push origin dev"
-else
-  echo "ok: origin/dev is in sync with upstream/dev"
-fi
-```
+Stale merged branches; fork sync between `origin/dev` and `upstream/dev`.
 
 - [ ] No merged remote branches outstanding, or owner notified to delete
-- [ ] `origin/dev` is in sync with `upstream/dev`, or sync performed
+- [ ] `origin/dev` in sync with `upstream/dev`, or sync performed
 
 ### Step 3 -- Issue and PR Hygiene
 
-Open issues missing a required `component:*` label:
+Open issues missing a `component:*` label; open PRs missing an assignee.
 
-```bash
-gh issue list --repo xencon/aixcl --state open --limit 100 \
-  --json number,title,labels,assignees \
-  --jq '.[] | select(.labels | map(.name) | any(startswith("component:")) | not)
-        | "  #\(.number) \(.title)"'
-```
-
-Open PRs missing an assignee:
-
-```bash
-gh pr list --repo xencon/aixcl --state open --limit 100 \
-  --json number,title,assignees \
-  --jq '.[] | select(.assignees | length == 0) | "  #\(.number) \(.title)"'
-```
-
-- [ ] All open issues have at least one `component:*` label, or flagged for triage
-- [ ] All open PRs have an assignee, or flagged for triage
+- [ ] All open issues labeled, all open PRs assigned, or flagged for triage
 
 ### Step 4 -- Line Endings
 
-```bash
-grep -rlP "\r\n" --include="*.md" --include="*.sh" --include="*.yml" \
-  --exclude-dir=.git . 2>/dev/null \
-  && echo "FAIL: CRLF line endings found" || echo "ok: LF only"
-```
-
 - [ ] No CRLF line endings
 
-### Step 5 -- Generated Env File Integrity (Duplicate Keys)
+### Step 5 -- Env File Integrity
 
-Duplicate keys in `.env.*` or `*.env` files indicate an append bug (e.g. a
-setup script running multiple times and stacking entries instead of rewriting).
+Duplicate keys in env files indicate an append bug.
 
-```bash
-for f in $(find . \( -name ".env*" -o -name "*.env" \) \
-           -not -path "./.git/*" -not -name "*.example" -type f); do
-  dupes=$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$f" \
-          | cut -d= -f1 | sort | uniq -d)
-  if [ -n "$dupes" ]; then
-    echo "DUPLICATE KEYS in $f: $dupes"
-  else
-    echo "ok: $f"
-  fi
-done
-```
-
-- [ ] No duplicate keys found in any env file
+- [ ] No duplicate keys in any env file
 
 ### Step 6 -- File Permissions (Sensitive Files)
 
-Runtime env files must not be world-readable or world-writable. Expected
-mode: `600` (owner read/write only). Tracked config files in
-`config/profiles/` are excluded -- they contain service names and ports,
-not secrets.
+Runtime env files, keys, and certs must be mode `600`.
 
-```bash
-find . \( -name ".env" -o -name ".env.*" -o -name "*.key" \
-          -o -name "*.token" -o -name "*.pem" -o -name "*.crt" \) \
-  -not -path "./.git/*" \
-  -not -path "./config/profiles/*" \
-  -not -name "*.example" \
-  -type f \
-  | while read -r f; do
-      perms=$(stat -c "%a" "$f" 2>/dev/null || stat -f "%OLp" "$f" 2>/dev/null)
-      if echo "$perms" | grep -qE "[1-7]$"; then
-        echo "WORLD-READABLE or WRITABLE: $f ($perms) -- run: chmod 600 $f"
-      else
-        echo "ok: $f ($perms)"
-      fi
-    done
-```
-
-- [ ] No sensitive runtime env files are world-readable or world-writable
+- [ ] No sensitive runtime files world-readable or world-writable
 - [ ] Files under `vault/` or `security/` paths checked specifically
-- [ ] Note: to check whether a file is tracked in git, use `git ls-files --error-unmatch <file>` -- plain `git ls-files <file>` exits 0 even when the file is not tracked, making `&& echo TRACKED` a false positive.
 
 ### Step 7 -- Secret Scanning
 
-Scan tracked files for common secret patterns. If `gitleaks` is installed,
-prefer it. Otherwise use grep patterns as a baseline.
+gitleaks if installed, grep baseline otherwise.
 
-```bash
-if command -v gitleaks > /dev/null 2>&1; then
-  gitleaks detect --source . --no-git 2>&1 | tail -20
-else
-  grep -rEn \
-    "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|glpat-[A-Za-z0-9_\-]{20,}|sk-[A-Za-z0-9]{40,}|xoxb-[A-Za-z0-9\-]+|VAULT_TOKEN=[A-Za-z0-9.\-]{20,})" \
-    --include="*.md" --include="*.yml" --include="*.yaml" \
-    --include="*.sh" --include="*.json" --include="*.env*" \
-    --exclude-dir=.git . 2>/dev/null \
-    && echo "FAIL: potential secrets found above" || echo "ok: no common secret patterns matched"
-fi
-```
-
-- [ ] No secrets detected
-- [ ] If gitleaks not installed, note it as a tooling gap
-- [ ] Note: `--no-git` scans ALL files on disk, including gitignored runtime files (e.g. `pgadmin-servers.json`). Findings in gitignored runtime files belong in the `.gitleaks.toml` `paths` allowlist, not the `commits` allowlist.
+- [ ] No secrets detected (gitleaks absence noted as a tooling gap)
 
 ### Step 8 -- Container Image Pin Hygiene
 
-Covers compose files AND shell code under `lib/` and `scripts/` -- four
-unpinned alpine references hid in shell code because the old sweep only
-scanned compose (issue #1726). Legitimate `:latest` uses (locally built
-`localhost/` images, ollama model tags) are exempted via `localhost/`
-detection or an inline `pin-waiver:` comment.
+`./aixcl checks pins` -- covers compose files AND shell code under `lib/`
+and `scripts/` (unpinned references have hidden in shell code before, #1726).
 
-```bash
-./aixcl checks pins
-```
+- [ ] All image references pinned or carrying a `pin-waiver:` comment
 
-- [ ] All container image references are pinned (no `latest`, no bare image names), or carry an explicit `pin-waiver:` comment with a reason
+### Step 9 -- Shellcheck Sweep
 
-### Step 9 -- Shellcheck Sweep (All Scripts)
-
-```bash
-issues=$(find . -name "*.sh" -not -path "./.git/*" \
-  | xargs shellcheck --severity=warning --exclude=SC1091 2>&1)
-if [ -n "$issues" ]; then
-  echo "$issues" | head -40
-  echo "FAIL: shellcheck issues found"
-else
-  echo "ok: all scripts clean"
-fi
-```
-
-- [ ] No shellcheck warnings or errors at severity `warning` or above
+- [ ] No warnings at severity `warning` or above across all scripts
 
 ### Step 10 -- UPSTREAM-ISSUES.md Staleness
 
-```bash
-if [ -f UPSTREAM-ISSUES.md ]; then
-  echo "UPSTREAM-ISSUES.md exists -- review entries manually:"
-  grep -E "^##|^- " UPSTREAM-ISSUES.md | head -30
-  echo ""
-  echo "File last modified: $(git log -1 --format='%ar' -- UPSTREAM-ISSUES.md)"
-else
-  echo "ok: UPSTREAM-ISSUES.md does not exist"
-fi
-```
-
-- [ ] No entries older than 7 days without a corresponding upstream issue
-- [ ] Entries that have been filed upstream are removed from the file
+- [ ] No entries older than 7 days without a filed upstream issue
+- [ ] Filed entries removed from the file
 
 ### Step 11 -- Agent Scratch/Temp File Hygiene
 
-Verification work (podman test harnesses, permission/capability checks) leaves
-temporary artifacts outside the repository tree -- stub secrets directories,
-throwaway config copies, test containers/volumes, scratchpad drafts of PR and
-issue bodies. None of the steps above catch this since they only look inside
-the repo; it was found here by chance, not by systematic check.
+Stray `/tmp` harness directories, lingering podman test containers/volumes,
+stale scratchpad drafts. Detection only -- review before deleting anything.
 
-```bash
-# Stray /tmp directories from prior harness/verification runs (adjust the
-# glob to match your own session's naming convention if it differs)
-find /tmp -maxdepth 1 \( -iname "aixcl-harness-*" -o -iname "*-harness-*" \) 2>/dev/null
+- [ ] No stray harness artifacts or stale scratchpad drafts
 
-# Lingering podman test containers/volumes from harness runs
-podman ps -a --filter "name=harness" --format "{{.Names}}" 2>&1
-podman volume ls --filter "name=harness" --format "{{.Name}}" 2>&1
+### Step 12 -- Status Report and Priorities
 
-# This session's scratchpad directory -- safe to clear once every draft's
-# real content has landed on GitHub (issue/PR bodies, once filed, live
-# there; the local draft file is disposable afterward)
-ls -la "$CLAUDE_SCRATCHPAD_DIR" 2>/dev/null || true
-```
-
-- [ ] No stray `/tmp` directories from this or prior sessions' test harnesses
-- [ ] No lingering podman test containers/volumes matching a harness naming pattern
-- [ ] Scratchpad cleared of drafts whose content has already landed on GitHub
-- [ ] Note: this step only lists/detects -- review what's found before deleting anything, same as every other step in this skill; never blind-delete a match without confirming it's actually stale
-
-## Verification
-
-Record findings after all steps:
+Compile the single report:
 
 ```
-Step 1  -- Mechanical sweep (aixcl checks all):  [ ] clean  [ ] failures
-Step 2  -- Branch hygiene:                       [ ] clean  [ ] stale branches / fork drift
-Step 3  -- Issue/PR hygiene:                     [ ] clean  [ ] missing labels/assignees
-Step 4  -- Line endings:                         [ ] clean  [ ] CRLF found
-Step 5  -- Env file integrity:                   [ ] clean  [ ] duplicates
-Step 6  -- File permissions:                     [ ] clean  [ ] overexposed
-Step 7  -- Secret scanning:                      [ ] clean  [ ] matches
-Step 8  -- Image pin hygiene:                    [ ] clean  [ ] unpinned
-Step 9  -- Shellcheck sweep:                     [ ] clean  [ ] warnings
-Step 10 -- UPSTREAM-ISSUES.md:                   [ ] clean  [ ] stale entries
-Step 11 -- Agent scratch/temp file hygiene:      [ ] clean  [ ] stray /tmp or scratchpad debt
+Step 0  -- Memory recall:            <in-progress work / blockers>
+Step 1  -- Mechanical sweep:         [ ] clean  [ ] failures
+Step 2  -- Branch hygiene:           [ ] clean  [ ] drift/stale
+Step 3  -- Issue/PR hygiene:         [ ] clean  [ ] gaps
+Step 4  -- Line endings:             [ ] clean  [ ] CRLF
+Step 5  -- Env file integrity:       [ ] clean  [ ] duplicates
+Step 6  -- File permissions:         [ ] clean  [ ] overexposed
+Step 7  -- Secret scanning:          [ ] clean  [ ] matches
+Step 8  -- Image pin hygiene:        [ ] clean  [ ] unpinned
+Step 9  -- Shellcheck sweep:         [ ] clean  [ ] warnings
+Step 10 -- UPSTREAM-ISSUES.md:       [ ] clean  [ ] stale
+Step 11 -- Scratch/temp hygiene:     [ ] clean  [ ] debt
 ```
 
-Any `items found` result should become a follow-up issue before the next
-release. Critical findings from steps 6 and 7 should be treated as P1.
+Follow with a recommended priority order for anything found (critical
+findings from steps 6 and 7 are P1; other findings become follow-up issues
+before the next release) and **wait for direction**.
 
 ## Common Mistakes
 
@@ -268,3 +153,5 @@ release. Critical findings from steps 6 and 7 should be treated as P1.
   allowlist the path in `.gitleaks.toml` instead
 - Deleting a remote branch that has an open PR -- check the PR state is
   MERGED first (a closed PR is not a merged PR)
+- Running delegated checks in parallel -- the delegation log is
+  sequential-only
