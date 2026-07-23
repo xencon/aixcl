@@ -49,6 +49,7 @@ bun.lock
 # OpenCode generated artifacts
 .opencode/package-lock.json
 .opencode/bun.lock
+.opencode/delegation-log.jsonl
 
 # macOS
 .DS_Store
