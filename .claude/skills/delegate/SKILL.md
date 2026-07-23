@@ -11,7 +11,7 @@ argument-hint: <task description or instructions>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.2"
+  version: "1.3"
 ---
 
 # Delegate to OpenCode
@@ -70,7 +70,11 @@ If the task does not fit, say so and handle it directly.
 Cloud is always preferred, regardless of whether the local stack is up --
 Ollama is last resort only, since it needs a stack the operator may not want
 running just for delegation. Every invocation adds `--variant medium`
-(reasoning effort). Try in this order, falling through on failure:
+(reasoning effort). Try in this order, falling through on failure. Each
+position is numbered (1-4) -- record whichever position actually succeeds
+as `fallback_position` in Step 5's completion log entry, so
+delegate-review can report how often the primary model serves requests
+versus falling through.
 
 1. **`nvidia/deepseek-ai/deepseek-v4-flash`** (primary, credentialed via
    `opencode.json`). A `503` with a body like `"ResourceExhausted: Worker
@@ -112,9 +116,15 @@ Execute (one at a time; bound the runtime):
 
 ## Step 5: Log the result
 
-    echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","task":"<TASK_SUMMARY_50_CHARS>","dir":"<WORKING_DIR>","status":"completed","success":<true|false>,"duration_ms":'$((END_MS - START_MS))',"result_summary":"<ONE_LINE_SUMMARY>"}' >> .opencode/delegation-log.jsonl
+Record which provider/model actually served the request (`<provider/model>`,
+e.g. `nvidia/deepseek-ai/deepseek-v4-flash`) and its position in Step 2's
+chain (`<fallback_position>`, 1-4):
 
-On failure set `"status":"failed"` and `"success":false`.
+    echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","task":"<TASK_SUMMARY_50_CHARS>","dir":"<WORKING_DIR>","status":"completed","success":<true|false>,"duration_ms":'$((END_MS - START_MS))',"provider_model":"<provider/model>","fallback_position":<fallback_position>,"result_summary":"<ONE_LINE_SUMMARY>"}' >> .opencode/delegation-log.jsonl
+
+On failure set `"status":"failed"` and `"success":false`; still record
+`provider_model` and `fallback_position` for whichever model the failing
+attempt was on.
 
 **If delegation fails** at every model in Step 2's fallback chain (a genuine
 opencode-level error exits non-zero with output like `Error: "Streaming
