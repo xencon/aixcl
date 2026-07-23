@@ -39,3 +39,11 @@ Use this exact template:
 - **FAIL**: Violates a hard rule (invalid name, missing description trigger, nested references 2+ deep, backslash paths, over 500 lines with no splitting, bigger than 5KB file size).
 - **WARN**: Suboptimal but functional (verbose explanations, missing examples, inconsistent terminology, no feedback loop for quality-critical tasks).
 - **PASS**: Meets or exceeds best practices.
+
+## Rendering the report
+
+The template above stays plain ASCII text -- this file and every skill file
+are emoji-free by convention. When you actually present the report live,
+render each Category's Rating as a colored indicator alongside the text
+(green for PASS, yellow for WARN, red for FAIL) for readability; the color
+exists only in what you render to the user, never in a committed file.
