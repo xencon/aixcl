@@ -11,7 +11,7 @@ argument-hint: <task description or instructions>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Delegate to OpenCode
@@ -48,6 +48,12 @@ Confirm the task fits delegation. Good candidates:
 - Simple single-file mechanical edits (rename, ASCII conversion, import sort)
 - Mechanical find-replace across explicitly listed files
 - Generate boilerplate from an existing template in the repo
+
+**Cost floor**: do not delegate tasks whose direct cost is under about 30
+seconds -- the delegation round trip alone runs about 45 seconds (measured
+2026-07-23), so quick greps, single-file reads, and fast checks are negative
+leverage. Delegation pays off for long-running or blocking work: CI watches,
+full check sweeps, bulk mechanical conversions.
 
 Do NOT delegate:
 - Multi-file or architectural changes; anything security-sensitive

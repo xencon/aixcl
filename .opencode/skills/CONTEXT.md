@@ -20,7 +20,6 @@ are byte-identical mirrors, enforced by `check-agents.sh` and CI
 | `release` | workflow | Cut a release (operator-gated via disable-model-invocation) |
 | `reviewing-skills` | maintenance | Audit SKILL.md files against authoring best practices |
 | `session-review` | workflow | End-of-session delegation feedback loop |
-| `workflow-guard` | workflow | Validate issue-first compliance before execution |
 
 How they interlock: `housekeeping` orients the session and may hand
 mechanical checks to `delegate`; `issue-triage` drives an issue end to end,
