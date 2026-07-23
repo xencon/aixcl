@@ -4,7 +4,7 @@ description: Comprehensive repository health check covering hygiene, security, a
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "2.0"
+  version: "2.1"
 ---
 
 # Skill: housekeeping
@@ -210,6 +210,34 @@ fi
 - [ ] No entries older than 7 days without a corresponding upstream issue
 - [ ] Entries that have been filed upstream are removed from the file
 
+### Step 11 -- Agent Scratch/Temp File Hygiene
+
+Verification work (podman test harnesses, permission/capability checks) leaves
+temporary artifacts outside the repository tree -- stub secrets directories,
+throwaway config copies, test containers/volumes, scratchpad drafts of PR and
+issue bodies. None of the steps above catch this since they only look inside
+the repo; it was found here by chance, not by systematic check.
+
+```bash
+# Stray /tmp directories from prior harness/verification runs (adjust the
+# glob to match your own session's naming convention if it differs)
+find /tmp -maxdepth 1 \( -iname "aixcl-harness-*" -o -iname "*-harness-*" \) 2>/dev/null
+
+# Lingering podman test containers/volumes from harness runs
+podman ps -a --filter "name=harness" --format "{{.Names}}" 2>&1
+podman volume ls --filter "name=harness" --format "{{.Name}}" 2>&1
+
+# This session's scratchpad directory -- safe to clear once every draft's
+# real content has landed on GitHub (issue/PR bodies, once filed, live
+# there; the local draft file is disposable afterward)
+ls -la "$CLAUDE_SCRATCHPAD_DIR" 2>/dev/null || true
+```
+
+- [ ] No stray `/tmp` directories from this or prior sessions' test harnesses
+- [ ] No lingering podman test containers/volumes matching a harness naming pattern
+- [ ] Scratchpad cleared of drafts whose content has already landed on GitHub
+- [ ] Note: this step only lists/detects -- review what's found before deleting anything, same as every other step in this skill; never blind-delete a match without confirming it's actually stale
+
 ## Verification
 
 Record findings after all steps:
@@ -225,6 +253,7 @@ Step 7  -- Secret scanning:                      [ ] clean  [ ] matches
 Step 8  -- Image pin hygiene:                    [ ] clean  [ ] unpinned
 Step 9  -- Shellcheck sweep:                     [ ] clean  [ ] warnings
 Step 10 -- UPSTREAM-ISSUES.md:                   [ ] clean  [ ] stale entries
+Step 11 -- Agent scratch/temp file hygiene:      [ ] clean  [ ] stray /tmp or scratchpad debt
 ```
 
 Any `items found` result should become a follow-up issue before the next
