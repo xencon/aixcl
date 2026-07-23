@@ -11,7 +11,7 @@ argument-hint: <task description or instructions>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.4"
+  version: "1.5"
 ---
 
 # Delegate to OpenCode
@@ -129,6 +129,18 @@ chain (`<fallback_position>`, 1-4):
 On failure set `"status":"failed"` and `"success":false`; still record
 `provider_model` and `fallback_position` for whichever model the failing
 attempt was on.
+
+**A `503` that arrives AFTER visible tool-execution output is not a
+failure.** The delegate model can hit the same shared-endpoint saturation
+(Step 2) while generating its final summary, after the underlying command
+already ran and printed real output -- confirmed live 2026-07-24 (a
+gitleaks and a shellcheck delegation both hit `Error: "ResourceExhausted:
+..."` with the tool's actual output visible just above it). In that case
+log `"status":"completed"`, `"success":true`, and use the visible tool
+output as `result_summary` directly -- do not retry or fall through, since
+a retry would just re-run the tool for no benefit. This is distinct from
+Step 2's 503 retry-with-backoff, which covers a 503 on the *initial*
+request, before any tool output exists.
 
 **If delegation fails** at every model in Step 2's fallback chain (a genuine
 opencode-level error exits non-zero with output like `Error: "Streaming
