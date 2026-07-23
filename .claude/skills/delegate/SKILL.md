@@ -11,7 +11,7 @@ argument-hint: <task description or instructions>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.1"
+  version: "1.5"
 ---
 
 # Delegate to OpenCode
@@ -67,11 +67,33 @@ If the task does not fit, say so and handle it directly.
 
 ## Step 2: Pick the model
 
-The default OpenCode model is the local stack's Ollama model and only works
-when the stack is running (`./aixcl stack status`). If the stack is down, add
-`-m <provider/model>` with a cloud model from `opencode.json` (e.g.
-`-m nvidia/deepseek-ai/deepseek-v4-flash`). Never start the stack just to
-delegate -- stack operations belong to the operator.
+Cloud is always preferred, regardless of whether the local stack is up --
+Ollama is last resort only, since it needs a stack the operator may not want
+running just for delegation. Every invocation adds `--variant medium`
+(reasoning effort). Try in this order, falling through on failure. Each
+position is numbered (1-4) -- record whichever position actually succeeds
+as `fallback_position` in Step 5's completion log entry, so
+delegate-review can report how often the primary model serves requests
+versus falling through.
+
+1. **`nvidia/deepseek-ai/deepseek-v4-flash`** (primary, credentialed via
+   `opencode.json`). A `503` with a body like `"ResourceExhausted: Worker
+   local total request limit reached"` is shared-endpoint saturation, not an
+   auth or quota failure -- confirmed transient (2026-07-23: a retry 8s later
+   succeeded). Retry this model up to 2 times with a short backoff (5s, then
+   10s) before falling through to step 2.
+2. **`opencode/deepseek-v4-flash-free`** (OpenCode Zen -- built into the
+   `opencode` CLI itself, zero config, no credential needed). One attempt.
+3. **`opencode/nemotron-3-ultra-free`** (OpenCode Zen, zero config). One
+   attempt. Both Zen models are picked from `opencode.db`'s
+   `session.model` recency data, not arbitrarily -- re-derive with
+   `sqlite3 ~/.local/share/opencode/opencode.db "SELECT model, MAX(time_updated) FROM session WHERE model IS NOT NULL GROUP BY model ORDER BY 2 DESC LIMIT 5;"`
+   if these stop being reachable.
+4. **`aixcl-local/qwen3-coder:30b-32k`** (Ollama) -- LAST RESORT ONLY, and
+   only if `./aixcl stack status` shows Ollama healthy. Never start the
+   stack just to delegate.
+
+If all four fail, handle the task directly (see Step 5's failure handling).
 
 ## Step 3: Prepare the prompt
 
@@ -82,25 +104,49 @@ vague ("fix the bug").
 
 ## Step 4: Log and execute
 
-Log the start:
+**Log the start BEFORE running `opencode run` -- never skip this, even for a
+quick call.** A completion entry with no matching start (found 2026-07-23:
+3 of 11 entries in one session) breaks pairing-based analytics in
+delegate-review and leaves no record that the delegation was even
+attempted if it never finishes.
 
     echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","task":"<TASK_SUMMARY_50_CHARS>","dir":"<WORKING_DIR>","status":"started"}' >> .opencode/delegation-log.jsonl
 
 Execute (one at a time; bound the runtime):
 
     START_MS=$(date +%s%3N)
-    timeout -k 10 600 opencode run --auto --dir <WORKING_DIR> [-m <provider/model>] "<PROMPT>"
+    timeout -k 10 600 opencode run --auto --dir <WORKING_DIR> -m <provider/model> --variant medium "<PROMPT>"
     END_MS=$(date +%s%3N)
 
 ## Step 5: Log the result
 
-    echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","task":"<TASK_SUMMARY_50_CHARS>","dir":"<WORKING_DIR>","status":"completed","success":<true|false>,"duration_ms":'$((END_MS - START_MS))',"result_summary":"<ONE_LINE_SUMMARY>"}' >> .opencode/delegation-log.jsonl
+Record which provider/model actually served the request (`<provider/model>`,
+e.g. `nvidia/deepseek-ai/deepseek-v4-flash`) and its position in Step 2's
+chain (`<fallback_position>`, 1-4):
 
-On failure set `"status":"failed"` and `"success":false`.
+    echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","task":"<TASK_SUMMARY_50_CHARS>","dir":"<WORKING_DIR>","status":"completed","success":<true|false>,"duration_ms":'$((END_MS - START_MS))',"provider_model":"<provider/model>","fallback_position":<fallback_position>,"result_summary":"<ONE_LINE_SUMMARY>"}' >> .opencode/delegation-log.jsonl
 
-**If delegation fails** (error, timeout, model unavailable): retry once with
-an alternate model from `opencode.json`. If that also fails, handle the task
-directly and log the completion entry with `"status":"fallback-primary"`.
+On failure set `"status":"failed"` and `"success":false`; still record
+`provider_model` and `fallback_position` for whichever model the failing
+attempt was on.
+
+**A `503` that arrives AFTER visible tool-execution output is not a
+failure.** The delegate model can hit the same shared-endpoint saturation
+(Step 2) while generating its final summary, after the underlying command
+already ran and printed real output -- confirmed live 2026-07-24 (a
+gitleaks and a shellcheck delegation both hit `Error: "ResourceExhausted:
+..."` with the tool's actual output visible just above it). In that case
+log `"status":"completed"`, `"success":true`, and use the visible tool
+output as `result_summary` directly -- do not retry or fall through, since
+a retry would just re-run the tool for no benefit. This is distinct from
+Step 2's 503 retry-with-backoff, which covers a 503 on the *initial*
+request, before any tool output exists.
+
+**If delegation fails** at every model in Step 2's fallback chain (a genuine
+opencode-level error exits non-zero with output like `Error: "Streaming
+response failed"` -- distinct from a permission-hook denial, which never
+reaches opencode at all): handle the task directly and log the completion
+entry with `"status":"fallback-primary"`.
 
 ## Step 6: Report
 

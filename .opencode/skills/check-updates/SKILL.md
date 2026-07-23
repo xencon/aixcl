@@ -9,7 +9,7 @@ argument-hint: <optional: category to audit, or blank for all>
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Skill: check-updates
@@ -38,7 +38,11 @@ GitHub Actions, developer CLI tools.
 
 Produce a table: Component, Category, Pinned, Latest, Status. Status is one
 of `current` (pinned == latest), `UPDATE` (newer available), `check` (could
-not determine -- verify manually).
+not determine -- verify manually). Render Status as a colored indicator in
+the live report -- green for `current`, yellow for `UPDATE`, red for `check`
+(an unverifiable pin is the state most likely to hide a real problem). This
+file stays ASCII (no skill file uses emoji); the color exists only in the
+report you render, never in this source.
 
 ## Step 3 -- Triage Updates
 

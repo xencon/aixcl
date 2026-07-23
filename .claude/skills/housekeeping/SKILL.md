@@ -10,7 +10,7 @@ argument-hint: <optional: 'all' or specific step numbers>
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "3.0"
+  version: "3.1"
 ---
 
 # Skill: housekeeping
@@ -123,22 +123,28 @@ stale scratchpad drafts. Detection only -- review before deleting anything.
 
 ### Step 12 -- Status Report and Priorities
 
-Compile the single report:
+Compile the single report as a table, columns `#`, `Step`, `Status`,
+`Findings`. Status is one of `clean` / `warning` / `critical` (`critical`
+reserved for steps 6-7, which are P1 findings). This file stays ASCII per
+repo convention (no skill file uses emoji -- keep it that way); when you
+render the report live in chat, show Status as a colored indicator (green
+for clean, yellow for warning, red for critical) for readability -- the
+color exists only in the rendered output, never in this source file.
 
-```
-Step 0  -- Memory recall:            <in-progress work / blockers>
-Step 1  -- Mechanical sweep:         [ ] clean  [ ] failures
-Step 2  -- Branch hygiene:           [ ] clean  [ ] drift/stale
-Step 3  -- Issue/PR hygiene:         [ ] clean  [ ] gaps
-Step 4  -- Line endings:             [ ] clean  [ ] CRLF
-Step 5  -- Env file integrity:       [ ] clean  [ ] duplicates
-Step 6  -- File permissions:         [ ] clean  [ ] overexposed
-Step 7  -- Secret scanning:          [ ] clean  [ ] matches
-Step 8  -- Image pin hygiene:        [ ] clean  [ ] unpinned
-Step 9  -- Shellcheck sweep:         [ ] clean  [ ] warnings
-Step 10 -- UPSTREAM-ISSUES.md:       [ ] clean  [ ] stale
-Step 11 -- Scratch/temp hygiene:     [ ] clean  [ ] debt
-```
+| # | Step | Status | Findings |
+|---|------|--------|----------|
+| 0 | Memory recall | -- | in-progress work / blockers |
+| 1 | Mechanical sweep | clean/critical | |
+| 2 | Branch hygiene | clean/warning | |
+| 3 | Issue/PR hygiene | clean/warning | |
+| 4 | Line endings | clean/warning | |
+| 5 | Env file integrity | clean/warning | |
+| 6 | File permissions | clean/critical | |
+| 7 | Secret scanning | clean/critical | |
+| 8 | Image pin hygiene | clean/warning | |
+| 9 | Shellcheck sweep | clean/warning | |
+| 10 | UPSTREAM-ISSUES.md | clean/warning | |
+| 11 | Scratch/temp hygiene | clean/warning | |
 
 Follow with a recommended priority order for anything found (critical
 findings from steps 6 and 7 are P1; other findings become follow-up issues

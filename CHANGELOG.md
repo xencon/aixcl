@@ -5,6 +5,30 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.67] - 2026-07-23
+
+### Summary
+
+Release v1.1.67 -- Delegation reliability release: a cloud-first model fallback chain for agent delegation with transient-error retry handling, full provider/model attribution in the delegation log, a data-integrity fix for log pairing, and color-coded tabular reporting across every status-reporting skill.
+
+### Added
+
+- [x] **Cloud-first delegation model fallback with 503 retry**: Agent delegation (`/delegate`) now always prefers the cloud model (NVIDIA DeepSeek V4 Flash) regardless of local stack state, retrying transient `503` shared-endpoint saturation with backoff before falling through two zero-config OpenCode Zen models and, only as a last resort, the local Ollama stack. Every delegated call now runs at a consistent medium reasoning effort (#1977).
+- [x] **Track provider and model in the delegation log**: The delegation log now records which provider/model actually served each request and its position in the fallback chain, and `/delegate-review`'s analytics gained a By Provider/Model breakdown -- previously there was no way to see which model handled a delegation or how often the primary model needed to fall through (#1979).
+- [x] **Roll out color-coded tabular reporting to remaining report skills**: `check-updates`, `delegate-review`, `reviewing-skills`, and `session-review` all present their findings as tables with a colored (green/yellow/red) status indicator in the live report, extending the pattern below to every status-reporting skill in the catalog (#1985).
+- [x] **Convert housekeeping report to a color-coded table**: The housekeeping skill's final status report is now a table instead of a fixed-width checkbox block, with color-coded status for faster scanning (#1983).
+
+### Fixed
+
+- [x] **Close started/completed log pairing gap in delegation skills**: A logging-discipline gap left some delegation log entries with no matching start record, breaking pairing-based analytics; `/delegate-review` now checks pairing in both directions and flags gaps instead of silently dropping them (#1981).
+- [x] **Exempt OVERRIDE-prefixed PR titles from issue-reference requirement**: PR titles carrying an operator-authorized `[OVERRIDE]` prefix (AGENTS.md Section 8, no issue by design) no longer fail the mandatory `(#<number>)` title check, mirroring the existing exemption for issue titles. Unblocked syncing an operator-authorized direct-integration change (an NVIDIA cloud provider template addition) into upstream dev (#1975).
+
+### Documentation
+
+- [x] **Distinguish 503-on-summary from 503-on-request in delegate skill**: Clarifies that a `503` arriving after a delegated tool command has already produced real output is a success to be logged as-is, not a failure requiring retry -- distinct from a `503` on the initial request, which still retries with backoff (#1987).
+
+
+
 ## [v1.1.66] - 2026-07-23
 
 ### Summary

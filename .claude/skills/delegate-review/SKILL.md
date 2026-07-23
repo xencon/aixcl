@@ -10,7 +10,7 @@ argument-hint: <timeframe, e.g. 'last week', 'today', or blank for all>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.0"
+  version: "1.3"
 ---
 
 # Delegation Review
@@ -26,6 +26,13 @@ cat .opencode/delegation-log.jsonl 2>/dev/null
 
 If the file is missing or empty, report that no delegations have been
 recorded yet and stop.
+
+Check pairing in both directions: a `started` entry with no matching
+`completed` for the same task is an interrupted run (Usage Summary excludes
+it from the total, per below). A `completed` entry with no preceding
+`started` for that occurrence is a logging-discipline gap, not an
+interruption -- the delegation happened, it just wasn't logged correctly.
+Flag both under Quality Assessment; do not silently drop either.
 
 ## Step 2: Produce analytics
 
@@ -51,6 +58,17 @@ For each completed delegation: did it succeed, was it appropriately scoped
 for the delegate model, and do failures suggest the task was too complex to
 delegate?
 
+### By Provider/Model
+Entries logged before the `provider_model`/`fallback_position` fields
+existed (delegate skill pre-1.3) won't have them -- report those separately
+as "unattributed" rather than dropping them silently. For entries that do:
+- Delegations and success rate per `provider_model`
+- Distribution of `fallback_position` (how often the primary model in the
+  delegate skill's Step 2 chain actually served the request, vs falling
+  through to a fallback -- a rising fallback rate signals the primary
+  model or endpoint needs attention)
+- Whether the last-resort model (Ollama) ever fired, and why if so
+
 ## Step 3: Recommendations
 
 Based on the history, suggest:
@@ -62,3 +80,10 @@ Based on the history, suggest:
    delegation prompts
 
 Present as a markdown report: tables for stats, bullets for recommendations.
+Use a table for each of Usage Summary, Duration Stats, Task Breakdown, and
+By Provider/Model -- one row per item, not prose. Where a row has a natural
+pass/warn/fail read (e.g. success rate, a task type's failure rate, a
+provider's fallback rate), add a `Status` column with a `clean`/`warning`/
+`critical` value and render it as a colored (green/yellow/red) indicator in
+the live report -- this file stays ASCII (no skill file uses emoji; keep it
+that way), the color exists only in what you render to the user.

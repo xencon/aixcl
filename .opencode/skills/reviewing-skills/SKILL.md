@@ -10,7 +10,7 @@ argument-hint: <skill name, SKILL.md path, or 'all'>
 compatibility: OpenCode, Claude Code
 metadata:
   category: maintenance
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Skill Reviewer

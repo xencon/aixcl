@@ -25,6 +25,16 @@
     ".opencode/memory/MEMORY.md"
   ],
   "default_agent": "agent-context",
+  "agent": {
+    "safety": {
+      "description": "Chat with the NVIDIA content-safety classifier (no tools sent)",
+      "mode": "primary",
+      "model": "nvidia/nvidia/nemotron-3-content-safety",
+      "tools": {
+        "*": false
+      }
+    }
+  },
   "permission": {
     "edit": "ask",
     "bash": {
@@ -76,6 +86,29 @@
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {}
+    },
+    "nvidia": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NVIDIA",
+      "options": {
+        "baseURL": "https://integrate.api.nvidia.com/v1"
+      },
+      "models": {
+        "nvidia/nemotron-3-content-safety": {
+          "name": "Nemotron 3 Content Safety",
+          "tool_call": false
+        },
+        "deepseek-ai/deepseek-v4-pro": {
+          "name": "DeepSeek V4 Pro"
+        },
+        "deepseek-ai/deepseek-v4-flash": {
+          "name": "DeepSeek V4 Flash"
+        },
+        "z-ai/glm-5.2": {
+          "name": "GLM 5.2"
+        }
+      }
     }
-  }
+  },
+  "small_model": "nvidia/deepseek-ai/deepseek-v4-flash"
 }

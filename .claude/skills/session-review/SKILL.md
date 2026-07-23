@@ -11,7 +11,7 @@ argument-hint: <optional focus area or timeframe>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Session Review
@@ -60,8 +60,15 @@ was missed.
 ## Step 5: Report
 
 - **Session summary**: date, total tasks, delegation rate, efficiency score
+  -- present as a small table, one row per metric, with a `Status` column
+  (`clean`/`warning`/`critical`) for the delegation rate and efficiency
+  score against your own judgment of whether they're healthy
 - **What was delegated**: table with duration and success
 - **Missed opportunities**: table with suggested delegation prompts
 - **New patterns**: recurring misses that should become standard candidates
 - **Recommendations**: what to delegate next session; patterns to drop
   (failed delegations); suggested updates to the delegate skill
+
+Render `Status` values as a colored indicator (green/yellow/red) in the live
+report. This file stays ASCII (no skill file uses emoji); the color exists
+only in the report you render, never in this source.
