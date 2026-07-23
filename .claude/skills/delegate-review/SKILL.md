@@ -10,7 +10,7 @@ argument-hint: <timeframe, e.g. 'last week', 'today', or blank for all>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Delegation Review
@@ -26,6 +26,13 @@ cat .opencode/delegation-log.jsonl 2>/dev/null
 
 If the file is missing or empty, report that no delegations have been
 recorded yet and stop.
+
+Check pairing in both directions: a `started` entry with no matching
+`completed` for the same task is an interrupted run (Usage Summary excludes
+it from the total, per below). A `completed` entry with no preceding
+`started` for that occurrence is a logging-discipline gap, not an
+interruption -- the delegation happened, it just wasn't logged correctly.
+Flag both under Quality Assessment; do not silently drop either.
 
 ## Step 2: Produce analytics
 

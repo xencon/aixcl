@@ -11,7 +11,7 @@ argument-hint: <task description or instructions>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.3"
+  version: "1.4"
 ---
 
 # Delegate to OpenCode
@@ -104,7 +104,11 @@ vague ("fix the bug").
 
 ## Step 4: Log and execute
 
-Log the start:
+**Log the start BEFORE running `opencode run` -- never skip this, even for a
+quick call.** A completion entry with no matching start (found 2026-07-23:
+3 of 11 entries in one session) breaks pairing-based analytics in
+delegate-review and leaves no record that the delegation was even
+attempted if it never finishes.
 
     echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","task":"<TASK_SUMMARY_50_CHARS>","dir":"<WORKING_DIR>","status":"started"}' >> .opencode/delegation-log.jsonl
 
