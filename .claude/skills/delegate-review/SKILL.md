@@ -10,7 +10,7 @@ argument-hint: <timeframe, e.g. 'last week', 'today', or blank for all>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.2"
+  version: "1.3"
 ---
 
 # Delegation Review
@@ -80,3 +80,10 @@ Based on the history, suggest:
    delegation prompts
 
 Present as a markdown report: tables for stats, bullets for recommendations.
+Use a table for each of Usage Summary, Duration Stats, Task Breakdown, and
+By Provider/Model -- one row per item, not prose. Where a row has a natural
+pass/warn/fail read (e.g. success rate, a task type's failure rate, a
+provider's fallback rate), add a `Status` column with a `clean`/`warning`/
+`critical` value and render it as a colored (green/yellow/red) indicator in
+the live report -- this file stays ASCII (no skill file uses emoji; keep it
+that way), the color exists only in what you render to the user.
