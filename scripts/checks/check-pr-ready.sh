@@ -63,7 +63,7 @@ _taxonomy_label() {
     _in_list "$label" "$PRIORITY_LABELS" && return 0
     [[ "$label" == component:* ]] && return 0
     [[ "$label" == profile:* ]] && return 0
-    [[ "$label" == agent:* ]] && return 0
+    [[ "$label" == "agent" ]] && return 0
     [[ "$label" == "security" ]] && return 0
     return 1
 }
