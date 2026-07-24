@@ -5,6 +5,27 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.68] - 2026-07-24
+
+### Summary
+
+Release v1.1.68 -- Security hardening release: removes a hardcoded Vault auth token and its dead HCL configs, narrows the Vault listener to loopback, closes a plaintext-password exposure in pgAdmin's config generator and in postgres statement logging, and aligns postgres/open-webui restart policy with the rest of the stack.
+
+### Fixed
+
+- [x] **Remove hardcoded Vault auth token and dead agent HCL configs**: Three Vault Agent HCL configs carried a hardcoded auth token and were never actually invoked by any container's `command:` -- every real credential path already uses the `vault` CLI or the HTTP API directly. Removed the dead configs along with their dangling bind mounts and stale cross-references in `CONTEXT.md`/ADR docs (#1995).
+- [x] **Narrow Vault listener to 127.0.0.1, matching its own comment**: The Vault listener bound to `0.0.0.0:8200` despite a comment claiming loopback-only. Verified every `VAULT_ADDR` consumer in the repo already connects via `127.0.0.1`, so narrowing the bind changes no behavior while closing the gap between the stated and actual configuration (#1996).
+- [x] **Fail closed instead of writing a world-readable DB password**: pgAdmin's server-config generator fell back to `chmod 644` (world-readable) whenever `podman unshare chown` failed, exposing a live PostgreSQL password on the host filesystem. It now fails closed, leaving the file at `600` host-owned and requiring the connection be added manually in the UI (#1997).
+- [x] **Stop postgres from logging a plaintext password via log_statement=all**: The bootstrap entrypoint's password-sync `ALTER USER ... PASSWORD` statement was being logged verbatim -- password included -- into container log files whose rotation lifecycle is decoupled from the credential's own rotation in Vault. Removed `log_statement=all`/`log_min_duration_statement=0` from both the base compose file and the postgres-ssl overlay, the latter caught by a repo-wide sweep for sibling instances of the same pattern (#2003).
+- [x] **Use unless-stopped restart policy for postgres and open-webui**: These two services were the only ones of 17 restart-managed services set to `restart: always`, meaning they would come back up after a host reboot even if the operator had intentionally stopped the stack. Aligned both with `unless-stopped` to match every other service (#2004).
+
+### Documentation
+
+- [x] **Require removing superseded implementations in governance guidance**: When a design decision supersedes an existing implementation, the superseded code, config, and mounts must be removed in the same change rather than left for a cleanup that may never happen -- added to `01_ai_guidance.md` after #1995 found a dead implementation that still carried a live credential (#1999).
+- [x] **Add sibling-instance grep sweep pattern to delegate skill**: Documents a recurring Tier 1 delegation candidate -- a repo-wide grep to confirm a just-fixed bug pattern has no other live instances -- surfaced after this exact sweep caught #2003's second occurrence in the postgres-ssl overlay (#2007).
+
+
+
 ## [v1.1.67] - 2026-07-23
 
 ### Summary
