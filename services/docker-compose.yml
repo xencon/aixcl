@@ -345,19 +345,12 @@ services:
     command: >
       postgres
       -c listen_addresses=127.0.0.1
-      -c log_statement=all
-      -c log_destination=stderr
-      -c logging_collector=on
-      -c log_directory=/var/log/postgresql
-      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
-      -c log_rotation_age=1d
       -c log_destination=stderr
       -c logging_collector=on
       -c log_directory=/var/log/postgresql
       -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
       -c log_rotation_age=1d
       -c log_rotation_size=100MB
-      -c log_min_duration_statement=0
     depends_on:
       - vault-agent-postgres-bootstrap
     healthcheck:
