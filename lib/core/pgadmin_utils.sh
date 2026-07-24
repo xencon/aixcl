@@ -66,8 +66,20 @@ EOF
     if podman unshare chown "${pgadmin_uid}:${pgadmin_gid}" "${SCRIPT_DIR}/pgadmin-servers.json" 2>/dev/null; then
         echo "✅ Generated pgadmin-servers.json, restricted to the pgadmin container's UID (600)"
     else
-        chmod 644 "${SCRIPT_DIR}/pgadmin-servers.json"
-        echo "⚠️  Could not map servers.json to the pgadmin container's UID (podman unshare failed) -- left world-readable (644) as a fallback so the container can still read it"
+        # Fail closed, not open: the file already exists at 600, host-owned
+        # (set above) -- leave it there rather than widening to 644. A 644
+        # fallback previously wrote a live PostgreSQL password world-
+        # readable on the host whenever podman unshare failed for any
+        # reason. The tradeoff here is a functional one, not a security
+        # one: pgAdmin's automatic server-list import will not be able to
+        # read the file (the connection can be added manually in the UI),
+        # but the password never lands somewhere every host user can read
+        # it (#1997).
+        echo "ERROR: Could not map servers.json to the pgadmin container's UID (podman unshare failed)."
+        echo "  Leaving the file at 600, host-owned -- pgAdmin will NOT auto-import its server list."
+        echo "  Add the connection manually in the pgAdmin UI, or fix rootless Podman setup"
+        echo "  (see scripts/utils/setup-podman-rootless.sh) and restart pgadmin to retry."
+        return 1
     fi
     echo "   Note: With Vault enabled, use dynamic credentials from './aixcl vault credentials'"
 }

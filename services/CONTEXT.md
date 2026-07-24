@@ -59,8 +59,7 @@ Also read: `docs/developer/adding-services.md`
 ## Cross-References
 
 - `scripts/runtime/` -- entrypoint scripts mounted into containers
-- `scripts/vault/` -- bootstrap scripts run by vault-agent-*-bootstrap containers
-- `vault/agent-config/` -- HCL configs for Vault Agent containers
+- `scripts/vault/` -- bootstrap and long-lived agent scripts run by vault-agent-* containers
 - `lib/cli/profile.sh` -- determines which services the CLI starts
 - `config/profiles/` -- profile env files
 - `docs/architecture/governance/02_profiles.md` -- profile invariants

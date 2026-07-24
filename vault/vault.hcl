@@ -7,9 +7,13 @@ storage "file" {
 }
 
 listener "tcp" {
-  address     = "0.0.0.0:8200"
-  # TLS is disabled: Vault binds to 127.0.0.1 (host network) and is
-  # not reachable from outside the host. Compensating control: host firewall.
+  address     = "127.0.0.1:8200"
+  # TLS is disabled: the listener is bound to loopback only, so it is not
+  # reachable from outside the host regardless of firewall state. Every
+  # consumer in this repo (vault-agent sidecars, bootstrap scripts, the
+  # aixcl CLI) already connects via 127.0.0.1 -- confirmed by grepping
+  # every VAULT_ADDR reference in the repo, none use a non-loopback
+  # address (#1996). Compensating control: host firewall, defense in depth.
   tls_disable = "true"
 }
 

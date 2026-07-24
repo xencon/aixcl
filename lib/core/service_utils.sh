@@ -64,7 +64,8 @@ container_start() {
 
     # Generate pgAdmin config if needed
     if [ "$service" = "pgadmin" ]; then
-        generate_pgadmin_config
+        generate_pgadmin_config \
+            || echo "  WARNING: pgAdmin will start without its server list pre-loaded (see error above)"
     fi
 
     # Start the container

@@ -575,7 +575,8 @@ function start() {
     done
 
     if [ "$has_pgadmin" = true ]; then
-        generate_pgadmin_config
+        generate_pgadmin_config \
+            || echo "  WARNING: pgAdmin will start without its server list pre-loaded (see error above)"
     fi
 
     # Auto-configure NVIDIA CDI if GPU is present but CDI has no devices registered
@@ -857,7 +858,6 @@ function start() {
                         --tmpfs /vault/logs:noexec,nosuid,size=1m \
                         --env VAULT_ADDR=http://127.0.0.1:8200 \
                         --env "VAULT_TOKEN=${_vtoken}" \
-                        -v "${SCRIPT_DIR}/vault/agent-config:/etc/vault:ro" \
                         -v "${SCRIPT_DIR}/scripts/vault/${_sc_script}:/usr/local/bin/${_sc_script}:ro" \
                         "$_vault_image" "/usr/local/bin/${_sc_script}" ${_sc_args} > /dev/null; then
                         echo "  Started ${_sidecar}"
