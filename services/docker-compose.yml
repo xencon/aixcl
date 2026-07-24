@@ -109,7 +109,6 @@ services:
       - SETUID
       - SETGID
     volumes:
-      - ../vault/agent-config:/etc/vault:ro
       - ../scripts/vault/vault-agent.sh:/usr/local/bin/vault-agent.sh:ro
     tmpfs:
       - /vault/file:noexec,nosuid,size=1m
@@ -144,7 +143,6 @@ services:
       - SETUID
       - SETGID
     volumes:
-      - ../vault/agent-config:/etc/vault:ro
       - ../scripts/vault/vault-agent-openwebui.sh:/usr/local/bin/vault-agent-openwebui.sh:ro
     tmpfs:
       - /vault/file:noexec,nosuid,size=1m
