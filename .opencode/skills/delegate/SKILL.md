@@ -11,7 +11,7 @@ argument-hint: <task description or instructions>
 compatibility: OpenCode, Claude Code
 metadata:
   category: workflow
-  version: "1.5"
+  version: "1.6"
 ---
 
 # Delegate to OpenCode
@@ -36,6 +36,10 @@ Confirm the task fits delegation. Good candidates:
 - Check env var presence (name/length/prefix only -- never full values)
 - Probe an HTTP endpoint and report status (e.g. `curl` against Ollama's API)
 - Parse config schemas or JSON and report structure
+- Repo-wide grep to confirm a just-fixed pattern has no other live instances
+  (e.g. before ticking a remediation checklist's "confirm no other path has
+  this issue" item -- caught a second live instance of #2003's plaintext-
+  password logging bug in a separate compose overlay file, 2026-07-23)
 
 **Tier 2 -- side-effect-free analysis:**
 - Individual `./aixcl checks <name>` runs (paths, ascii, yaml, pins, ...)
