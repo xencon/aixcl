@@ -575,7 +575,8 @@ function start() {
     done
 
     if [ "$has_pgadmin" = true ]; then
-        generate_pgadmin_config
+        generate_pgadmin_config \
+            || echo "  WARNING: pgAdmin will start without its server list pre-loaded (see error above)"
     fi
 
     # Auto-configure NVIDIA CDI if GPU is present but CDI has no devices registered
