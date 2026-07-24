@@ -327,7 +327,7 @@ services:
       - ../scripts/runtime/postgres-secret-entrypoint.sh:/usr/local/bin/postgres-secret-entrypoint.sh:ro
       - ../scripts/db/init:/docker-entrypoint-initdb.d:ro
     network_mode: host
-    restart: always
+    restart: unless-stopped
     entrypoint: ["/usr/local/bin/postgres-secret-entrypoint.sh"]
     cap_drop:
       - ALL
@@ -397,7 +397,7 @@ services:
     depends_on:
       - postgres
     network_mode: host
-    restart: always
+    restart: unless-stopped
     entrypoint: ["/usr/local/bin/openwebui-entrypoint.sh"]
     command: []
     cap_drop:
