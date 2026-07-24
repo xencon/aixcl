@@ -44,7 +44,6 @@ See `docs/architecture/decisions/002-one-shot-bootstrap.md` for the full rationa
 
 ## Cross-References
 
-- `vault/agent-config/` -- HCL configs for Vault Agent containers
 - `lib/aixcl/commands/vault*.sh` -- CLI commands that source vault-commands.sh
 - `services/docker-compose.yml` -- defines vault-agent-*-bootstrap containers
 - `docs/architecture/decisions/002-one-shot-bootstrap.md` -- design rationale

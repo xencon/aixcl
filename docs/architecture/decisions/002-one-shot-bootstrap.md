@@ -47,4 +47,3 @@ Bootstrap containers are one-shot:
 
 - `services/docker-compose.yml` -- `vault-agent-*-bootstrap` service definitions
 - `scripts/vault/bootstrap-password-*.sh` -- the one-shot scripts
-- `vault/agent-config/*-bootstrap.hcl` -- Vault Agent configs for bootstrap containers
