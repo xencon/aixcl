@@ -49,6 +49,16 @@ Agents **may** safely operate in:
 - Small, reversible steps
 - Clear grouping by responsibility
 - Minimal assumptions about upstream internals
+- When a design decision (an ADR or otherwise) supersedes an existing
+  implementation, remove the superseded code, config, and mounts in the
+  same change -- do not leave a dead implementation behind for a later
+  cleanup that may never happen. A dead implementation is not neutral: it
+  can still carry real credentials, mislead a future reader into thinking
+  it is the pattern to follow, and go unnoticed by mechanical checks,
+  since "is this file ever actually executed" is a behavioral question,
+  not a lint-able one. Update or remove any documentation
+  (`CONTEXT.md`, ADRs, cross-references) that pointed at the removed
+  files in the same change.
 
 ---
 
