@@ -110,5 +110,6 @@
       }
     }
   },
+  "model": "nvidia/deepseek-ai/deepseek-v4-pro",
   "small_model": "nvidia/deepseek-ai/deepseek-v4-flash"
 }
