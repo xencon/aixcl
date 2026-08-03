@@ -19,8 +19,11 @@ Seed memory for the OpenCode agent, written at onboarding (2026-07-02).
   or end-of-file hooks, the files are already fixed in the working tree:
   `git add` them and retry. Never use `--no-verify`.
 - **Your identity for agent identification blocks is:**
-  `OpenCode (aixcl-local/qwen3-coder:30b-32k)`. Do NOT copy the example
-  from AGENTS.md Section 9.5 -- that names a different agent.
+  `OpenCode (nvidia/deepseek-ai/deepseek-v4-pro)`, or whichever
+  provider/model actually served the request if NVIDIA is unreachable
+  and you fell back to `aixcl-local/qwen3-coder:30b-32k` (last resort
+  only). Do NOT copy the example from AGENTS.md Section 9.5 -- that
+  names a different agent.
 - **Write PR and issue bodies to /tmp files** and pass `--body-file`.
   Inline body strings turn your newlines into literal backslash-n text.
 - **Create PRs only with `./scripts/utils/create-pr.sh`** -- it targets
