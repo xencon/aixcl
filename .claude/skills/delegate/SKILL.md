@@ -102,7 +102,7 @@ so delegate-review can report how often the default model serves requests
 versus falling through.
 
 1. **Default -- omit `-m` entirely.** Inherits whatever `opencode.json`'s
-   `model` key configures (currently `nvidia/deepseek-ai/deepseek-v4-pro`),
+   `model` key configures (currently `nvidia/z-ai/glm-5.2`),
    so delegation always tracks OpenCode's actual configured default rather
    than a separately hardcoded model. A `503` with a body like
    `"ResourceExhausted: Worker local total request limit reached"` is
@@ -153,7 +153,7 @@ For up to 3 independent tasks at once, background each with `&` (own
 ## Step 5: Log the result
 
 Record which provider/model actually served the request (`<provider/model>`,
-e.g. `nvidia/deepseek-ai/deepseek-v4-pro`) and its position in Step 2's
+e.g. `nvidia/z-ai/glm-5.2`) and its position in Step 2's
 chain (`<fallback_position>`, 1-2), again through `flock`:
 
     flock -x .opencode/delegation-log.jsonl.lock -c "echo '{\"ts\":\"'\$(date -u +%Y-%m-%dT%H:%M:%SZ)'\",\"task\":\"<TASK_SUMMARY_50_CHARS>\",\"dir\":\"<WORKING_DIR>\",\"status\":\"completed\",\"success\":<true|false>,\"duration_ms\":$((END_MS - START_MS)),\"provider_model\":\"<provider/model>\",\"fallback_position\":<fallback_position>,\"result_summary\":\"<ONE_LINE_SUMMARY>\"}' >> .opencode/delegation-log.jsonl"

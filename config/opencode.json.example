@@ -106,10 +106,13 @@
         },
         "z-ai/glm-5.2": {
           "name": "GLM 5.2"
+        },
+        "openai/gpt-oss-20b": {
+          "name": "GPT-OSS 20B"
         }
       }
     }
   },
-  "model": "nvidia/deepseek-ai/deepseek-v4-pro",
-  "small_model": "nvidia/deepseek-ai/deepseek-v4-flash"
+  "model": "nvidia/z-ai/glm-5.2",
+  "small_model": "nvidia/openai/gpt-oss-20b"
 }
