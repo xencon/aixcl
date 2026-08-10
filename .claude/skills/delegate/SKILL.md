@@ -92,6 +92,18 @@ process ever writes to `~/.local/share/opencode/opencode.db`, which is the
 actual fix for the sqlite-contention risk that used to justify running
 delegations one at a time.
 
+**The running server caches `opencode.json` at startup.** Editing
+`model`, `small_model`, or the `provider` block does not take effect on a
+live server -- `ensure-opencode-server.sh` reuses any process that is
+still healthy, so a config change silently keeps serving the old values
+until the process is restarted. Confirmed live 2026-08-10: after fixing
+a dead default model in `opencode.json`, the first delegation still hit
+the old (dead) model because the server had started before the edit.
+Fix: `kill <pid>; rm -f .opencode/server-state.json`, then re-run
+`ensure-opencode-server.sh` to start a fresh process with the new config.
+Do this any time you change `opencode.json` and delegation doesn't
+reflect it.
+
 Cloud is always preferred, regardless of whether the local stack is up --
 Ollama is last resort only, since it needs a stack the operator may not want
 running just for delegation. Every invocation adds `--attach "$URL"` and
