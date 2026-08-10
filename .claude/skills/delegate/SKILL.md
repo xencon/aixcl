@@ -49,6 +49,11 @@ Confirm the task fits delegation. Good candidates:
   (e.g. before ticking a remediation checklist's "confirm no other path has
   this issue" item -- caught a second live instance of #2003's plaintext-
   password logging bug in a separate compose overlay file, 2026-07-23)
+- Repo-wide grep for a stale identifier after a rename or config-default
+  change (e.g. confirming no doc or skill file still names an old model,
+  env var, or file path after the live value changed -- used to sweep
+  `.claude/`, `.opencode/`, and `config/` for a dead default-model name
+  after #2024's fix, 2026-08-10)
 
 **Tier 2 -- side-effect-free analysis:**
 - Individual `./aixcl checks <name>` runs (paths, ascii, yaml, pins, ...)
