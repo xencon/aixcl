@@ -29,7 +29,7 @@
     "safety": {
       "description": "Chat with the NVIDIA content-safety classifier (no tools sent)",
       "mode": "primary",
-      "model": "nvidia/nvidia/nemotron-3-content-safety",
+      "model": "nvidia/nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
       "tools": {
         "*": false
       }
@@ -96,6 +96,10 @@
       "models": {
         "nvidia/nemotron-3-content-safety": {
           "name": "Nemotron 3 Content Safety",
+          "tool_call": false
+        },
+        "nvidia/llama-3.1-nemotron-safety-guard-8b-v3": {
+          "name": "Nemotron Safety Guard 8B v3",
           "tool_call": false
         },
         "deepseek-ai/deepseek-v4-pro": {
