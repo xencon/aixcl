@@ -19,7 +19,7 @@ Seed memory for the OpenCode agent, written at onboarding (2026-07-02).
   or end-of-file hooks, the files are already fixed in the working tree:
   `git add` them and retry. Never use `--no-verify`.
 - **Your identity for agent identification blocks is:**
-  `OpenCode (nvidia/deepseek-ai/deepseek-v4-pro)`, or whichever
+  `OpenCode (nvidia/z-ai/glm-5.2)`, or whichever
   provider/model actually served the request if NVIDIA is unreachable
   and you fell back to `aixcl-local/qwen3-coder:30b-32k` (last resort
   only). Do NOT copy the example from AGENTS.md Section 9.5 -- that

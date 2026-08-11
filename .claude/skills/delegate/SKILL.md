@@ -49,6 +49,11 @@ Confirm the task fits delegation. Good candidates:
   (e.g. before ticking a remediation checklist's "confirm no other path has
   this issue" item -- caught a second live instance of #2003's plaintext-
   password logging bug in a separate compose overlay file, 2026-07-23)
+- Repo-wide grep for a stale identifier after a rename or config-default
+  change (e.g. confirming no doc or skill file still names an old model,
+  env var, or file path after the live value changed -- used to sweep
+  `.claude/`, `.opencode/`, and `config/` for a dead default-model name
+  after #2024's fix, 2026-08-10)
 
 **Tier 2 -- side-effect-free analysis:**
 - Individual `./aixcl checks <name>` runs (paths, ascii, yaml, pins, ...)
@@ -92,6 +97,18 @@ process ever writes to `~/.local/share/opencode/opencode.db`, which is the
 actual fix for the sqlite-contention risk that used to justify running
 delegations one at a time.
 
+**The running server caches `opencode.json` at startup.** Editing
+`model`, `small_model`, or the `provider` block does not take effect on a
+live server -- `ensure-opencode-server.sh` reuses any process that is
+still healthy, so a config change silently keeps serving the old values
+until the process is restarted. Confirmed live 2026-08-10: after fixing
+a dead default model in `opencode.json`, the first delegation still hit
+the old (dead) model because the server had started before the edit.
+Fix: `kill <pid>; rm -f .opencode/server-state.json`, then re-run
+`ensure-opencode-server.sh` to start a fresh process with the new config.
+Do this any time you change `opencode.json` and delegation doesn't
+reflect it.
+
 Cloud is always preferred, regardless of whether the local stack is up --
 Ollama is last resort only, since it needs a stack the operator may not want
 running just for delegation. Every invocation adds `--attach "$URL"` and
@@ -102,7 +119,7 @@ so delegate-review can report how often the default model serves requests
 versus falling through.
 
 1. **Default -- omit `-m` entirely.** Inherits whatever `opencode.json`'s
-   `model` key configures (currently `nvidia/deepseek-ai/deepseek-v4-pro`),
+   `model` key configures (currently `nvidia/z-ai/glm-5.2`),
    so delegation always tracks OpenCode's actual configured default rather
    than a separately hardcoded model. A `503` with a body like
    `"ResourceExhausted: Worker local total request limit reached"` is
@@ -153,7 +170,7 @@ For up to 3 independent tasks at once, background each with `&` (own
 ## Step 5: Log the result
 
 Record which provider/model actually served the request (`<provider/model>`,
-e.g. `nvidia/deepseek-ai/deepseek-v4-pro`) and its position in Step 2's
+e.g. `nvidia/z-ai/glm-5.2`) and its position in Step 2's
 chain (`<fallback_position>`, 1-2), again through `flock`:
 
     flock -x .opencode/delegation-log.jsonl.lock -c "echo '{\"ts\":\"'\$(date -u +%Y-%m-%dT%H:%M:%SZ)'\",\"task\":\"<TASK_SUMMARY_50_CHARS>\",\"dir\":\"<WORKING_DIR>\",\"status\":\"completed\",\"success\":<true|false>,\"duration_ms\":$((END_MS - START_MS)),\"provider_model\":\"<provider/model>\",\"fallback_position\":<fallback_position>,\"result_summary\":\"<ONE_LINE_SUMMARY>\"}' >> .opencode/delegation-log.jsonl"
