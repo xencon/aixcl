@@ -10,17 +10,25 @@ source "${SCRIPT_DIR}/tests/lib/test-framework.sh"
 
 log_test_start "test-03-stack-status"
 
-# Test: Stack status command exits cleanly
-assert_command_success "${SCRIPT_DIR}/aixcl stack status" "Stack status command succeeds"
-
-# Capture output for content assertions
+# Test: Stack status command reports cleanly. `aixcl stack status` exits
+# non-zero when the stack is stopped -- that's a state signal, not a command
+# failure, so a plain assert_command_success would spuriously fail here.
+# Only exit 0 is unconditionally accepted; any other exit is only accepted
+# if the output actually reports "Status: Stopped" (proves the command ran
+# and reported cleanly rather than crashing for an unrelated reason).
+set +e
 STATUS_OUTPUT=$("${SCRIPT_DIR}/aixcl" stack status 2>&1)
+STATUS_EXIT=$?
+set -e
 
-# Test: Overall summary line is present
-if echo "$STATUS_OUTPUT" | grep -qE "^Services: [0-9]+/[0-9]+ healthy"; then
-    log_test_pass "Services summary line present"
+if [ "$STATUS_EXIT" -eq 0 ]; then
+    log_test_pass "Stack status command succeeds"
+elif echo "$STATUS_OUTPUT" | grep -q "Status: Stopped"; then
+    log_test_pass "Stack status command succeeds (stopped state, exit $STATUS_EXIT)"
 else
-    log_test_fail "Services summary line missing from stack status output"
+    log_test_fail "Stack status command failed unexpectedly (exit $STATUS_EXIT)"
+    echo "  Output:"
+    echo "$STATUS_OUTPUT" | head -5 | sed 's/^/    /'
     exit 1
 fi
 
@@ -28,6 +36,15 @@ fi
 # (regression for issue #1377 -- bootstrap containers showed as red despite exit 0)
 if echo "$STATUS_OUTPUT" | grep -q "Status: Running"; then
     log_info "Stack is running -- asserting bootstrap container health"
+
+    # Test: Overall summary line is present (only meaningful when running --
+    # the stopped-state output has no per-service health summary to report)
+    if echo "$STATUS_OUTPUT" | grep -qE "^Services: [0-9]+/[0-9]+ healthy"; then
+        log_test_pass "Services summary line present"
+    else
+        log_test_fail "Services summary line missing from stack status output"
+        exit 1
+    fi
 
     for bootstrap in \
         "Vault Agent Bootstrap (Postgres)" \

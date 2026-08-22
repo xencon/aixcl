@@ -50,6 +50,9 @@ bun.lock
 .opencode/package-lock.json
 .opencode/bun.lock
 .opencode/delegation-log.jsonl
+.opencode/delegation-log.jsonl.lock
+.opencode/server-state.json
+.opencode/server.log
 
 # macOS
 .DS_Store

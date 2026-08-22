@@ -86,14 +86,14 @@ All 12 workflows:
 ```bash
 # Full pre-PR check (paths, mirror parity, elisions, generated files,
 # ASCII, pins, profile reconciliation, yamllint, compose validation,
-# environment)
+# environment, OpenCode model liveness)
 ./aixcl checks all
 
 # Shellcheck sweep (not part of checks all -- run before shell changes)
 shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path "./.git/*")
 
 # Individual checks
-./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, profiles, obfuscation, yaml, compose, env
+./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, profiles, obfuscation, yaml, compose, env, models
 ./aixcl checks pr-refs <body-file>
 ./aixcl checks pr-ready <pr-number>
 ```

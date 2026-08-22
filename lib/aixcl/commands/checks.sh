@@ -9,7 +9,7 @@ CHECKS_FAILED=()
 CHECKS_SKIPPED=()
 
 _checks_usage() {
-    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|profiles|obfuscation|yaml|compose|env|pr-refs <file>|pr-ready <pr>}"
+    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|profiles|obfuscation|yaml|compose|env|models|pr-refs <file>|pr-ready <pr>}"
     echo "  all              Run every check below (continues on failure, prints summary)"
     echo "  paths            Documentation relative links and stale path patterns"
     echo "  agents           .claude/ vs .opencode/ rules and skills mirror parity"
@@ -22,6 +22,7 @@ _checks_usage() {
     echo "  yaml             yamllint over the repository"
     echo "  compose          docker compose config validation (main + overrides)"
     echo "  env              Environment prerequisites (same as utils check-env)"
+    echo "  models           OpenCode configured model/small_model liveness (dynamic, from opencode.json)"
     echo "  pr-refs <file>   Issue/PR body reference style (one reference per line)"
     echo "  pr-ready <pr>    Merge-readiness gate: checkboxes, format, labels, CI state"
 }
@@ -172,6 +173,9 @@ function checks_cmd() {
         env)
             check_env
             ;;
+        models)
+            bash "${checks_dir}/check-opencode-models.sh"
+            ;;
         pr-refs)
             local body_file="${1:-}"
             if [ -z "$body_file" ] || [ ! -f "$body_file" ]; then
@@ -215,6 +219,12 @@ function checks_cmd() {
             fi
 
             _check_run "env" check_env || true
+
+            if command -v opencode > /dev/null 2>&1; then
+                _check_run "models" bash "${checks_dir}/check-opencode-models.sh" || true
+            else
+                _check_skip "models" "opencode CLI not installed"
+            fi
 
             _checks_summary
             ;;

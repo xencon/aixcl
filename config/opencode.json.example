@@ -29,86 +29,81 @@
     "safety": {
       "description": "Chat with the NVIDIA content-safety classifier (no tools sent)",
       "mode": "primary",
-      "model": "nvidia/nvidia/nemotron-3-content-safety",
+      "model": "nvidia/nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
       "tools": {
         "*": false
       }
     }
   },
-  "permission": {
-    "edit": "ask",
-    "bash": {
-      "*": "ask",
-      "git status*": "allow",
-      "git diff*": "allow",
-      "git log*": "allow",
-      "git show*": "allow",
-      "git fetch*": "allow",
-      "git add*": "allow",
-      "ls*": "allow",
-      "cat*": "allow",
-      "grep*": "allow",
-      "gh repo*": "allow",
-      "gh issue*": "allow",
-      "gh pr view*": "allow",
-      "gh pr list*": "allow",
-      "gh pr checks*": "allow",
-      "gh label list*": "allow",
-      "shellcheck*": "allow",
-      "bash -n *": "allow",
-      "bash scripts/checks/*": "allow",
-      "bash scripts/utils/sync-mirrors.sh*": "allow",
-      "./aixcl checks*": "allow",
-      "./scripts/checks/check-agents.sh*": "allow",
-      "podman ps*": "allow",
-      "git commit*": "ask",
-      "git push*": "ask",
-      "rm -rf*": "deny",
-      "git push --force*": "deny",
-      "git push upstream*": "deny",
-      "git reset --hard*": "deny",
-      "git commit*--no-verify*": "deny",
-      "git commit*--no-gpg-sign*": "deny",
-      "gh pr merge*": "deny",
-      "gh pr create*": "deny",
-      "gh release*": "deny",
-      "./aixcl release tag*": "deny",
-      "./aixcl utils prune*": "deny"
-    },
-    "webfetch": "ask",
-    "skill": "allow"
-  },
   "provider": {
-    "aixcl-local": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "AIXCL",
-      "options": {
-        "baseURL": "http://localhost:11434/v1"
-      },
-      "models": {}
-    },
     "nvidia": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "NVIDIA",
-      "options": {
-        "baseURL": "https://integrate.api.nvidia.com/v1"
-      },
+      "api_base": "https://integrate.api.nvidia.com/v1",
       "models": {
-        "nvidia/nemotron-3-content-safety": {
-          "name": "Nemotron 3 Content Safety",
+        "nvidia/llama-3.1-nemotron-safety-guard-8b-v3": {
+          "name": "Nemotron Safety Guard 8B v3",
           "tool_call": false
         },
-        "deepseek-ai/deepseek-v4-pro": {
-          "name": "DeepSeek V4 Pro"
+        "mistralai/mistral-nemotron": {
+          "name": "Mistral Nemotron",
+          "tool_call": true
         },
-        "deepseek-ai/deepseek-v4-flash": {
-          "name": "DeepSeek V4 Flash"
+        "meta/llama-3.1-8b-instruct": {
+          "name": "Llama 3.1 8B Instruct",
+          "tool_call": true
         },
-        "z-ai/glm-5.2": {
-          "name": "GLM 5.2"
+        "meta/llama-3.1-70b-instruct": {
+          "name": "Llama 3.1 70B Instruct",
+          "tool_call": true
+        },
+        "meta/llama-3.3-70b-instruct": {
+          "name": "Llama 3.3 70B Instruct",
+          "tool_call": true
+        }
+      }
+    },
+    "aixcl-local": {
+      "api_base": "http://localhost:11434/v1",
+      "models": {
+        "qwen3-coder:30b-32k": {
+          "name": "Qwen3 Coder 30B (32k ctx)",
+          "tool_call": true
+        }
+      }
+    },
+    "opencode": {
+      "api_base": "https://opencode.ai/api",
+      "models": {
+        "nemotron-3-ultra-free": {
+          "name": "Nemotron 3 Ultra (Free)",
+          "tool_call": true
+        },
+        "nemotron-3.5-lightning-free": {
+          "name": "Nemotron 3.5 Lightning (Free)",
+          "tool_call": true
+        },
+        "big-pickle": {
+          "name": "Big Pickle",
+          "tool_call": true
+        },
+        "hy3-free": {
+          "name": "HY3 Free",
+          "tool_call": true
+        },
+        "x-preview-f-free": {
+          "name": "X Preview F Free",
+          "tool_call": true
+        },
+        "mimo-v2.5-free": {
+          "name": "MIMO v2.5 Free",
+          "tool_call": true
+        },
+        "muse-spark-1.2-contributor-free": {
+          "name": "Muse Spark 1.2 Contributor Free",
+          "tool_call": true
         }
       }
     }
   },
-  "small_model": "nvidia/deepseek-ai/deepseek-v4-flash"
+  "model": "opencode/nemotron-3-ultra-free",
+  "small_model": "opencode/nemotron-3.5-lightning-free"
 }
