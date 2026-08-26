@@ -113,10 +113,13 @@
         },
         "openai/gpt-oss-20b": {
           "name": "GPT-OSS 20B"
+        },
+        "moonshotai/kimi-k3": {
+          "name": "Kimi K3"
         }
       }
     }
   },
-  "model": "nvidia/z-ai/glm-5.2",
+  "model": "nvidia/moonshotai/kimi-k3",
   "small_model": "nvidia/openai/gpt-oss-20b"
 }

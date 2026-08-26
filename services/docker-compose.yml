@@ -15,7 +15,7 @@
 
 services:
   ollama:
-    image: docker.io/ollama/ollama:0.31.2
+    image: docker.io/ollama/ollama:0.33.0
     container_name: ollama
     pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
@@ -58,7 +58,7 @@ services:
       start_period: 30s
 
   vault:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault
     pull_policy: missing
     cap_add:
@@ -100,7 +100,7 @@ services:
 
   # Vault Agent sidecar for PostgreSQL (runs alongside postgres)
   vault-agent-postgres:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault-agent-postgres
     pull_policy: missing
     cap_drop:
@@ -134,7 +134,7 @@ services:
 
   # Vault Agent sidecar for Open WebUI (runs alongside open-webui)
   vault-agent-openwebui:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault-agent-openwebui
     pull_policy: missing
     cap_drop:
@@ -168,7 +168,7 @@ services:
 
   # Bootstrap service for PostgreSQL Vault KV password
   vault-agent-postgres-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault-agent-postgres-bootstrap
     pull_policy: missing
     cap_drop:
@@ -204,7 +204,7 @@ services:
 
   # Bootstrap service for Open WebUI Vault KV password
   vault-agent-openwebui-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault-agent-openwebui-bootstrap
     pull_policy: missing
     cap_drop:
@@ -240,7 +240,7 @@ services:
 
   # Bootstrap service for pgAdmin Vault KV password
   vault-agent-pgadmin-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault-agent-pgadmin-bootstrap
     pull_policy: missing
     cap_drop:
@@ -276,7 +276,7 @@ services:
 
   # Bootstrap service for Grafana Vault KV password
   vault-agent-grafana-bootstrap:
-    image: docker.io/hashicorp/vault:2.0.3
+    image: docker.io/hashicorp/vault:2.0.4
     container_name: vault-agent-grafana-bootstrap
     pull_policy: missing
     cap_drop:
@@ -311,7 +311,7 @@ services:
       - no-new-privileges:true
 
   postgres:
-    image: docker.io/postgres:18.4
+    image: docker.io/postgres:18.6
     container_name: postgres
     pull_policy: missing
     user: "999:999"  # Run as postgres user (official image default)
@@ -360,7 +360,7 @@ services:
       retries: 3
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.10.2
+    image: ghcr.io/open-webui/open-webui:v0.11.1
     container_name: open-webui
     pull_policy: missing
     volumes:
@@ -469,7 +469,7 @@ services:
     entrypoint: ["/usr/local/bin/pgadmin-entrypoint.sh"]
 
   prometheus:
-    image: docker.io/prom/prometheus:v3.13.1
+    image: docker.io/prom/prometheus:v3.14.0
     container_name: prometheus
     pull_policy: missing
     cap_drop:
@@ -507,7 +507,7 @@ services:
       retries: 3
 
   alertmanager:
-    image: docker.io/prom/alertmanager:v0.33.1
+    image: docker.io/prom/alertmanager:v0.34.0
     container_name: alertmanager
     pull_policy: missing
     cap_drop:
@@ -541,7 +541,7 @@ services:
       retries: 3
 
   grafana:
-    image: docker.io/grafana/grafana:13.1.0
+    image: docker.io/grafana/grafana:13.2.0
     container_name: grafana
     pull_policy: missing
     cap_drop:
@@ -617,7 +617,7 @@ services:
       - '--docker_only=true'
 
   node-exporter:
-    image: docker.io/prom/node-exporter:v1.12.0
+    image: docker.io/prom/node-exporter:v1.12.1
     container_name: node-exporter
     pull_policy: missing
     user: "65534:65534"  # node-exporter user (official image default) - avoids 'nobody' ambiguity
@@ -685,7 +685,7 @@ services:
           memory: 64M
 
   nvidia-gpu-exporter:
-    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.10.0
+    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.14.0
     container_name: nvidia-gpu-exporter
     pull_policy: missing
     cap_drop:
@@ -742,7 +742,7 @@ services:
       retries: 3
 
   json-exporter:
-    image: docker.io/prometheuscommunity/json-exporter:v0.7.0
+    image: docker.io/prometheuscommunity/json-exporter:v0.8.0
     container_name: json-exporter
     pull_policy: missing
     cap_drop:
@@ -775,7 +775,7 @@ services:
       retries: 3
 
   loki:
-    image: docker.io/grafana/loki:3.7.3
+    image: docker.io/grafana/loki:3.7.6
     container_name: loki
     pull_policy: missing
     cap_drop:
