@@ -5,6 +5,41 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.69] - 2026-08-26
+
+### Summary
+
+Maintenance release: recurring OpenCode default-model EOL fixes and a new model-liveness check, a reverted stale-branch config regression, routine stack service image updates, and an Ollama runtime-core bump -- all verified live.
+
+### Added
+
+- [x] **Delegate skill shared server, default-model delegation, bounded parallelism (closes #2018)**: shared `opencode serve` process with `--attach`, no hardcoded model, 2-tier fallback, up to 3 concurrent delegations.
+- [x] **Dynamic OpenCode model liveness check (closes #2026)**: `./aixcl checks models` derives the model list from `opencode.json`'s own provider block and probes the configured `model`/`small_model` defaults through the shared server, failing only if a default is dead.
+
+### Changed
+
+- [x] **Bump docker/setup-buildx-action from 4.2.0 to 4.3.0 (closes #2031)**
+- [x] **Bump github/codeql-action from 4 to 4.37.4 (closes #2021)**
+- [x] **Update 10 stack service images to latest patch/minor versions (closes #2036)**: Open WebUI, Grafana, Loki, Vault, PostgreSQL, Prometheus, Alertmanager, Node Exporter, JSON Exporter, NVIDIA GPU Exporter. Verified live at 21/21 services healthy.
+- [x] **Update Ollama from v0.31.2 to v0.33.0 (closes #2037)**: runtime-core bump. Verified live: inference tested against an existing model, OpenAI-compatible endpoint (`/v1/chat/completions`) confirmed responding correctly, 21/21 services healthy.
+
+### Fixed
+
+- [x] **Test-03-stack-status no longer fails on stopped-stack exit code (closes #2020)**
+- [x] **Default OpenCode to NVIDIA model, local as last resort (closes #2016)**
+- [x] **Dead OpenCode default model after NVIDIA deepseek-v4 EOL (closes #2024)**
+- [x] **Dead safety agent model replaced with live nemotron-safety-guard (closes #2028)**: NVIDIA retired `nemotron-3-content-safety`; replaced with `nvidia/llama-3.1-nemotron-safety-guard-8b-v3`.
+- [x] **Reverted PR #2030's stale opencode.json.example regression on main (closes #2033)**: a month-stale branch had been merged directly to `main`, clobbering `dev`'s permission block, provider schema, and live model catalog; restored `dev`'s current state.
+- [x] **Dead OpenCode default model nvidia/z-ai/glm-5.2 (closes #2035)**: NVIDIA retired `z-ai/glm-5.2`; replaced with live-candidate-probed `nvidia/moonshotai/kimi-k3` after confirming tool-call support.
+
+### Documentation
+
+- [x] **Add stale-identifier-after-rename example to delegate skill tier 1**
+- [x] **Document opencode.json server-restart caveat in delegate skill**
+- [x] **Sharpen CLAUDE.md GPG, stack-op, and release guardrails (closes #2023)**
+
+
+
 ## [v1.1.68] - 2026-07-24
 
 ### Summary
