@@ -15,7 +15,7 @@
 
 services:
   ollama:
-    image: docker.io/ollama/ollama:0.33.0
+    image: docker.io/ollama/ollama:0.34.1
     container_name: ollama
     pull_policy: missing
     user: "0:0"  # Start as root to set permissions, entrypoint switches to ubuntu user
@@ -360,7 +360,7 @@ services:
       retries: 3
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.11.1
+    image: ghcr.io/open-webui/open-webui:v0.11.3
     container_name: open-webui
     pull_policy: missing
     volumes:
@@ -425,7 +425,7 @@ services:
       start_period: 60s
 
   pgadmin:
-    image: docker.io/dpage/pgadmin4:9.15.0
+    image: docker.io/dpage/pgadmin4:9.18.0
     container_name: pgadmin
     pull_policy: missing
     network_mode: host
@@ -507,7 +507,7 @@ services:
       retries: 3
 
   alertmanager:
-    image: docker.io/prom/alertmanager:v0.34.0
+    image: docker.io/prom/alertmanager:v0.34.1
     container_name: alertmanager
     pull_policy: missing
     cap_drop:
@@ -541,7 +541,7 @@ services:
       retries: 3
 
   grafana:
-    image: docker.io/grafana/grafana:13.2.0
+    image: docker.io/grafana/grafana:13.2.2
     container_name: grafana
     pull_policy: missing
     cap_drop:
@@ -685,7 +685,7 @@ services:
           memory: 64M
 
   nvidia-gpu-exporter:
-    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.14.0
+    image: docker.io/utkuozdemir/nvidia_gpu_exporter:1.15.1
     container_name: nvidia-gpu-exporter
     pull_policy: missing
     cap_drop:
@@ -775,7 +775,7 @@ services:
       retries: 3
 
   loki:
-    image: docker.io/grafana/loki:3.7.6
+    image: docker.io/grafana/loki:3.7.8
     container_name: loki
     pull_policy: missing
     cap_drop:

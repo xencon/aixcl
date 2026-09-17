@@ -4,6 +4,8 @@ Command blocks for each housekeeping step. Run from the repository root.
 
 ## Contents
 
+- Status report template and priority ordering (Step 12)
+- Common mistakes
 - Step 2: Branch hygiene
 - Step 3: Issue and PR hygiene
 - Step 4: Line endings
@@ -13,6 +15,47 @@ Command blocks for each housekeeping step. Run from the repository root.
 - Step 9: Shellcheck sweep
 - Step 10: UPSTREAM-ISSUES.md staleness
 - Step 11: Agent scratch/temp file hygiene
+
+## Status report template (Step 12)
+
+Compile the single report as a table, columns `#`, `Step`, `Status`,
+`Findings`. Status is one of `clean` / `warning` / `critical` (`critical`
+reserved for steps 6-7, which are P1 findings). This file stays ASCII per
+repo convention (no skill file uses emoji -- keep it that way); when you
+render the report live in chat, show Status as a colored indicator (green
+for clean, yellow for warning, red for critical) for readability -- the
+color exists only in the rendered output, never in this source file.
+
+| # | Step | Status | Findings |
+|---|------|--------|----------|
+| 0 | Memory recall | -- | in-progress work / blockers |
+| 1 | Mechanical sweep | clean/critical | |
+| 2 | Branch hygiene | clean/warning | |
+| 3 | Issue/PR hygiene | clean/warning | |
+| 4 | Line endings | clean/warning | |
+| 5 | Env file integrity | clean/warning | |
+| 6 | File permissions | clean/critical | |
+| 7 | Secret scanning | clean/critical | |
+| 8 | Image pin hygiene | clean/warning | |
+| 9 | Shellcheck sweep | clean/warning | |
+| 10 | UPSTREAM-ISSUES.md | clean/warning | |
+| 11 | Scratch/temp hygiene | clean/warning | |
+
+Follow with a recommended priority order for anything found (critical
+findings from steps 6 and 7 are P1; other findings become follow-up issues
+before the next release) and **wait for direction**.
+
+## Common Mistakes
+
+- Fixing findings directly on `dev` -- use a housekeeping branch and the
+  issue-first workflow (or the documented override) for anything beyond
+  branch deletion and fork sync
+- Treating a gitleaks finding in a gitignored runtime file as a repo leak --
+  allowlist the path in `.gitleaks.toml` instead
+- Deleting a remote branch that has an open PR -- check the PR state is
+  MERGED first (a closed PR is not a merged PR)
+- Running delegated checks in parallel -- the delegation log is
+  sequential-only
 
 ## Step 2: Branch hygiene
 

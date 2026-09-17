@@ -9,7 +9,7 @@ compatibility: OpenCode, Claude Code
 disable-model-invocation: true
 metadata:
   category: workflow
-  version: "2.1"
+  version: "2.2"
 ---
 
 # Skill: release
@@ -20,6 +20,9 @@ Cut an AIXCL release. The mechanics live in `./aixcl release` -- this skill
 supplies the judgment steps around them (retrospective content, changelog
 editing, announcement) and the order in which everything runs. GPG commits
 and merge decisions always stay with the human operator.
+
+**Discussion post templates and common mistakes:**
+[references/release-templates.md](references/release-templates.md)
 
 ## When to Run
 
@@ -53,32 +56,8 @@ release or sync PRs. Resolve anything unexpected before continuing.
 
 ### Step 2 -- Pre-Release Retrospective (judgment)
 
-Open a dedicated discussion thread and post agent observations. This step is
-advisory -- the human may proceed once formal CI and review checks are
-complete, even if one agent has nothing material to add.
-
-```bash
-# Repository and category IDs are xencon/aixcl constants; re-derive with
-# `gh api graphql` repository/discussionCategories queries if they change
-gh api graphql -f query='
-mutation {
-  createDiscussion(input: {
-    repositoryId: "R_kgDOMOfaEA",
-    categoryId: "DIC_kwDOMOfaEM4C_SO-",
-    title: "Release v1.1.N retrospective",
-    body: "Pre-release retrospective for v1.1.N.\n\nBoth agents post observations below: what landed, what was deferred, and any open concerns before the tag goes out."
-  }) {
-    discussion { url number id }
-  }
-}'
-```
-
-- [ ] This agent has posted its retrospective (what landed, what was deferred, open concerns)
-- [ ] The other agent has posted its retrospective, or confirmed nothing material to add
-- [ ] Human has reviewed and confirmed readiness to proceed
-
-Each agent post must include the standard agent identification block
-(AGENTS.md Section 9.5). Link the thread URL in the release PR body.
+Open a dedicated discussion thread and post agent observations before
+proceeding. Template and checklist in the reference.
 
 ### Step 3 -- Prep
 
@@ -111,25 +90,10 @@ and waits for the GitHub release to publish.
 
 ### Step 5 -- Announcement (judgment)
 
-Post a release announcement in the Announcements discussion category:
-
-```bash
-gh api graphql -f query='
-mutation {
-  createDiscussion(input: {
-    repositoryId: "R_kgDOMOfaEA",
-    categoryId: "DIC_kwDOMOfaEM4C_R_w",
-    title: "AIXCL v1.1.N -- <headline>",
-    body: "<what shipped, what users need to know, migration notes, changelog link>"
-  }) {
-    discussion { url number }
-  }
-}'
-```
-
-Cover: the headline change, what users must do (if anything), anything
-removed or deprecated, and a link to the release page and CHANGELOG. Include
-the agent identification block.
+Post a release announcement in the Announcements discussion category.
+Template in the reference. Cover: the headline change, what users must do
+(if anything), anything removed or deprecated, and a link to the release
+page and CHANGELOG. Include the agent identification block.
 
 ### Step 6 -- Finish
 
@@ -148,18 +112,4 @@ release branches, and closes any lingering release/sync issues.
 - [ ] Release and sync issues closed
 - [ ] Announcement posted
 
-## Common Mistakes
-
-- Tagging before the release PR is merged (`release tag` guards this by
-  checking the changelog on upstream main -- do not bypass it)
-- Editing CHANGELOG.md with non-ASCII punctuation (CI fails the ASCII check)
-- Comma-packed references in the PR body -- `create-pr.sh` validates this,
-  raw `gh pr create` does not
-- Force-push race: if the release branch is force-pushed while the PR is
-  open, confirm `gh pr view <N> --json headRefOid` matches `git log
-  --oneline -1` before the human merges. A PR merged seconds before an
-  amend lands cannot be fixed afterward
-- Closing a PR instead of merging it -- check `state=MERGED`, not just
-  "the PR is no longer open," before cleaning up branches
-- Pre-commit trailing whitespace: the hook already fixed the files; re-run
-  `git add` and retry the commit -- never use `--no-verify`
+See the reference for common mistakes to avoid at each step.
