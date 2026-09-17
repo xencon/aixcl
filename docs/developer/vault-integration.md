@@ -197,6 +197,63 @@ If GPG decryption fails ("Is your GPG key available?"), check:
 gpg --list-secret-keys
 ```
 
+### Vault Reports "These Unseal Keys Do Not Match This Vault Instance's Data"
+
+`.security/vault-keys.gpg` no longer corresponds to the `aixcl-vault-data`
+volume's actual contents -- typically because the volume was reset or
+restored independently of the key file (e.g. a manual `podman volume rm`,
+or a restored backup that didn't bring its matching keys along). The three
+key shares decrypt and submit fine individually, but Vault's own decrypt at
+the threshold submission fails with `cipher: message authentication failed`
+-- `vault-init.sh` and `vault-unseal.sh` detect that specific signature and
+report it directly instead of a generic "still sealed" message (#2051).
+
+This is unrecoverable without the correct key shares. Recovery wipes and
+reinitializes Vault:
+
+```bash
+# Removing the stale key file triggers vault-init.sh's documented
+# split-state self-heal (wipe aixcl-vault-data, fresh operator init)
+rm -f .security/vault-keys.gpg .security/vault-root-token.gpg
+./aixcl vault init
+```
+
+**If PostgreSQL's data volume was kept** (the common case -- only Vault was
+reset), Postgres still has the *old* admin password baked into its data
+directory, while the fresh Vault init generates a *new* one. The bootstrap
+containers only sync this on Postgres's very first boot; on a subsequent
+start with existing data, `postgres-secret-entrypoint.sh`'s rotation-sync
+depends on an `OLD_POSTGRES_PASSWORD` that nothing actually sets after a
+Vault-only reinit, so it silently no-ops instead of reconciling. You'll see
+this as `password authentication failed for user "admin"` in the Open WebUI
+(or other Postgres-dependent service) logs. Reconcile manually:
+
+```bash
+# Fetch the fresh password Vault just generated (never echo it)
+ROOT_TOKEN=$(gpg --quiet --decrypt .security/vault-root-token.gpg 2>/dev/null)
+PG_PASSWORD=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+  "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" | jq -r '.data.data.password')
+
+# Temporarily allow local trust auth to apply it without the old password
+podman exec postgres cp /var/lib/postgresql/18/docker/pg_hba.conf /tmp/pg_hba.conf.bak
+podman exec postgres sh -c "echo 'local all all trust' > /var/lib/postgresql/18/docker/pg_hba.conf"
+podman exec -u 999 postgres pg_ctl reload -D /var/lib/postgresql/18/docker
+
+podman exec -u 999 postgres psql -U admin -d postgres \
+  -c "ALTER ROLE admin WITH PASSWORD '${PG_PASSWORD}';"
+
+# Revert immediately -- do not leave local trust auth enabled
+podman exec postgres cp /tmp/pg_hba.conf.bak /var/lib/postgresql/18/docker/pg_hba.conf
+podman exec -u 999 postgres pg_ctl reload -D /var/lib/postgresql/18/docker
+
+unset ROOT_TOKEN PG_PASSWORD
+./aixcl service start open-webui
+```
+
+Adjust the Postgres major-version path (`/var/lib/postgresql/18/docker`) to
+match the running image if it differs. This gap in the automatic sync path
+is tracked in #2059.
+
 ### Credentials Not Rotating
 
 ```bash
