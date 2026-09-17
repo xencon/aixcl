@@ -5,6 +5,23 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.70] - 2026-09-17
+
+### Summary
+
+Maintenance release: skill authoring cleanup, a stale reference-doc fix, nine routine component bumps verified live, and a caught-and-reverted Vault regression.
+
+### Changed
+
+- [x] **Housekeeping batch: skill sizes, update-reference drift, version bumps (closes #2049)**: split 4 oversized SKILL.md files (delegate, housekeeping, release, add-service) into `references/` for the 5KB progressive-disclosure limit, mirrored byte-identical into `.opencode/skills/`. Fixed stale inventory in the `check-updates` skill's own reference doc (missing blackbox-exporter/json-exporter, stale docker/setup-buildx-action row). Bumped Ollama, Open WebUI, Loki, Alertmanager, Grafana, NVIDIA GPU Exporter, pgAdmin 4, git-cliff, and github/codeql-action to latest. Ollama verified live: v0.34.1 healthy, `/v1/chat/completions` responding correctly with a real inference result.
+
+### Fixed
+
+- [x] **Reverted Vault 2.0.4 -> 2.1.1 bump, breaks unseal of existing storage**: live testing against the real `aixcl-vault-data` volume found `2.1.1` cannot decrypt existing barrier data -- the first two Shamir key shares are accepted normally, but the third fails with `cipher: message authentication failed` once Vault reconstructs the root key. Pin stays at `2.0.4`; migration path tracked in #2051.
+
+
+
+
 ## [v1.1.69] - 2026-08-26
 
 ### Summary
