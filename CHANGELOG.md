@@ -5,6 +5,24 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.70] - 2026-09-17
+
+### Summary
+
+Maintenance release: skill authoring cleanup, a stale reference-doc fix, nine routine component bumps verified live, and clearer Vault unseal-failure diagnostics.
+
+### Changed
+
+- [x] **Housekeeping batch: skill sizes, update-reference drift, version bumps (closes #2049)**: split 4 oversized SKILL.md files (delegate, housekeeping, release, add-service) into `references/` for the 5KB progressive-disclosure limit, mirrored byte-identical into `.opencode/skills/`. Fixed stale inventory in the `check-updates` skill's own reference doc (missing blackbox-exporter/json-exporter, stale docker/setup-buildx-action row). Bumped Ollama, Open WebUI, Loki, Alertmanager, Grafana, NVIDIA GPU Exporter, pgAdmin 4, git-cliff, and github/codeql-action to latest. Ollama verified live: v0.34.1 healthy, `/v1/chat/completions` responding correctly with a real inference result.
+- [x] **Vault stays pinned at 2.0.4 this cycle**: a `2.1.1` bump was drafted and reverted mid-review after an unseal failure was observed against a local test volume; further investigation traced that failure to a stale local key/data pairing on the test machine, unrelated to the Vault version. No storage-format incompatibility was found.
+
+### Fixed
+
+- [x] **Vault reports a clear diagnosis when unseal keys do not match the current storage (closes #2051)**: `vault-init.sh` and `vault-unseal.sh` now inspect Vault's own `/v1/sys/unseal` response at the threshold-reached submission. A genuine key/data mismatch returns a distinct `cipher: message authentication failed` error, now surfaced with the wipe-and-reinit recovery command instead of a generic "still sealed" message. Live-verified against a real mismatched instance, a real successful unseal, and a malformed-share failure (correctly falls through to the generic message).
+
+
+
+
 ## [v1.1.69] - 2026-08-26
 
 ### Summary
