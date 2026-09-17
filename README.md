@@ -63,8 +63,8 @@ curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleak
 sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
 
 # git-cliff 2.x -- changelog generation (required for the release skill)
-curl -sSL https://github.com/orhun/git-cliff/releases/download/v2.13.1/git-cliff-2.13.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /tmp
-sudo mv /tmp/git-cliff-2.13.1-x86_64-unknown-linux-gnu/git-cliff /usr/local/bin/git-cliff
+curl -sSL https://github.com/orhun/git-cliff/releases/download/v2.14.1/git-cliff-2.14.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /tmp
+sudo mv /tmp/git-cliff-2.14.1-x86_64-unknown-linux-gnu/git-cliff /usr/local/bin/git-cliff
 ```
 
 > **VM users (QEMU/SLIRP networking):** If image pulls fail mid-download, add the following to `/etc/docker/daemon.json` to work around MTU limitations:
