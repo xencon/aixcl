@@ -390,16 +390,33 @@ vault_unseal_if_needed() {
         return 1
     }
 
+    local last_response
+    last_response=""
     for i in 0 1 2; do
-        local key
+        local key resp_file
         key=$(echo "$keys_json" | jq -r ".unseal_keys_b64[$i]")
-        curl -sf -X PUT "${VAULT_ADDR}/v1/sys/unseal" \
+        resp_file=$(mktemp)
+        curl -s -o "$resp_file" -X PUT "${VAULT_ADDR}/v1/sys/unseal" \
             -H "Content-Type: application/json" \
-            -d "{\"key\": \"${key}\"}" >/dev/null 2>&1 || true
+            -d "{\"key\": \"${key}\"}" 2>/dev/null || true
+        last_response=$(cat "$resp_file" 2>/dev/null)
+        rm -f "$resp_file"
     done
 
     if is_vault_sealed; then
-        log_error "Vault is still sealed after submitting 3 key shares"
+        # Vault's own response at the failing threshold submission distinguishes
+        # "these keys do not belong to this instance's data" from other sealed
+        # states -- surface that instead of a generic retry-suggesting message
+        # (#2051: a stale .security/vault-keys.gpg vs. a reset/restored
+        # aixcl-vault-data volume produces exactly this signature).
+        if echo "$last_response" | grep -q "cipher: message authentication failed"; then
+            log_error "These unseal keys do not match this Vault instance's data."
+            log_error "  ${VAULT_KEYS_FILE} was likely generated for a different"
+            log_error "  initialization of the aixcl-vault-data volume."
+            log_error "  Recovery: ./aixcl vault init will wipe and reinitialize Vault (destructive)."
+        else
+            log_error "Vault is still sealed after submitting 3 key shares"
+        fi
         return 1
     fi
     log_info "Vault unsealed successfully"
