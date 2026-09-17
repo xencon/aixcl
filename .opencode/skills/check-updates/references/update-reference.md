@@ -33,6 +33,8 @@ grep "image:" services/docker-compose.yml | grep -v "#" | \
 | Loki | `grafana/loki:<tag>` | GitHub releases |
 | cAdvisor | `ghcr.io/google/cadvisor:<tag>` | GitHub releases |
 | Node Exporter | `prom/node-exporter:<tag>` | GitHub releases |
+| Blackbox Exporter | `prom/blackbox-exporter:<tag>` | GitHub releases |
+| JSON Exporter | `prometheuscommunity/json-exporter:<tag>` | GitHub releases |
 | Postgres Exporter | `prometheuscommunity/postgres-exporter:<tag>` | GitHub releases |
 | NVIDIA GPU Exporter | `utkuozdemir/nvidia_gpu_exporter:<tag>` | GitHub releases |
 
@@ -60,7 +62,6 @@ grep -rh "uses:" .github/workflows/ | grep -v "#" | grep "@" | \
 |--------|-----------|
 | actions/checkout | bash-ci.yml, codeql.yml, security.yml, others |
 | actions/dependency-review-action | dependency-review.yml |
-| docker/setup-buildx-action | bash-ci.yml |
 | github/codeql-action/init | codeql.yml |
 | github/codeql-action/analyze | codeql.yml |
 
@@ -91,7 +92,9 @@ for repo in \
   "prometheus/alertmanager" \
   "grafana/grafana" \
   "prometheus/node_exporter" \
+  "prometheus/blackbox_exporter" \
   "prometheus-community/postgres_exporter" \
+  "prometheus-community/json_exporter" \
   "utkuozdemir/nvidia_gpu_exporter"; do
   latest=$(gh api repos/$repo/releases/latest --jq '.tag_name' 2>/dev/null || echo "N/A")
   echo "$repo: $latest"
@@ -119,7 +122,6 @@ for repo in \
   "koalaman/shellcheck" \
   "actions/checkout" \
   "actions/dependency-review-action" \
-  "docker/setup-buildx-action" \
   "github/codeql-action"; do
   latest=$(gh api repos/$repo/releases/latest --jq '.tag_name' 2>/dev/null || echo "N/A")
   echo "$repo: $latest"
