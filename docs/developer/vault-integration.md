@@ -220,39 +220,17 @@ rm -f .security/vault-keys.gpg .security/vault-root-token.gpg
 
 **If PostgreSQL's data volume was kept** (the common case -- only Vault was
 reset), Postgres still has the *old* admin password baked into its data
-directory, while the fresh Vault init generates a *new* one. The bootstrap
-containers only sync this on Postgres's very first boot; on a subsequent
-start with existing data, `postgres-secret-entrypoint.sh`'s rotation-sync
-depends on an `OLD_POSTGRES_PASSWORD` that nothing actually sets after a
-Vault-only reinit, so it silently no-ops instead of reconciling. You'll see
-this as `password authentication failed for user "admin"` in the Open WebUI
-(or other Postgres-dependent service) logs. Reconcile manually:
+directory, while the fresh Vault init generates a *new* one.
+`postgres-secret-entrypoint.sh` reconciles this on every Postgres start: it
+runs a temporary socket-only server with local trust auth in a private
+directory, sets the admin role's password to the current Vault secret, then
+hands off to the normal startup (#2059). No manual step is needed -- restart
+Postgres, then any dependent service that already failed to connect:
 
 ```bash
-# Fetch the fresh password Vault just generated (never echo it)
-ROOT_TOKEN=$(gpg --quiet --decrypt .security/vault-root-token.gpg 2>/dev/null)
-PG_PASSWORD=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
-  "http://127.0.0.1:8200/v1/kv/data/bootstrap/postgres" | jq -r '.data.data.password')
-
-# Temporarily allow local trust auth to apply it without the old password
-podman exec postgres cp /var/lib/postgresql/18/docker/pg_hba.conf /tmp/pg_hba.conf.bak
-podman exec postgres sh -c "echo 'local all all trust' > /var/lib/postgresql/18/docker/pg_hba.conf"
-podman exec -u 999 postgres pg_ctl reload -D /var/lib/postgresql/18/docker
-
-podman exec -u 999 postgres psql -U admin -d postgres \
-  -c "ALTER ROLE admin WITH PASSWORD '${PG_PASSWORD}';"
-
-# Revert immediately -- do not leave local trust auth enabled
-podman exec postgres cp /tmp/pg_hba.conf.bak /var/lib/postgresql/18/docker/pg_hba.conf
-podman exec -u 999 postgres pg_ctl reload -D /var/lib/postgresql/18/docker
-
-unset ROOT_TOKEN PG_PASSWORD
-./aixcl service start open-webui
+./aixcl service restart postgres
+./aixcl service restart open-webui
 ```
-
-Adjust the Postgres major-version path (`/var/lib/postgresql/18/docker`) to
-match the running image if it differs. This gap in the automatic sync path
-is tracked in #2059.
 
 ### Credentials Not Rotating
 
