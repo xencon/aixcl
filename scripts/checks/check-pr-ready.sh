@@ -89,7 +89,7 @@ echo "========================================"
 # --- Fetch PR ---
 info "Fetching PR #${PR_NUMBER}..."
 PR_JSON=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
-    --json title,body,state,isDraft,assignees,labels 2>/dev/null) || {
+    --json title,body,state,isDraft,assignees,labels,author 2>/dev/null) || {
     echo "Could not fetch PR #${PR_NUMBER} from ${REPO}"
     exit 1
 }
@@ -98,6 +98,7 @@ PR_TITLE=$(jq -r '.title' <<<"$PR_JSON")
 PR_BODY=$(jq -r '.body' <<<"$PR_JSON")
 PR_STATE=$(jq -r '.state' <<<"$PR_JSON")
 PR_DRAFT=$(jq -r '.isDraft' <<<"$PR_JSON")
+PR_AUTHOR=$(jq -r '.author.login' <<<"$PR_JSON")
 
 # --- PR state ---
 info "Checking PR state..."
@@ -106,14 +107,23 @@ info "Checking PR state..."
 
 # --- PR title format ---
 info "Checking PR title format..."
-if [[ "$PR_TITLE" == *:* ]]; then
-    error "PR title contains a colon: ${PR_TITLE}"
-fi
-if [[ ! "$PR_TITLE" =~ \(#([0-9]+)\)$ ]]; then
-    error "PR title must end with '(#<number>)': ${PR_TITLE}"
-    ISSUE_NUMBER=""
+ISSUE_NUMBER=""
+# Mirror pr-validation.yml: Dependabot writes its own title (commit-prefix
+# colon, no issue reference) so it is exempt outright (#1923); [OVERRIDE]
+# PRs have no issue by design, so only the reference is optional (#1947).
+if [[ "$PR_AUTHOR" =~ ^(app/)?dependabot(\[bot\])?$ ]]; then
+    info "Dependabot PR -- skipping title format and linked-issue checks"
 else
-    ISSUE_NUMBER="${BASH_REMATCH[1]}"
+    if [[ "$PR_TITLE" == *:* ]]; then
+        error "PR title contains a colon: ${PR_TITLE}"
+    fi
+    if [[ "$PR_TITLE" =~ \(#([0-9]+)\)$ ]]; then
+        ISSUE_NUMBER="${BASH_REMATCH[1]}"
+    elif [[ "$PR_TITLE" == "[OVERRIDE] "* ]]; then
+        info "OVERRIDE PR -- no linked issue required"
+    else
+        error "PR title must end with '(#<number>)': ${PR_TITLE}"
+    fi
 fi
 
 # --- PR assignee and labels ---
