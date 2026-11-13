@@ -197,6 +197,41 @@ If GPG decryption fails ("Is your GPG key available?"), check:
 gpg --list-secret-keys
 ```
 
+### Vault Reports "These Unseal Keys Do Not Match This Vault Instance's Data"
+
+`.security/vault-keys.gpg` no longer corresponds to the `aixcl-vault-data`
+volume's actual contents -- typically because the volume was reset or
+restored independently of the key file (e.g. a manual `podman volume rm`,
+or a restored backup that didn't bring its matching keys along). The three
+key shares decrypt and submit fine individually, but Vault's own decrypt at
+the threshold submission fails with `cipher: message authentication failed`
+-- `vault-init.sh` and `vault-unseal.sh` detect that specific signature and
+report it directly instead of a generic "still sealed" message (#2051).
+
+This is unrecoverable without the correct key shares. Recovery wipes and
+reinitializes Vault:
+
+```bash
+# Removing the stale key file triggers vault-init.sh's documented
+# split-state self-heal (wipe aixcl-vault-data, fresh operator init)
+rm -f .security/vault-keys.gpg .security/vault-root-token.gpg
+./aixcl vault init
+```
+
+**If PostgreSQL's data volume was kept** (the common case -- only Vault was
+reset), Postgres still has the *old* admin password baked into its data
+directory, while the fresh Vault init generates a *new* one.
+`postgres-secret-entrypoint.sh` reconciles this on every Postgres start: it
+runs a temporary socket-only server with local trust auth in a private
+directory, sets the admin role's password to the current Vault secret, then
+hands off to the normal startup (#2059). No manual step is needed -- restart
+Postgres, then any dependent service that already failed to connect:
+
+```bash
+./aixcl service restart postgres
+./aixcl service restart open-webui
+```
+
 ### Credentials Not Rotating
 
 ```bash

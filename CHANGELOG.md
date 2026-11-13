@@ -5,6 +5,29 @@ All notable changes to the AIXCL project will be documented in this file.
 ## [Unreleased]
 
 
+## [v1.1.71] - 2026-11-13
+
+### Summary
+
+Maintenance release: PostgreSQL now resyncs its admin password from Vault on every start, so a Vault-only reinit no longer breaks Postgres-dependent services; the merge-readiness gate matches CI for Dependabot and override PRs; three GitHub Actions bumps.
+
+### Changed
+
+- [x] **Bump docker/setup-buildx-action from 4.3.0 to 4.4.1 (closes #2062)**
+- [x] **Bump softprops/action-gh-release from 3.0.3 to 3.0.4 (closes #2067)**
+- [x] **Bump github/codeql-action from 4.38.0 to 4.39.3 (closes #2068)**
+
+### Fixed
+
+- [x] **PostgreSQL admin password resyncs from Vault on every start (closes #2059)**: `postgres-secret-entrypoint.sh` previously only rotated the password when an `OLD_POSTGRES_PASSWORD` was supplied, which nothing ever set, so a Vault-only reinit against kept Postgres data left Open WebUI and other dependents failing authentication. The entrypoint now runs a temporary socket-only server (no TCP listener, trust auth confined to a private 0700 directory), sets the admin role to the current Vault secret, then starts normally. The password is passed on stdin and SQL-escaped. New `tests/workflow-tests/test-postgres-password-resync.sh` covers first init, plain restart, Vault-only reinit, and a metacharacter password in a throwaway container. Live full-stack verification deferred to post-release.
+- [x] **Merge-readiness gate mirrors CI title exemptions (closes #2069)**: `./aixcl checks pr-ready` no longer blocks green Dependabot PRs on title format and accepts `[OVERRIDE]` PRs without an issue reference, matching `pr-validation.yml`.
+
+### Documentation
+
+- [x] **Vault key/data mismatch recovery documented (closes #2051)**: `docs/developer/vault-integration.md` covers the wipe-and-reinit path; its manual Postgres `ALTER ROLE` step is superseded by the automatic resync above.
+
+
+
 ## [v1.1.70] - 2026-09-17
 
 ### Summary

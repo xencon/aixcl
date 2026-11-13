@@ -6,8 +6,12 @@
 # the first volume creation. On subsequent restarts, the database exists but
 # the password may have changed (Vault generates new dynamic passwords).
 #
-# Solution: Start postgres temporarily via pg_ctl, ALTER USER the password,
-# then start normally via the official docker-entrypoint.sh.
+# Solution: Start postgres temporarily via pg_ctl with no TCP listener and a
+# trust-only pg_hba on a private socket directory, ALTER ROLE the password to
+# the Vault secret, then start normally via the official docker-entrypoint.sh.
+# This needs no knowledge of the previous password, so it also recovers a
+# Vault-only reinit against existing data (#2059). The official image uses
+# the same no-TCP temporary-server technique during initdb.
 #
 # Usage in docker-compose.yml:
 #   entrypoint: ["/usr/local/bin/postgres-secret-entrypoint.sh"]
@@ -56,64 +60,39 @@ fi
 if [ -n "$VAULT_PASS" ] && [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
     echo "[Vault] Database already initialized (PGDATA exists). Syncing password..."
 
-    # The DB is running as user 999 (postgres). pg_ctl must run as that user.
-    # The official image entrypoint does not start postgres until after initdb,
-    # so here we start it ourselves, update the password, then stop it.
-
-    # Temporarily set the password env vars so pg_ctl can start successfully.
-    # If the old password is still in POSTGRES_PASSWORD (e.g. from .env),
-    # pg_hba.conf checks md5/scram and the server will accept.
-    # Then we connect via TCP (not socket — to avoid peer auth issues) to ALTER USER.
-
-    # Save original values
-    OLD_POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
-
-    # Set Vault password so the server starts with the correct secrets
-    export POSTGRES_PASSWORD="$VAULT_PASS"
-    export PGPASSWORD="$VAULT_PASS"
+    # Private socket dir and hba file, readable only by the postgres user.
+    # listen_addresses='' means no TCP at all, so trust auth is reachable
+    # only through this 0700 directory for the lifetime of the sync.
+    SYNC_DIR=$(mktemp -d /tmp/pg-sync.XXXXXX)
+    chmod 700 "$SYNC_DIR"
+    echo "local all all trust" > "$SYNC_DIR/pg_hba.conf"
 
     echo "[Vault] Starting PostgreSQL temporarily for password sync..."
-    pg_ctl -D "$PGDATA" start -o "-h 127.0.0.1" -l /tmp/pg_sync.log
+    pg_ctl -D "$PGDATA" -w -t 60 -l "$SYNC_DIR/pg_sync.log" start \
+        -o "-c listen_addresses='' -c unix_socket_directories=$SYNC_DIR -c hba_file=$SYNC_DIR/pg_hba.conf" || {
+        echo "[Vault] ERROR: temporary PostgreSQL failed to start"
+        cat "$SYNC_DIR/pg_sync.log"
+        exit 1
+    }
 
-    # Wait for PostgreSQL to be ready via TCP
-    pg_ready=false
-    for i in $(seq 1 60); do
-        if pg_isready -h 127.0.0.1 -p 5432 -U "${POSTGRES_USER}" >/dev/null 2>&1; then
-            pg_ready=true
-            break
-        fi
-        echo "[Vault] Waiting for PostgreSQL to be ready... ($i/30)"
-        sleep 2
-    done
-
-    if [ "$pg_ready" = false ]; then
-        echo "[Vault] Warning: PostgreSQL did not become ready, skipping password sync"
-    elif [ -z "${OLD_POSTGRES_PASSWORD:-}" ]; then
-        # No OLD_POSTGRES_PASSWORD — normal restart with no rotation.
-        # The DB was initialized with VAULT_PASS; no ALTER USER needed.
-        echo "[Vault] No OLD_POSTGRES_PASSWORD set — DB already uses Vault password, skipping sync"
+    # Pass the password via stdin (not argv) with single quotes doubled for
+    # SQL; the role name is double-quoted as an identifier.
+    ESCAPED_PASS=$(printf '%s' "$VAULT_PASS" | sed "s/'/''/g")
+    if printf 'ALTER ROLE "%s" WITH PASSWORD '"'"'%s'"'"';\n' "$POSTGRES_USER" "$ESCAPED_PASS" | \
+        psql -X -q -v ON_ERROR_STOP=1 -h "$SYNC_DIR" -U "$POSTGRES_USER" -d postgres \
+            > /dev/null 2>> "$SYNC_DIR/pg_sync.log"; then
+        echo "[Vault] PostgreSQL admin password synced to Vault secret"
     else
-        # Rotation case: connect with OLD password and change to new Vault password.
-        export PGPASSWORD="${OLD_POSTGRES_PASSWORD}"
-        echo "[Vault] Updating PostgreSQL admin password to match Vault secret..."
-        psql -U "${POSTGRES_USER}" -h 127.0.0.1 -d "${POSTGRES_DATABASE}" \
-            -Atc "ALTER USER ${POSTGRES_USER} WITH PASSWORD '${VAULT_PASS}';" 2> /tmp/pg_sync.log && \
-            echo "[Vault] Password updated successfully" && \
-            echo "[Vault] PostgreSQL will restart with new password"
+        echo "[Vault] Warning: password sync failed, see log below"
+        cat "$SYNC_DIR/pg_sync.log"
     fi
 
     echo "[Vault] Stopping temporary PostgreSQL instance..."
-    pg_ctl -D "$PGDATA" stop -m fast
+    pg_ctl -D "$PGDATA" -w stop -m fast
+    rm -rf "$SYNC_DIR"
+    unset ESCAPED_PASS
 
-    # Set password for the official entrypoint.
-    # Rotation: restore OLD so postgres can verify data-dir ownership.
-    # Normal restart: use VAULT_PASS directly (it matches the data dir).
-    if [ -n "${OLD_POSTGRES_PASSWORD:-}" ]; then
-        POSTGRES_PASSWORD="${OLD_POSTGRES_PASSWORD}"
-    else
-        POSTGRES_PASSWORD="$VAULT_PASS"
-    fi
-    export POSTGRES_PASSWORD
+    export POSTGRES_PASSWORD="$VAULT_PASS"
 
     echo "[Vault] Starting PostgreSQL with official entrypoint..."
     echo ""
