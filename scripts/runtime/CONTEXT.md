@@ -14,7 +14,7 @@ via volume mounts defined in `services/docker-compose.yml`.
 | `openwebui-vault-entrypoint.sh` | `openwebui` (vault profile) | Fetches credentials from Vault before starting OpenWebUI. |
 | `pgadmin-entrypoint.sh` | `pgadmin` | Configures pgAdmin servers.json, starts pgAdmin. |
 | `postgres-exporter-entrypoint.sh` | `postgres-exporter` | Waits for postgres, starts exporter. |
-| `postgres-secret-entrypoint.sh` | `postgres` | Injects secrets from Docker secrets into postgres env. |
+| `postgres-secret-entrypoint.sh` | `postgres` | Loads the Vault-generated admin password and syncs it into existing data on every start. |
 
 ## Key Constraints
 

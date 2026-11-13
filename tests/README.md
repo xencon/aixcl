@@ -35,6 +35,7 @@ tests/
 |   +-- test-08-service-restart.sh
 |   `-- test-99-stack-stop.sh
 `-- workflow-tests/
+    +-- test-postgres-password-resync.sh
     `-- test-readme-quickstart.sh
 ```
 
@@ -86,6 +87,7 @@ Validate complete user workflows:
 
 | Test | Description |
 |------|-------------|
+| test-postgres-password-resync.sh | Postgres admin password follows the Vault secret across restart and Vault-only reinit (throwaway container, no stack) |
 | test-readme-quickstart.sh | README Steps 1-5: Clone -> Start -> Engine -> Model -> OpenCode |
 
 ## Test Results
