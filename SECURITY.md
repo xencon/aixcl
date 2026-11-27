@@ -305,7 +305,7 @@ Is activity in threat detector rules? (future system)
 - New service added to stack
 - New upstream dependency introduced
 - Security incident reveals new attack vector
-- Major version update of runtime core (Ollama, OpenCode)
+- Major version update of runtime core (Ollama)
 - Profile changes (new services enabled)
 
 ---

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Workflow Test: README Quick Start
-# Validates the complete README Quick Start workflow (Steps 1-5)
+# Validates the complete README Quick Start workflow (Steps 1-4)
 
 set -e
 
@@ -67,25 +67,8 @@ else
 fi
 echo ""
 
-# Step 5: Launch OpenCode
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 5: Launch OpenCode"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-# Verify opencode.json configuration is valid
-if [[ -f "${SCRIPT_DIR}/opencode.json" ]]; then
-    if python3 -c "import json; json.load(open('${SCRIPT_DIR}/opencode.json'))" 2>/dev/null; then
-        log_success "Step 5: opencode.json is valid JSON"
-    else
-        log_error "Step 5: opencode.json is invalid"
-        exit 1
-    fi
-else
-    log_warn "Step 5: opencode.json not found (may be optional)"
-fi
-
-echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "README Quick Start - All Steps Complete"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-log_test_pass "README Quick Start workflow validated (Steps 1-5)"
+log_test_pass "README Quick Start workflow validated (Steps 1-4)"

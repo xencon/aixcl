@@ -48,6 +48,6 @@ AIXCL separates **Runtime Core** (always enabled) from **Operational Services** 
 
 - **Runtime Core**: Inference Engine (Ollama)
 - **Operational Services**: PostgreSQL, Open WebUI, monitoring stack
-- **AI Coding Clients**: OpenCode, Claude Code, or any OpenAI-API-compatible tool -- clients connect above the API layer and are not part of the runtime core
+- **AI Coding Clients**: Claude Code, or any OpenAI-API-compatible tool -- clients connect above the API layer and are not part of the runtime core
 
 See [`architecture/governance/`](../architecture/governance/) for invariants and service contracts.

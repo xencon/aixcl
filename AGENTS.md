@@ -1,11 +1,11 @@
 | field | value |
 |-------|-------|
 | file | AGENTS.md |
-| version | 2.3 |
+| version | 2.4 |
 | purpose | agent_contract |
 | priority | critical |
-| compatibility | OpenCode, Claude Code, Cursor, Copilot, MCP-compatible systems |
-| last_updated | 2026-07-22 |
+| compatibility | Claude Code, Cursor, Copilot, MCP-compatible systems |
+| last_updated | 2026-11-27 |
 
 # AGENTS.md
 
@@ -22,11 +22,8 @@ If you are starting a new session in this repository, read exactly these four do
 | 3 | `docs/architecture/governance/00_invariants.md` | Non-negotiable platform invariants |
 | 4 | `docs/architecture/governance/01_ai_guidance.md` | Agentic behavioral guidance |
 
-You do NOT need to read `.claude/rules/` or `.opencode/rules/` separately -- they are
-subsets of the above and loaded automatically by your tool. You do NOT need to read
-`.opencode/agents/agent-context.md` -- it carries only OpenCode-agent-specific
-operational guidance (work queue, tool list, memory) and defers to this file for
-all policy.
+You do NOT need to read `.claude/rules/` separately -- it is a subset of the
+above and loaded automatically by Claude Code.
 
 After reading those four files you are fully oriented. Begin work.
 
@@ -68,7 +65,7 @@ When conflicts arise, follow this order:
 1. Direct human instruction in active session
 2. **This AGENTS.md file** (operating contract)
 3. **DEVELOPMENT.md** (workflow rules, templates)
-4. **.opencode/rules/** and **.claude/rules/** (behavioral constraints)
+4. **.claude/rules/** (behavioral constraints)
 5. **docs/architecture/governance/** (platform invariants)
 6. **docs/developer/** (developer guides)
 
@@ -98,7 +95,7 @@ When conflicts arise, follow this order:
 
 #### Supported AI Coding Clients (Non-Exclusive)
 
-AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Claude Code are documented clients; other MCP-compatible or OpenAI-API-compatible tools are equally valid. Do not treat any specific AI coding client as a platform invariant.
+AIXCL is client-agnostic above the OpenAI-compatible API layer. Claude Code is the documented client; other MCP-compatible or OpenAI-API-compatible tools are equally valid. Do not treat any specific AI coding client as a platform invariant.
 
 #### Runtime vs Operational Services Boundary
 
@@ -126,9 +123,6 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 - Priority: `P1`, `P2`, `P3`
 - Profile: `profile:bld`, `profile:sys`
 - Category: `Fix`, `Enhancement`, `Refactor`, `Maintenance`
-- Agent delegation: `agent` (issues delegated to a peer agent -- e.g.
-  the OpenCode agent -- for execution; the agent discovers delegated
-  work by listing open issues with this label)
 - Security: `security` (security-relevant issues and PRs: capability
   hardening, secret handling, permission fixes, vulnerability follow-ups)
 
@@ -170,7 +164,7 @@ AIXCL is client-agnostic above the OpenAI-compatible API layer. OpenCode and Cla
 ### Validation, Tests, and Release
 ```bash
 ./aixcl checks all                    # Full local CI parity sweep (summary table)
-./aixcl checks agents                 # Mirror parity only (.claude/.opencode)
+./aixcl checks agents                 # Skill frontmatter and AI report naming
 ./aixcl test all                      # Run every test suite
 ./aixcl test lib                      # Shell library unit tests (no stack needed)
 ./aixcl release status                # Where the current release cycle stands
@@ -304,12 +298,9 @@ precedence), internal tool output, human-authored content.
 - [docs/developer/development-workflow.md](docs/developer/development-workflow.md) -- Complete developer guide
 - [docs/architecture/governance/00_invariants.md](docs/architecture/governance/00_invariants.md) -- Platform invariants
 - [docs/architecture/governance/01_ai_guidance.md](docs/architecture/governance/01_ai_guidance.md) -- Agentic behavioral guidance
-- `.opencode/rules/workflow.md` -- OpenCode workflow constraints
 - `.claude/rules/workflow.md` -- Claude Code workflow constraints
-- `.claude/rules/discussions.md` / `.opencode/rules/discussions.md` -- GitHub
-  Discussions policy (secret handling, untrusted-input treatment,
-  advisory-only status)
-- `opencode.json` -- OpenCode configuration
+- `.claude/rules/discussions.md` -- GitHub Discussions policy (secret
+  handling, untrusted-input treatment, advisory-only status)
 
 ---
 

@@ -23,12 +23,6 @@ Status: Running
 Runtime Core (Strict - Always Enabled)
 ---------------------------------------
 OK  ollama          Running
-OK opencode        Active     Connected (VS Code plugin)
-
-Configured Models
------------------
-  - OpenCode (VS Code) Models: qwen2.5-coder:1.5b, qwen2.5-coder:3b
-  - OpenCode CLI       Config: AIXCL CLI (Ollama)   Model: qwen2.5-coder:1.5b
 
 Operational Services (Guided - Profile-Dependent)
 --------------------------------------------------
@@ -95,11 +89,9 @@ When implementing stack status:
 3. **Health Check Semantics**
    - Runtime core: Use strict health checks (API must respond)
    - Operational services: Use lenient health checks (graceful degradation acceptable)
-   - OpenCode: Check plugin connectivity, not container (it's a VS Code extension)
 
 4. **Output Format**
    - Default: Human-readable, grouped by category
-    - After Runtime Core, show **Configured Models**: OpenCode VS Code plugin, OpenCode CLI (no Ollama). Use `[x]` when models are configured, `[ ]` when not, to match other services. OpenCode CLI in same format: Config: <name>   Model: <current model> (parse `opencode.json` provider settings to determine current model)
    - Verbose: Include service details, ports, dependencies
    - JSON: Machine-readable format for automation
 
@@ -107,4 +99,3 @@ When implementing stack status:
    - If runtime core is unhealthy, show clear error and suggest remediation
    - If operational services are unhealthy, show warning but do not block
    - Always distinguish between "not in profile" vs "failed to start"
-

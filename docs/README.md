@@ -12,7 +12,6 @@ This file is the complete index of `docs/`. Every file under `docs/` must be lis
 ## Developer Guides (`developer/`)
 
 - [`development-workflow.md`](developer/development-workflow.md) -- Full issue-first workflow, step by step
-- [`opencode-setup.md`](developer/opencode-setup.md) -- OpenCode CLI configuration for the local stack
 - [`adding-services.md`](developer/adding-services.md) -- Add a service to the stack
 - [`adding-apps.md`](developer/adding-apps.md) -- Add an app on the app framework
 - [`app-builder-guide.md`](developer/app-builder-guide.md) -- Build apps against the platform contract
@@ -54,7 +53,6 @@ This file is the complete index of `docs/`. Every file under `docs/` must be lis
 ## Reference (`reference/`)
 
 - [`manpage.txt`](reference/manpage.txt) -- Generated CLI man page
-- [`ai-report-structured-knowledge-architectures.md`](reference/ai-report-structured-knowledge-architectures.md) -- Research report on structured knowledge architectures
 
 ## Root-Level Contracts
 
@@ -64,6 +62,6 @@ These files are canonical and loaded by all agents:
 - `CONTRIBUTING.md` -- External contributor guide
 - `SECURITY.md` -- Security policy
 
-## Multi-Agent CLI Support
+## Agentic CLI Support
 
-This repository supports both OpenCode and Claude Code agentic CLIs. Tool-specific configuration lives in `.opencode/` and `.claude/` respectively. Both tools share the same governance rules (Issue-First workflow, platform invariants) defined in `AGENTS.md` and `DEVELOPMENT.md`.
+This repository documents Claude Code as its agentic CLI. Tool-specific configuration lives in `.claude/`. The governance rules (Issue-First workflow, platform invariants) are defined in `AGENTS.md` and `DEVELOPMENT.md` and apply to any agent.

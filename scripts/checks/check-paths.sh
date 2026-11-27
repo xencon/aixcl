@@ -34,7 +34,7 @@ check_markdown_paths() {
     local md_files=()
     while IFS= read -r -d '' file; do
         md_files+=("$file")
-    done < <(find . -name "*.md" -type f -not -path "./.git/*" -not -path "./.backup/*" -not -path "./node_modules/*" -not -path "./.opencode/node_modules/*" -print0 2>/dev/null || true)
+    done < <(find . -name "*.md" -type f -not -path "./.git/*" -not -path "./.backup/*" -not -path "./node_modules/*" -print0 2>/dev/null || true)
 
     local checked=0
     local issues=0
@@ -87,7 +87,6 @@ check_common_stale_paths() {
         "scripts/check-agents.sh"  # Should be scripts/checks/check-agents.sh
         "ai/skills/"               # Directory does not exist
         "ai/orchestration/registry.yaml"  # File does not exist
-        "opencode/cli-ollama.yaml"        # Path changed
     )
 
     for pattern in "${stale_patterns[@]}"; do
@@ -126,7 +125,7 @@ check_directory_references() {
     info "Checking directory references..."
 
     local dirs_to_check=(
-        ".opencode/agents"   # Should exist
+        ".claude/skills"     # Should exist
     )
 
     for dir in "${dirs_to_check[@]}"; do

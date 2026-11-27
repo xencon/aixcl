@@ -1,20 +1,6 @@
 #!/usr/bin/env bash
 # Engine management commands for AIXCL
 
-_clear_opencode_model() {
-    local opencode_config="${SCRIPT_DIR}/opencode.json"
-    if [ -f "$opencode_config" ]; then
-        if command -v jq >/dev/null 2>&1; then
-            local temp_json
-            temp_json=$(mktemp)
-            jq '.provider."aixcl-local".models = {} | .model = "aixcl-local/"' "$opencode_config" > "$temp_json" && mv "$temp_json" "$opencode_config"
-            echo "   Note: Model configuration cleared in opencode.json. Please add a model for the new engine."
-        else
-            echo "   Note: Install jq to auto-clear model config in opencode.json"
-        fi
-    fi
-}
-
 # Write the engine selection and Open WebUI API setting to .env
 _write_engine_env() {
     local engine="$1"
@@ -61,7 +47,6 @@ function engine() {
         fi
 
         _write_engine_env "$engine"
-        _clear_opencode_model
 
         echo "Note: Restart the stack for the change to take effect:"
         echo "  ./aixcl stack restart"
@@ -71,7 +56,6 @@ function engine() {
         echo "Auto-detected engine: $engine"
 
         _write_engine_env "$engine"
-        _clear_opencode_model
 
         echo "Note: Restart the stack for the change to take effect:"
         echo "  ./aixcl stack restart"

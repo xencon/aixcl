@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Environment Validation Script for AIXCL Development
-# Checks that the development environment is ready for OpenCode and Issue-First workflow
+# Checks that the development environment is ready for the Issue-First workflow
 #
 # Usage: ./scripts/checks/check-environment.sh
 
@@ -113,56 +113,6 @@ check_git_remotes() {
     else
         error "No Git remotes configured"
     fi
-}
-
-# Check OpenCode configuration
-check_opencode_config() {
-    info "Checking OpenCode configuration..."
-
-    if [ -f "opencode.json" ]; then
-        pass "opencode.json exists"
-
-        # Validate JSON
-        if python3 -m json.tool opencode.json > /dev/null 2>&1; then
-            pass "opencode.json is valid JSON"
-        else
-            error "opencode.json contains invalid JSON"
-        fi
-
-        # Check for required fields
-        if grep -q '"default_agent"' opencode.json; then
-            pass "default_agent configured"
-        else
-            warn "default_agent not configured in opencode.json"
-        fi
-
-        if grep -q '"instructions"' opencode.json; then
-            pass "instructions array configured"
-        else
-            warn "instructions array not configured"
-        fi
-    else
-        error "opencode.json not found in repository root"
-    fi
-}
-
-# Check OpenCode directory structure
-check_opencode_structure() {
-    info "Checking OpenCode directory structure..."
-
-    local dirs=(
-        ".opencode/agents"
-    )
-
-    for dir in "${dirs[@]}"; do
-        if [ -d "$dir" ]; then
-            local count
-            count=$(find "$dir" -name "*.md" | wc -l)
-            pass "$dir exists ($count markdown files)"
-        else
-            error "$dir directory missing"
-        fi
-    done
 }
 
 # Check AI directory structure
@@ -368,8 +318,6 @@ main() {
     echo ""
 
     # Configuration checks
-    check_opencode_config
-    check_opencode_structure
     check_ai_structure
 
     echo ""
@@ -397,7 +345,7 @@ main() {
         echo -e "${GREEN}${ICON_SUCCESS:-✅}${NC} All checks passed!"
         echo ""
         echo "Your environment is ready for AIXCL development."
-        echo "Start OpenCode and use /workflow to run the Issue-First workflow."
+        echo "See DEVELOPMENT.md for the Issue-First workflow."
         exit 0
     elif [ $ERRORS -eq 0 ]; then
         echo -e "${YELLOW}${ICON_WARNING:-⚠️}${NC} Checks passed with warnings"

@@ -7,10 +7,10 @@ description: >
   adds or changes a skill. Triggers on "review this skill", "audit skills",
   "lint SKILL.md", "skill feedback".
 argument-hint: <skill name, SKILL.md path, or 'all'>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: maintenance
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Skill Reviewer
@@ -87,8 +87,7 @@ trigger phrases, third person voice).
 - **ASCII only**: no smart quotes, em dashes, ellipsis characters, or other
   non-ASCII (CI enforces this on all markdown).
 - **LF line endings**: no CRLF.
-- **Mirror parity**: the skill exists byte-identical in both
-  `.claude/skills/<name>/` and `.opencode/skills/<name>/`
+- **Frontmatter validity**: `name` and `description` present
   (verify: `./aixcl checks agents`).
 - **Frontmatter house style**: `compatibility` and `metadata.category`/
   `metadata.version` fields present; version bumped when behavior changes.

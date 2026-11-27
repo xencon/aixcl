@@ -46,14 +46,6 @@ yarn-error.log
 package-lock.json
 bun.lock
 
-# OpenCode generated artifacts
-.opencode/package-lock.json
-.opencode/bun.lock
-.opencode/delegation-log.jsonl
-.opencode/delegation-log.jsonl.lock
-.opencode/server-state.json
-.opencode/server.log
-
 # macOS
 .DS_Store
 
@@ -108,13 +100,6 @@ build/
 .idea/
 *.sublime-workspace
 *.sublime-project
-
-# OpenCode IDE integration
-opencode/config.json
-!opencode/config.json.example
-
-# OpenCode runtime config (models added via `aixcl` CLI; template at config/opencode.json.example)
-opencode.json
 
 # System files
 Thumbs.db

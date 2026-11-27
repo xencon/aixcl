@@ -7,10 +7,10 @@ description: >
   service to docker-compose, wiring a new container into the stack, or asked
   to "add a service", "add <tool> to the stack", "new compose service".
 argument-hint: <service name and purpose>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: platform
-  version: "1.3"
+  version: "1.4"
 ---
 
 # Skill: add-service
@@ -34,7 +34,7 @@ Before starting, confirm:
 
 - [ ] A GitHub issue exists for this service addition
 - [ ] The service is an operational service (monitoring, logging, automation, UI)
-      NOT a replacement or extension of runtime core (Ollama, OpenCode, Postgres)
+      NOT a replacement or extension of runtime core (Ollama, Postgres)
 - [ ] The service does not create a dependency from runtime core -> operational services
 - [ ] `docker compose -f services/docker-compose.yml config > /dev/null` passes currently
 
@@ -69,5 +69,5 @@ Before starting, confirm:
 You MUST NOT:
 - Use `latest` image tags
 - Use `network_mode: bridge` or custom Docker networks
-- Create a dependency from Ollama, OpenCode, or Postgres on the new service
+- Create a dependency from Ollama or Postgres on the new service
 - Skip profile registration (the CLI will not start the service without it)

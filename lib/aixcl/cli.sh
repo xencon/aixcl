@@ -53,7 +53,7 @@ COMMANDS
     checks <action>
         all                                             Run every local CI check with summary
         paths                                           Documentation links and stale paths
-        agents                                          .claude/.opencode mirror parity
+        agents                                          Claude skill frontmatter, AI report naming
         elisions                                        AI-elision placeholders, mass deletions
         generated                                       Tracked generated files
         ascii                                           Non-ASCII punctuation in markdown

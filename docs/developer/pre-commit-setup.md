@@ -30,7 +30,7 @@ Hooks run at two stages. Commit-time hooks run on every `git commit`; push-time 
 | `no-non-ascii-punctuation` | Smart quotes, em dashes, ellipsis in markdown |
 | `check-ai-elisions` | AI placeholder text standing in for real content |
 | `check-generated-files` | Generated files accidentally tracked in git |
-| `check-agents` | `.claude/` vs `.opencode/` mirror parity (only when those paths change) |
+| `check-agents` | Skill frontmatter and AI report naming (only when those paths change) |
 
 ### Push-time hooks
 

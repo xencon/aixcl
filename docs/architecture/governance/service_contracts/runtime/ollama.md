@@ -11,7 +11,7 @@ Provides LLM inference for AIXCL.
 - Local filesystem
 
 ## Exposes
-- Inference API to AIXCL services and plugins (Open WebUI, OpenCode)
+- Inference API to AIXCL services and plugins (Open WebUI, AI coding clients)
 - Model management
 
 ## Must Not Depend On

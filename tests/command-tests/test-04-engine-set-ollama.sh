@@ -32,9 +32,4 @@ assert_command_success "${SCRIPT_DIR}/aixcl engine set ollama" "Engine set to ol
 # Test: .env is updated
 assert_env_equals "INFERENCE_ENGINE" "ollama"
 
-# Test: opencode.json models are cleared (if it exists)
-if [[ -f "${SCRIPT_DIR}/opencode.json" ]]; then
-    log_info "Note: opencode.json models should be cleared (verified manually)"
-fi
-
 log_test_pass "Engine set to ollama correctly"

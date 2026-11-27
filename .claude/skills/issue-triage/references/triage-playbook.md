@@ -20,7 +20,7 @@
 | `services/docker-compose.yml` | All service definitions | `network_mode: host` invariant; pinned image tags |
 | `config/profiles/` | Which services each profile starts | bld is a subset of sys; register new services or they will not start |
 | `docs/architecture/governance/` | Invariants, AI guidance, profiles, service contracts | Read 00_invariants.md before touching anything structural |
-| `.claude/` and `.opencode/` | Agent rules, skills, commands | Byte-identical mirrors for rules and skills; `./aixcl checks agents` |
+| `.claude/` | Agent rules, skills, commands | Skill frontmatter validated by `./aixcl checks agents` |
 | `tests/` | Test suites | `./aixcl test all` |
 
 ## Command cheat sheet

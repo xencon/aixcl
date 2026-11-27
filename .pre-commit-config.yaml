@@ -59,12 +59,12 @@ repos:
         stages: [pre-commit]
 
       - id: check-agents
-        name: Check agent and skill mirror parity
+        name: Check skill and AI report structure
         language: script
         entry: scripts/checks/check-agents.sh
         pass_filenames: false
         stages: [pre-commit]
-        files: '^(\.claude|\.opencode)/'
+        files: '^(\.claude/|docs/reference/ai-report-)'
 
       - id: check-paths
         name: Check documentation relative links

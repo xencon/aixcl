@@ -46,12 +46,11 @@ Any change that removes, replaces, or conditionally disables the Inference Engin
 
 AIXCL exposes an OpenAI-compatible API. Any AI coding client that speaks that protocol is a supported client. The platform does not mandate a specific client.
 
-Currently documented clients:
+Currently documented client:
 
-- **OpenCode** - terminal (TUI) AI coding agent, connects via OpenAI-compatible API
 - **Claude Code** - CLI, connects via MCP or OpenAI-compatible API
 
-Client configuration lives in the tool-specific directories (`.opencode/`, `.claude/`). Adding or preferring a different client does not violate any platform invariant.
+Client configuration lives in the tool-specific directory (`.claude/`). Adding or preferring a different client does not violate any platform invariant.
 
 ---
 

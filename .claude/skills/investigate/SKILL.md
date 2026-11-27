@@ -7,7 +7,7 @@ description: >
   "investigate", "debug", "what changed", "why is this broken". Triggers on
   bug reports, failing CI links, error output, unhealthy services.
 argument-hint: <description of the issue or a GitHub issue link>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: workflow
   version: "1.0"

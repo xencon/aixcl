@@ -10,7 +10,6 @@ which runs inside containers).
 |------|---------|
 | `create-issue.sh` | Issue creation wrapper -- targets xencon/aixcl, template-based or custom body (custom bodies validated for reference style), assignee at creation. Required by DEVELOPMENT.md. |
 | `create-pr.sh` | PR creation wrapper -- fork-aware `--head`, title/branch/body validation, assignee and labels at creation time. Required by DEVELOPMENT.md. |
-| `sync-mirrors.sh` | One-command `.claude/` <-> `.opencode/` skills and rules sync, then parity verification. Run after editing either side. |
 | `init-volumes.sh` | Creates the external Docker volumes shared across contexts. |
 | `validate-volume-consistency.sh` | Checks volume declarations across compose files. |
 | `setup-gpg.sh` | One-time GPG signing setup per developer. |

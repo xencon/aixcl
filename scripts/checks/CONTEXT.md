@@ -8,7 +8,7 @@ committing. This directory is the pre-commit safety net.
 | File | Purpose | When to run |
 |------|---------|------------|
 | `check-ai-elisions.sh` | **CRITICAL.** Detects AI placeholder text and mass deletions in staged diffs. An AI-assisted edit once replaced a 639-line module with a stub -- this script catches that. | Before EVERY commit: `./scripts/checks/check-ai-elisions.sh --staged` |
-| `check-agents.sh` | Validates agent and skill file structure (frontmatter, required fields). | After editing `.claude/skills/` or `.opencode/skills/`. |
+| `check-agents.sh` | Validates skill file structure (frontmatter, required fields) and AI report naming. | After editing `.claude/skills/`. |
 | `check-environment.sh` | Full host prerequisite check (container runtime, Python3-yaml, jq, curl, GPG). | Before first stack start; on new dev machine setup. |
 | `check-generated-files.sh` | Verifies gitignored generated files are not tracked in git. | Part of CI; run locally if you added a new generated file. |
 | `check-paths.sh` | Validates all relative links in markdown files resolve to real paths. | After adding or moving markdown files. |

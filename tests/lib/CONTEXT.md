@@ -9,7 +9,7 @@ shell unit tests under `tests/lib/tests/`. Run everything through
 | File | Purpose |
 |------|---------|
 | `test-framework.sh` | Assertions (`assert_*`), logging (`log_test_*`), result tracking, report generation. Must be sourced at the top of every test. |
-| `state-capture.sh` | `capture_state`/`restore_state` -- snapshots `.env`, `opencode.json`, and running containers into `tests/.backup/<name>_<timestamp>/` before a test mutates them. |
+| `state-capture.sh` | `capture_state`/`restore_state` -- snapshots `.env` and running containers into `tests/.backup/<name>_<timestamp>/` before a test mutates them. |
 | `cleanup.sh` | Container/model cleanup between tests, port-release polling, `cleanup_old_backups`. |
 | `tests/test-*.sh` | Unit tests for `lib/` shell functions -- no running stack required. |
 

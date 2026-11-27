@@ -7,10 +7,10 @@ description: >
   release. Triggers on "housekeeping", "start day", "what's the status",
   "where did we leave off", "repo health check".
 argument-hint: <optional: 'all' or specific step numbers>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: maintenance
-  version: "3.2"
+  version: "3.3"
 ---
 
 # Skill: housekeeping
@@ -18,7 +18,7 @@ metadata:
 ## Purpose
 
 Catch accumulated debt across the repository and orient the session: broken
-links, mirror drift, stale branches, permission problems, secrets, unpinned
+links, stale branches, permission problems, secrets, unpinned
 images, shell regressions, and open-work state. Report findings and wait for
 direction -- take no corrective action until directed.
 
@@ -33,14 +33,6 @@ independent -- a failure in one does not block the others.
 - [ ] `gh` authenticated (`gh auth status`)
 - [ ] No uncommitted changes that would pollute diff checks
 
-## Delegation
-
-The mechanical steps (4, 5, 9, 10, 11) fit the delegate skill's tier rubric
-and may be delegated to the OpenCode peer -- strictly one at a time, per the
-delegate skill's sequential-only rule. If delegation fails, run the commands
-directly. Steps needing GitHub state or judgment (0, 2, 3, 12) stay with the
-primary agent.
-
 **Command blocks for every step, the Step 12 report template, and common
 mistakes:** [references/step-commands.md](references/step-commands.md).
 
@@ -49,7 +41,7 @@ mistakes:** [references/step-commands.md](references/step-commands.md).
 | # | Step | What it checks | Checklist |
 |---|------|-----------------|-----------|
 | 0 | Read memory | MEMORY.md index + files relevant to open work | in-progress work, blockers, last-session recommendations noted |
-| 1 | Mechanical sweep | `./aixcl checks all` -- paths, mirror parity, elisions, generated/dated files, ascii, pins, profiles, yaml, compose, env | all checks green |
+| 1 | Mechanical sweep | `./aixcl checks all` -- paths, skill frontmatter, elisions, generated/dated files, ascii, image and action pins, profiles, obfuscation, yaml, compose, env | all checks green |
 | 2 | Branch hygiene | Stale merged branches; `origin/dev` vs `upstream/dev` sync | no stale branches; forks in sync |
 | 3 | Issue/PR hygiene | Open issues missing `component:*`; open PRs missing an assignee | all labeled/assigned or flagged |
 | 4 | Line endings | CRLF in tracked files | none found |

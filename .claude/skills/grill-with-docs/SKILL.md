@@ -8,10 +8,10 @@ description: >
   "grill this", "stress test the plan", "challenge this approach", "validate
   the design".
 argument-hint: <description of the plan or approach to challenge>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: workflow
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Grill with Docs
@@ -58,8 +58,8 @@ When the plan states how something works, check whether the code agrees.
 
 ### Surface infrastructure constraints
 
-Check CI workflows, profile registration, mirror parity, and permissions.
-"The plan adds a skill file -- where is the byte-identical .opencode mirror?
+Check CI workflows, profile registration, catalog updates, and permissions.
+"The plan adds a skill file -- is it in the `.claude/skills/CONTEXT.md` catalog?
 Which profile registers the new service?"
 
 ### Flag when to stop

@@ -269,15 +269,9 @@ The CI workflow automatically checks for CRLF line endings and will fail the bui
 
 **Example:** If automated PRs #351-355 are merged, create issue #356 documenting them.
 
-## Running the workflow with OpenCode CLI
+## Running the workflow with an AI coding agent
 
-A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root with OpenCode CLI and approve `gh`/`git` tool calls when prompted:
-
-```bash
-opencode
-```
-
-See [opencode-setup.md](./opencode-setup.md) for installation and configuration instructions.
+A single agent runs this workflow end-to-end (issue, branch, commit, PR, assign and label). Use it from the repo root (for example with Claude Code, which loads `AGENTS.md` via `CLAUDE.md`) and approve `gh`/`git` tool calls when prompted. GPG-signed commits are always handed to the operator to run.
 
 ## Agent Instructions
 
@@ -326,22 +320,19 @@ git push -u origin issue-<number>/<description>
 - **Discussion**: Issues allow discussion before implementation
 - **Consistency**: Standardized process works across all contributors
 
-## Checking Agent and Skill Files
+## Checking Skill Files
 
-When creating or modifying agent files (`.opencode/agents/agent-*.md`), skills, rules, commands, or agent reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
+When creating or modifying skills or agent reports (`docs/reference/ai-report-*.md`), run the lint check script before committing:
 
 ```bash
 ./scripts/checks/check-agents.sh
 ```
 
 This script validates:
-- Agent naming convention (`agent-*.md`) and frontmatter (`description` required, `name` forbidden -- it overrides the filename-derived agent id)
-- `SKILL.md` frontmatter (`name` and `description` required)
-- Byte-identical mirror parity between `.claude/rules/` and `.opencode/rules/`, and between `.claude/skills/` and `.opencode/skills/`
-- Body parity for commands present in both `.claude/commands/` and `.opencode/commands/` (frontmatter may differ per tool)
+- `SKILL.md` frontmatter under `.claude/skills/` (`name` and `description` required)
 - AI report naming convention (`ai-report-*.md`)
 
-The same checks run automatically in CI on pull requests that touch these paths (`check-opencode.yml`).
+The same checks run automatically in CI (`check-agents` job in `documentation-checks.yml`).
 
 ## Questions?
 
