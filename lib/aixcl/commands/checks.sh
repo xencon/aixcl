@@ -9,13 +9,14 @@ CHECKS_FAILED=()
 CHECKS_SKIPPED=()
 
 _checks_usage() {
-    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|profiles|obfuscation|yaml|compose|env|models|pr-refs <file>|pr-ready <pr>}"
+    echo "Usage: $0 checks {all|paths|agents|elisions|generated|ascii|pins|action-pins|profiles|obfuscation|yaml|compose|env|models|pr-refs <file>|pr-ready <pr>}"
     echo "  all              Run every check below (continues on failure, prints summary)"
     echo "  paths            Documentation relative links and stale path patterns"
     echo "  agents           .claude/ vs .opencode/ rules and skills mirror parity"
     echo "  elisions         AI-elision placeholders and suspicious mass deletions"
     echo "  generated        Tracked generated files and stale artifacts"
     echo "  pins             Container image references pinned (compose + shell code)"
+    echo "  action-pins      GitHub Action references pinned to commit SHAs (workflows)"
     echo "  profiles         Profile configs match the 02_profiles.md contract"
     echo "  obfuscation      Shell obfuscation/injection patterns (unwaivered eval, pipe-to-shell)"
     echo "  ascii            Non-ASCII punctuation in markdown files"
@@ -148,6 +149,9 @@ function checks_cmd() {
         pins)
             bash "${checks_dir}/check-image-pins.sh"
             ;;
+        action-pins)
+            bash "${checks_dir}/check-action-pins.sh"
+            ;;
         profiles)
             bash "${checks_dir}/check-profiles.sh"
             ;;
@@ -203,6 +207,7 @@ function checks_cmd() {
             _check_run "generated" bash "${checks_dir}/check-generated-files.sh" || true
             _check_run "ascii" _check_ascii || true
             _check_run "pins" bash "${checks_dir}/check-image-pins.sh" || true
+            _check_run "action-pins" bash "${checks_dir}/check-action-pins.sh" || true
             _check_run "profiles" bash "${checks_dir}/check-profiles.sh" || true
             _check_run "obfuscation" bash "${checks_dir}/check-obfuscation.sh" || true
 

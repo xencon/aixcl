@@ -13,6 +13,7 @@ scripts/
 |   +-- check-environment.sh
 |   +-- check-generated-files.sh
 |   +-- check-image-pins.sh
+|   +-- check-action-pins.sh
 |   +-- check-paths.sh
 |   +-- check-pr-ready.sh
 |   +-- check-pr-references.sh
