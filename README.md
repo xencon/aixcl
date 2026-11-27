@@ -91,7 +91,6 @@ cd aixcl
 - Detects and configures Podman (rootless) or Docker
 - Adds `docker=podman` alias and `DOCKER_HOST` to `~/.bashrc`
 - Creates `.env` from `config/.env.example`
-- Creates `opencode.json` from `config/opencode.json.example`
 - Initialises all external Docker/Podman volumes
 - Prompts for admin username and email
 
@@ -219,7 +218,6 @@ git log --show-signature -1
 | View logs | `./aixcl stack logs` |
 | Stop stack | `./aixcl stack stop` |
 | Add model | `./aixcl models add <model>` |
-| Chat CLI | `opencode` |
 | Vault credentials | `./aixcl vault credentials` |
 | Rotate credentials | `./aixcl vault rotate` |
 | Verify GPG | `gpg --list-secret-keys --keyid-format LONG` |

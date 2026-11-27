@@ -88,7 +88,7 @@ Validate complete user workflows:
 | Test | Description |
 |------|-------------|
 | test-postgres-password-resync.sh | Postgres admin password follows the Vault secret across restart and Vault-only reinit (throwaway container, no stack) |
-| test-readme-quickstart.sh | README Steps 1-5: Clone -> Start -> Engine -> Model -> OpenCode |
+| test-readme-quickstart.sh | README Steps 1-4: Clone -> Start -> Engine -> Model |
 
 ## Test Results
 
@@ -105,7 +105,7 @@ The file is overwritten on each run and is not committed to the repository.
 
 Each test:
 
-1. **Captures state** before running (`.env`, `opencode.json`, running containers)
+1. **Captures state** before running (`.env`, running containers)
 2. **Executes commands** and validates assertions
 3. **Restores state** after completion (even on failure)
 

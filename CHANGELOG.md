@@ -36,7 +36,7 @@ Maintenance release: skill authoring cleanup, a stale reference-doc fix, nine ro
 
 ### Changed
 
-- [x] **Housekeeping batch: skill sizes, update-reference drift, version bumps (closes #2049)**: split 4 oversized SKILL.md files (delegate, housekeeping, release, add-service) into `references/` for the 5KB progressive-disclosure limit, mirrored byte-identical into `.opencode/skills/`. Fixed stale inventory in the `check-updates` skill's own reference doc (missing blackbox-exporter/json-exporter, stale docker/setup-buildx-action row). Bumped Ollama, Open WebUI, Loki, Alertmanager, Grafana, NVIDIA GPU Exporter, pgAdmin 4, git-cliff, and github/codeql-action to latest. Ollama verified live: v0.34.1 healthy, `/v1/chat/completions` responding correctly with a real inference result.
+- [x] **Housekeeping batch: skill sizes, update-reference drift, version bumps (closes #2049)**: split 4 oversized SKILL.md files (delegate, housekeeping, release, add-service) into `references/` for the 5KB progressive-disclosure limit, mirrored byte-identical into `.agent-mirror/skills/`. Fixed stale inventory in the `check-updates` skill's own reference doc (missing blackbox-exporter/json-exporter, stale docker/setup-buildx-action row). Bumped Ollama, Open WebUI, Loki, Alertmanager, Grafana, NVIDIA GPU Exporter, pgAdmin 4, git-cliff, and github/codeql-action to latest. Ollama verified live: v0.34.1 healthy, `/v1/chat/completions` responding correctly with a real inference result.
 - [x] **Vault stays pinned at 2.0.4 this cycle**: a `2.1.1` bump was drafted and reverted mid-review after an unseal failure was observed against a local test volume; further investigation traced that failure to a stale local key/data pairing on the test machine, unrelated to the Vault version. No storage-format incompatibility was found.
 
 ### Fixed
@@ -50,12 +50,12 @@ Maintenance release: skill authoring cleanup, a stale reference-doc fix, nine ro
 
 ### Summary
 
-Maintenance release: recurring OpenCode default-model EOL fixes and a new model-liveness check, a reverted stale-branch config regression, routine stack service image updates, and an Ollama runtime-core bump -- all verified live.
+Maintenance release: recurring peer-agent default-model EOL fixes and a new model-liveness check, a reverted stale-branch config regression, routine stack service image updates, and an Ollama runtime-core bump -- all verified live.
 
 ### Added
 
-- [x] **Delegate skill shared server, default-model delegation, bounded parallelism (closes #2018)**: shared `opencode serve` process with `--attach`, no hardcoded model, 2-tier fallback, up to 3 concurrent delegations.
-- [x] **Dynamic OpenCode model liveness check (closes #2026)**: `./aixcl checks models` derives the model list from `opencode.json`'s own provider block and probes the configured `model`/`small_model` defaults through the shared server, failing only if a default is dead.
+- [x] **Delegate skill shared server, default-model delegation, bounded parallelism (closes #2018)**: shared `agent server` process with `--attach`, no hardcoded model, 2-tier fallback, up to 3 concurrent delegations.
+- [x] **Dynamic peer-agent model liveness check (closes #2026)**: `./aixcl checks models` derives the model list from the agent config's own provider block and probes the configured `model`/`small_model` defaults through the shared server, failing only if a default is dead.
 
 ### Changed
 
@@ -67,16 +67,16 @@ Maintenance release: recurring OpenCode default-model EOL fixes and a new model-
 ### Fixed
 
 - [x] **Test-03-stack-status no longer fails on stopped-stack exit code (closes #2020)**
-- [x] **Default OpenCode to NVIDIA model, local as last resort (closes #2016)**
-- [x] **Dead OpenCode default model after NVIDIA deepseek-v4 EOL (closes #2024)**
+- [x] **Default peer agent to NVIDIA model, local as last resort (closes #2016)**
+- [x] **Dead peer-agent default model after NVIDIA deepseek-v4 EOL (closes #2024)**
 - [x] **Dead safety agent model replaced with live nemotron-safety-guard (closes #2028)**: NVIDIA retired `nemotron-3-content-safety`; replaced with `nvidia/llama-3.1-nemotron-safety-guard-8b-v3`.
-- [x] **Reverted PR #2030's stale opencode.json.example regression on main (closes #2033)**: a month-stale branch had been merged directly to `main`, clobbering `dev`'s permission block, provider schema, and live model catalog; restored `dev`'s current state.
-- [x] **Dead OpenCode default model nvidia/z-ai/glm-5.2 (closes #2035)**: NVIDIA retired `z-ai/glm-5.2`; replaced with live-candidate-probed `nvidia/moonshotai/kimi-k3` after confirming tool-call support.
+- [x] **Reverted PR #2030's stale agent config template regression on main (closes #2033)**: a month-stale branch had been merged directly to `main`, clobbering `dev`'s permission block, provider schema, and live model catalog; restored `dev`'s current state.
+- [x] **Dead peer-agent default model nvidia/z-ai/glm-5.2 (closes #2035)**: NVIDIA retired `z-ai/glm-5.2`; replaced with live-candidate-probed `nvidia/moonshotai/kimi-k3` after confirming tool-call support.
 
 ### Documentation
 
 - [x] **Add stale-identifier-after-rename example to delegate skill tier 1**
-- [x] **Document opencode.json server-restart caveat in delegate skill**
+- [x] **Document agent config server-restart caveat in delegate skill**
 - [x] **Sharpen CLAUDE.md GPG, stack-op, and release guardrails (closes #2023)**
 
 
@@ -110,7 +110,7 @@ Release v1.1.67 -- Delegation reliability release: a cloud-first model fallback 
 
 ### Added
 
-- [x] **Cloud-first delegation model fallback with 503 retry**: Agent delegation (`/delegate`) now always prefers the cloud model (NVIDIA DeepSeek V4 Flash) regardless of local stack state, retrying transient `503` shared-endpoint saturation with backoff before falling through two zero-config OpenCode Zen models and, only as a last resort, the local Ollama stack. Every delegated call now runs at a consistent medium reasoning effort (#1977).
+- [x] **Cloud-first delegation model fallback with 503 retry**: Agent delegation (`/delegate`) now always prefers the cloud model (NVIDIA DeepSeek V4 Flash) regardless of local stack state, retrying transient `503` shared-endpoint saturation with backoff before falling through two zero-config zero-config hosted models and, only as a last resort, the local Ollama stack. Every delegated call now runs at a consistent medium reasoning effort (#1977).
 - [x] **Track provider and model in the delegation log**: The delegation log now records which provider/model actually served each request and its position in the fallback chain, and `/delegate-review`'s analytics gained a By Provider/Model breakdown -- previously there was no way to see which model handled a delegation or how often the primary model needed to fall through (#1979).
 - [x] **Roll out color-coded tabular reporting to remaining report skills**: `check-updates`, `delegate-review`, `reviewing-skills`, and `session-review` all present their findings as tables with a colored (green/yellow/red) status indicator in the live report, extending the pattern below to every status-reporting skill in the catalog (#1985).
 - [x] **Convert housekeeping report to a color-coded table**: The housekeeping skill's final status report is now a table instead of a fixed-width checkbox block, with color-coded status for faster scanning (#1983).
@@ -135,7 +135,7 @@ Release v1.1.66 -- Agent tooling and log hygiene release: a skill-catalog overha
 ### Added
 
 - [x] **reviewing-skills skill**: skill-authoring linter with a FAIL/WARN/PASS report workflow, AIXCL conventions checks (ASCII, mirror parity, no references to absent tooling), and Anthropic's authoring best-practices guide vendored for offline use; every skill in the catalog now passes with zero FAIL findings (#1951).
-- [x] **Delegation skill trio**: delegate routes mechanistic sub-tasks to the OpenCode peer via opencode run with a 3-tier safety rubric, a ~30s cost floor, and strictly sequential JSONL logging (concurrent runs skew the log); delegate-review provides analytics over the log; session-review closes the loop by surfacing missed delegation opportunities each session. Smoke-tested live end to end (#1952).
+- [x] **Delegation skill trio**: delegate routes mechanistic sub-tasks to the peer agent via the agent CLI with a 3-tier safety rubric, a ~30s cost floor, and strictly sequential JSONL logging (concurrent runs skew the log); delegate-review provides analytics over the log; session-review closes the loop by surfacing missed delegation opportunities each session. Smoke-tested live end to end (#1952).
 - [x] **Dev-flow skill trio**: investigate (root-cause-first bug investigation with a no-fixing-until-complete gate), issue-triage (GitHub issue-first workflow with design-validation and CI-parity hard gates plus a consolidated triage playbook), and grill-with-docs (one-question-at-a-time plan stress-testing against invariants and existing patterns) (#1953).
 
 ### Changed
@@ -175,7 +175,7 @@ Release v1.1.65 -- Security and reliability release: a full capability audit of 
 
 ### Documentation
 
-- [x] **Reoriented OpenCode agent docs from junior to peer delegation**: reframed the OpenCode agent's documented relationship to Claude Code from a supervised junior worker to a peer running a cloud/local model, with tasks reaching it by delegation rather than self-service queue-pulling; purely a framing change, every mechanized rail (hard gates, denies) is unchanged (#1930).
+- [x] **Reoriented peer agent docs from junior to peer delegation**: reframed the peer agent's documented relationship to Claude Code from a supervised junior worker to a peer running a cloud/local model, with tasks reaching it by delegation rather than self-service queue-pulling; purely a framing change, every mechanized rail (hard gates, denies) is unchanged (#1930).
 - [x] **Baked capability hardening into the BYO app scaffold template**: `etc/app-scaffold/docker-compose.yml`'s example service now demonstrates `cap_drop: ALL` as the default, with both safe patterns (a `user:` override, or a minimal `cap_add`) documented inline, scoped explicitly as greenfield guidance distinct from the existing retrofit guidance for hardening an already-shipped image (#1925).
 
 
@@ -188,7 +188,7 @@ Release v1.1.64 -- Documentation and tooling release: a full consistency sweep o
 
 ### Documentation
 
-- [x] **Agentic file consistency sweep**: fixed stale version cross-references in AGENTS.md and DEVELOPMENT.md headers; normalized SKILL.md frontmatter across all five skills on both mirror sides and gated the release skill behind explicit operator invocation (disable-model-invocation); added a shared-command body-parity check to scripts/checks/check-agents.sh so commands present in both .claude/commands and .opencode/commands cannot drift silently; completed the CI workflows table in both ci-checks.md mirrors to all 12 workflows; rewrote docs/developer/development-workflow.md to remove the forbidden two-step gh pr edit pattern and point label guidance at the canonical AGENTS.md taxonomy; marked the structured-knowledge report as durable reference; brought scripts/hooks/pre-commit to elision-guard parity with the pre-commit framework config; and removed a dead ai/skills special case from scripts/checks/check-paths.sh (#1910).
+- [x] **Agentic file consistency sweep**: fixed stale version cross-references in AGENTS.md and DEVELOPMENT.md headers; normalized SKILL.md frontmatter across all five skills on both mirror sides and gated the release skill behind explicit operator invocation (disable-model-invocation); added a shared-command body-parity check to scripts/checks/check-agents.sh so commands present in both .claude/commands and .agent-mirror/commands cannot drift silently; completed the CI workflows table in both ci-checks.md mirrors to all 12 workflows; rewrote docs/developer/development-workflow.md to remove the forbidden two-step gh pr edit pattern and point label guidance at the canonical AGENTS.md taxonomy; marked the structured-knowledge report as durable reference; brought scripts/hooks/pre-commit to elision-guard parity with the pre-commit framework config; and removed a dead ai/skills special case from scripts/checks/check-paths.sh (#1910).
 
 
 
@@ -268,8 +268,8 @@ Release v1.1.59 -- Documentation consistency release: stale runtime-core claims 
 
 ### Documentation
 
-- [x] **Stale runtime-core and Vault token references swept**: 01_ai_guidance.md and usage.md no longer claim OpenCode is part of the fixed core runtime (core is the Inference Engine; clients are non-exclusive); 00_invariants.md describes OpenCode as a terminal TUI agent, matching its service contract; 02_profiles.md sys enumeration includes PostgreSQL; README Vault UI login points at the GPG-encrypted root token instead of the unset VAULT_DEV_TOKEN env var (#1855).
-- [x] **Agent-identity names neutralized**: The release skill mirror pair and .opencode memory files use role-based wording ("the other agent", "OpenCode agent") instead of naming specific agents; Ollama/HF model tags and CHANGELOG history intentionally unchanged (#1856).
+- [x] **Stale runtime-core and Vault token references swept**: 01_ai_guidance.md and usage.md no longer claim the peer agent is part of the fixed core runtime (core is the Inference Engine; clients are non-exclusive); 00_invariants.md describes the peer agent as a terminal TUI agent, matching its service contract; 02_profiles.md sys enumeration includes PostgreSQL; README Vault UI login points at the GPG-encrypted root token instead of the unset VAULT_DEV_TOKEN env var (#1855).
+- [x] **Agent-identity names neutralized**: The release skill mirror pair and .agent-mirror memory files use role-based wording ("the other agent", "peer agent") instead of naming specific agents; Ollama/HF model tags and CHANGELOG history intentionally unchanged (#1856).
 
 
 
@@ -309,7 +309,7 @@ Release v1.1.57 -- Agent-platform efficiency and least-privilege sweep: per-sess
 
 ### Changed
 
-- [x] **Rules files slimmed to deltas**: The security/workflow/formatting files in `.claude/rules/` and `.opencode/rules/` now carry only content absent from AGENTS.md/DEVELOPMENT.md, cutting the auto-loaded per-session agent payload by 441 words (11%) with no policy loss; CONTEXT.md descriptions updated to match.
+- [x] **Rules files slimmed to deltas**: The security/workflow/formatting files in `.claude/rules/` and `.agent-mirror/rules/` now carry only content absent from AGENTS.md/DEVELOPMENT.md, cutting the auto-loaded per-session agent payload by 441 words (11%) with no policy loss; CONTEXT.md descriptions updated to match.
 
 ### Fixed
 
@@ -426,9 +426,9 @@ Release v1.1.51 -- Documentation optimized for agentic use: complete navigation,
 ### Documentation
 
 - [x] **Docs Index and Cold-Start Navigation**: docs/README.md is now a complete audience-based index (adds docs/security/, all five ADRs, and six previously unindexed developer docs) with a same-PR update rule; AGENTS.md Section 0 is the single cold-start reading list and DEVELOPMENT.md defers to it; the CONTEXT.md vs README.md per-directory convention is documented, three high-traffic CONTEXT.md files added, and the deprecated QUICKSTART.md tombstone deleted. Closes #1736.
-- [x] **Single-Source Policy Dedup**: rules/security.md and rules/formatting.md (both mirrors) now point at canonical AGENTS.md instead of restating it; agent-context.md slimmed from 244 to 76 lines, removing two policy defects (inverted push/PR remotes, OpenCode listed as fixed core runtime); finish-pr converged to one procedure across command surfaces. Auto-loaded agent payload reduced 17 percent. Closes #1737.
-- [x] **Naming Conventions and Doc Currency**: ai-file-naming.md rewritten (kebab-case for new docs, existing numbered series keep their style, frontmatter only where a tool consumes it) and no longer instructs adding the `name:` field that breaks OpenCode agent dispatch; UPSTREAM-ISSUES.md entry template embedded in DEVELOPMENT.md; stale service-contract and GPG-enforcement claims corrected against live state. Closes #1738.
-- [x] **Security Guardrails Hardened**: general Untrusted Input rules added to rules/security.md (both mirrors) covering web content, Discussions, non-collaborator issue/PR bodies, and echoed tool output; opencode-setup.md now points at the canonical config template and documents the full permission deny table with rationale; the release template's U+2705 ASCII exception carries an explicit inline waiver. Closes #1739.
+- [x] **Single-Source Policy Dedup**: rules/security.md and rules/formatting.md (both mirrors) now point at canonical AGENTS.md instead of restating it; agent-context.md slimmed from 244 to 76 lines, removing two policy defects (inverted push/PR remotes, peer-agent listed as fixed core runtime); finish-pr converged to one procedure across command surfaces. Auto-loaded agent payload reduced 17 percent. Closes #1737.
+- [x] **Naming Conventions and Doc Currency**: ai-file-naming.md rewritten (kebab-case for new docs, existing numbered series keep their style, frontmatter only where a tool consumes it) and no longer instructs adding the `name:` field that breaks peer agent dispatch; UPSTREAM-ISSUES.md entry template embedded in DEVELOPMENT.md; stale service-contract and GPG-enforcement claims corrected against live state. Closes #1738.
+- [x] **Security Guardrails Hardened**: general Untrusted Input rules added to rules/security.md (both mirrors) covering web content, Discussions, non-collaborator issue/PR bodies, and echoed tool output; the agent setup guide now points at the canonical config template and documents the full permission deny table with rationale; the release template's U+2705 ASCII exception carries an explicit inline waiver. Closes #1739.
 
 ### Fixed
 
@@ -459,28 +459,28 @@ Release v1.1.49 -- Junior agent onboarding: a work queue, guided commands with m
 
 ### Added
 
-- [x] **Agent Work Queue**: new `agent:qwen` label marks issues queued for a named agent; the OpenCode agent definition instructs the agent to discover its work by listing open issues with its label. Closes #1696.
-- [x] **Agent Tooling**: guided commands (`/next-task`, `/pr-ready`, `/finish-pr`) with shell-injected live state, a persistent memory system built on the OpenCode instructions array, a read-only reviewer subagent, and permission guardrails denying upstream pushes, PR merges, release tagging, and unverified commits. Closes #1701.
+- [x] **Agent Work Queue**: new `agent:qwen` label marks issues queued for a named agent; the peer agent definition instructs the agent to discover its work by listing open issues with its label. Closes #1696.
+- [x] **Agent Tooling**: guided commands (`/next-task`, `/pr-ready`, `/finish-pr`) with shell-injected live state, a persistent memory system built on the agent instructions array, a read-only reviewer subagent, and permission guardrails denying upstream pushes, PR merges, release tagging, and unverified commits. Closes #1701.
 - [x] **Procedure Rails**: `/pr-ready` gained a hard gate that stops when the branch has no signed commit ahead of dev; `/next-task` serves only the single oldest queued issue; `git commit --no-gpg-sign` is denied. Closes #1714.
 - [x] **PR Path Enforcement**: raw `gh pr create` is denied so `scripts/utils/create-pr.sh` (correct base, creation-time assignee and labels) is the only PR path; the agent's real identity and body-file rules live in its seed memory. Closes #1718.
 
 ### Changed
 
 - [x] **OpenWebUI v0.10.2**: image pin bump carrying upstream access-control security fixes; verified live (healthy container, clean migrations, version endpoint confirmed). Closes #1711.
-- [x] **Legacy Modes Removed**: deleted `.opencode/modes/` (registered as phantom agents in the OpenCode agent list) and cleaned stale `/mode planning` references from CLAUDE.md and lib/cli/CONTEXT.md. Closes #1716.
+- [x] **Legacy Modes Removed**: deleted `.agent-mirror/modes/` (registered as phantom agents in the peer agent list) and cleaned stale `/mode planning` references from CLAUDE.md and lib/cli/CONTEXT.md. Closes #1716.
 
 ### Fixed
 
 - [x] **Ollama Context Truncation**: models loaded at Ollama's 4096-token default while the agent instruction payload was ~20k tokens, silently truncating the entire operating contract. Compose now sets `OLLAMA_CONTEXT_LENGTH=32768` (with `OLLAMA_NUM_PARALLEL` lowered 8 to 2), the instruction payload was slimmed to ~9.6k tokens, and the Ollama 0.31.x workaround (derived model with `PARAMETER num_ctx`) is documented. Closes #1707.
-- [x] **OpenCode Agent Resolution**: `name` frontmatter fields overrode filename-derived agent identifiers, breaking every reference including `default_agent`; fields removed, phantom README agent deleted, and `check-agents.sh` now errors when `name` is present. Closes #1703.
-- [x] **ASCII Check Scope**: `./aixcl checks ascii` scanned gitignored third-party files (e.g. `.opencode/node_modules`); it now iterates only git-tracked markdown, anchored to the repo root, and yamllint gained a matching ignore list. Closes #1699.
+- [x] **Peer Agent Resolution**: `name` frontmatter fields overrode filename-derived agent identifiers, breaking every reference including `default_agent`; fields removed, phantom README agent deleted, and `check-agents.sh` now errors when `name` is present. Closes #1703.
+- [x] **ASCII Check Scope**: `./aixcl checks ascii` scanned gitignored third-party files (e.g. `.agent-mirror/node_modules`); it now iterates only git-tracked markdown, anchored to the repo root, and yamllint gained a matching ignore list. Closes #1699.
 - [x] **Startup Output Leak**: fresh container creation echoed multi-line inline entrypoint scripts (the GPU ollama privilege-drop block) into `stack start` output; the `run_compose` filter now suppresses the full `podman run` echo while passing WARN and Error lines through. Closes #1694.
 
 ### Documentation
 
 - [x] **Agent Pitfalls**: four new entries -- GPG signing is human-only, pre-commit re-staging, closed-vs-merged PR verification, and the force-push race -- authored by the junior agent from its own review history. Closes #1697.
-- [x] **Stale References**: `component:runtime-core` no longer describes OpenCode as a runtime core service, and the dead `tests/test-results.md` watcher entry is gone from the OpenCode config template. Closes #1698.
-- [x] **Tool Discipline**: the OpenCode agent definition enumerates available tools, routes subagents through the `task` tool, and instructs continuing past tool errors instead of stopping. Closes #1705.
+- [x] **Stale References**: `component:runtime-core` no longer describes the peer agent as a runtime core service, and the dead `tests/test-results.md` watcher entry is gone from the peer-agent config template. Closes #1698.
+- [x] **Tool Discipline**: the peer agent definition enumerates available tools, routes subagents through the `task` tool, and instructs continuing past tool errors instead of stopping. Closes #1705.
 
 
 ## [v1.1.48] - 2026-07-02
@@ -525,7 +525,7 @@ Release v1.1.46 -- CLI alignment: the developer workflow (checks, tests, release
 - [x] **aixcl checks command**: Single entry point for local CI parity -- paths, mirror parity, elision guard, generated files, ASCII, yamllint, compose validation, and environment, with a summary table from `checks all`. Closes #1658.
 - [x] **aixcl release command**: Release process mechanics as a CLI command (prep, tag, finish, status). Encodes the two-remote model (branches to origin, PRs and tags to upstream); GPG commits and merge decisions remain with the human operator. Closes #1659.
 - [x] **aixcl test command**: All test suites (command, workflow, lib, apps, security) behind the single entry point with --quick and --dry-run pass-through. Includes new CONTEXT.md coverage for tests/lib and scripts/utils, plus completion, manpage, and AGENTS.md updates. Closes #1662.
-- [x] **sync-mirrors.sh**: One-command .claude/.opencode skills and rules synchronization with parity verification. Closes #1661.
+- [x] **sync-mirrors.sh**: One-command .claude/.agent-mirror skills and rules synchronization with parity verification. Closes #1661.
 
 ### Changed
 
@@ -558,7 +558,7 @@ Release v1.1.44 -- Test suite cleanup, cAdvisor registry fix, and engine auto-de
 
 ### Changed
 
-- [x] **Test suite cleanup and renumbering**: Removed 8 defunct command tests covering vLLM, llama.cpp, and OpenCode engines. Removed 3 standalone defunct scripts (opencode-engine-integration-test.sh, aixcl-test, integration/platform-tests.sh). Renumbered remaining command tests to a clean 00-08/99 sequence. Redirected all test result output from the repo tree to /tmp. Closes #1641.
+- [x] **Test suite cleanup and renumbering**: Removed 8 defunct command tests covering vLLM, llama.cpp, and agent engines. Removed 3 standalone defunct scripts (agent-engine-integration-test.sh, aixcl-test, integration/platform-tests.sh). Renumbered remaining command tests to a clean 00-08/99 sequence. Redirected all test result output from the repo tree to /tmp. Closes #1641.
 
 ### Fixed
 
@@ -683,7 +683,7 @@ Release v1.1.39 -- Developer tooling, repository health automation, and CI harde
 
 ### Changed
 
-- [x] **OpenCode Demoted to Supported Client**: Corrected AGENTS.md, invariants, and governance docs to treat OpenCode as a supported AI coding client rather than a platform invariant; AIXCL is client-agnostic above the OpenAI-compatible API layer. Closes #1516.
+- [x] **Peer Agent Demoted to Supported Client**: Corrected AGENTS.md, invariants, and governance docs to treat the peer agent as a supported AI coding client rather than a platform invariant; AIXCL is client-agnostic above the OpenAI-compatible API layer. Closes #1516.
 
 ### Fixed
 
@@ -723,7 +723,7 @@ Release v1.1.37 -- PR body validation hardening, README improvements, Discussion
 ### Documentation
 
 - [x] **README GPG Setup and Codespaces Guide**: Added GPG key setup as a numbered prerequisite step before stack start, added Docker 24+ as a supported container engine, and added a GitHub Codespaces compatibility note covering Docker engine differences, yamllint installation, and port forwarding. Closes #1490.
-- [x] **Discussions Discrete-References Rule**: Extended `.claude/rules/discussions.md` and `.opencode/rules/discussions.md` to require one issue/PR reference per list item in Discussion posts, mirroring the convention enforced for issues and PRs. Closes #1495.
+- [x] **Discussions Discrete-References Rule**: Extended `.claude/rules/discussions.md` and `.agent-mirror/rules/discussions.md` to require one issue/PR reference per list item in Discussion posts, mirroring the convention enforced for issues and PRs. Closes #1495.
 
 ## [v1.1.36] - 2026-06-16
 
@@ -739,7 +739,7 @@ Release v1.1.36 -- Vault bootstrap hardening, Docker-engine compatibility, ASCII
 
 ### Documentation
 
-- [x] **GitHub Discussions Governance**: Added `.claude/rules/discussions.md` and `.opencode/rules/discussions.md` defining secret-handling, untrusted-input, advisory-only, and no-proactive-crawl rules for the Discussions surface. Closes #1475.
+- [x] **GitHub Discussions Governance**: Added `.claude/rules/discussions.md` and `.agent-mirror/rules/discussions.md` defining secret-handling, untrusted-input, advisory-only, and no-proactive-crawl rules for the Discussions surface. Closes #1475.
 - [x] **ASCII Sweep -- Arrows and Checkmarks**: Replaced non-ASCII arrow (`->`) and checkmark characters with plain ASCII equivalents across 7 markdown files. Closes #1477 (part 1).
 - [x] **ASCII Sweep -- Box-Drawing Diagrams**: Converted box-drawing tree characters to plain ASCII notation in 5 diagram/README files. Closes #1477 (part 2).
 - [x] **No-Hard-Wrap Convention**: Documented that issue and PR body prose paragraphs must not be hard-wrapped at a fixed column width, and that discrete references in list items should be split into separate entries rather than comma-packed. Closes #1482.
@@ -933,14 +933,14 @@ Release v1.1.29 -- Agent intelligence package for agentic navigation.
 - [x] **12 CONTEXT.md Files**: High-traffic directories now have agent-readable index files covering purpose, key behavioural notes, agent guidance, and cross-references. Directories covered: `lib/aixcl/commands/`, `lib/core/`, `lib/cli/`, `scripts/checks/`, `scripts/vault/`, `scripts/runtime/`, `scripts/security/`, `services/`, `vault/agent-config/`, `tests/command-tests/`, `.claude/rules/`, `etc/app-scaffold/`. Closes #1371.
 - [x] **5 Architectural Decision Records**: `docs/architecture/decisions/` documents the five decisions agents repeatedly question or revert: `network_mode: host` (001), one-shot bootstrap containers (002), `VAULT_TOKEN` escape hatch (003), topological sort for `depends_on` (004), and Python3 for YAML parsing (005). Closes #1371.
 - [x] **Service Map**: `docs/reference/service-map.md` provides a single table of all 21 platform services with profile membership, port, entrypoint, and health check -- replacing the need to parse `docker-compose.yml` for an overview. Closes #1371.
-- [x] **add-service Skill**: `.claude/skills/add-service/SKILL.md` (and `.opencode` mirror) provides a 9-step guided checklist for adding a platform service while preserving all invariants. Closes #1371.
-- [x] **cut-release Skill**: `.claude/skills/cut-release/SKILL.md` (and `.opencode` mirror) encodes the full release workflow with dynamic version computation. Closes #1371.
+- [x] **add-service Skill**: `.claude/skills/add-service/SKILL.md` (and `.agent-mirror` mirror) provides a 9-step guided checklist for adding a platform service while preserving all invariants. Closes #1371.
+- [x] **cut-release Skill**: `.claude/skills/cut-release/SKILL.md` (and `.agent-mirror` mirror) encodes the full release workflow with dynamic version computation. Closes #1371.
 - [x] **Agent Pitfalls Guide**: `docs/developer/agent-pitfalls.md` documents 12 common agent mistakes with corrections -- covering workflow, architecture, vault, and versioning errors. Closes #1371.
 
 ### Changed
 
 - [x] **docker-compose.yml Invariant Comment**: Header comment block explicitly states that `network_mode: host` and `restart: on-failure` on bootstrap containers are intentional invariants, with ADR references, to stop repeated reviewer questions. Closes #1371.
-- [x] **agent-context.md Extended**: `.opencode/agents/agent-context.md` gains the cold-start sequence, fork remote table, elision check reminder, and references to new ADRs and skills -- while retaining the full context OpenCode agents require. Closes #1371.
+- [x] **agent-context.md Extended**: `.agent-mirror/agents/agent-context.md` gains the cold-start sequence, fork remote table, elision check reminder, and references to new ADRs and skills -- while retaining the full context peer agents require. Closes #1371.
 
 ### Fixed
 
@@ -992,7 +992,7 @@ Release v1.1.27 -- Declarative app provisioning contract for BYO apps, governanc
 - [x] **App Provisioning Contract**: New declarative `provision:` block in `app.yaml`. The platform idempotently seeds Vault secrets under `kv/apps/<name>`, renders them to a per-app secrets volume, and creates the PostgreSQL role and database. New `./aixcl app provision` and `./aixcl app secrets` subcommands; scaffold template includes a commented provision block. (Fixes #1331)
 - [x] **App Healthcheck Dispatcher**: `http`, `cmd`, and `container_running` healthcheck types declared in `app.yaml` are now honored by app status reporting. (Fixes #1336)
 - [x] **AI Elision Guard**: New `scripts/checks/check-ai-elisions.sh` detects placeholder text standing in for preserved content and suspicious mass deletions; enforced in CI on every PR and documented in the pre-commit checklist. (Fixes #1346)
-- [x] **Rules and Skills Mirror Parity Check**: `check-agents.sh` now verifies `.claude/` and `.opencode/` rules and skills directories are byte-identical. (Fixes #1348)
+- [x] **Rules and Skills Mirror Parity Check**: `check-agents.sh` now verifies `.claude/` and `.agent-mirror/` rules and skills directories are byte-identical. (Fixes #1348)
 - [x] **Fork Workflow Documentation**: New DEVELOPMENT.md section covering fork remotes, local-only overrides, upstream defect capture, and pre-upstream scrub checklist. (Fixes #1349)
 
 ### Changed
@@ -1091,7 +1091,7 @@ Release v1.1.24 -- Vault bootstrap reliability, multi-agent CLI support, and age
 
 ### Added
 
-- [x] **Multi-Agent CLI Support**: Created `.claude/` directory with Claude Code compatibility files (`CLAUDE.md`, rules, skills, commands, settings). Documented multi-agent CLI support (OpenCode + Claude Code) in docs/README.md. (Fixes #1291, #1299)
+- [x] **Multi-Agent CLI Support**: Created `.claude/` directory with Claude Code compatibility files (`CLAUDE.md`, rules, skills, commands, settings). Documented multi-agent CLI support (a peer agent + Claude Code) in docs/README.md. (Fixes #1291, #1299)
 
 ### Changed
 
@@ -1101,7 +1101,7 @@ Release v1.1.24 -- Vault bootstrap reliability, multi-agent CLI support, and age
 
 - [x] **Vault Bootstrap Reliability**: Fixed Vault init and stack start reliability issues, resolving race conditions between Vault initialization, bootstrap agents, and PostgreSQL startup. (Fixes #1289, #1290)
 - [x] **Deprecated Profile References**: Removed stale references to deprecated `usr` and `dev` profiles from `docs/developer/adding-services.md`. (Fixes #1298)
-- [x] **Workflow Guard Skill**: Corrected dead references to `workflow-governance.md` in `.opencode/skills/workflow-guard/SKILL.md`. (Fixes #1297)
+- [x] **Workflow Guard Skill**: Corrected dead references to `workflow-governance.md` in `.agent-mirror/skills/workflow-guard/SKILL.md`. (Fixes #1297)
 
 ### Verification
 
@@ -1360,11 +1360,11 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Changed
 
-- [x] **OpenCode Configuration**: Added `opencode.json` to `.gitignore` and shipped a vanilla configuration template to prevent accidental commits of personal settings. (Fixes #1154)
+- [x] **Agent Configuration**: Added `agent config` to `.gitignore` and shipped a vanilla configuration template to prevent accidental commits of personal settings. (Fixes #1154)
 
 ### Related Issues
 
-- [x] Fixes #1154 - Gitignore opencode.json and ship vanilla config template
+- [x] Fixes #1154 - Gitignore agent config and ship vanilla config template
 - [x] Fixes #1157 - Correct factual errors in SECURITY.md posture documentation
 - [x] Fixes #1159 - Migrate Vault from dev mode to production mode
 - [x] Fixes #1170 - Fix Vault init not creating database engine roles policies or AppRole auth
@@ -1418,7 +1418,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Changed
 
-- **Duplicate Logic Elimination**: Extracted triplicated stopped-status output block in `stack.sh` into `_print_stopped_status()` helper. Extracted duplicated `opencode.json` model-clearing block in `engine.sh` into `_clear_opencode_model()` helper. (Fixes #1146)
+- **Duplicate Logic Elimination**: Extracted triplicated stopped-status output block in `stack.sh` into `_print_stopped_status()` helper. Extracted duplicated `agent config` model-clearing block in `engine.sh` into `_clear_agent_model()` helper. (Fixes #1146)
 
 ### Related Issues
 
@@ -1505,7 +1505,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Configuration
 
-- **Cloud Provider Agnostic**: Made `opencode.json` provider-agnostic and removed hardcoded `small_model` to enable cloud provider fallback. (Fixes #1058, #1062)
+- **Cloud Provider Agnostic**: Made `agent config` provider-agnostic and removed hardcoded `small_model` to enable cloud provider fallback. (Fixes #1058, #1062)
 - **Environment Variable Hardening**: Replaced hardcoded Vault dev token and PostgreSQL fallback with proper environment variable configuration. (Fixes #998)
 
 ### Documentation
@@ -1521,7 +1521,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 - Fixes #1055 - Poll Vault KV for bootstrap passwords
 - Fixes #1057 - Update agent-context.md
 - Fixes #1058 - Remove hardcoded small_model
-- Fixes #1062 - Make opencode.json provider-agnostic
+- Fixes #1062 - Make agent config provider-agnostic
 - Fixes #1064 - Create missing security documentation
 - Fixes #1068 - Tighten PR creation governance
 - Fixes #1071 - Document GPG terminal setup
@@ -1536,7 +1536,7 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Configuration
 
-- **OpenCode Schema Alignment**: Enhanced opencode.json with official schema features including shell, logLevel, snapshot, share, autoupdate, username, and watcher ignore patterns (Fixes #1041)
+- **Agent Config Schema Alignment**: Enhanced agent config with official schema features including shell, logLevel, snapshot, share, autoupdate, username, and watcher ignore patterns (Fixes #1041)
 - **Small Model Support**: Added small_model configuration for fast lightweight tasks like title generation
 - **Artifact Prevention**: Updated .gitignore to prevent accidental commits of npm artifacts (node_modules, package-lock.json, bun.lock)
 
@@ -1555,18 +1555,18 @@ Release v1.1.15 -- Vault production mode hardening, health check fixes, and docu
 
 ### Governance
 
-- **Consolidated OpenCode governance**: Eliminated `ai/` directory duplication by moving all agent definitions, skills, and rules into `.opencode/` per the canonical OpenCode layout (Fixes #1033)
-- **Removed stale references**: Cleaned up `ai/` and `.opencode/commands/` references from `AGENTS.md`, `opencode.json`, and documentation (Fixes #1035)
+- **Consolidated agent governance**: Eliminated `ai/` directory duplication by moving all agent definitions, skills, and rules into `.agent-mirror/` per the canonical agent layout (Fixes #1033)
+- **Removed stale references**: Cleaned up `ai/` and `.agent-mirror/commands/` references from `AGENTS.md`, `agent config`, and documentation (Fixes #1035)
 
 ### Documentation
 
-- **Documentation overhaul**: Restructured `docs/` for clarity, aligned `opencode.json` with `.opencode/` conventions, and added `.opencode/rules/` for workflow, formatting, and security constraints (Fixes #1031)
+- **Documentation overhaul**: Restructured `docs/` for clarity, aligned `agent config` with `.agent-mirror/` conventions, and added `.agent-mirror/rules/` for workflow, formatting, and security constraints (Fixes #1031)
 
 ### Related Issues
 
-- Fixes #1031 - Docs overhaul and opencode.json alignment
-- Fixes #1033 - Consolidate OpenCode governance and eliminate ai/ duplication
-- Fixes #1035 - Remove stale ai/ and .opencode/commands/ references
+- Fixes #1031 - Docs overhaul and agent config alignment
+- Fixes #1033 - Consolidate agent governance and eliminate ai/ duplication
+- Fixes #1035 - Remove stale ai/ and .agent-mirror/commands/ references
 
 ---
 
@@ -1917,7 +1917,7 @@ Release Candidate 5 for v1.0.0. This release includes 27 commits since RC4 with 
 - Added network_mode and fixed permissions for pgAdmin container (#764)
 - Fixed pgAdmin servers.json import permission issues (#759)
 - Fixed docker-compose.yml corruption from models add command (#744)
-- Fixed three critical issues: model selection, pgadmin connection, OpenCode token limit (#740)
+- Fixed three critical issues: model selection, pgadmin connection, agent token limit (#740)
 - Fixed pgAdmin permission errors with entrypoint script (#737)
 - Removed database deletion from engine switch command (#736)
 - Fixed environment variable consistency issues (#733)
@@ -2002,7 +2002,7 @@ Release Candidate 3 for v1.0.0. This release includes 35+ commits since RC2 focu
 
 ### Fixed
 
-- **vLLM Token Limit Error**: Fixed vLLM compatibility issues with OpenCode using `--enforce-eager` flag to disable CUDA graph capture (Fixes #685, #682, #682)
+- **vLLM Token Limit Error**: Fixed vLLM compatibility issues with the peer agent using `--enforce-eager` flag to disable CUDA graph capture (Fixes #685, #682, #682)
 - **ShellCheck SC2168**: Resolved ShellCheck errors in test infrastructure (Fixes #678)
 - **Profile Services**: Fixed PROFILE_SERVICES to use current INFERENCE_ENGINE from .env (Fixes #675)
 - **Grafana Version**: Corrected Grafana image tag to use valid stable version
@@ -2030,7 +2030,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 ### Added
 
 - Token usage reporting with actual Ollama counts for accurate model usage tracking
-- OpenCode orchestrator YAML configuration replacing legacy agent config
+- Agent orchestrator YAML configuration replacing legacy agent config
 - Commercial licensing documentation (`COMMERCIAL.md`)
 - Explicit timeouts to platform test script API calls
 - orchestrator members test timeout increase to prevent false failures
@@ -2057,7 +2057,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 
 ### Documentation
 
-- Clarified OpenCode plugin omission from `RUNTIME_CORE_SERVICES`
+- Clarified IDE plugin omission from `RUNTIME_CORE_SERVICES`
 - Added assignee and PR labeling requirements to development workflow
 - Improved overall documentation consistency
 
@@ -2081,15 +2081,15 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 - **PostgreSQL Integration**: Added automatic PostgreSQL-based storage for orchestrator conversations
   - Automatic schema creation on startup via `ensure_schema()` function
   - Migration system with `001_create_chat_table.sql` for initial schema setup
-  - Support for both Open WebUI and OpenCode plugin conversations via `source` field
+  - Support for both Open WebUI and IDE plugin conversations via `source` field
   - Conversation tracking with unique IDs generated from message hashes
   - Full message history preservation with stage data (Stage 1, 2, 3 responses)
 
 - **Database Storage Module** (`orchestrator/backend/db_storage.py`):
-  - `create_opencode_conversation()` - Create new OpenCode conversations
-  - `get_opencode_conversation()` - Retrieve conversations by ID
+  - `create_agent_conversation()` - Create new agent conversations
+  - `get_agent_conversation()` - Retrieve conversations by ID
   - `add_message_to_conversation()` - Add messages to existing conversations
-  - `list_opencode_conversations()` - List all OpenCode conversations
+  - `list_agent_conversations()` - List all agent conversations
   - `delete_conversation()` - Delete conversations
   - `find_conversation_by_messages()` - Find conversations by message content
 
@@ -2119,7 +2119,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
 #### Database Utilities
 - **Utility Scripts** (organized in `scripts/db/`):
   - `002_add_source_column.sql` - Migration script for adding source column to existing databases
-  - `query_opencode_chats.sql` - Query script for OpenCode conversations
+  - `query_agent_chats.sql` - Query script for agent conversations
   - `query_all_chats.sql` - Query script for all conversations
   - `check_db.sh` - Quick database inspection script
   - `README.md` - Documentation for database utilities
@@ -2139,7 +2139,7 @@ Release Candidate 2 for v1.0.0. This release includes 58 commits since RC1 cover
   - Created logical directory structure for better maintainability
 
 - **File Cleanup**:
-  - Removed duplicate `check_opencode.sql` file (consolidated with `check_opencode_chats.sql`)
+  - Removed duplicate `check_agent.sql` file (consolidated with `check_agent_chats.sql`)
   - Organized temporary test files into appropriate directories
   - Updated all script paths in documentation
 
@@ -2156,7 +2156,7 @@ The `chat` table structure:
 - `title` (TEXT) - Conversation title
 - `chat` (JSONB) - Full conversation data with messages array
 - `meta` (JSONB) - Additional metadata
-- `source` (TEXT) - Source identifier ('openwebui' or 'opencode')
+- `source` (TEXT) - Source identifier ('openwebui' or 'agent')
 - `created_at` (TIMESTAMP) - Creation timestamp
 - `updated_at` (TIMESTAMP) - Auto-updated on changes
 - `user_id` (TEXT) - Optional user identifier
@@ -2199,7 +2199,7 @@ None
 
 ### Removed
 
-- Removed duplicate `check_opencode.sql` file (functionality preserved in `check_opencode_chats.sql`)
+- Removed duplicate `check_agent.sql` file (functionality preserved in `check_agent_chats.sql`)
 
 ### Fixed
 
@@ -2210,4 +2210,4 @@ None
 
 - Database credentials are managed via environment variables
 - Connection pooling with configurable pool size
-- Graceful degradation when database is unavailable (service opencodes without persistence)
+- Graceful degradation when database is unavailable (service continues without persistence)

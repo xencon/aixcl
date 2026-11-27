@@ -6,7 +6,7 @@ description: >
   workflow. Use before a release cycle, after a long gap, or when asked to
   "check updates", "audit versions", "what's outdated", "bump components".
 argument-hint: <optional: category to audit, or blank for all>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: maintenance
   version: "1.2"

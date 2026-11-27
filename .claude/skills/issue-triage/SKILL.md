@@ -7,10 +7,10 @@ description: >
   one, or asked to "triage", "take issue N", "work on this issue". Triggers
   on GitHub issue URLs and issue numbers.
 argument-hint: <issue number or GitHub issue URL>
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 metadata:
   category: workflow
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Issue Triage
@@ -53,7 +53,7 @@ sign-off before any code.
 
 Read the rules that apply to the touched file types (`.claude/rules/`,
 DEVELOPMENT.md) and the target directory's `CONTEXT.md`. Write down the
-checklist you will be held to (mirror parity, ASCII, shellcheck, pin
+checklist you will be held to (skill frontmatter, ASCII, shellcheck, pin
 hygiene, ...) -- CI enforces these later; violating them now compounds.
 
 ## Step 4: Investigate and draft an approach

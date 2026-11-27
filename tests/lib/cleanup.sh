@@ -26,12 +26,6 @@ restore_state() {
         log_info "Removed .env file (no backup)"
     fi
 
-    # Restore opencode.json
-    if [[ -f "$backup_dir/opencode.json.backup" ]]; then
-        cp "$backup_dir/opencode.json.backup" "${SCRIPT_DIR}/opencode.json"
-        log_info "Restored opencode.json"
-    fi
-
     # Restore original engine
     if [[ -f "$backup_dir/engine.backup" ]]; then
         local original_engine

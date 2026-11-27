@@ -179,19 +179,7 @@ function init_stack() {
         fi
     fi
 
-    # --- Step 3: Create opencode.json from example ---
-    local opencode_file="${SCRIPT_DIR}/opencode.json"
-    local opencode_example="${SCRIPT_DIR}/config/opencode.json.example"
-    if [ ! -f "$opencode_file" ]; then
-        if [ -f "$opencode_example" ]; then
-            cp "$opencode_example" "$opencode_file"
-            echo "Created opencode.json from config/opencode.json.example"
-        else
-            echo "Warning: config/opencode.json.example not found, skipping opencode.json creation"
-        fi
-    fi
-
-    # --- Step 4: Initialise external volumes ---
+    # --- Step 3: Initialise external volumes ---
     local vol_script="${SCRIPT_DIR}/scripts/utils/init-volumes.sh"
     if [ -f "$vol_script" ]; then
         echo "Initialising external volumes..."
@@ -199,7 +187,7 @@ function init_stack() {
     fi
     echo ""
 
-    # --- Step 5: Admin credentials ---
+    # --- Step 4: Admin credentials ---
     load_env_file "$env_file"
     while true; do
         read -r -p "Enter admin username: " AIXCL_ADMIN_USER
@@ -238,7 +226,7 @@ function init_stack() {
     echo "  PostgreSQL database: $postgres_db"
     echo ""
 
-    # --- Step 6: Post-init notices ---
+    # --- Step 5: Post-init notices ---
     if ! gpg --list-secret-keys --keyid-format LONG 2>/dev/null | grep -q "^sec"; then
         echo "Notice: No GPG key found. GPG signing is required for commits to main/dev."
         echo "  Run: ./scripts/utils/setup-gpg.sh"
@@ -1298,7 +1286,6 @@ function start_service() {
         log_info "Operational Services (profile-dependent):"
         log_info "  ${ALL_SERVICES[*]}"
         echo ""
-        log_info "Note: OpenCode is a VS Code plugin, not a containerized service"
         log_info "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi
@@ -1358,7 +1345,6 @@ function service() {
         echo "Runtime Core Services (always enabled): engine (${INFERENCE_ENGINE:-ollama})"
         echo "Operational Services (profile-dependent): ${ALL_SERVICES[*]}"
         echo ""
-        echo "Note: OpenCode is a VS Code plugin, not a containerized service"
         echo "For service contracts and profiles, see: docs/architecture/governance/service_contracts/"
         return 1
     fi

@@ -5,7 +5,7 @@ description: >
   command: retrospective, changelog judgment, tag, announcement, and sync.
   Operator-gated (disable-model-invocation) -- run only when the maintainer
   explicitly asks to cut a release.
-compatibility: OpenCode, Claude Code
+compatibility: Claude Code
 disable-model-invocation: true
 metadata:
   category: workflow

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS agent_sessions (
     parent_session_id UUID REFERENCES agent_sessions(session_id),
     started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     ended_at TIMESTAMP WITH TIME ZONE,
-    status VARCHAR(16) NOT NULL DEFAULT 'active' 
+    status VARCHAR(16) NOT NULL DEFAULT 'active'
         CHECK (status IN ('active', 'completed', 'failed', 'blocked')),
     human_approval_id UUID,
     conversation_log JSONB DEFAULT '[]'::jsonb,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS agent_sessions (
     previous_hash VARCHAR(64),
     current_hash VARCHAR(64) GENERATED ALWAYS AS (
         encode(digest(
-            session_id::text || agent_name || started_at::text || 
+            session_id::text || agent_name || started_at::text ||
             COALESCE(conversation_log::text, '[]'),
             'sha256'
         ), 'hex')
@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS agent_actions (
     tool_output JSONB,
     execution_time_ms INTEGER,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    security_scan_status VARCHAR(16) 
+    security_scan_status VARCHAR(16)
         CHECK (security_scan_status IN ('pending', 'passed', 'failed')),
-    compliance_status VARCHAR(16) 
+    compliance_status VARCHAR(16)
         CHECK (compliance_status IN ('pending', 'passed', 'failed')),
     previous_hash VARCHAR(64),
     current_hash VARCHAR(64),
@@ -79,7 +79,7 @@ COMMENT ON TABLE human_approvals IS 'Tracks human-in-the-loop approvals for crit
 CREATE TABLE IF NOT EXISTS audit_logs (
     log_id BIGSERIAL PRIMARY KEY,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    severity VARCHAR(16) NOT NULL 
+    severity VARCHAR(16) NOT NULL
         CHECK (severity IN ('info', 'warning', 'error', 'critical')),
     agent_name VARCHAR(64) NOT NULL,
     event_type VARCHAR(64) NOT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS safe_patterns (
     automation_enabled BOOLEAN DEFAULT false,
     last_used_at TIMESTAMP WITH TIME ZONE,
     quarterly_review_due TIMESTAMP WITH TIME ZONE DEFAULT NOW() + INTERVAL '90 days',
-    review_status VARCHAR(16) DEFAULT 'pending' 
+    review_status VARCHAR(16) DEFAULT 'pending'
         CHECK (review_status IN ('pending', 'reviewed', 'deprecated'))
 );
 
@@ -137,13 +137,13 @@ DECLARE
     prev_hash VARCHAR(64) := '0';
     rec RECORD;
 BEGIN
-    FOR rec IN 
-        SELECT action_id, previous_hash, current_hash 
-        FROM agent_actions 
+    FOR rec IN
+        SELECT action_id, previous_hash, current_hash
+        FROM agent_actions
         ORDER BY timestamp
     LOOP
         IF rec.previous_hash != prev_hash THEN
-            RETURN QUERY SELECT 
+            RETURN QUERY SELECT
                 rec.action_id,
                 prev_hash,
                 rec.previous_hash,
@@ -161,9 +161,9 @@ RETURNS INTEGER AS $$
 DECLARE
     deleted_count INTEGER;
 BEGIN
-    DELETE FROM audit_logs 
+    DELETE FROM audit_logs
     WHERE retention_until < NOW();
-    
+
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
     RETURN deleted_count;
 END;
@@ -192,7 +192,7 @@ BEGIN
         WHEN 'dependency-add' THEN action_risk := 6.0;
         ELSE action_risk := 3.0;
     END CASE;
-    
+
     -- File path risk
     IF files_affected IS NOT NULL THEN
         IF array_to_string(files_affected, ',') ~ '\.github/workflows/' THEN
@@ -201,18 +201,15 @@ BEGIN
         IF array_to_string(files_affected, ',') ~ '\.security/' THEN
             file_risk := file_risk + 3.0;
         END IF;
-        IF array_to_string(files_affected, ',') ~ 'opencode\.json' THEN
-            file_risk := file_risk + 2.0;
-        END IF;
     END IF;
-    
+
     -- Agent mode risk (subagents are lower risk)
     IF agent_mode = 'primary' THEN
         mode_risk := 1.0;
     ELSE
         mode_risk := 0.5;
     END IF;
-    
+
     RETURN LEAST(base_score + action_risk + file_risk + mode_risk, 10.0);
 END;
 $$ LANGUAGE plpgsql;
@@ -222,7 +219,7 @@ CREATE OR REPLACE FUNCTION increment_safe_pattern_usage(pattern_hash_input VARCH
 RETURNS VOID AS $$
 BEGIN
     UPDATE safe_patterns
-    SET 
+    SET
         usage_count = usage_count + 1,
         last_used_at = NOW()
     WHERE pattern_hash = pattern_hash_input;
@@ -251,8 +248,8 @@ EXECUTE FUNCTION update_session_end_time();
 -- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO aixcl_agent;
 
 -- Verification: Show created tables
-SELECT table_name, table_type 
-FROM information_schema.tables 
+SELECT table_name, table_type
+FROM information_schema.tables
 WHERE table_schema = 'public'
 AND table_name IN ('agent_sessions', 'agent_actions', 'human_approvals', 'audit_logs', 'safe_patterns')
 ORDER BY table_name;

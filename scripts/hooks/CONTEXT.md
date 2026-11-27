@@ -33,5 +33,5 @@ machine before a commit is created.
 ## Cross-References
 
 - `docs/developer/pre-commit-setup.md` -- installation guide
-- `.claude/rules/ci-checks.md` / `.opencode/rules/ci-checks.md` -- the pre-commit checklist agents follow
+- `.claude/rules/ci-checks.md` -- the pre-commit checklist agents follow
 - `.github/workflows/security.yml` -- CI shellcheck settings this hook mirrors

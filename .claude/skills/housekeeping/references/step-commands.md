@@ -54,8 +54,6 @@ before the next release) and **wait for direction**.
   allowlist the path in `.gitleaks.toml` instead
 - Deleting a remote branch that has an open PR -- check the PR state is
   MERGED first (a closed PR is not a merged PR)
-- Running delegated checks in parallel -- the delegation log is
-  sequential-only
 
 ## Step 2: Branch hygiene
 

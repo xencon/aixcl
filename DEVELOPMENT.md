@@ -3,14 +3,14 @@
 | field         | value                                                                      |
 |---------------|----------------------------------------------------------------------------|
 | file          | DEVELOPMENT.md                                                             |
-| version       | 2.1 (tracks workflow evolution; subordinate to AGENTS.md v2.3)             |
+| version       | 2.2 (tracks workflow evolution; subordinate to AGENTS.md v2.4)             |
 | scope         | all agents                                                                 |
 | priority      | high                                                                       |
-| compatibility | OpenCode, Claude Code, Cursor, Copilot, any MCP-compatible agent           |
+| compatibility | Claude Code, Cursor, Copilot, any MCP-compatible agent                     |
 
 Agents MUST read this file before performing any development work in this repository.
 This file is the single source of truth for workflow, formatting, and contribution rules.
-It complements `AGENTS.md` (the operating contract) and `.opencode/rules/` (behavioral constraints).
+It complements `AGENTS.md` (the operating contract) and `.claude/rules/` (behavioral constraints).
 
 ---
 
@@ -220,7 +220,7 @@ Allowed types: `fix`, `feat`, `refactor`, `docs`, `test`, `chore`, `ci`
 - Use bullet points for multi-change commits
 - Always include `Fixes #<n>` or `Addresses #<n>`
 - **Review the staged diff before committing** (see the Pre-Commit
-  Checklist in `.claude/rules/ci-checks.md` / `.opencode/rules/ci-checks.md`,
+  Checklist in `.claude/rules/ci-checks.md`,
   and `./scripts/checks/check-ai-elisions.sh --staged`). Unexplained mass
   deletions and placeholder text are commit blockers, not review nits.
 
@@ -364,15 +364,14 @@ Consult these before making architectural or structural decisions:
 
 ---
 
-## 8. OpenCode-specific notes
+## 8. Claude Code-specific notes
 
-When working via the OpenCode CLI:
+When working via Claude Code:
 
-- This file is loaded automatically via the `instructions` field in `opencode.json`
-- The AIXCL local provider is configured in `opencode.json` -- use `/connect` in the OpenCode TUI to select a provider, or connect to the local provider with `./aixcl stack start --profile sys`
-- Custom agents can be added under `.opencode/agents/`
-- Rules can be added under `.opencode/rules/`
-- Permissions for `bash`, `edit`, and `webfetch` tools are configured in `opencode.json`
+- `CLAUDE.md` imports `AGENTS.md`, so the operating contract loads automatically every session
+- Rules under `.claude/rules/` are loaded automatically
+- Skills live under `.claude/skills/<name>/SKILL.md`; commands under `.claude/commands/`
+- Shared tool permissions are configured in `.claude/settings.json` (local overrides in the gitignored `.claude/settings.local.json`)
 
 ---
 

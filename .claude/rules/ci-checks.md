@@ -65,7 +65,7 @@ up front:
 
 ## CI Workflows Summary
 
-All 12 workflows:
+All 11 workflows:
 
 | Workflow | Trigger | Key Checks |
 |----------|---------|------------|
@@ -73,9 +73,8 @@ All 12 workflows:
 | bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown, check-ai-elisions |
 | quick-tests.yml | Push to dev (.sh files) | Security tests, bash -n, ./aixcl help |
 | security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review, gitleaks, shell obfuscation patterns, Action SHA pins |
-| documentation-checks.yml | PR + push | check-paths.sh, check-generated-files.sh, check-profiles.sh, yamllint, compose validate |
+| documentation-checks.yml | PR + push | check-paths.sh, check-agents.sh, check-generated-files.sh, check-profiles.sh, yamllint, compose validate |
 | codeql.yml | PR + push | GitHub Actions workflow security (actions language only) |
-| check-opencode.yml | PR touching .opencode paths | check-agents.sh (agent/skill/rules/commands parity) |
 | integration-tests.yml | PR + push (main/dev) | Compose validation, engine and stack configuration tests |
 | dependency-review.yml | PR to main/dev | GitHub dependency review action |
 | commit-signature-check.yml | Push to main/dev | GPG signature presence (reporting only, non-blocking) |
@@ -84,16 +83,16 @@ All 12 workflows:
 
 ## Running Checks Locally
 ```bash
-# Full pre-PR check (paths, mirror parity, elisions, generated files,
-# ASCII, pins, profile reconciliation, yamllint, compose validation,
-# environment, OpenCode model liveness)
+# Full pre-PR check (paths, skill frontmatter, elisions, generated files,
+# ASCII, image and action pins, profile reconciliation, obfuscation,
+# yamllint, compose validation, environment)
 ./aixcl checks all
 
 # Shellcheck sweep (not part of checks all -- run before shell changes)
 shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path "./.git/*")
 
 # Individual checks
-./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, action-pins, profiles, obfuscation, yaml, compose, env, models
+./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, action-pins, profiles, obfuscation, yaml, compose, env
 ./aixcl checks pr-refs <body-file>
 ./aixcl checks pr-ready <pr-number>
 ```
