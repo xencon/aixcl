@@ -13,6 +13,7 @@ committing. This directory is the pre-commit safety net.
 | `check-generated-files.sh` | Verifies gitignored generated files are not tracked in git. | Part of CI; run locally if you added a new generated file. |
 | `check-paths.sh` | Validates all relative links in markdown files resolve to real paths. | After adding or moving markdown files. |
 | `check-profiles.sh` | Reconciles PROFILE_SERVICES in `config/profiles/*.env` against the enumerations in `docs/architecture/governance/02_profiles.md`. Caught the bld/alertmanager drift on its first run. | After editing a profile env file or 02_profiles.md. |
+| `check-action-pins.sh` | Every `uses:` in `.github/workflows/` must be pinned to a 40-char commit SHA with a `# vX.Y.Z` comment. Tags are movable; SHAs are not (#2080). | After adding or editing a workflow. |
 | `check-obfuscation.sh` | Shell obfuscation/injection patterns: pipe-to-shell, base64-to-shell, ANSI-C escapes, quote-split expansion, eval without an `eval-waiver:` comment. | After adding shell code or an eval site. |
 
 ## The Elision Guard -- Do Not Skip
@@ -41,5 +42,5 @@ State the intent explicitly in the commit message when using the override.
 
 - `.github/workflows/bash-ci.yml` -- runs check-ai-elisions and check-paths
 - `.github/workflows/documentation-checks.yml` -- runs check-paths, check-generated-files, and check-profiles
-- `.github/workflows/security.yml` -- runs ShellCheck
+- `.github/workflows/security.yml` -- runs ShellCheck, check-obfuscation, and check-action-pins
 - `.claude/rules/ci-checks.md` -- full CI workflow summary

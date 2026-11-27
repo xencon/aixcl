@@ -72,7 +72,7 @@ All 12 workflows:
 | pr-validation.yml | PR open/edit | Title format (Dependabot exempt), assignee, component label, body reference style |
 | bash-ci.yml | PR + push | check-env, CRLF, ASCII markdown, check-ai-elisions |
 | quick-tests.yml | Push to dev (.sh files) | Security tests, bash -n, ./aixcl help |
-| security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review, gitleaks, shell obfuscation patterns |
+| security.yml | PR + push | ShellCheck (warning+, no SC1091), dependency review, gitleaks, shell obfuscation patterns, Action SHA pins |
 | documentation-checks.yml | PR + push | check-paths.sh, check-generated-files.sh, check-profiles.sh, yamllint, compose validate |
 | codeql.yml | PR + push | GitHub Actions workflow security (actions language only) |
 | check-opencode.yml | PR touching .opencode paths | check-agents.sh (agent/skill/rules/commands parity) |
@@ -93,7 +93,7 @@ All 12 workflows:
 shellcheck --severity=warning --exclude=SC1091 $(find . -name "*.sh" -not -path "./.git/*")
 
 # Individual checks
-./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, profiles, obfuscation, yaml, compose, env, models
+./aixcl checks paths        # or: agents, elisions, generated, ascii, pins, action-pins, profiles, obfuscation, yaml, compose, env, models
 ./aixcl checks pr-refs <body-file>
 ./aixcl checks pr-ready <pr-number>
 ```
